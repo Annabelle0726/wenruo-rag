@@ -78,11 +78,7 @@ CONCEPTUAL_TOP_K = 10
 #: produced: ``mm²``/``mm2``, ``Ω``/``ohm``/``欧``, ``℃``/``°C``, ``×``/``x``/``*``
 #: are the same measurement to the reader and different bytes to a regex.
 _NUMERIC_UNIT_RE = re.compile(
-    r"\d+(?:\.\d+)?\s*(?:"
-    r"mm\s*[²2³3]?|cm|kV|KV|kv|MV|V|mA|A|kA|Ω|ohm|MΩ|mΩ|欧|"
-    r"℃|°C|K|Hz|kHz|MHz|GHz|kg|g|km|m\b|s\b|min|h\b|%|％|"
-    r"kW|W|kWh|N|N·m|MPa|kPa|Pa|dB|pF|nF|µF|uF|mF|F\b|Ω/km"
-    r")"
+    r"\d+(?:\.\d+)?\s*(?:" r"mm\s*[²2³3]?|cm|kV|KV|kv|MV|V|mA|A|kA|Ω|ohm|MΩ|mΩ|欧|" r"℃|°C|K|Hz|kHz|MHz|GHz|kg|g|km|m\b|s\b|min|h\b|%|％|" r"kW|W|kWh|N|N·m|MPa|kPa|Pa|dB|pF|nF|µF|uF|mF|F\b|Ω/km" r")"
 )
 #: A conductor size written as a count times a section (``3×25``, ``3x25``,
 #: ``4*16``), with optional units on either side (``3×25mm²``).
@@ -96,17 +92,12 @@ _NUMERIC_TERM_RE = re.compile(r"偏心度|厚度|外径|截面|载流量|直流�
 
 # --- Revision / edition shape ----------------------------------------------
 _REVISION_RE = re.compile(
-    r"对比|比较|修订|修订版|版本|年版|新版|旧版|现行版|替代|废止|作废|沿用|"
-    r"现行有效|新旧|历次|变更(?:记录|内容)?|升版|换版|"
-    r"第\s*[0-9０-９一二三四五六七八九十]+\s*部分|"
-    r"(?:19|20)\d{2}\s*年"
+    r"对比|比较|修订|修订版|版本|年版|新版|旧版|现行版|替代|废止|作废|沿用|" r"现行有效|新旧|历次|变更(?:记录|内容)?|升版|换版|" r"第\s*[0-9０-９一二三四五六七八九十]+\s*部分|" r"(?:19|20)\d{2}\s*年"
 )
 
 # --- Conceptual / macro shape ---------------------------------------------
 _CONCEPTUAL_RE = re.compile(
-    r"异同|优缺点|优劣势|优势|劣势|利弊|原理|区别|差异|不同点|相同点|"
-    r"为什么|为何|本质|概念|定义|含义|作用|意义|概述|综述|"
-    r"选型原则|选型思路|如何选择|如何选型|适用场景|适用条件|发展趋势"
+    r"异同|优缺点|优劣势|优势|劣势|利弊|原理|区别|差异|不同点|相同点|" r"为什么|为何|本质|概念|定义|含义|作用|意义|概述|综述|" r"选型原则|选型思路|如何选择|如何选型|适用场景|适用条件|发展趋势"
 )
 
 _WHITESPACE_RE = re.compile(r"\s+")

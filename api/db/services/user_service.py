@@ -440,11 +440,16 @@ class UserTenantService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_role(cls, user_id, tenant_id):
-        row = cls.model.select(cls.model.role).where(
-            (cls.model.user_id == user_id) & (cls.model.tenant_id == tenant_id)
-            & cls.model.role.in_((UserTenantRole.OWNER, UserTenantRole.ADMIN, UserTenantRole.NORMAL))
-            & (cls.model.status == StatusEnum.VALID.value)
-        ).first()
+        row = (
+            cls.model.select(cls.model.role)
+            .where(
+                (cls.model.user_id == user_id)
+                & (cls.model.tenant_id == tenant_id)
+                & cls.model.role.in_((UserTenantRole.OWNER, UserTenantRole.ADMIN, UserTenantRole.NORMAL))
+                & (cls.model.status == StatusEnum.VALID.value)
+            )
+            .first()
+        )
         return row.role if row else None
 
     @classmethod

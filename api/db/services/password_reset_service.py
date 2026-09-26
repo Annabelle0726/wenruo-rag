@@ -1,4 +1,5 @@
 """Bounded, single-use reset codes shared across API workers in Redis."""
+
 import hashlib
 import hmac
 import secrets
@@ -74,8 +75,15 @@ def reset_password(email, code, new_password):
     if not REDIS_CONN.REDIS.eval(CONSUME, 1, _key(email), _digest(email, code)):
         raise PermissionError("Invalid or expired verification code.")
     # Rotating the access token invalidates every existing authenticated session.
-    updated = User.update(password=generate_password_hash(encoded), access_token=get_uuid()).where(
-        fn.LOWER(User.email) == email, User.status == "1", User.is_active == "1", User.login_channel == "password",
-    ).execute()
+    updated = (
+        User.update(password=generate_password_hash(encoded), access_token=get_uuid())
+        .where(
+            fn.LOWER(User.email) == email,
+            User.status == "1",
+            User.is_active == "1",
+            User.login_channel == "password",
+        )
+        .execute()
+    )
     if not updated:
         raise PermissionError("Invalid or expired verification code.")

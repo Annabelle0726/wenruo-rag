@@ -1,4 +1,5 @@
 """Invitation creation and public, single-use onboarding."""
+
 from api.apps import current_user, login_required, login_user, require_tenant_admin
 from api.db.services.invitation_service import InvitationService
 from api.utils.api_utils import get_data_error_result, get_error_permission_result, get_json_result, get_request_json, validate_request
@@ -12,8 +13,7 @@ from common.connection_utils import construct_response
 async def create_invitation(tenant_id):
     req = await get_request_json()
     try:
-        result = InvitationService.create(tenant_id, current_user.id, req.get("email"),
-                                          req.get("role", "normal"), req.get("department_id") or None)
+        result = InvitationService.create(tenant_id, current_user.id, req.get("email"), req.get("role", "normal"), req.get("department_id") or None)
         return get_json_result(data=result)
     except PermissionError as exc:
         return get_error_permission_result(str(exc))

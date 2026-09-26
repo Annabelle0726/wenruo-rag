@@ -185,7 +185,7 @@ export default function SearchingView({
                 <span className="h-4 w-px bg-border-button" aria-hidden />
                 <button
                   type="button"
-                  className="flex size-9 items-center justify-center rounded-full bg-text-primary text-bg-base shadow transition-opacity hover:opacity-90"
+                  className="flex size-9 items-center justify-center rounded-full shadow transition-opacity hover:opacity-90"
                   onClick={() => {
                     if (sendingLoading) {
                       stopOutputMessage();

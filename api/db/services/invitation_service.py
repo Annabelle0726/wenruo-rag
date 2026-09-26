@@ -1,4 +1,5 @@
 """Workspace invitations. A bearer token grants only its recorded membership."""
+
 import base64
 import re
 import secrets
@@ -43,14 +44,27 @@ def _validate_scope(tenant_id, inviter, role, department_id):
         raise PermissionError("Inviting administrator unavailable.")
     if not Tenant.select().where(Tenant.id == tenant_id, Tenant.status == "1").exists():
         raise PermissionError("Workspace unavailable.")
-    if not UserTenant.select().where(
-        UserTenant.tenant_id == tenant_id, UserTenant.user_id == inviter,
-        UserTenant.status == "1", UserTenant.role.in_(("owner", "admin")),
-    ).exists():
+    if (
+        not UserTenant.select()
+        .where(
+            UserTenant.tenant_id == tenant_id,
+            UserTenant.user_id == inviter,
+            UserTenant.status == "1",
+            UserTenant.role.in_(("owner", "admin")),
+        )
+        .exists()
+    ):
         raise PermissionError("Workspace administrator required.")
-    if department_id and not Department.select().where(
-        Department.id == department_id, Department.tenant_id == tenant_id, Department.status == "1",
-    ).exists():
+    if (
+        department_id
+        and not Department.select()
+        .where(
+            Department.id == department_id,
+            Department.tenant_id == tenant_id,
+            Department.status == "1",
+        )
+        .exists()
+    ):
         raise PermissionError("Department unavailable in this workspace.")
 
 
@@ -69,18 +83,20 @@ class InvitationService:
                     raise PermissionError("Account unavailable.")
                 if UserTenant.select().where(UserTenant.tenant_id == tenant_id, UserTenant.user_id == user.id).exists():
                     raise ValueError("This user is already a workspace member.")
-                UserTenant.create(id=get_uuid(), user_id=user.id, tenant_id=tenant_id, role=role,
-                                  department_id=department_id, invited_by=inviter, status="1")
+                UserTenant.create(id=get_uuid(), user_id=user.id, tenant_id=tenant_id, role=role, department_id=department_id, invited_by=inviter, status="1")
                 TenantInvite.update(status="revoked").where(
-                    TenantInvite.tenant_id == tenant_id, TenantInvite.email == email, TenantInvite.status == "pending",
+                    TenantInvite.tenant_id == tenant_id,
+                    TenantInvite.email == email,
+                    TenantInvite.status == "pending",
                 ).execute()
                 return {"joined": True}
             TenantInvite.update(status="revoked").where(
-                TenantInvite.tenant_id == tenant_id, TenantInvite.email == email, TenantInvite.status == "pending",
+                TenantInvite.tenant_id == tenant_id,
+                TenantInvite.email == email,
+                TenantInvite.status == "pending",
             ).execute()
             token = secrets.token_hex(16)
-            TenantInvite.create(id=get_uuid(), tenant_id=tenant_id, invited_by=inviter, email=email,
-                                role=role, department_id=department_id, token=token)
+            TenantInvite.create(id=get_uuid(), tenant_id=tenant_id, invited_by=inviter, email=email, role=role, department_id=department_id, token=token)
             return {"joined": False, "token": token, "invite_path": f"/accept-invite?token={token}"}
 
     @staticmethod
@@ -98,8 +114,7 @@ class InvitationService:
     def metadata(token):
         invite = InvitationService._pending(token)
         department = Department.get_or_none(Department.id == invite.department_id) if invite.department_id else None
-        return {"tenant_name": Tenant.get_by_id(invite.tenant_id).name, "email": invite.email,
-                "role": invite.role, "department_name": department.name if department else None}
+        return {"tenant_name": Tenant.get_by_id(invite.tenant_id).name, "email": invite.email, "role": invite.role, "department_name": department.name if department else None}
 
     @staticmethod
     @DB.connection_context()
@@ -112,16 +127,28 @@ class InvitationService:
             with DB.atomic():
                 invite = InvitationService._pending(token)
                 # Conditional write is the single-use claim. Any later failure rolls it back.
-                claimed = TenantInvite.update(status="accepted").where(
-                    TenantInvite.id == invite.id, TenantInvite.status == "pending", TenantInvite.expires_at > utcnow(),
-                ).execute()
+                claimed = (
+                    TenantInvite.update(status="accepted")
+                    .where(
+                        TenantInvite.id == invite.id,
+                        TenantInvite.status == "pending",
+                        TenantInvite.expires_at > utcnow(),
+                    )
+                    .execute()
+                )
                 if not claimed or User.select().where(fn.LOWER(User.email) == invite.email).exists():
                     raise PermissionError("Invitation cannot be redeemed. Ask the administrator to invite again.")
-                user = User.create(id=get_uuid(), email=invite.email, nickname=nickname.strip(),
-                                   password=generate_password_hash(encoded), access_token=get_uuid(),
-                                   current_tenant_id=invite.tenant_id, login_channel="password", last_login_time=utcnow())
-                UserTenant.create(id=get_uuid(), user_id=user.id, tenant_id=invite.tenant_id,
-                                  role=invite.role, department_id=invite.department_id, invited_by=invite.invited_by, status="1")
+                user = User.create(
+                    id=get_uuid(),
+                    email=invite.email,
+                    nickname=nickname.strip(),
+                    password=generate_password_hash(encoded),
+                    access_token=get_uuid(),
+                    current_tenant_id=invite.tenant_id,
+                    login_channel="password",
+                    last_login_time=utcnow(),
+                )
+                UserTenant.create(id=get_uuid(), user_id=user.id, tenant_id=invite.tenant_id, role=invite.role, department_id=invite.department_id, invited_by=invite.invited_by, status="1")
                 return user
         except IntegrityError:
             raise PermissionError("Invitation cannot be redeemed. Ask the administrator to invite again.") from None

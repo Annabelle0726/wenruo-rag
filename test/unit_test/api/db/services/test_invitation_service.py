@@ -33,6 +33,7 @@ def accept(token):
 
 def test_registration_disabled_still_allows_single_use_scoped_invitation(database, monkeypatch):
     from common import settings
+
     monkeypatch.setattr(settings, "REGISTER_ENABLED", False)
     result = create(role="admin", department_id="department")
     assert len(result["token"]) == 32
@@ -95,8 +96,10 @@ def test_existing_account_joins_without_resetting_password(database):
 
 def test_failed_membership_insert_rolls_back_user_and_token(database, monkeypatch):
     result = create()
+
     def fail(**kwargs):
         raise RuntimeError("database write failed")
+
     monkeypatch.setattr(UserTenant, "create", fail)
     with pytest.raises(RuntimeError):
         accept(result["token"])

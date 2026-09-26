@@ -90,9 +90,7 @@ class UserCanvasService(CommonService):
         is published. `release == 1` is how this schema stores the boolean, the
         same way `User.is_superuser` is compared.
         """
-        return cls.model.tenant_id.in_(joined_tenant_ids) & (
-            ((cls.model.permission == TenantPermission.TEAM.value) & (cls.model.release == 1)) | (cls.model.user_id == user_id)
-        )
+        return cls.model.tenant_id.in_(joined_tenant_ids) & (((cls.model.permission == TenantPermission.TEAM.value) & (cls.model.release == 1)) | (cls.model.user_id == user_id))
 
     @classmethod
     @DB.connection_context()

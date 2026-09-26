@@ -1,4 +1,5 @@
 """Exercise the real cookie helpers without booting every application blueprint."""
+
 import ast
 import hashlib
 import hmac
@@ -14,8 +15,13 @@ def test_cookie_session_is_bound_to_the_current_access_token():
     tree.body = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in names]
     user = SimpleNamespace(id="member", is_active="1", access_token="a" * 32)
     namespace = {
-        "hashlib": hashlib, "hmac": hmac, "logging": logging, "session": {},
-        "get_uuid": lambda: "session-id", "g": SimpleNamespace(), "AUTH_JWT": "jwt",
+        "hashlib": hashlib,
+        "hmac": hmac,
+        "logging": logging,
+        "session": {},
+        "get_uuid": lambda: "session-id",
+        "g": SimpleNamespace(),
+        "AUTH_JWT": "jwt",
         "StatusEnum": SimpleNamespace(VALID=SimpleNamespace(value="1")),
         "UserService": SimpleNamespace(query=lambda **kwargs: [user]),
     }

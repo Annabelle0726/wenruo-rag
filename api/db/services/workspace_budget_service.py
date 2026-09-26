@@ -325,7 +325,11 @@ def release_dispatch(reservation_id):
         return {"status": "missing"}
     try:
         with DB.connection_context(), DB.atomic():
-            updated = WorkspaceUsageLedger.update(status="unsettled", settled_at=datetime.now(utc_timezone.utc).strftime("%Y-%m-%d %H:%M:%S")).where((WorkspaceUsageLedger.id == reservation_id) & (WorkspaceUsageLedger.status == "reserved")).execute()
+            updated = (
+                WorkspaceUsageLedger.update(status="unsettled", settled_at=datetime.now(utc_timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
+                .where((WorkspaceUsageLedger.id == reservation_id) & (WorkspaceUsageLedger.status == "reserved"))
+                .execute()
+            )
             return {"status": "unsettled" if updated else "closed", "updated": updated}
     except Exception as exc:  # noqa: BLE001 - accounting must never break the answer
         logging.warning("Failed to close reservation %s: %s", reservation_id, exc)

@@ -44,7 +44,7 @@ from rag.retrieval.multi_route import (
     merge_route_hits,
     multi_route_retrieve,
 )
-from rag.retrieval.query_router import PASS_THROUGH, route_question
+from rag.retrieval.query_router import route_question
 from rag.retrieval.rerank import DEFAULT_FINAL_TOP_N, rerank_chunks, resolve_final_top_n
 
 _LOG = logging.getLogger(__name__)
