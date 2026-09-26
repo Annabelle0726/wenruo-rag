@@ -27,7 +27,7 @@ from langfuse import propagate_attributes
 from api.db.db_models import LLM
 from api.db.services.common_service import CommonService
 from api.db.services.tenant_llm_service import LLM4Tenant
-from common.model_budget import budgeted
+from common.model_budget import budgeted, record_dispatch_usage
 from common.token_utils import langfuse_run_attrs, num_tokens_from_string, record_run_token_usage, truncate
 
 # Default values for the four LLM generation parameters stored in
@@ -123,6 +123,9 @@ class LLMBundle(LLM4Tenant):
             # Stale or inconsistent split — keep the total, drop the unreliable split.
             prompt, completion = 0, 0
         record_run_token_usage(prompt, completion, total_tokens)
+        # The same numbers settle this dispatch's budget reservation; a call that
+        # reports nothing leaves the reservation standing (never refunded).
+        record_dispatch_usage(prompt_tokens=prompt, completion_tokens=completion, total_tokens=total_tokens)
         return {"input": prompt, "output": completion, "total": total_tokens}
 
     def close(self):
@@ -211,6 +214,8 @@ class LLMBundle(LLM4Tenant):
             generation.update(usage_details={"total_tokens": used_tokens})
             generation.end()
 
+        # Embedding usage is input-only: the whole count is prompt tokens.
+        record_dispatch_usage(prompt_tokens=used_tokens, total_tokens=used_tokens)
         return embeddings, used_tokens
 
     @budgeted
@@ -239,6 +244,7 @@ class LLMBundle(LLM4Tenant):
             generation.update(usage_details={"total_tokens": used_tokens})
             generation.end()
 
+        record_dispatch_usage(prompt_tokens=used_tokens, total_tokens=used_tokens)
         return emd, used_tokens
 
     @budgeted
@@ -255,6 +261,7 @@ class LLMBundle(LLM4Tenant):
             generation.update(usage_details={"total_tokens": used_tokens})
             generation.end()
 
+        record_dispatch_usage(prompt_tokens=used_tokens, total_tokens=used_tokens)
         return sim, used_tokens
 
     @budgeted

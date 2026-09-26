@@ -1556,6 +1556,14 @@ class Task(DataBaseModel):
     retry_count = IntegerField(default=0)
     digest = TextField(null=True, help_text="task digest", default="")
     chunk_ids = EmptyStringLongTextField(null=True, help_text="chunk ids", default="")
+    # WHO caused this task, so a worker can attribute (and meter) the model calls
+    # it makes after the request that queued it is long gone. This is the
+    # AUTHENTICATED caller, never the end-user id the request may carry for
+    # provider tracing - those are different things and only the former is a
+    # grant. Nullable: rows queued before this column (or by a background sync
+    # with no authenticated caller) carry none and are attributed to the
+    # workspace owner at execution time.
+    initiator_user_id = CharField(max_length=32, null=True, help_text="authenticated user id that queued the task", index=True)
 
 
 class Dialog(DataBaseModel):
@@ -1685,26 +1693,84 @@ class UserCanvas(DataBaseModel):
 
 
 class WorkspaceBudget(DataBaseModel):
+    """Per-workspace limits. A limit of 0 on the token/cost dimensions means
+    "not enforced": a workspace that never configured pricing must not be
+    blocked by an accidental zero, while the call dimensions keep the positive
+    defaults below."""
+
     tenant_id = CharField(max_length=32, primary_key=True)
     calls_per_minute = IntegerField(default=20)
     calls_per_day = IntegerField(default=1000)
     calls_per_month = IntegerField(default=20000)
+    tokens_per_day = BigIntegerField(default=200000)
+    tokens_per_month = BigIntegerField(default=4000000)
+    # Micro-USD (1e-6 USD) so the ledger needs no floating point. Pricing is
+    # optional per model, so these default to "unlimited".
+    cost_micros_per_day = BigIntegerField(default=0)
+    cost_micros_per_month = BigIntegerField(default=0)
+    # The zone the day/month reset boundary is computed in. The rolling minute
+    # is zone-independent, and a wrong/unknown zone is refused on write.
+    timezone = CharField(max_length=64, null=False, default="UTC")
 
     class Meta:
         db_table = "workspace_budget"
 
 
 class WorkspaceUsage(DataBaseModel):
-    """Durable per-member calendar-period call counters (UTC)."""
+    """Durable per-member calendar-period counters, in the workspace's zone.
+
+    Counters carry BOTH what a dispatch reserved and what it actually settled:
+    a reservation is added on the way in and the unused part is subtracted when
+    the provider reports its usage, so the stored value is never below the true
+    spend AND includes what is still in flight. Nothing is refunded for a call
+    that reported no usage.
+    """
 
     id = CharField(max_length=64, primary_key=True)
     tenant_id = CharField(max_length=32, index=True)
     user_id = CharField(max_length=32, index=True)
     period = CharField(max_length=10)
     calls = BigIntegerField(default=0)
+    prompt_tokens = BigIntegerField(default=0)
+    completion_tokens = BigIntegerField(default=0)
+    tokens = BigIntegerField(default=0)
+    cost_micros = BigIntegerField(default=0)
 
     class Meta:
         db_table = "workspace_usage"
+
+
+class WorkspaceUsageLedger(DataBaseModel):
+    """One row per metered model-call attempt: the bound it reserved and what it
+    settled to.
+
+    The row is the idempotency record for settlement - `id` is the reservation
+    id the caller holds, so a second settlement (a stream that ends twice, a
+    retried callback, a duplicate provider round) is a no-op instead of a second
+    charge. It is also the reconciliation source for the durable counters.
+    """
+
+    id = CharField(max_length=64, primary_key=True)
+    tenant_id = CharField(max_length=32, index=True)
+    user_id = CharField(max_length=32, index=True)
+    call_kind = CharField(max_length=32, null=False, default="")
+    model_name = CharField(max_length=128, null=False, default="")
+    period_day = CharField(max_length=10, null=False, default="")
+    period_month = CharField(max_length=7, null=False, default="")
+    timezone = CharField(max_length=64, null=False, default="UTC")
+    reserved_tokens = BigIntegerField(default=0)
+    reserved_cost_micros = BigIntegerField(default=0)
+    prompt_tokens = BigIntegerField(default=0)
+    completion_tokens = BigIntegerField(default=0)
+    tokens = BigIntegerField(default=0)
+    cost_micros = BigIntegerField(default=0)
+    # reserved (in flight) | settled (usage reported) | unsettled (finished
+    # without reporting usage; the reservation stands, as documented)
+    status = CharField(max_length=16, null=False, default="reserved", index=True)
+    settled_at = DateTimeField(null=True)
+
+    class Meta:
+        db_table = "workspace_usage_ledger"
 
 
 class WorkspaceAudit(DataBaseModel):
@@ -2641,6 +2707,27 @@ def migrate_db():
     # legacy row whose owner belongs to several workspaces stays unbound and is
     # resolved by an operator (see migrate_user_canvas_tenant_id).
     alter_db_add_column(migrator, "user_canvas", "tenant_id", CharField(max_length=32, null=True, index=True))
+    # Token/cost dimensions and the reset-boundary zone of the workspace budget.
+    # The token columns are additive to the call counters added earlier; cost is
+    # stored in micro-USD and defaults to "unlimited" because pricing is
+    # optional per model. `timezone` keeps UTC as the default so a deployment
+    # that never configures one resets exactly where it did before.
+    alter_db_add_column(migrator, "workspace_budget", "tokens_per_day", BigIntegerField(default=200000))
+    alter_db_add_column(migrator, "workspace_budget", "tokens_per_month", BigIntegerField(default=4000000))
+    alter_db_add_column(migrator, "workspace_budget", "cost_micros_per_day", BigIntegerField(default=0))
+    alter_db_add_column(migrator, "workspace_budget", "cost_micros_per_month", BigIntegerField(default=0))
+    alter_db_add_column(migrator, "workspace_budget", "timezone", CharField(max_length=64, null=False, default="UTC"))
+    # The durable counters grow a token/cost split. Existing rows keep the call
+    # count they already had; the new columns start at zero, which is the truth
+    # for them (nothing measured tokens before this migration).
+    alter_db_add_column(migrator, "workspace_usage", "prompt_tokens", BigIntegerField(default=0))
+    alter_db_add_column(migrator, "workspace_usage", "completion_tokens", BigIntegerField(default=0))
+    alter_db_add_column(migrator, "workspace_usage", "tokens", BigIntegerField(default=0))
+    alter_db_add_column(migrator, "workspace_usage", "cost_micros", BigIntegerField(default=0))
+    # Detached work needs a persisted initiator: the end-user id on the queue
+    # message is a tracing value, not an identity, and it is gone once the
+    # message is acked.
+    alter_db_add_column(migrator, "task", "initiator_user_id", CharField(max_length=32, null=True, help_text="authenticated user id that queued the task", index=True))
     # Run after all alter_db_* calls so newly added compatible columns, such as
     # user_canvas.tags, exist before their GaussDB NOT NULL constraints relax.
     relax_gaussdb_empty_string_compatible_columns()
@@ -2695,6 +2782,7 @@ def migrate_db():
     WorkspaceUsage.create_table(safe=True)
     WorkspaceBudget.create_table(safe=True)
     WorkspaceAudit.create_table(safe=True)
+    WorkspaceUsageLedger.create_table(safe=True)
     migrate_user_canvas_tenant_id()
 
 

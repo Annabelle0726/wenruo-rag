@@ -93,6 +93,7 @@ from api.db.services.document_service import DocumentService
 from api.db.services.doc_metadata_service import DocMetadataService
 from api.db.services.llm_service import LLMBundle
 from api.db.services.task_service import TaskService, has_canceled, CANVAS_DEBUG_DOC_ID, GRAPH_RAPTOR_FAKE_DOC_ID
+from api.db.services.workspace_budget_service import enter_detached_job, exit_detached_job
 from api.db.services.file2document_service import File2DocumentService
 from api.db.joint_services.tenant_model_service import get_tenant_default_model_by_type, resolve_model_config, get_model_config_by_id
 from common.versions import get_ragflow_version
@@ -1828,7 +1829,14 @@ async def handle_task() -> bool:
     pipeline_task_type = TASK_TYPE_TO_PIPELINE_TASK_TYPE.get(task_type, PipelineTaskType.PARSE) or PipelineTaskType.PARSE
     task_id = task["id"]
     ctx_token = set_llm_request_context(user_id=normalize_llm_user_id(task.get("user_id")))
+    job_tokens = None
     try:
+        # Detached work carries the identity of the member who queued it, so the
+        # model calls this worker makes are metered against that member's quota
+        # in the job's workspace instead of against nobody. A queued job whose
+        # initiator has since been removed is REFUSED here (fencing), and a legacy
+        # row with no recorded initiator is attributed to the workspace owner.
+        job_tokens = enter_detached_job(task.get("tenant_id"), task.get("initiator_user_id"))
         CURRENT_TASKS[task["id"]] = _redact_task_user(copy.deepcopy(task))
         run_mode = os.environ.get("TE_RUN_MODE", "0")
         logging.info(f"TE_RUN_MODE is {run_mode}")
@@ -1871,6 +1879,7 @@ async def handle_task() -> bool:
             pass
         logging.exception(f"handle_task got exception for task {json.dumps(_redact_task_user(task))}")
     finally:
+        exit_detached_job(job_tokens)
         reset_llm_request_context(ctx_token)
         if not task.get("dataflow_id", ""):
             referred_document_id = None

@@ -32,6 +32,7 @@ from common.misc_utils import get_uuid
 from common.time_utils import current_timestamp, get_format_time
 from common.constants import StatusEnum, TaskStatus, MAXIMUM_PAGE_NUMBER, MAXIMUM_TASK_PAGE_NUMBER
 from common.llm_request_context import normalize_llm_user_id
+from common.workspace_context import execution_user
 from deepdoc.parser.excel_parser import RAGFlowExcelParser
 from rag.utils.redis_conn import REDIS_CONN
 from common import settings
@@ -189,6 +190,7 @@ class TaskService(CommonService):
             cls.model.to_page,
             cls.model.task_type,
             cls.model.retry_count,
+            cls.model.initiator_user_id,
             Document.kb_id,
             Document.parser_id,
             Document.parser_config,
@@ -467,6 +469,13 @@ def queue_tasks(doc: dict, bucket: str, name: str, priority: int, user_id: str |
         - Previous task chunks may be reused if available
     """
 
+    # WHO queued this work, persisted on the task row so the worker can attribute
+    # (and meter) the model calls it makes long after this request is gone. It is
+    # the AUTHENTICATED caller, never the tracing end-user id in `user_id`, which
+    # is only forwarded to the provider. None for a background sync with no
+    # authenticated caller; the worker then falls back to the workspace owner.
+    initiator_user_id = execution_user.get() or None
+
     def new_task():
         return {
             "id": get_uuid(),
@@ -475,6 +484,7 @@ def queue_tasks(doc: dict, bucket: str, name: str, priority: int, user_id: str |
             "from_page": 0,
             "to_page": MAXIMUM_TASK_PAGE_NUMBER,
             "begin_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "initiator_user_id": initiator_user_id,
         }
 
     parse_task_array = []
@@ -674,6 +684,9 @@ def queue_dataflow(
         task_type="dataflow" if not rerun else "dataflow_rerun",
         priority=priority,
         begin_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        # The authenticated caller, so the worker can attribute the pipeline's
+        # model calls to a member instead of to nobody (see queue_tasks).
+        initiator_user_id=execution_user.get() or None,
     )
     if doc_id not in [CANVAS_DEBUG_DOC_ID, GRAPH_RAPTOR_FAKE_DOC_ID]:
         TaskService.model.delete().where(TaskService.model.doc_id == doc_id).execute()

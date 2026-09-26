@@ -240,6 +240,27 @@ def get_default_rerank_model_config(tenant_id: str) -> dict | None:
         return None
 
 
+def _model_pricing(model_extra):
+    """Optional per-token pricing stated on a model's own `extra`.
+
+    `price_input_per_million` / `price_output_per_million` are USD per million
+    tokens, which is numerically the micro-USD the ledger stores per token. A
+    model without pricing simply has no cost dimension: tokens are still metered
+    for it, cost is not.
+    """
+    if not isinstance(model_extra, dict):
+        return None
+    price_in = model_extra.get("price_input_per_million")
+    price_out = model_extra.get("price_output_per_million")
+    if price_in is None and price_out is None:
+        return None
+    try:
+        return {"input_per_million": float(price_in or 0), "output_per_million": float(price_out or 0)}
+    except (TypeError, ValueError):
+        logger.warning("Ignoring invalid model pricing %r / %r", price_in, price_out)
+        return None
+
+
 def split_model_name(model_name: str):
     # Parse model_name: {model_name} or {model_name}@{factory_name} or {model_name}@{instance_name}@{factory_name}
     #
@@ -352,6 +373,10 @@ def get_model_config_from_provider_instance(tenant_id, model_type: str | enum.En
             # from model_config["extra"]; see tenant_llm_service.LLMBundle OCR path.
             model_config["extra"] = model_extra
 
+        pricing = _model_pricing(model_extra)
+        if pricing:
+            model_config["pricing"] = pricing
+
         if api_key_payload is not None:
             model_config["api_key_payload"] = api_key_payload
 
@@ -404,6 +429,10 @@ def get_model_config_by_id(tenant_id: str, model_type: str | enum.Enum, model_id
     }
     if provider_obj.provider_name.lower() == "somark":
         model_config["extra"] = model_extra
+
+    pricing = _model_pricing(model_extra)
+    if pricing:
+        model_config["pricing"] = pricing
 
     if api_key_payload is not None:
         model_config["api_key_payload"] = api_key_payload

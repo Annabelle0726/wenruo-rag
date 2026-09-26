@@ -20,6 +20,7 @@ from api.db.db_models import (
     WorkspaceAudit,
     WorkspaceBudget,
     WorkspaceUsage,
+    WorkspaceUsageLedger,
 )
 from api.db.services import workspace_budget_service as budget
 from api.db.services import workspace_member_service as members
@@ -30,7 +31,7 @@ from common.workspace_context import execution_user
 
 @pytest.fixture
 def workspace(tmp_path, monkeypatch):
-    models = [Tenant, User, UserTenant, TenantInvite, APIToken, Dialog, Knowledgebase, KnowledgebaseAuthorization, UserCanvas, WorkspaceAudit, WorkspaceBudget, WorkspaceUsage]
+    models = [Tenant, User, UserTenant, TenantInvite, APIToken, Dialog, Knowledgebase, KnowledgebaseAuthorization, UserCanvas, WorkspaceAudit, WorkspaceBudget, WorkspaceUsage, WorkspaceUsageLedger]
     db = SqliteDatabase(tmp_path / "workspace.sqlite", timeout=20)
     with db.bind_ctx(models):
         db.create_tables(models)
@@ -170,7 +171,7 @@ def test_store_outage_and_normal_configuration_denied(workspace, monkeypatch):
 @pytest.mark.asyncio
 async def test_subcalls_and_streams_recheck_identity(monkeypatch):
     calls = []
-    monkeypatch.setattr(budget, "reserve_call", lambda tenant, actor: calls.append((tenant, actor)))
+    monkeypatch.setattr(budget, "reserve_call", lambda tenant, actor, **_kwargs: calls.append((tenant, actor)))
 
     class Model:
         tenant_id = "workspace"
@@ -189,7 +190,7 @@ async def test_subcalls_and_streams_recheck_identity(monkeypatch):
         assert [part async for part in Model().stream()] == ["ok"]
         assert calls == [("workspace", "member"), ("workspace", "member")]
 
-        def deny(*_):
+        def deny(*_args, **_kwargs):
             raise WorkspaceAccessDenied("removed")
 
         monkeypatch.setattr(budget, "reserve_call", deny)
@@ -202,7 +203,7 @@ async def test_subcalls_and_streams_recheck_identity(monkeypatch):
 def test_provider_tool_rounds_and_retries_each_consume_budget(monkeypatch):
     calls = []
 
-    def reserve(tenant, user):
+    def reserve(tenant, user, **_kwargs):
         if len(calls) == 2:
             raise WorkspaceAccessDenied("quota")
         calls.append((tenant, user))

@@ -358,6 +358,17 @@ async def rm(tenant_id):
 @manager.route("/tenants/<tenant_id>/usage-budget", methods=["GET", "PUT"])  # noqa: F821
 @login_required
 async def usage_budget(tenant_id):
+    """Read or update a workspace's model-call limits (OWNER/ADMIN only).
+
+    A PUT takes any subset of `calls_per_minute`, `calls_per_day`,
+    `calls_per_month` (positive integers), `tokens_per_day`,
+    `tokens_per_month`, `cost_micros_per_day`, `cost_micros_per_month` (0 means
+    "not enforced") and `timezone` (an IANA name, e.g. `Asia/Shanghai`, which is
+    the zone the day/month counters reset in). The response echoes every limit,
+    its unit, and the usage of the current period(s) separated into day and
+    month, because a single summed total would double count a call that
+    increments both.
+    """
     from quart import request
     from api.db.services.workspace_budget_service import configure_budget
 
