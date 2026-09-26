@@ -20,7 +20,6 @@ import asyncio
 import logging
 import math
 import os
-import random
 import re
 import sys
 import threading
@@ -193,6 +192,35 @@ IS_ENGLISH_BOX_PATTERN = rf"[ \na-zA-Z0-9,/¸;:'\[\]\(\)!@#$%^&*\"?<>._-]{{{IS_E
 #: owns in the extraction progress bar.
 OCR_PROGRESS_EVERY_PAGES = 6
 OCR_PROGRESS_SHARE = 0.6
+
+
+#: Seed for the column-assignment KMeans. ``KMeans`` initialises from the global
+#: numpy RNG when ``random_state`` is None, so two runs of the same document could
+#: start from different centroids and land on different ``col_id`` labels — which
+#: reorders the reading order and therefore the chunk tokens. The clustering it
+#: pins is the same one it always ran (same k search, same silhouette choice).
+KMEANS_RANDOM_STATE = 0
+
+
+def _evenly_spaced(items: list[Any], count: int) -> list[Any]:
+    """Take ``count`` items from ``items`` at an even stride — deterministically.
+
+    The English probe only needs a representative slice of a page, and it sampled
+    with ``random.choices``: the drawn slice could contain a 30+ character Latin
+    run on one run and not on the next, which flips the document between the
+    English path and the OCR-only path and made a before/after digest comparison
+    meaningless. An even stride is a pure function of the input and is also the
+    better sample: a head slice would only ever see a page's title area, and a
+    replacement sample can repeat the same character.
+    """
+    total = len(items)
+    if count <= 0:
+        return []
+    if count >= total:
+        return list(items)
+    step = total / count
+    return [items[int(i * step)] for i in range(count)]
+
 
 # --- Failure taxonomy -------------------------------------------------------
 # Only failures this module actually handles are named; anything else is a defect
@@ -997,7 +1025,7 @@ class RAGFlowPdfParser:
             best_score = -1
 
             for k in range(1, max_try + 1):
-                km = KMeans(n_clusters=k, n_init="auto")
+                km = KMeans(n_clusters=k, n_init="auto", random_state=KMEANS_RANDOM_STATE)
                 labels = km.fit_predict(x0s)
 
                 centers = np.sort(km.cluster_centers_.flatten())
@@ -1028,7 +1056,7 @@ class RAGFlowPdfParser:
             if len(bxs) < k:
                 k = 1
             x0s = np.array([[b["x0"]] for b in bxs], dtype=float)
-            km = KMeans(n_clusters=k, n_init="auto")
+            km = KMeans(n_clusters=k, n_init="auto", random_state=KMEANS_RANDOM_STATE)
             labels = km.fit_predict(x0s)
 
             centers = km.cluster_centers_.flatten()
@@ -1615,10 +1643,10 @@ class RAGFlowPdfParser:
         logging.info(f"__images__ dedupe_chars cost {timer() - start}s")
 
         logging.debug("Images converted.")
-        self.is_english = [
-            re.search(IS_ENGLISH_PATTERN, "".join(random.choices([c["text"] for c in self.page_chars[i]], k=min(IS_ENGLISH_SAMPLE_CHARS, len(self.page_chars[i])))))
-            for i in range(len(self.page_chars))
-        ]
+        # Deterministic sample (see ``_evenly_spaced``): the document's language
+        # must be a property of the document, not of the RNG state of the run that
+        # happened to parse it.
+        self.is_english = [re.search(IS_ENGLISH_PATTERN, "".join(c["text"] for c in _evenly_spaced(self.page_chars[i], IS_ENGLISH_SAMPLE_CHARS))) for i in range(len(self.page_chars))]
         if sum([1 if e else 0 for e in self.is_english]) > len(self.page_images) / 2:
             self.is_english = True
         else:
@@ -1677,7 +1705,7 @@ class RAGFlowPdfParser:
 
         if not self.is_english and not any([c for c in self.page_chars]) and self.boxes:
             bxes = [b for bxs in self.boxes for b in bxs]
-            self.is_english = re.search(IS_ENGLISH_BOX_PATTERN, "".join([b["text"] for b in random.choices(bxes, k=min(IS_ENGLISH_SAMPLE_BOXES, len(bxes)))]))
+            self.is_english = re.search(IS_ENGLISH_BOX_PATTERN, "".join(b["text"] for b in _evenly_spaced(bxes, IS_ENGLISH_SAMPLE_BOXES)))
 
         logging.debug(f"Is it English: {self.is_english}")
         self.page_cum_height = np.cumsum(self.page_cum_height)
@@ -2033,7 +2061,7 @@ class VisionParser(RAGFlowPdfParser):
         large batch exhausts first.
         """
         try:
-            with sys.modules[LOCK_KEY_pdfplumber], (pdfplumber.open(fnm) if isinstance(fnm, str) else pdfplumber.open(BytesIO(fnm))) as pdf:
+            with sys.modules[LOCK_KEY_pdfplumber], pdfplumber.open(fnm) if isinstance(fnm, str) else pdfplumber.open(BytesIO(fnm)) as pdf:
                 self.pdf = pdf
                 self.page_images = [p.to_image(resolution=PDF_RENDER_DPI * zoomin).annotated for i, p in enumerate(pdf.pages[page_from:page_to])]
                 self.total_page = len(pdf.pages)

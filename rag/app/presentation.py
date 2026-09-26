@@ -118,10 +118,15 @@ class Pdf(PdfParser):
 
 class PlainPdf(PlainParser):
     def __call__(self, filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, callback=None, **kwargs):
-        self.pdf = pdf2_read(filename if binary is None else BytesIO(binary))
         page_txt = []
-        for page in self.pdf.pages[from_page:to_page]:
-            page_txt.append(page.extract_text())
+        # ``with`` closes the reader (and, for a path, the stream pypdf opened):
+        # the pages are fully consumed here, so holding the parsed object graph on
+        # ``self.pdf`` for the parser's lifetime buys nothing and costs a
+        # document's worth of objects per file.
+        with pdf2_read(filename if binary is None else BytesIO(binary)) as pdf:
+            self.pdf = pdf
+            for page in pdf.pages[from_page:to_page]:
+                page_txt.append(page.extract_text())
         callback(0.9, "Parsing finished")
         return [(txt, None) for txt in page_txt], []
 

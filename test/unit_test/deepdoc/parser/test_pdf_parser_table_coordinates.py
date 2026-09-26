@@ -386,3 +386,100 @@ def test_extract_table_figure_preserves_textless_figures(monkeypatch):
     assert isinstance(descriptions, list)
     assert descriptions == [""]
     assert poss == [(0, 50, 200, 50, 200)]
+
+
+# ---------------------------------------------------------------------------
+# Determinism: the parse must be a function of the document, not of a random draw
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.p1
+def test_evenly_spaced_sampling_is_a_pure_function_of_its_input(monkeypatch):
+    """The English probe samples a page; two calls must agree, run after run.
+
+    ``random.choices`` made the SAME document parse to different text (measured:
+    5,194 vs 897 characters over the same 5 pages of the cable datasheet), which
+    also flips a document between the English path and the OCR-only path between
+    two runs of the same build.
+    """
+    module = _load_pdf_parser(monkeypatch)
+
+    items = list(range(1000))
+
+    assert module._evenly_spaced(items, 100) == module._evenly_spaced(items, 100)
+    assert len(module._evenly_spaced(items, 100)) == 100
+
+
+@pytest.mark.p1
+def test_evenly_spaced_sampling_spans_the_input_instead_of_its_head(monkeypatch):
+    """A head slice would only ever see a page's title area."""
+    module = _load_pdf_parser(monkeypatch)
+
+    sample = module._evenly_spaced(list(range(1000)), 100)
+
+    assert sample[0] == 0
+    assert sample[-1] >= 990
+
+
+@pytest.mark.p1
+def test_evenly_spaced_sampling_covers_short_inputs_whole(monkeypatch):
+    module = _load_pdf_parser(monkeypatch)
+
+    assert module._evenly_spaced(["a", "b", "c"], 100) == ["a", "b", "c"]
+    assert module._evenly_spaced(["a"], 1) == ["a"]
+    assert module._evenly_spaced(["a", "b"], 0) == []
+
+
+@pytest.mark.p1
+def test_the_parser_does_not_sample_with_the_random_module(monkeypatch):
+    """Guard against reintroducing a random draw into the parse.
+
+    The module must not even import ``random``: every sampling decision in it has
+    to be reproducible from the document alone.
+    """
+    module = _load_pdf_parser(monkeypatch)
+
+    assert not hasattr(module, "random")
+
+
+@pytest.mark.p1
+def test_column_assignment_pins_its_kmeans_seed(monkeypatch):
+    """``KMeans`` initialises from the global numpy RNG unless it is seeded.
+
+    Different centroids mean different ``col_id`` labels, which reorder the
+    reading order and therefore the chunk tokens of the same document.
+    """
+    module = _load_pdf_parser(monkeypatch)
+
+    seeded = []
+
+    class _RecordingKMeans:
+        def __init__(self, **kwargs):
+            seeded.append(kwargs.get("random_state"))
+
+        def fit_predict(self, x0s):
+            import numpy as np
+
+            return np.zeros(len(x0s), dtype=int)
+
+        _centers = None
+
+        @property
+        def cluster_centers_(self):
+            import numpy as np
+
+            return np.zeros((1, 1))
+
+    monkeypatch.setattr(module, "KMeans", _RecordingKMeans)
+
+    parser = module.RAGFlowPdfParser.__new__(module.RAGFlowPdfParser)
+    parser.page_from = 0
+    boxes = [
+        {"page_number": 1, "x0": 10.0, "x1": 100.0, "top": 10.0, "bottom": 20.0},
+        {"page_number": 1, "x0": 12.0, "x1": 102.0, "top": 30.0, "bottom": 40.0},
+    ]
+
+    parser._assign_column(boxes, 3)
+
+    assert seeded, "KMeans was never constructed"
+    assert all(state == module.KMEANS_RANDOM_STATE for state in seeded), seeded

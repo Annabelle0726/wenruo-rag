@@ -46,13 +46,16 @@ def init_in_out(args):
 
     def pdf_pages(fnm, zoomin=3):
         nonlocal outputs, images
-        with sys.modules[LOCK_KEY_pdfplumber]:
-            pdf = pdfplumber.open(fnm)
+        # One ``with`` for the whole render: ``pdf.close()`` used to sit AFTER the
+        # page loop, so a page whose image conversion raised left the handle open
+        # for the rest of the process -- this CLI walks a directory, so a single
+        # bad page would leak one handle per file. Same contract as every parser
+        # in deepdoc/parser: the handle never outlives the pages it rendered.
+        with sys.modules[LOCK_KEY_pdfplumber], pdfplumber.open(fnm) as pdf:
             images = [p.to_image(resolution=72 * zoomin).annotated for i, p in enumerate(pdf.pages)]
 
         for i, page in enumerate(images):
             outputs.append(os.path.split(fnm)[-1] + f"_{i}.jpg")
-        pdf.close()
 
     def images_and_outputs(fnm):
         nonlocal outputs, images
