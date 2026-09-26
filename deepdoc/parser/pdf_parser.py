@@ -1436,7 +1436,17 @@ class RAGFlowPdfParser:
             img = cropout(bxs, "table", poss)
             if img is None:
                 continue
-            res.append((img, self.tbl_det.construct_table(bxs, html=return_html, is_english=self.is_english)))
+            content = self.tbl_det.construct_table(bxs, html=return_html, is_english=self.is_english)
+            if not str(content or "").strip():
+                # The structure recogniser produced nothing for a region the LAYOUT
+                # model called a table. That is the missed-table report on a cable
+                # datasheet: a large or borderless table whose grid the model cannot
+                # read comes back empty, and the rows stay in the page text with no
+                # columns to belong to. Fall back to the geometry-driven extractor
+                # (`deepdoc/parser/table_extractor.py`), which reads the ruling - or,
+                # when there is none, the columns the words line up into.
+                content = self._rule_based_table_markdown(poss) or content
+            res.append((img, content))
             positions.append(poss)
 
         if separate_tables_figures:
@@ -1556,6 +1566,54 @@ class RAGFlowPdfParser:
 
         return "\n\n".join(res)
 
+    def _rule_based_table_markdown(self, poss: list[Any]) -> str:
+        """Markdown for the table at ``poss``, from the geometry-driven extractor.
+
+        Used when the structure recogniser returns nothing for a table region. The
+        source PDF is re-opened (and closed) inside the extractor, under the shared
+        pdfplumber lock: the handle this parser rendered with is long gone by the
+        time the table regions are known, and keeping one alive across the whole
+        parse is the leak this file spent two rounds removing. The window's tables
+        are extracted at most once per parse and cached.
+
+        Best-effort by design: no source, no overlap or an extraction failure
+        returns an empty string, and the caller keeps whatever it had.
+        """
+        source = getattr(self, "_table_source", None)
+        if source is None or not poss:
+            return ""
+        try:
+            from deepdoc.parser.table_extractor import table_to_markdown
+
+            window = getattr(self, "_table_window", (0, MAXIMUM_PAGE_NUMBER))
+            if getattr(self, "_page_tables", None) is None:
+                from deepdoc.parser.table_extractor import extract_tables_from_pdf
+
+                self._page_tables = extract_tables_from_pdf(source, window[0], window[1])
+            page_no, left, right, top, bott = poss[0]
+            for table in getattr(self, "_page_tables", None) or []:
+                bbox = table.bbox
+                if bbox is None or table.page_index != int(page_no):
+                    continue
+                if float(bbox[2]) < float(left) - ROTATED_TABLE_BOX_PADDING or float(bbox[0]) > float(right) + ROTATED_TABLE_BOX_PADDING:
+                    continue
+                if float(bbox[3]) < float(top) - ROTATED_TABLE_BOX_PADDING or float(bbox[1]) > float(bott) + ROTATED_TABLE_BOX_PADDING:
+                    continue
+                markdown = table_to_markdown(table.rows, caption=table.caption)
+                if markdown:
+                    logging.info(
+                        "[Table] structure recogniser returned nothing for page %d (%.0f,%.0f); using %d row(s) from the %s rule-based extraction",
+                        table.page_index + 1,
+                        float(left),
+                        float(top),
+                        len(table.rows),
+                        table.strategy,
+                    )
+                    return markdown
+        except Exception:  # noqa: BLE001 - an enhancement must never fail the parse
+            logging.exception("rule-based table fallback failed")
+        return ""
+
     @staticmethod
     def total_page_number(fnm: str | bytes, binary: bytes | None = None) -> int | None:
         """Page count of ``fnm``; ``None`` when the file cannot be read at all.
@@ -1593,6 +1651,14 @@ class RAGFlowPdfParser:
         self.page_cum_height = [0]
         self.page_layout = []
         self.page_from = page_from
+        # Where the rule-based table extractor re-opens the document from, and which
+        # page window this parse covers. The handle this method renders with is
+        # closed before the table regions are known, so the fallback re-reads the
+        # source instead of keeping a handle alive across the parse; the extracted
+        # tables are cached per window (`_page_tables`).
+        self._table_source = fnm
+        self._table_window = (page_from, page_to)
+        self._page_tables = None
         start = timer()
         try:
             with sys.modules[LOCK_KEY_pdfplumber]:

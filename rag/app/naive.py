@@ -45,6 +45,7 @@ from rag.utils.file_utils import extract_embed_file, extract_links_from_pdf, ext
 from deepdoc.parser import DocxParser, EpubParser, ExcelParser, HtmlParser, JsonParser, MarkdownElementExtractor, MarkdownParser, PdfParser, TxtParser
 from rag.app.figure_parser import VisionFigureParser, vision_figure_parser_docx_wrapper_naive, vision_figure_parser_pdf_wrapper
 from deepdoc.parser.pdf_parser import PlainParser, VisionParser
+from deepdoc.parser.table_extractor import DEFAULT_TABLE_CHUNK_CHARS
 from deepdoc.parser.docling_parser import DoclingParser
 from deepdoc.parser.monkeyocrv2_parser import MonkeyOCRv2Parser
 from deepdoc.parser.tcadp_parser import TCADPParser
@@ -1135,6 +1136,11 @@ def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang=
     is_markdown = False
     table_context_size = max(0, int(parser_config.get("table_context_size", 0) or 0))
     image_context_size = max(0, int(parser_config.get("image_context_size", 0) or 0))
+    # Per-chunk budget for ONE table. A table longer than this is stored as
+    # row-batches that each repeat the table's name and header row, so that a single
+    # data row (``3x630`` / ``60.0``) never travels without the columns it belongs
+    # to; `0` disables the split and stores one chunk per table as before.
+    table_chunk_chars = max(0, int(parser_config.get("table_chunk_chars", DEFAULT_TABLE_CHUNK_CHARS) or 0))
 
     doc = {"docnm_kwd": filename, "title_tks": rag_tokenizer.tokenize(re.sub(r"\.[a-zA-Z]+$", "", filename))}
     doc["title_sm_tks"] = rag_tokenizer.fine_grained_tokenize(doc["title_tks"])
@@ -1268,7 +1274,7 @@ def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang=
             if int(parser_config.get("chunk_token_num", 0)) <= 0:
                 parser_config["chunk_token_num"] = 0
 
-        res = tokenize_table(tables, doc, is_english, language=lang)
+        res = tokenize_table(tables, doc, is_english, language=lang, max_table_chars=table_chunk_chars)
         callback(0.8, "Finish parsing.")
 
     elif re.search(r"\.(csv|xlsx?)$", filename, re.IGNORECASE):
@@ -1290,7 +1296,7 @@ def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang=
             sections, tables = tcadp_parser.parse_pdf(filepath=filename, binary=binary, callback=callback, output_dir=os.environ.get("TCADP_OUTPUT_DIR", ""), file_type=file_type)
             sections = _normalize_section_text_for_rtl_presentation_forms(sections)
             parser_config["chunk_token_num"] = 0
-            res = tokenize_table(tables, doc, is_english, language=lang)
+            res = tokenize_table(tables, doc, is_english, language=lang, max_table_chars=table_chunk_chars)
             sections = []
             callback(0.8, "Finish parsing.")
         else:
@@ -1375,7 +1381,7 @@ def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang=
                 soup = markdown_parser.md_to_html(section_text)
                 hyperlink_urls = markdown_parser.get_hyperlink_urls(soup)
                 urls.update(hyperlink_urls)
-        res = tokenize_table(tables, doc, is_english, language=lang)
+        res = tokenize_table(tables, doc, is_english, language=lang, max_table_chars=table_chunk_chars)
         callback(0.8, "Finish parsing.")
 
     elif re.search(r"\.(htm|html)$", filename, re.IGNORECASE):

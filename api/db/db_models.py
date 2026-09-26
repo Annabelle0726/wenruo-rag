@@ -1594,6 +1594,10 @@ class Dialog(DataBaseModel):
         # opener and no-result answer (api/db/cable_defaults.py).
         default=cable_defaults.prompt_config,
     )
+    # Cable vertical: a new assistant starts with metadata matching ON, so a
+    # question that names a 型号/标准号 narrows the search to the document that
+    # carries it (see api/db/cable_defaults.META_DATA_FILTER_METHOD). A callable
+    # default, not a literal: every row must get its own dict.
     meta_data_filter = JSONField(null=True, default=cable_defaults.meta_data_filter)
 
     similarity_threshold = FloatField(default=cable_defaults.SIMILARITY_THRESHOLD)

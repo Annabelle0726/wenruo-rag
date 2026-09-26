@@ -549,7 +549,16 @@ def tokenize_chunks_with_images(chunks, doc, eng, images, child_delimiters_patte
     return res
 
 
-def tokenize_table(tbls, doc, eng, batch_size=10, language="English"):
+def tokenize_table(tbls, doc, eng, batch_size=10, language="English", max_table_chars=0):
+    """Turn extracted tables into chunks.
+
+    ``max_table_chars`` is the budget for ONE table chunk. A Markdown table longer
+    than it is split into row-batches, and every batch keeps the table's name and
+    header row: a cable parameter table runs to dozens of rows, and the row a
+    question asks about (``3x630`` / ``60.0``) is unreadable in a chunk that lost
+    the columns it belongs to. ``0`` - the default, and what every existing caller
+    passes - keeps the previous behaviour of one chunk per table.
+    """
     res = []
     # add tables
     for (img, rows), poss in tbls:
@@ -558,15 +567,16 @@ def tokenize_table(tbls, doc, eng, batch_size=10, language="English"):
         # Media producers use strings for tables and lists for figures. Keep
         # that contract explicit instead of guessing the type from HTML tags.
         if isinstance(rows, str):
-            d = copy.deepcopy(doc)
-            tokenize(d, rows, eng, language=language)
-            d["content_with_weight"] = rows
-            d["doc_type_kwd"] = "table"
-            if img is not None:
-                d["image"] = img
-            if poss:
-                add_positions(d, poss)
-            res.append(d)
+            for part in _table_content_chunks(rows, max_table_chars):
+                d = copy.deepcopy(doc)
+                tokenize(d, part, eng, language=language)
+                d["content_with_weight"] = part
+                d["doc_type_kwd"] = "table"
+                if img is not None:
+                    d["image"] = img
+                if poss:
+                    add_positions(d, poss)
+                res.append(d)
             continue
         lang_key = (language or "English").strip().lower()
         de = "； " if lang_key in {"chinese", "japanese"} else "; "
@@ -580,6 +590,27 @@ def tokenize_table(tbls, doc, eng, batch_size=10, language="English"):
             add_positions(d, poss)
             res.append(d)
     return res
+
+
+def _table_content_chunks(table_text, max_table_chars):
+    """Split one table's text into the chunks that will be stored.
+
+    Only a Markdown table is split, and only when a budget is configured: an HTML
+    table (what the structure recogniser emits) has no row to repeat a header with,
+    and a caller that passes no budget keeps one chunk per table. The splitter
+    itself lives with the extractor that produces the Markdown; the import is
+    deferred because ``deepdoc.parser`` imports this module (``rag_tokenizer``), so
+    a module-level import would be circular.
+    """
+    text = str(table_text or "")
+    if not text or int(max_table_chars or 0) <= 0:
+        return [text]
+    from deepdoc.parser.table_extractor import split_markdown_table
+
+    parts = split_markdown_table(text, int(max_table_chars))
+    if len(parts) > 1:
+        logging.debug("table split into %d chunk(s) with the header repeated (budget %s chars)", len(parts), max_table_chars)
+    return parts
 
 
 def attach_media_context(chunks, table_context_size=0, image_context_size=0):
