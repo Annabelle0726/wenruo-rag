@@ -18,6 +18,8 @@ import os
 import enum
 import json
 from common import settings
+from common.exceptions import WorkspaceAccessDenied
+from common.workspace_context import execution_user
 from common.constants import (
     ActiveStatusEnum,
     LLMType,
@@ -295,6 +297,8 @@ def resolve_model_config(tenant_id, model_type: str | enum.Enum, model_ref: str)
 
 
 def get_model_config_from_provider_instance(tenant_id, model_type: str | enum.Enum, model_name: str):
+    if execution_user.get():
+        TenantService.resolve_config_tenant_id(execution_user.get(), tenant_id)
     pure_model_name, instance_name, provider_name = split_model_name(model_name)
     model_type_val = model_type if isinstance(model_type, str) else model_type.value
     # Builtin embedding model
@@ -358,11 +362,20 @@ def get_model_config_from_provider_instance(tenant_id, model_type: str | enum.En
 
 def get_model_config_by_id(tenant_id: str, model_type: str | enum.Enum, model_id: str):
     """Get model config from tenant_model by its id (CharField PK)."""
+    if execution_user.get():
+        TenantService.resolve_config_tenant_id(execution_user.get(), tenant_id)
     model_type_val = model_type if isinstance(model_type, str) else model_type.value
     model_type_bin = calculate_model_type(model_type_val)
     exist, model_obj = TenantModelService.get_by_id(model_id)
     if not exist:
         raise LookupError(f"TenantModel id={model_id} not found.")
+    ok, provider_obj = TenantModelProviderService.get_by_id(model_obj.provider_id)
+    if not ok:
+        raise LookupError(f"Provider id={model_obj.provider_id} not found for model id={model_id}.")
+
+    if tenant_id != provider_obj.tenant_id:
+        raise WorkspaceAccessDenied("此模型不属于当前工作区")
+
     if model_obj.status == ActiveStatusEnum.INACTIVE.value:
         raise LookupError(f"TenantModel id={model_id} is disabled.")
     if model_obj.status == ActiveStatusEnum.UNSUPPORTED.value:
@@ -370,20 +383,11 @@ def get_model_config_by_id(tenant_id: str, model_type: str | enum.Enum, model_id
     if not (model_obj.model_type & model_type_bin):
         raise LookupError(f"TenantModel id={model_id} cannot be used as {model_type_val} model.")
 
-    ok, provider_obj = TenantModelProviderService.get_by_id(model_obj.provider_id)
-    if not ok:
-        raise LookupError(f"Provider id={model_obj.provider_id} not found for model id={model_id}.")
-
-    # Validate that tenant_id owns the provider or is a joined tenant of the provider's owner.
-    if tenant_id != provider_obj.tenant_id:
-        joined_tenants = TenantService.get_joined_tenants_by_user_id(tenant_id)
-        joined_tenant_ids = [t["tenant_id"] for t in joined_tenants]
-        if provider_obj.tenant_id not in joined_tenant_ids:
-            raise LookupError(f"Tenant {tenant_id} has no access to provider owned by tenant {provider_obj.tenant_id}.")
-
     ok, instance_obj = TenantModelInstanceService.get_by_id(model_obj.instance_id)
     if not ok:
         raise LookupError(f"Instance id={model_obj.instance_id} not found for model id={model_id}.")
+    if instance_obj.provider_id != provider_obj.id:
+        raise WorkspaceAccessDenied("模型实例与工作区配置不匹配")
 
     api_key, is_tool, api_key_payload = _decode_api_key_config(instance_obj.api_key)
     extra_fields = json.loads(instance_obj.extra) if instance_obj.extra else {}
@@ -470,6 +474,8 @@ def ensure_tenant_model_ids_for_params(tenant_id: str, params: dict) -> dict:
 
 
 def get_api_key(tenant_id: str, model_name: str):
+    if execution_user.get():
+        TenantService.resolve_config_tenant_id(execution_user.get(), tenant_id)
     # Try direct model ID (UUID) lookup first
     exist, model_obj = TenantModelService.get_by_id(model_name)
     if exist:
@@ -478,10 +484,7 @@ def get_api_key(tenant_id: str, model_name: str):
         if not ok:
             raise LookupError(f"Provider id={model_obj.provider_id} not found for model {model_name}.")
         if tenant_id != provider_obj.tenant_id:
-            joined_tenants = TenantService.get_joined_tenants_by_user_id(tenant_id)
-            joined_tenant_ids = [t["tenant_id"] for t in joined_tenants]
-            if provider_obj.tenant_id not in joined_tenant_ids:
-                raise LookupError(f"Tenant {tenant_id} has no access to provider owned by tenant {provider_obj.tenant_id}.")
+            raise WorkspaceAccessDenied("此模型不属于当前工作区")
 
         exist_inst, instance_obj = TenantModelInstanceService.get_by_id(model_obj.instance_id)
         if not exist_inst:
@@ -492,6 +495,8 @@ def get_api_key(tenant_id: str, model_name: str):
                 model_obj.instance_id,
             )
             raise LookupError(f"Instance {model_obj.instance_id} not found for model {model_name}.")
+        if instance_obj.provider_id != provider_obj.id:
+            raise WorkspaceAccessDenied("模型实例与工作区配置不匹配")
         logger.debug(
             "Direct-ID resolution: resolved | tenant_id=%s model_id=%s instance_id=%s",
             tenant_id,

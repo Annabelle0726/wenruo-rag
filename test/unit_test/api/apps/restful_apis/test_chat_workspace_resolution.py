@@ -130,6 +130,9 @@ class _AwaitableValue:
 @pytest.fixture
 def workspace(monkeypatch):
     """The caller `member-1`, working in `ws-1`, whose assistants it created."""
+    from api.db.services.user_service import UserTenantService
+
+    monkeypatch.setattr(UserTenantService, "get_role", lambda user, tenant: "normal" if user == MEMBER_ID and tenant == WORKSPACE_ID else None)
     state = SimpleNamespace(
         resolved=[],
         tenant_lookups=[],

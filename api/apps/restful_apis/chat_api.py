@@ -224,6 +224,10 @@ async def _accessible_chat(chat_id):
         return None
     if chat.created_by != current_user.id:
         return None
+    from api.db.services.user_service import UserTenantService
+
+    if not await thread_pool_exec(UserTenantService.get_role, current_user.id, chat.tenant_id):
+        return None
     return chat
 
 
@@ -1667,7 +1671,7 @@ async def session_completion(chat_id_in_arg=""):
                     await thread_pool_exec(ConversationService.update_by_id, conv.id, conv.to_dict())
             except Exception as ex:
                 logging.exception(ex)
-                yield "data:" + json.dumps({"code": 500, "message": str(ex), "data": {"answer": "**ERROR**: " + str(ex), "reference": []}}, ensure_ascii=False) + "\n\n"
+                yield "data:" + json.dumps({"code": getattr(ex, "code", 500), "message": str(ex), "data": {"answer": "**ERROR**: " + str(ex), "reference": []}}, ensure_ascii=False) + "\n\n"
             yield "data:" + json.dumps({"code": 0, "message": "", "data": True}, ensure_ascii=False) + "\n\n"
 
         if stream_mode:

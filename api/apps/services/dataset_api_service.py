@@ -1946,7 +1946,7 @@ async def get_dataset_structure(dataset_id: str, tenant_id: str, kind: str, keyw
 
     from api.apps.services import structure_graph_common as sgc
     from api.db.services.compilation_template_service import CompilationTemplateService
-    from api.db.services.tenant_llm_service import TenantLLMService
+    from api.db.services.llm_service import LLMBundle
     from common.doc_store.doc_store_base import OrderByExpr
 
     keywords = (keywords or "").strip()
@@ -2123,7 +2123,7 @@ async def get_dataset_structure(dataset_id: str, tenant_id: str, kind: str, keyw
             return True, empty
         try:
             model_config = resolve_model_config(kb.tenant_id, LLMType.EMBEDDING.value, kb.embd_id)
-            embd_mdl = TenantLLMService.model_instance(model_config)
+            embd_mdl = LLMBundle(kb.tenant_id, model_config)
         except Exception:
             logging.exception("get_dataset_structure: embedding bind failed for kb=%s", dataset_id)
             return True, empty

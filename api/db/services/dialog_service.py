@@ -158,8 +158,9 @@ class DialogService(CommonService):
         Returns:
             Model instance: The created record object.
         """
-        sample_obj = cls.model(**kwargs).save(force_insert=True)
-        return sample_obj
+        from api.db.services.workspace_member_service import save_owned_asset
+
+        return save_owned_asset(cls.model, kwargs)
 
     @classmethod
     def update_many_by_id(cls, data_list):

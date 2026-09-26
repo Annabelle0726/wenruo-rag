@@ -13,6 +13,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+from common.model_budget import charge_provider_call
+from common.exceptions import WorkspaceAccessDenied
+
 import asyncio
 import json
 import logging
@@ -430,6 +433,7 @@ class Base(ABC):
             request_kwargs["stop"] = stop
         request_kwargs.update(extra_request_kwargs)
 
+        charge_provider_call()
         response = await self.async_client.chat.completions.create(**request_kwargs)
         async for resp in response:
             if not resp.choices:
@@ -521,6 +525,8 @@ class Base(ABC):
         return error_code in self._retryable_errors
 
     def _exceptions(self, e, attempt) -> str | None:
+        if isinstance(e, WorkspaceAccessDenied):
+            raise e
         logging.exception("OpenAI chat_with_tools")
         # Classify the error
         error_code = self._classify_error(e)
@@ -538,6 +544,8 @@ class Base(ABC):
         return msg
 
     async def _exceptions_async(self, e, attempt):
+        if isinstance(e, WorkspaceAccessDenied):
+            raise e
         logging.exception("OpenAI async completion")
         error_code = self._classify_error(e)
         if attempt == self.max_retries:
@@ -691,6 +699,7 @@ class Base(ABC):
             try:
                 for _ in range(self.max_rounds + 1):
                     logging.info(f"{self.tools=}")
+                    charge_provider_call()
                     response = await self.async_client.chat.completions.create(model=self.model_name, messages=history, **self._tool_request_kwargs(), **gen_conf, **extra_request_kwargs)
                     _add_round_usage(response)
                     if not response.choices or not response.choices[0].message:
@@ -813,6 +822,7 @@ class Base(ABC):
                     reasoning_start = False
                     logging.info(f"[Tool loop] Deciding what to do next (step {_round + 1}); available tools: {', '.join(t['function']['name'] for t in tools)}")
 
+                    charge_provider_call()
                     response = await self.async_client.chat.completions.create(
                         model=self.model_name, messages=history, stream=True, **self._tool_request_kwargs(tools), **gen_conf, **extra_request_kwargs
                     )
@@ -935,6 +945,7 @@ class Base(ABC):
                 logging.warning(f"Exceed max rounds: {self.max_rounds}")
                 history.append({"role": "user", "content": f"Exceed max rounds: {self.max_rounds}"})
 
+                charge_provider_call()
                 response = await self.async_client.chat.completions.create(
                     model=self.model_name,
                     messages=history,
@@ -998,6 +1009,7 @@ class Base(ABC):
             request_kwargs=kwargs,
         )
 
+        charge_provider_call()
         response = await self.async_client.chat.completions.create(model=self.model_name, messages=history, **gen_conf, **kwargs)
 
         # Capture prompt/completion split for accurate Langfuse + run aggregation.
@@ -1075,6 +1087,7 @@ class BaiChuanChat(Base):
 
     def _chat(self, history, gen_conf=None, **kwargs):
         gen_conf = dict(gen_conf or {})
+        charge_provider_call()
         response = self.client.chat.completions.create(
             model=self.model_name,
             messages=history,
@@ -1100,6 +1113,7 @@ class BaiChuanChat(Base):
         ans = ""
         total_tokens = 0
         try:
+            charge_provider_call()
             response = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=history,
@@ -1744,6 +1758,7 @@ class GoogleChat(Base):
 
         if "claude" in self.model_name:
             gen_conf = self._clean_conf(gen_conf)
+            charge_provider_call()
             response = self.client.messages.create(
                 model=self.model_name,
                 messages=[h for h in history if h["role"] != "system"],
@@ -1825,6 +1840,7 @@ class GoogleChat(Base):
             ans = ""
             total_tokens = 0
             try:
+                charge_provider_call()
                 response = self.client.messages.create(
                     model=self.model_name,
                     messages=history,
@@ -2387,6 +2403,7 @@ class LiteLLMBase(ABC):
 
         for attempt in range(self.max_retries + 1):
             try:
+                charge_provider_call()
                 response = await litellm.acompletion(
                     **completion_args,
                     drop_params=True,
@@ -2432,6 +2449,7 @@ class LiteLLMBase(ABC):
 
         for attempt in range(self.max_retries + 1):
             try:
+                charge_provider_call()
                 stream = await litellm.acompletion(
                     **completion_args,
                     drop_params=True,
@@ -2518,6 +2536,8 @@ class LiteLLMBase(ABC):
         return error_code in self._retryable_errors
 
     async def _exceptions_async(self, e, attempt):
+        if isinstance(e, WorkspaceAccessDenied):
+            raise e
         logging.exception("LiteLLMBase async completion")
         error_code = self._classify_error(e)
         if attempt == self.max_retries:
@@ -2669,6 +2689,7 @@ class LiteLLMBase(ABC):
                     logging.info(f"HAS TOOL:{len(self.tools)}\n{history=}")
 
                     completion_args = self._construct_completion_args(history=history, stream=False, tools=True, **gen_conf)
+                    charge_provider_call()
                     response = await litellm.acompletion(
                         **completion_args,
                         drop_params=True,
@@ -2784,6 +2805,7 @@ class LiteLLMBase(ABC):
                     completion_args = self._construct_completion_args(history=history, stream=True, tools=True, **gen_conf)
                     # Request authoritative usage on the final streaming chunk.
                     completion_args.setdefault("stream_options", {})["include_usage"] = True
+                    charge_provider_call()
                     response = await litellm.acompletion(
                         **completion_args,
                         drop_params=True,
@@ -2938,6 +2960,7 @@ class LiteLLMBase(ABC):
 
                 completion_args = self._construct_completion_args(history=history, stream=True, tools=True, **gen_conf)
                 completion_args.setdefault("stream_options", {})["include_usage"] = True
+                charge_provider_call()
                 response = await litellm.acompletion(
                     **completion_args,
                     drop_params=True,

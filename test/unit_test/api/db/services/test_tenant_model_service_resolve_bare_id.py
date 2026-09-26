@@ -43,7 +43,7 @@ def test_resolve_model_config_resolves_bare_tenant_model_id_without_name_fallbac
         extra="",
     )
     provider = SimpleNamespace(id="provider-1", tenant_id=TENANT_ID, provider_name="OpenAI")
-    instance = SimpleNamespace(id="instance-1", api_key="sk-test", extra="")
+    instance = SimpleNamespace(id="instance-1", provider_id="provider-1", api_key="sk-test", extra="")
 
     def get_model_by_id(model_id):
         assert model_id == BARE_MODEL_ID

@@ -346,23 +346,24 @@ async def rm(tenant_id):
     req = await get_request_json()
     user_id = req["user_id"]
 
-    leaving_self = user_id == current_user.id
-    if not leaving_self and not UserTenantService.can_manage_tenant(current_user.id, tenant_id):
-        return get_error_permission_result("admin role required for this workspace")
-
-    role = UserTenantService.get_role(user_id, tenant_id)
-    if role is None:
-        return get_data_error_result(message="This user is not a member of the workspace.")
-    if role == UserTenantRole.OWNER:
-        return get_data_error_result(message="The owner cannot be removed from the workspace.")
+    from api.db.services.workspace_member_service import remove_member
 
     try:
-        UserTenantService.filter_delete([UserTenant.tenant_id == tenant_id, UserTenant.user_id == user_id])
-        # Do not leave the caller pointing at a workspace they just left.
-        _, user = UserService.get_by_id(user_id)
-        if user and user.current_tenant_id == tenant_id:
-            UserService.update_by_id(user_id, {"current_tenant_id": None})
+        remove_member(tenant_id, user_id, current_user.id, req.get("transfer_to_user_id"))
         return get_json_result(data=True)
+    except Exception as exc:
+        return server_error_response(exc)
+
+
+@manager.route("/tenants/<tenant_id>/usage-budget", methods=["GET", "PUT"])  # noqa: F821
+@login_required
+async def usage_budget(tenant_id):
+    from quart import request
+    from api.db.services.workspace_budget_service import configure_budget
+
+    try:
+        values = await get_request_json() if request.method == "PUT" else None
+        return get_json_result(data=configure_budget(tenant_id, current_user.id, values))
     except Exception as exc:
         return server_error_response(exc)
 

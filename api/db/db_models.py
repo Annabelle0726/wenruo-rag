@@ -1661,6 +1661,7 @@ class API4Conversation(DataBaseModel):
 
 class UserCanvas(DataBaseModel):
     id = CharField(max_length=32, primary_key=True)
+    tenant_id = CharField(max_length=32, null=True, index=True)
     avatar = TextField(null=True, help_text="avatar base64 string")
     user_id = CharField(max_length=255, null=False, help_text="user_id", index=True)
     title = CharField(max_length=255, null=True, help_text="Canvas title")
@@ -1681,6 +1682,40 @@ class UserCanvas(DataBaseModel):
 
     class Meta:
         db_table = "user_canvas"
+
+
+class WorkspaceBudget(DataBaseModel):
+    tenant_id = CharField(max_length=32, primary_key=True)
+    calls_per_minute = IntegerField(default=20)
+    calls_per_day = IntegerField(default=1000)
+    calls_per_month = IntegerField(default=20000)
+
+    class Meta:
+        db_table = "workspace_budget"
+
+
+class WorkspaceUsage(DataBaseModel):
+    """Durable per-member calendar-period call counters (UTC)."""
+
+    id = CharField(max_length=64, primary_key=True)
+    tenant_id = CharField(max_length=32, index=True)
+    user_id = CharField(max_length=32, index=True)
+    period = CharField(max_length=10)
+    calls = BigIntegerField(default=0)
+
+    class Meta:
+        db_table = "workspace_usage"
+
+
+class WorkspaceAudit(DataBaseModel):
+    id = CharField(max_length=32, primary_key=True)
+    tenant_id = CharField(max_length=32, index=True)
+    operator_id = CharField(max_length=32)
+    action = CharField(max_length=32)
+    details = JSONField(default=dict)
+
+    class Meta:
+        db_table = "workspace_audit"
 
 
 class CanvasTemplate(DataBaseModel):
@@ -2601,6 +2636,11 @@ def migrate_db():
     # rather than next to the table it belongs to: every alter_db_* call must
     # precede the relax below (see the comment on it).
     alter_db_add_column(migrator, "tenant_invite", "department_id", CharField(max_length=32, null=True))
+    # An agent canvas now names the workspace it belongs to, so membership can
+    # authorize it without inferring the workspace from its owner. Nullable: a
+    # legacy row whose owner belongs to several workspaces stays unbound and is
+    # resolved by an operator (see migrate_user_canvas_tenant_id).
+    alter_db_add_column(migrator, "user_canvas", "tenant_id", CharField(max_length=32, null=True, index=True))
     # Run after all alter_db_* calls so newly added compatible columns, such as
     # user_canvas.tags, exist before their GaussDB NOT NULL constraints relax.
     relax_gaussdb_empty_string_compatible_columns()
@@ -2650,6 +2690,49 @@ def migrate_db():
     # (Its `department_id` column is added with the other alters above, before
     # the relax.)
     TenantInvite.create_table(safe=True)
+
+    # P3/P4: durable budget tables (their own schema; no alters involved).
+    WorkspaceUsage.create_table(safe=True)
+    WorkspaceBudget.create_table(safe=True)
+    WorkspaceAudit.create_table(safe=True)
+    migrate_user_canvas_tenant_id()
+
+
+def migrate_user_canvas_tenant_id():
+    """Bind a legacy agent canvas to the workspace that provably owns it.
+
+    `user_canvas` carried only `user_id`, so an agent's workspace had to be
+    inferred. A canvas is bound here EXACTLY when its owner has a single
+    workspace membership - one candidate is a proof, not a guess. A canvas whose
+    owner belongs to several workspaces stays unbound on purpose: guessing would
+    move an agent across a workspace boundary, so those rows remain unresolved
+    and BLOCK the owner's removal (see `workspace_member_service.remove_member`)
+    until an operator assigns them.
+
+    Best-effort, like every other migration here: a database where the column
+    could not be added (a failed or skipped `alter_db_add_column`, or a
+    read-only replica) logs and continues instead of aborting startup.
+    """
+    if not DB.table_exists("user_canvas"):
+        return
+    try:
+        columns = {column.name for column in DB.get_columns("user_canvas")}
+    except Exception as ex:  # noqa: BLE001 - never block startup on introspection
+        logging.warning("Failed to inspect user_canvas columns; skipping the workspace bind: %s", ex)
+        return
+    if "tenant_id" not in columns:
+        logging.warning("user_canvas.tenant_id is missing; legacy agent canvases stay unbound until the next migration run")
+        return
+    try:
+        bound = 0
+        for canvas in UserCanvas.select().where(UserCanvas.tenant_id.is_null()):
+            memberships = list(UserTenant.select(UserTenant.tenant_id).where((UserTenant.user_id == canvas.user_id) & (UserTenant.status == "1")).distinct())
+            if len(memberships) == 1:
+                bound += UserCanvas.update(tenant_id=memberships[0].tenant_id).where((UserCanvas.id == canvas.id) & UserCanvas.tenant_id.is_null()).execute()
+        if bound:
+            logging.info("Bound %s legacy agent canvas(es) to their only workspace", bound)
+    except Exception as ex:  # noqa: BLE001 - a failed backfill must not block startup
+        logging.warning("Failed to bind legacy agent canvases to a workspace: %s", ex)
 
 
 def migrate_dialog_created_by():

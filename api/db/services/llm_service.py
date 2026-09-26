@@ -27,6 +27,7 @@ from langfuse import propagate_attributes
 from api.db.db_models import LLM
 from api.db.services.common_service import CommonService
 from api.db.services.tenant_llm_service import LLM4Tenant
+from common.model_budget import budgeted
 from common.token_utils import langfuse_run_attrs, num_tokens_from_string, record_run_token_usage, truncate
 
 # Default values for the four LLM generation parameters stored in
@@ -138,7 +139,9 @@ class LLMBundle(LLM4Tenant):
             value = getattr(self.mdl, attr, None)
             if value is not None:
                 kwargs[key] = value
-        return LLMBundle(self.tenant_id, dict(self.model_config), lang=getattr(self, "lang", "Chinese"), **kwargs)
+        clone = LLMBundle(self.tenant_id, dict(self.model_config), lang=getattr(self, "lang", "Chinese"), **kwargs)
+        clone.execution_user_id = self.execution_user_id
+        return clone
 
     def __enter__(self):
         """Enter context manager."""
@@ -155,6 +158,7 @@ class LLMBundle(LLM4Tenant):
             return
         self.mdl.bind_tools(toolcall_session, tools)
 
+    @budgeted
     def encode(self, texts: list):
         if self.langfuse:
             generation = self._start_langfuse_observation(trace_context=self.trace_context, as_type="generation", name="encode", model=self.model_config["llm_name"], input={"texts": texts})
@@ -209,6 +213,7 @@ class LLMBundle(LLM4Tenant):
 
         return embeddings, used_tokens
 
+    @budgeted
     def encode_queries(self, query: str):
         if self.langfuse:
             generation = self._start_langfuse_observation(trace_context=self.trace_context, as_type="generation", name="encode_queries", model=self.model_config["llm_name"], input={"query": query})
@@ -236,6 +241,7 @@ class LLMBundle(LLM4Tenant):
 
         return emd, used_tokens
 
+    @budgeted
     def similarity(self, query: str, texts: list):
         if self.langfuse:
             generation = self._start_langfuse_observation(
@@ -251,6 +257,7 @@ class LLMBundle(LLM4Tenant):
 
         return sim, used_tokens
 
+    @budgeted
     def describe(self, image, max_tokens=300):
         if self.langfuse:
             generation = self._start_langfuse_observation(trace_context=self.trace_context, as_type="generation", name="describe", metadata={"model": self.model_config["llm_name"]})
@@ -264,6 +271,7 @@ class LLMBundle(LLM4Tenant):
 
         return txt
 
+    @budgeted
     def describe_with_prompt(self, image, prompt):
         if self.langfuse:
             generation = self._start_langfuse_observation(
@@ -279,6 +287,7 @@ class LLMBundle(LLM4Tenant):
 
         return txt
 
+    @budgeted
     def transcription(self, audio):
         if self.langfuse:
             generation = self._start_langfuse_observation(trace_context=self.trace_context, as_type="generation", name="transcription", metadata={"model": self.model_config["llm_name"]})
@@ -292,6 +301,7 @@ class LLMBundle(LLM4Tenant):
 
         return txt
 
+    @budgeted
     def stream_transcription(self, audio):
         mdl = self.mdl
         supports_stream = hasattr(mdl, "stream_transcription") and callable(getattr(mdl, "stream_transcription"))
@@ -355,6 +365,7 @@ class LLMBundle(LLM4Tenant):
             "streaming": False,
         }
 
+    @budgeted
     def tts(self, text: str) -> Generator[bytes, None, None]:
         if self.langfuse:
             generation = self._start_langfuse_observation(trace_context=self.trace_context, as_type="generation", name="tts", input={"text": text})
@@ -472,6 +483,7 @@ class LLMBundle(LLM4Tenant):
         threading.Thread(target=worker, daemon=True).start()
         return queue
 
+    @budgeted
     async def async_chat(self, system: str, history: list, gen_conf: dict = {}, **kwargs):
         if self.is_tools and getattr(self.mdl, "is_tools", False) and hasattr(self.mdl, "async_chat_with_tools"):
             base_fn = self.mdl.async_chat_with_tools
@@ -513,6 +525,7 @@ class LLMBundle(LLM4Tenant):
 
         return txt
 
+    @budgeted
     async def async_chat_streamly(self, system: str, history: list, gen_conf: dict = {}, **kwargs):
         total_tokens = 0
         ans = ""
@@ -575,6 +588,7 @@ class LLMBundle(LLM4Tenant):
                 generation.end()
             return
 
+    @budgeted
     async def async_chat_streamly_delta(self, system: str, history: list, gen_conf: dict = {}, **kwargs):
         total_tokens = 0
         ans = ""

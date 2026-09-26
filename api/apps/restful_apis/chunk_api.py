@@ -40,7 +40,6 @@ from api.db.services.knowledgebase_service import KnowledgebaseService, validate
 from api.db.services.llm_service import LLMBundle
 from api.db.services.search_service import SearchService
 from api.db.services.task_service import TaskService, cancel_all_task_of
-from api.db.services.tenant_llm_service import TenantLLMService
 from common.llm_request_context import normalize_llm_user_id, reset_llm_request_context, set_llm_request_context
 from api.utils.api_utils import (
     add_tenant_id_to_kwargs,
@@ -906,7 +905,7 @@ async def get_document_structure_graph(tenant_id, dataset_id, document_id):
         try:
             embd_id = DocumentService.get_embd_id(document_id)
             model_config = resolve_model_config(dataset_tenant_id, LLMType.EMBEDDING.value, embd_id)
-            embd_mdl = TenantLLMService.model_instance(model_config)
+            embd_mdl = LLMBundle(dataset_tenant_id, model_config)
         except Exception:
             logging.exception("structure graph: embedding bind failed for doc=%s", document_id)
             return get_result(data=_response([]))
@@ -1280,7 +1279,7 @@ async def add_chunk(tenant_id, dataset_id, document_id):
 
     embd_id = DocumentService.get_embd_id(document_id)
     model_config = resolve_model_config(dataset_tenant_id, LLMType.EMBEDDING.value, embd_id)
-    embd_mdl = TenantLLMService.model_instance(model_config)
+    embd_mdl = LLMBundle(dataset_tenant_id, model_config)
     v, c = _encode_with_request_user(
         embd_mdl,
         [doc.name, req["content"] if not d["question_kwd"] else "\n".join(d["question_kwd"])],
@@ -1442,7 +1441,7 @@ async def update_chunk(tenant_id, dataset_id, document_id, chunk_id):
 
     embd_id = DocumentService.get_embd_id(document_id)
     model_config = resolve_model_config(dataset_tenant_id, LLMType.EMBEDDING.value, embd_id)
-    embd_mdl = TenantLLMService.model_instance(model_config)
+    embd_mdl = LLMBundle(dataset_tenant_id, model_config)
     if doc.parser_id == ParserType.QA:
         arr = [t for t in re.split(r"[\n\t]", d["content_with_weight"]) if len(t) > 1]
         if len(arr) != 2:

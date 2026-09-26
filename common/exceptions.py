@@ -19,6 +19,12 @@ class TaskCanceledException(Exception):
         self.msg = msg
 
 
+class WorkspaceAccessDenied(Exception):
+    """A public, credential-free workspace authorization or budget refusal."""
+
+    code = 108
+
+
 class ArgumentException(Exception):
     def __init__(self, msg):
         self.msg = msg

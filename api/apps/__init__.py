@@ -276,7 +276,18 @@ def login_required(func: Callable[P, Awaitable[T]] = None, auth_types=None) -> C
                         message=getattr(g, "auth_error_message", None) or "Authorization is not valid!",
                     )
                 raise QuartAuthUnauthorized()
-            return await current_app.ensure_async(func)(*args, **kwargs)
+            from common.workspace_context import execution_refusal, execution_user
+            from api.db.services.user_service import TenantService
+            from api.utils.workspace_execution import guard_response
+
+            execution_user.set(user.id)
+            refusal = {}
+            execution_refusal.set(refusal)
+            selected_tenant = requested_tenant_id()
+            if selected_tenant:
+                TenantService.resolve_config_tenant_id(user.id, selected_tenant)
+            result = await current_app.ensure_async(func)(*args, **kwargs)
+            return guard_response(result, user.id, refusal)
 
         return wrapper
 

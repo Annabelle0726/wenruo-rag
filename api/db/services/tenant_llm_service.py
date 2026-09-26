@@ -92,6 +92,12 @@ class TenantLLMService(CommonService):
 
 class LLM4Tenant:
     def __init__(self, tenant_id: str, model_config: dict, lang="Chinese", **kwargs):
+        from common.workspace_context import execution_user
+        from api.db.services.user_service import TenantService
+
+        self.execution_user_id = execution_user.get()
+        if self.execution_user_id:
+            tenant_id = TenantService.resolve_config_tenant_id(self.execution_user_id, tenant_id)
         self.trace_context = kwargs.pop("trace_context", None) or {}
         self.langfuse_session_id = kwargs.pop("langfuse_session_id", None)
         self.tenant_id = tenant_id

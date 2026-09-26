@@ -330,6 +330,20 @@ class Graph:
 
 class Canvas(Graph):
     def __init__(self, dsl: str, tenant_id=None, task_id=None, canvas_id=None, custom_header=None):
+        if canvas_id:
+            from api.db.db_models import DB, UserCanvas
+            from api.db.services.user_service import TenantService
+            from common.exceptions import WorkspaceAccessDenied
+            from common.workspace_context import execution_user
+
+            with DB.connection_context():
+                asset = UserCanvas.get_or_none(UserCanvas.id == canvas_id)
+            if asset:
+                if not asset.tenant_id:
+                    raise WorkspaceAccessDenied("请先确认此代理的工作区归属")
+                tenant_id = asset.tenant_id
+                if execution_user.get():
+                    TenantService.resolve_config_tenant_id(execution_user.get(), tenant_id)
         self.globals = {
             "sys.query": "",
             "sys.user_id": tenant_id,

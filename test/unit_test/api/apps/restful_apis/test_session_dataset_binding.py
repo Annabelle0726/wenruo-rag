@@ -154,6 +154,24 @@ class _FakeKnowledgebaseService:
         return [SimpleNamespace(id=kb_id, name=f"dataset {kb_id}", chunk_num=3)]
 
 
+@pytest.fixture(autouse=True)
+def live_membership(monkeypatch):
+    """Membership is revalidated on every per-assistant route.
+
+    `_accessible_chat` asks `UserTenantService.get_role` for the caller's LIVE
+    role in the assistant's workspace, so creator identity alone cannot outlive a
+    revocation. The fixtures here model one caller (`member-1`) whose assistant
+    lives in its own workspace.
+    """
+    from api.db.services.user_service import UserTenantService
+
+    monkeypatch.setattr(
+        UserTenantService,
+        "get_role",
+        lambda user_id, tenant_id: "normal" if user_id == MEMBER_ID and tenant_id == MEMBER_ID else None,
+    )
+
+
 @pytest.fixture
 def sessions(monkeypatch):
     """The session routes wired to in-memory tables, as the caller `member-1`."""

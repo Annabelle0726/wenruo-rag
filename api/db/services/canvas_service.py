@@ -48,6 +48,18 @@ class UserCanvasService(CommonService):
     model = UserCanvas
 
     @classmethod
+    def save(cls, **kwargs):
+        from api.db.services.user_service import TenantService
+        from api.utils.api_utils import requested_tenant_id
+
+        # Never trust a tenant_id supplied in the canvas JSON.
+        kwargs["tenant_id"] = TenantService.resolve_active_tenant_id(kwargs["user_id"], requested_tenant_id())
+        TenantService.resolve_config_tenant_id(kwargs["user_id"], kwargs["tenant_id"])
+        from api.db.services.workspace_member_service import save_owned_asset
+
+        return save_owned_asset(cls.model, kwargs)
+
+    @classmethod
     @DB.connection_context()
     def get_list(cls, tenant_id, page_number, items_per_page, orderby, desc, id, title, canvas_category=CanvasCategory.Agent):
         agents = cls.model.select()
@@ -78,7 +90,9 @@ class UserCanvasService(CommonService):
         is published. `release == 1` is how this schema stores the boolean, the
         same way `User.is_superuser` is compared.
         """
-        return (cls.model.user_id.in_(joined_tenant_ids) & (cls.model.permission == TenantPermission.TEAM.value) & (cls.model.release == 1)) | (cls.model.user_id == user_id)
+        return cls.model.tenant_id.in_(joined_tenant_ids) & (
+            ((cls.model.permission == TenantPermission.TEAM.value) & (cls.model.release == 1)) | (cls.model.user_id == user_id)
+        )
 
     @classmethod
     @DB.connection_context()
@@ -114,6 +128,7 @@ class UserCanvasService(CommonService):
                 cls.model.permission,
                 cls.model.update_time,
                 cls.model.user_id,
+                cls.model.tenant_id,
                 cls.model.create_time,
                 cls.model.create_date,
                 cls.model.update_date,
@@ -340,11 +355,10 @@ class UserCanvasService(CommonService):
         if not e:
             return False
 
-        tids = [t.tenant_id for t in UserTenantService.query(user_id=tenant_id)]
+        if not c.get("tenant_id") or not UserTenantService.get_role(tenant_id, c["tenant_id"]):
+            return False
         if c["user_id"] == tenant_id:
             return True
-        if c["user_id"] not in tids:
-            return False
         if c["permission"] != TenantPermission.TEAM.value:
             return False
         # Reachable only when it has been published: `permission=team` states the

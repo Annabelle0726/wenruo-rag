@@ -27,6 +27,7 @@ import pytest
 
 from api.db import UserTenantRole
 from api.db.services.user_service import TenantService, UserService, UserTenantService
+from common.exceptions import WorkspaceAccessDenied
 
 
 def _resolver(monkeypatch, *, own_role, joined, stored_tenant_id=None, memberships=()):
@@ -58,11 +59,19 @@ def test_an_explicitly_requested_workspace_wins_when_the_caller_belongs_to_it(mo
     assert resolve(TenantService, "user-1", "tenant-shared") == "tenant-shared"
 
 
-def test_a_requested_workspace_the_caller_does_not_belong_to_is_ignored(monkeypatch):
-    # A client must not be able to name someone else's workspace.
+def test_a_requested_workspace_the_caller_does_not_belong_to_is_refused(monkeypatch):
+    """Naming a workspace the caller is not a member of is refused, not re-targeted.
+
+    A rejected selection MUST NOT silently fall back to another workspace and
+    execute there: the caller would be served a workspace it never named, and
+    after a revocation that fallback is exactly how a removed member would keep
+    working. The refusal is a `WorkspaceAccessDenied`, which the API layer
+    reports as HTTP 200 + code 108.
+    """
     resolve = _resolver(monkeypatch, own_role=UserTenantRole.OWNER, joined=[])
 
-    assert resolve(TenantService, "user-1", "tenant-someone-else") == "user-1"
+    with pytest.raises(WorkspaceAccessDenied):
+        resolve(TenantService, "user-1", "tenant-someone-else")
 
 
 def test_the_stored_selection_is_honoured(monkeypatch):

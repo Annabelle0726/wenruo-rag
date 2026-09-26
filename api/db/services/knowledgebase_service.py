@@ -131,6 +131,12 @@ class KnowledgebaseService(CommonService):
     model = Knowledgebase
 
     @classmethod
+    def save(cls, **kwargs):
+        from api.db.services.workspace_member_service import save_owned_asset
+
+        return save_owned_asset(cls.model, kwargs)
+
+    @classmethod
     def _readable_filter(cls, user_id, tenant_ids):
         """The SQL form of `can_read_dataset`, applied over a workspace scope.
 

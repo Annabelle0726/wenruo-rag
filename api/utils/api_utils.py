@@ -154,6 +154,10 @@ def get_data_error_result(code=RetCode.DATA_ERROR, message="Sorry! Data missing!
 
 
 def server_error_response(e):
+    from common.exceptions import WorkspaceAccessDenied
+
+    if isinstance(e, WorkspaceAccessDenied):
+        return get_error_permission_result(str(e))
     # Quart invokes this handler outside the original except block, so we must pass exc_info manually.
     logging.error("Unhandled exception during request", exc_info=(type(e), e, e.__traceback__))
     try:

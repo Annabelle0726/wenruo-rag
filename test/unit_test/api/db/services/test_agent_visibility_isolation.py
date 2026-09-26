@@ -43,6 +43,10 @@ class _FakeUserTenantService:
     """`user_tenant`: the colleague belongs to the workspace, the stranger does not."""
 
     @staticmethod
+    def get_role(user_id, tenant_id):
+        return "normal" if user_id in (CREATOR_ID, COLLEAGUE_ID) and tenant_id == WORKSPACE_ID else None
+
+    @staticmethod
     def query(user_id=None, **_kwargs):
         return [SimpleNamespace(tenant_id=WORKSPACE_ID)] if user_id == COLLEAGUE_ID else []
 
@@ -52,7 +56,7 @@ def agents(monkeypatch):
     # An agent carries its OWNER's user id, and a personal workspace's id IS its
     # owner's user id - which is why a team agent of this workspace is filed
     # under `ws-1`, the id the colleague's `user_tenant` rows name.
-    record = {"user_id": WORKSPACE_ID, "permission": "team", "release": False}
+    record = {"user_id": WORKSPACE_ID, "tenant_id": WORKSPACE_ID, "permission": "team", "release": False}
     monkeypatch.setattr(UserCanvasService, "get_by_canvas_id", lambda _canvas_id: (True, dict(record)))
     monkeypatch.setattr(user_service, "UserTenantService", _FakeUserTenantService)
     return record
@@ -108,4 +112,9 @@ def test_a_colleague_never_reaches_a_private_agent(agents):
 def test_someone_outside_the_workspace_never_reaches_it(agents):
     agents["release"] = True
 
+    assert UserCanvasService.accessible(AGENT_ID, STRANGER_ID) is False
+
+
+def test_creator_identity_cannot_bypass_removed_membership(agents):
+    agents["user_id"] = STRANGER_ID
     assert UserCanvasService.accessible(AGENT_ID, STRANGER_ID) is False

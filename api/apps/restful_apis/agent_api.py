@@ -136,7 +136,7 @@ def _require_canvas_access_sync(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not UserCanvasService.accessible(kwargs.get("agent_id"), kwargs.get("tenant_id")):
-            return get_json_result(data=False, message="Make sure you have permission to access the agent.", code=RetCode.OPERATING_ERROR)
+            return get_json_result(data=False, message="Make sure you have permission to access the agent.", code=RetCode.PERMISSION_ERROR)
         return func(*args, **kwargs)
 
     return wrapper
@@ -148,7 +148,7 @@ def _require_canvas_access_async(func):
         agent_id = kwargs.get("agent_id")
         tenant_id = kwargs.get("tenant_id")
         if not await thread_pool_exec(UserCanvasService.accessible, agent_id, tenant_id):
-            return get_json_result(data=False, message="Make sure you have permission to access the agent.", code=RetCode.OPERATING_ERROR)
+            return get_json_result(data=False, message="Make sure you have permission to access the agent.", code=RetCode.PERMISSION_ERROR)
         return await func(*args, **kwargs)
 
     return wrapper
@@ -158,7 +158,7 @@ def _require_canvas_owner_sync(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not UserCanvasService.query(user_id=kwargs.get("tenant_id"), id=kwargs.get("agent_id")):
-            return get_json_result(data=False, message="Only the owner of the agent is authorized for this operation.", code=RetCode.OPERATING_ERROR)
+            return get_json_result(data=False, message="Only the owner of the agent is authorized for this operation.", code=RetCode.PERMISSION_ERROR)
         return func(*args, **kwargs)
 
     return wrapper
@@ -1119,7 +1119,7 @@ async def debug_agent_component(agent_id, component_id, tenant_id):
 @add_tenant_id_to_kwargs
 def get_agent(agent_id, tenant_id):
     if not UserCanvasService.accessible(agent_id, tenant_id):
-        return get_data_error_result(message="canvas not found.")
+        return get_json_result(code=RetCode.PERMISSION_ERROR, message="您已无权访问此代理")
 
     exists, canvas = UserCanvasService.get_by_canvas_id(agent_id)
     if not exists:
@@ -1220,6 +1220,9 @@ def delete_agent(agent_id, tenant_id):
 @_require_canvas_access_async
 async def update_agent(agent_id, tenant_id):
     req = {k: v for k, v in (await get_request_json()).items() if v is not None}
+    # Ownership/workspace changes belong exclusively to the transfer transaction.
+    for identity_field in ("id", "user_id", "tenant_id"):
+        req.pop(identity_field, None)
     req["canvas_type"] = req.get("canvas_type", "")
     req["release"] = bool(req.get("release", ""))
 
@@ -1534,7 +1537,7 @@ async def agent_chat_completion(tenant_id, agent_id=None):
             return get_json_result(
                 data=False,
                 message="Only authorized users can access this agent session.",
-                code=RetCode.OPERATING_ERROR,
+                code=RetCode.PERMISSION_ERROR,
             )
         workflow_session = getattr(conv, "source", "") == "workflow"
         if workflow_session:
@@ -1640,7 +1643,7 @@ async def agent_chat_completion(tenant_id, agent_id=None):
             return get_json_result(
                 data=False,
                 message="Make sure you have permission to access the agent.",
-                code=RetCode.OPERATING_ERROR,
+                code=RetCode.PERMISSION_ERROR,
             )
 
         # Load the caller's runtime replica as the workflow template. Session-owned
@@ -1886,7 +1889,7 @@ async def webhook_test(agent_id: str, tenant_id: str):
             tenant_id,
             request.method,
         )
-        return get_json_result(data=False, message="Only the owner of the agent is authorized for this operation.", code=RetCode.OPERATING_ERROR)
+        return get_json_result(data=False, message="Only the owner of the agent is authorized for this operation.", code=RetCode.PERMISSION_ERROR)
     return await _webhook_impl(agent_id, is_test=True)
 
 

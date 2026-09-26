@@ -247,6 +247,9 @@ class TenantService(CommonService):
             membership = UserTenantService.get_role(user_id, requested_tenant_id)
             if membership:
                 return requested_tenant_id
+            from common.exceptions import WorkspaceAccessDenied
+
+            raise WorkspaceAccessDenied("您已无权访问此工作区")
 
         _, user = UserService.get_by_id(user_id)
         if user and user.current_tenant_id and UserTenantService.get_role(user_id, user.current_tenant_id):
@@ -257,6 +260,16 @@ class TenantService(CommonService):
 
         joined = cls.get_joined_tenants_by_user_id(user_id)
         return joined[0]["tenant_id"] if joined else user_id
+
+    @classmethod
+    @DB.connection_context()
+    def resolve_config_tenant_id(cls, user_id, owner_tenant_id):
+        """Validate a caller against the resource's authoritative workspace."""
+        from common.exceptions import WorkspaceAccessDenied
+
+        if not owner_tenant_id or UserTenantService.get_role(user_id, owner_tenant_id) not in (UserTenantRole.OWNER, UserTenantRole.ADMIN, UserTenantRole.NORMAL):
+            raise WorkspaceAccessDenied("您已无权访问此工作区")
+        return owner_tenant_id
 
     @classmethod
     @DB.connection_context()
@@ -427,7 +440,11 @@ class UserTenantService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_role(cls, user_id, tenant_id):
-        row = cls.model.select(cls.model.role).where((cls.model.user_id == user_id) & (cls.model.tenant_id == tenant_id) & (cls.model.status == StatusEnum.VALID.value)).first()
+        row = cls.model.select(cls.model.role).where(
+            (cls.model.user_id == user_id) & (cls.model.tenant_id == tenant_id)
+            & cls.model.role.in_((UserTenantRole.OWNER, UserTenantRole.ADMIN, UserTenantRole.NORMAL))
+            & (cls.model.status == StatusEnum.VALID.value)
+        ).first()
         return row.role if row else None
 
     @classmethod
