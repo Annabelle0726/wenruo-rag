@@ -127,6 +127,22 @@ async def test_without_a_reranker_the_fused_order_is_kept():
     assert "rerank_score" not in kept[0]
 
 
+async def test_a_deployment_without_a_reranker_says_so_once_per_search(caplog):
+    """Level 3 of the fallback must be visible in the transcript.
+
+    `dialog_service.resolve_rerank_mdl` returns None when no reranker is
+    configured anywhere; the cut stage then keeps the fused order. Without this
+    line that is indistinguishable from a reranker that ran and agreed.
+    """
+    pool = [_chunk("low", 0.4), _chunk("high", 0.9)]
+
+    with caplog.at_level(logging.WARNING):
+        kept = await rerank.rerank_chunks(None, pool, "q", top_n=2)
+
+    assert [c["chunk_id"] for c in kept] == ["high", "low"]
+    assert "no rerank model" in caplog.text
+
+
 async def test_a_failing_reranker_degrades_to_the_fused_order(caplog):
     pool = [_chunk("low", 0.4), _chunk("high", 0.9)]
 

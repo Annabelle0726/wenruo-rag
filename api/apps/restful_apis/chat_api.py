@@ -559,6 +559,11 @@ def _apply_retrieval_defaults(req):
     req.setdefault("rerank_id", "")
     req.setdefault("similarity_threshold", cable_defaults.SIMILARITY_THRESHOLD)
     req.setdefault("vector_similarity_weight", cable_defaults.VECTOR_SIMILARITY_WEIGHT)
+    # Metadata matching starts on: an assistant created without a metadata
+    # configuration gets the cable vertical's `auto` mode, while a caller that
+    # states a mode (the settings form sends `disabled`/`manual`/`semi_auto`) is
+    # taken at its word.
+    req["meta_data_filter"] = cable_defaults.meta_data_filter_with_defaults(req.get("meta_data_filter"))
 
 
 @manager.route("/chats", methods=["POST"])  # noqa: F821

@@ -50,6 +50,41 @@ def test_retrieval_defaults_fill_only_the_missing_settings():
     assert req["rerank_id"] == ""
 
 
+def test_a_new_assistant_is_created_with_metadata_matching_on():
+    """The create payload carries no metadata field, so the default decides."""
+    req = {"kb_ids": ["kb-1"]}
+    _apply_retrieval_defaults(req)
+
+    assert req["meta_data_filter"] == {"method": cable_defaults.META_DATA_FILTER_METHOD}
+    assert req["meta_data_filter"] == {"method": "auto"}
+
+
+def test_an_empty_metadata_configuration_gets_the_default():
+    """`{}` is what an older client sends for "never configured"."""
+    req = {"meta_data_filter": {}}
+    _apply_retrieval_defaults(req)
+
+    assert req["meta_data_filter"] == {"method": "auto"}
+
+
+def test_a_stated_metadata_mode_is_never_overwritten():
+    """The settings form's `disabled`/`manual`/`semi_auto` choices survive."""
+    stated = {"method": "manual", "logic": "and", "manual": [{"key": "物资类别", "op": "=", "value": "架空绝缘导线"}]}
+    req = {"meta_data_filter": stated}
+    _apply_retrieval_defaults(req)
+
+    assert req["meta_data_filter"] == stated
+
+
+def test_the_seeded_metadata_configuration_is_not_shared_between_requests():
+    first = {}
+    second = {}
+    _apply_retrieval_defaults(first)
+    _apply_retrieval_defaults(second)
+
+    assert first["meta_data_filter"] is not second["meta_data_filter"]
+
+
 def test_prompt_defaults_seed_the_cable_prompt_for_a_dataset_bound_chat():
     req = {"kb_ids": ["kb-1"]}
     _apply_prompt_defaults(req)

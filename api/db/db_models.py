@@ -1586,7 +1586,7 @@ class Dialog(DataBaseModel):
         # opener and no-result answer (api/db/cable_defaults.py).
         default=cable_defaults.prompt_config,
     )
-    meta_data_filter = JSONField(null=True, default={})
+    meta_data_filter = JSONField(null=True, default=cable_defaults.meta_data_filter)
 
     similarity_threshold = FloatField(default=cable_defaults.SIMILARITY_THRESHOLD)
     vector_similarity_weight = FloatField(default=cable_defaults.VECTOR_SIMILARITY_WEIGHT)

@@ -458,6 +458,12 @@ async def rerank_chunks(rerank_mdl, chunks: Sequence[dict], question: str, top_n
     policy = DiversityPolicy.for_question(question, pool)
     _warn_when_the_pool_cannot_satisfy_the_floor(pool, policy)
     if rerank_mdl is None or not str(question or "").strip():
+        # A deployment with no reranker reaches here by design (see
+        # ``dialog_service.resolve_rerank_mdl``): say so once per search, so a
+        # transcript can tell "no rerank model configured" from "the reranker ran
+        # and agreed with the fused order".
+        if rerank_mdl is None:
+            _LOG.warning("[Rerank] no rerank model; keeping the fused order for %d candidate(s)", len(pool))
         return _by_fused_score(pool, limit, policy)
 
     docs = [str(chunk.get("content_with_weight") or chunk.get("content") or "") for chunk in pool]

@@ -209,3 +209,53 @@ def test_chat_model_defaults_use_the_cable_values():
 def test_dataset_model_defaults_use_the_cable_values():
     assert Knowledgebase.similarity_threshold.default == cable_defaults.SIMILARITY_THRESHOLD
     assert Knowledgebase.vector_similarity_weight.default == cable_defaults.VECTOR_SIMILARITY_WEIGHT
+
+
+# ---------------------------------------------------------------------------
+# Metadata matching: a new assistant starts with it ON
+# ---------------------------------------------------------------------------
+
+
+def test_metadata_matching_defaults_to_auto():
+    """A corpus of standards is reached by the name the question uses."""
+    assert cable_defaults.META_DATA_FILTER_METHOD == "auto"
+    assert cable_defaults.meta_data_filter() == {"method": "auto"}
+
+
+def test_metadata_matching_returns_an_independent_copy():
+    first = cable_defaults.meta_data_filter()
+    first["method"] = "manual"
+
+    assert cable_defaults.meta_data_filter() == {"method": "auto"}
+
+
+def test_metadata_defaults_fill_in_an_absent_or_empty_configuration():
+    """Not configured means the platform default; configured means the operator."""
+    assert cable_defaults.meta_data_filter_with_defaults(None) == {"method": "auto"}
+    assert cable_defaults.meta_data_filter_with_defaults({}) == {"method": "auto"}
+
+
+def test_metadata_defaults_never_override_a_stated_mode():
+    """`disabled` is a decision, not an absent value.
+
+    The settings form sends it when an operator turns matching off, and defaulting
+    over it would make the control impossible to use.
+    """
+    for stated in ({"method": "disabled"}, {"method": "auto"}, {"method": "manual", "manual": [{"key": "k", "op": "=", "value": "v"}]}):
+        assert cable_defaults.meta_data_filter_with_defaults(stated) == stated
+
+
+def test_metadata_defaults_do_not_alias_the_caller_configuration():
+    stated = {"method": "semi_auto", "semi_auto": ["k"]}
+
+    effective = cable_defaults.meta_data_filter_with_defaults(stated)
+    effective["semi_auto"].append("other")
+
+    assert stated == {"method": "semi_auto", "semi_auto": ["k"]}
+    assert effective is not stated
+
+
+def test_chat_model_metadata_default_is_the_cable_auto_mode():
+    """A `Dialog.create()` with no metadata field must come out filtering."""
+    assert Dialog.meta_data_filter.default is cable_defaults.meta_data_filter
+    assert Dialog.meta_data_filter.default() == {"method": "auto"}

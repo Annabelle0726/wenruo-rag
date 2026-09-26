@@ -44,7 +44,8 @@ from rag.retrieval.multi_route import (
     merge_route_hits,
     multi_route_retrieve,
 )
-from rag.retrieval.rerank import DEFAULT_FINAL_TOP_N, rerank_chunks
+from rag.retrieval.query_router import PASS_THROUGH, route_question
+from rag.retrieval.rerank import DEFAULT_FINAL_TOP_N, rerank_chunks, resolve_final_top_n
 
 _LOG = logging.getLogger(__name__)
 
@@ -224,6 +225,42 @@ async def retrieve_multi_route(
     question = " ".join(str(question or "").split())
     if not question:
         return empty_kbinfos()
+
+    # Adaptive routing (module D): the query SHAPE decides the two legs' balance
+    # and the recall window, in memory, for this request only. Nothing is written
+    # to the assistant, so the configured sliders keep their values for every other
+    # turn and every other question. A question that matches no rule leaves both
+    # arguments exactly as the caller passed them.
+    configured_top_k, configured_weight = routes_top_k, vector_similarity_weight
+    decision = route_question(question)
+    if decision.routes_top_k is not None:
+        # A route cannot return more than its own window recalls, so the routed
+        # window is a floor as well as a target: narrowing it below the page the
+        # caller must fill would return fewer passages than asked for.
+        required = resolve_final_top_n(final_top_n)
+        routes_top_k = max(decision.routes_top_k, required)
+        if routes_top_k != decision.routes_top_k:
+            _LOG.info(
+                "[QueryRouter] %s route asked for routes_top_k=%s but the caller returns %s passage(s); keeping %s",
+                decision.name,
+                decision.routes_top_k,
+                required,
+                routes_top_k,
+            )
+    if decision.vector_similarity_weight is not None:
+        vector_similarity_weight = decision.vector_similarity_weight
+    if decision.overrides:
+        _LOG.info(
+            "[QueryRouter] %s route (signal=%r) -> vector_weight=%s, routes_top_k=%s (configured %s / %s)",
+            decision.name,
+            decision.signal,
+            vector_similarity_weight,
+            routes_top_k,
+            configured_weight,
+            configured_top_k,
+        )
+    else:
+        _LOG.debug("[QueryRouter] no rule matched %r; keeping the configured retrieval settings", question[:80])
 
     routes = [question]
     sub_queries: list[str] = []

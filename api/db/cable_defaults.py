@@ -29,6 +29,7 @@ the same values in ``internal/service/cable_defaults.go`` and reads them from
 ``internal/service/chat.go`` and ``internal/service/dataset/crud.go``.
 """
 
+from copy import deepcopy
 from typing import Any
 
 #: Minimum similarity a passage must reach to be retrieved by a new dataset or
@@ -100,6 +101,21 @@ PROLOGUE = "您好！我是您的线缆技术与选型专家助手，请发送�
 #: Answer shown when retrieval returns nothing, instead of asking the model.
 EMPTY_RESPONSE = "暂未在知识库中检索到相关线缆参数或规范条款。您可以提供更具体的型号规格或更新补充文档"
 
+#: Metadata matching mode a new chat assistant starts in.
+#:
+#: ``auto`` answers a corpus that is mostly standards and datasheets: the question
+#: usually NAMES the thing it asks about (a 型号, a 标准号, a 物资类别), the documents
+#: carry that name as metadata, and matching on it narrows the search to the right
+#: document before either retrieval leg is asked to find a passage about it.
+#: ``disabled`` - what an assistant used to start with - left every candidate in
+#: play, which is what let a working document out-number the standard it belongs to.
+#:
+#: This is a MATCHING rule, not a corpus filter: the automatic matcher derives its
+#: conditions from the question with one LLM call, and when it derives none (or
+#: none match) retrieval proceeds unrestricted, exactly as before. On a dataset
+#: that carries no metadata it therefore changes nothing.
+META_DATA_FILTER_METHOD = "auto"
+
 #: Prompt parameters the system prompt above declares. ``knowledge`` is filled by
 #: the retrieval step, ``date`` is optional and filled from the request.
 PROMPT_PARAMETERS = [
@@ -120,6 +136,33 @@ def prompt_config() -> dict[str, Any]:
         "parameters": [dict(parameter) for parameter in PROMPT_PARAMETERS],
         "empty_response": EMPTY_RESPONSE,
     }
+
+
+def meta_data_filter() -> dict[str, Any]:
+    """A fresh metadata-matching configuration for a new chat assistant.
+
+    A function for the same reason as :func:`prompt_config`: the dict is stored per
+    row, so a shared literal would be one object behind many assistants.
+    """
+    return {"method": META_DATA_FILTER_METHOD}
+
+
+def meta_data_filter_with_defaults(stored: dict[str, Any] | None) -> dict[str, Any]:
+    """A stored metadata configuration with the cable default underneath it.
+
+    An ABSENT or EMPTY configuration means "never configured", which the platform
+    answers with automatic matching - that is what makes a NEW assistant start with
+    metadata matching on. A configuration that names a method - including
+    ``disabled``, and including ``manual``/``semi_auto`` with their conditions - is
+    the operator's own decision and is returned as it stands.
+
+    The result is a deep copy: it is handed to a request that goes on to mutate it
+    (the settings form rewrites conditions in place), and a shared nested list
+    would write that edit back into the stored configuration.
+    """
+    if stored:
+        return deepcopy(dict(stored))
+    return meta_data_filter()
 
 
 def search_config() -> dict[str, Any]:

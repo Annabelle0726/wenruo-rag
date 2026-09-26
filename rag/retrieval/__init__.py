@@ -60,6 +60,20 @@ from rag.retrieval.multi_route import (
     resolve_routes_top_k,
 )
 from rag.retrieval.pipeline import empty_kbinfos, retrieve_multi_route
+from rag.retrieval.query_router import (
+    CONCEPTUAL,
+    CONCEPTUAL_TOP_K,
+    CONCEPTUAL_VECTOR_WEIGHT,
+    NUMERIC,
+    NUMERIC_TOP_K,
+    NUMERIC_VECTOR_WEIGHT,
+    PASS_THROUGH,
+    REVISION,
+    REVISION_TOP_K,
+    REVISION_VECTOR_WEIGHT,
+    RouteDecision,
+    route_question,
+)
 from rag.retrieval.rerank import (
     CORE_DOCUMENT_BOOST,
     DEFAULT_FINAL_TOP_N,
@@ -80,6 +94,9 @@ from rag.retrieval.rerank import (
 
 __all__ = [
     "CLAUSE_ROUTE_ANCHOR",
+    "CONCEPTUAL",
+    "CONCEPTUAL_TOP_K",
+    "CONCEPTUAL_VECTOR_WEIGHT",
     "CORE_DOCUMENT_BOOST",
     "CORE_DOCUMENT_NAME_CUES",
     "DEFAULT_FINAL_TOP_N",
@@ -90,8 +107,16 @@ __all__ = [
     "MAX_SUB_QUERIES",
     "MAX_TABLE_SHARE",
     "MIN_PROSE_PASSAGES",
+    "NUMERIC",
+    "NUMERIC_TOP_K",
+    "NUMERIC_VECTOR_WEIGHT",
+    "PASS_THROUGH",
     "RECALL_FLOOR",
+    "REVISION",
+    "REVISION_TOP_K",
+    "REVISION_VECTOR_WEIGHT",
     "ROUTES_TOP_K_RECOMMENDED",
+    "RouteDecision",
     "TABLE_PENALTY",
     "DiversityPolicy",
     "RouteResult",
@@ -117,6 +142,7 @@ __all__ = [
     "resolve_final_top_n",
     "resolve_routes_top_k",
     "retrieve_multi_route",
+    "route_question",
     "routes_of",
     "seeks_clause",
     "select_context",

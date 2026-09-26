@@ -392,15 +392,16 @@ def get_models(dialog, trace_context=None, langfuse_session_id=None):
 
     chat_mdl = LLMBundle(dialog.tenant_id, chat_model_config, trace_context=trace_context, langfuse_session_id=langfuse_session_id)
 
-    if dialog.rerank_id:
-        if dialog.tenant_rerank_id:
-            try:
-                rerank_model_config = get_model_config_by_id(dialog.tenant_id, LLMType.RERANK, dialog.tenant_rerank_id)
-            except LookupError:
-                rerank_model_config = resolve_model_config(dialog.tenant_id, LLMType.RERANK, dialog.rerank_id)
-        else:
-            rerank_model_config = resolve_model_config(dialog.tenant_id, LLMType.RERANK, dialog.rerank_id)
-        rerank_mdl = LLMBundle(dialog.tenant_id, rerank_model_config, trace_context=trace_context, langfuse_session_id=langfuse_session_id)
+    # Rerank degrades instead of failing: the assistant's own reranker first, then
+    # the workspace default, then no reranking at all (the fused hybrid order the
+    # retrieval pipeline already produced). See `resolve_rerank_mdl`.
+    rerank_mdl = resolve_rerank_mdl(
+        dialog.tenant_id,
+        dialog.rerank_id or "",
+        dialog.tenant_rerank_id,
+        trace_context=trace_context,
+        langfuse_session_id=langfuse_session_id,
+    )
 
     if dialog.prompt_config.get("tts"):
         default_tts_model_config = get_tenant_default_model_by_type(dialog.tenant_id, LLMType.TTS)
@@ -1846,6 +1847,56 @@ async def _stream_with_think_delta(stream_iter, min_tokens: int = 16):
         state.answer_buffer = ""
 
 
+def resolve_rerank_mdl(tenant_id, rerank_id="", tenant_rerank_id=None, trace_context=None, langfuse_session_id=None):
+    """The reranker a surface runs with, or ``None`` when it must run without one.
+
+    Three levels, in order, and never an exception:
+
+    1. the reranker the assistant/search app binds itself (``rerank_id``);
+    2. the workspace's default reranker (User Default Model), which is what a
+       surface that names none of its own runs with;
+    3. neither - and the retrieval continues on the fused hybrid score. Reranking
+       is an ORDERING pass: a deployment that has not designated a reranker, or
+       whose catalog row for it was deleted, must still answer, so this logs a
+       warning and returns ``None`` instead of failing the turn. ``rerank_chunks``
+       treats ``None`` as "keep the fused order".
+    """
+    if rerank_id:
+        try:
+            if tenant_rerank_id:
+                try:
+                    rerank_model_config = get_model_config_by_id(tenant_id, LLMType.RERANK, tenant_rerank_id)
+                except LookupError:
+                    rerank_model_config = resolve_model_config(tenant_id, LLMType.RERANK, rerank_id)
+            else:
+                rerank_model_config = resolve_model_config(tenant_id, LLMType.RERANK, rerank_id)
+            bundle = LLMBundle(tenant_id, rerank_model_config, trace_context=trace_context, langfuse_session_id=langfuse_session_id)
+            if bundle is not None:
+                return bundle
+            logging.warning("[Rerank] the configured rerank model %r of workspace %s is unavailable; falling back to the workspace default", rerank_id, tenant_id)
+        except Exception:
+            # A stale id, a deleted catalog row or an unreadable credential: all of
+            # them mean "this surface cannot rerank", not "this question fails".
+            logging.exception("[Rerank] resolving the configured rerank model %r of workspace %s failed; falling back to the workspace default", rerank_id, tenant_id)
+
+    try:
+        default_config = get_default_rerank_model_config(tenant_id)
+        if default_config:
+            bundle = LLMBundle(tenant_id, default_config, trace_context=trace_context, langfuse_session_id=langfuse_session_id)
+            if bundle is not None:
+                logging.debug("[Rerank] workspace %s has no rerank model of its own; using its default reranker", tenant_id)
+                return bundle
+    except Exception:
+        logging.exception("[Rerank] resolving the default rerank model of workspace %s failed", tenant_id)
+
+    logging.warning(
+        "[Rerank] no rerank model is configured for workspace %s (bound=%r, no workspace default); reranking is skipped and the fused hybrid order is used for this search",
+        tenant_id,
+        rerank_id or "",
+    )
+    return None
+
+
 def _search_rerank_model(tenant_id, search_config):
     """The reranker a search app runs with, or ``None`` when it runs without one.
 
@@ -1854,9 +1905,11 @@ def _search_rerank_model(tenant_id, search_config):
     one keeps the hybrid score alone, which is what an unconfigured deployment
     must do instead of failing the search.
     """
-    rerank_id = search_config.get("rerank_id", "")
-    model_config = resolve_model_config(tenant_id, LLMType.RERANK, rerank_id) if rerank_id else get_default_rerank_model_config(tenant_id)
-    return LLMBundle(tenant_id, model_config) if model_config else None
+    return resolve_rerank_mdl(
+        tenant_id,
+        search_config.get("rerank_id", ""),
+        search_config.get("tenant_rerank_id"),
+    )
 
 
 async def async_ask(question, kb_ids, tenant_id, chat_llm_name=None, search_config={}, search_id=None):
