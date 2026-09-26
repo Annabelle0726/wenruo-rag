@@ -14,6 +14,8 @@
 #  limitations under the License.
 #
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import math
@@ -27,6 +29,7 @@ from collections import Counter, defaultdict
 from copy import deepcopy
 from io import BytesIO
 from timeit import default_timer as timer
+from typing import Any
 
 import numpy as np
 import pdfplumber
@@ -53,6 +56,188 @@ from common.misc_utils import thread_pool_exec
 LOCK_KEY_pdfplumber = "global_shared_lock_pdfplumber"
 if LOCK_KEY_pdfplumber not in sys.modules:
     sys.modules[LOCK_KEY_pdfplumber] = threading.Lock()
+
+# ``MAXIMUM_PAGE_NUMBER`` stays imported (and therefore re-exported) here: sibling
+# parsers import it from this module rather than from ``common.constants``.
+
+# Every coordinate in this module is a PDF user-space point. ``zoomin`` converts
+# points to pixels, so a pixel measurement is divided by it and a point
+# measurement multiplied by it.
+DEFAULT_ZOOMIN = 3
+#: PDF user-space units per inch — the resolution ``zoomin`` scales.
+PDF_RENDER_DPI = 72
+#: A page that yielded no box at all is re-rendered at ``zoomin * ZOOMIN_RETRY_FACTOR``
+#: and retried, but never beyond ``MAX_ZOOMIN_RETRY``: past that scale the extra
+#: render costs more than the recovery is worth.
+ZOOMIN_RETRY_FACTOR = 3
+MAX_ZOOMIN_RETRY = 9
+#: Background of a stitched figure/table image (matches the page colour).
+IMAGE_CANVAS_BACKGROUND = (245, 245, 245)
+#: Whitespace kept around a cropped table before it is handed to the TSR model.
+TABLE_CROP_MARGIN = 10
+
+# --- Garbled-text detection (what turns the OCR fallback on) ----------------
+#: Share of unmappable characters at which a text box is discarded and re-OCR'd.
+GARBLED_CHAR_THRESHOLD = 0.5
+#: Stricter share for the page-level sample: re-OCRing costs a whole page, so a
+#: suspicion is enough there while a single box needs to be clearly broken.
+GARBLED_PAGE_THRESHOLD = 0.3
+#: Share of a box's characters that must come from subset fonts before the
+#: font-encoding heuristic is allowed to have an opinion.
+GARBLED_FONT_SUBSET_RATIO = 0.3
+#: CJK below this share *and* punctuation/symbols above
+#: :data:`GARBLED_FONT_PUNCT_RATIO` means a broken ToUnicode map (GB.18067-2000
+#: extracts as ASCII punctuation), not a page that is genuinely punctuation.
+GARBLED_FONT_CJK_RATIO = 0.05
+GARBLED_FONT_PUNCT_RATIO = 0.4
+#: Character counts below which the font-encoding heuristic has no opinion.
+GARBLED_FONT_MIN_CHARS = 20
+GARBLED_BOX_MIN_CHARS = 5
+#: A box character this much shorter or taller than the OCR line it would join is
+#: an annotation (superscript, footnote marker), not part of the line.
+GARBLED_BOX_HEIGHT_RATIO = 0.7
+#: Characters sampled from a page when testing for page-level garbage.
+GARBLED_PAGE_SAMPLE_CHARS = 200
+#: Share of a box's characters the OCR alphabet must be able to spell before
+#: re-OCRing it can produce anything but garbage.
+OCR_ALPHABET_MIN_COVERAGE = 0.8
+#: Gap, as a fraction of the mean glyph width, that becomes a word space when a
+#: PDF carries no space glyphs at all.
+WORD_GAP_RATIO = 0.25
+
+# --- Table orientation & structure recognition ------------------------------
+#: Confidence a rotation must gain over the unrotated crop before it is applied,
+#: and the unrotated score below which that gain is not trusted: an already-good
+#: crop has little to gain, and OCR noise can invent one.
+TABLE_ORIENTATION_MIN_GAIN = 0.2
+TABLE_ORIENTATION_BASELINE_CAP = 0.8
+#: Bonus for a rotation that recognises more regions, saturating at
+#: :data:`TABLE_ORIENTATION_REGION_CAP` regions.
+TABLE_ORIENTATION_REGION_BONUS = 0.1
+TABLE_ORIENTATION_REGION_CAP = 50
+#: Kept for callers that tune the probe's sampling; the probe scores the whole
+#: crop, so it currently has no effect on the result.
+TABLE_ORIENTATION_SAMPLE_RATIO = 0.3
+#: bbox overlap above which a recognised table component is attached to a box.
+TSR_OVERLAP_THRESHOLD = 0.3
+#: Component cleanup: rows further apart than this many line heights are split,
+#: and the ption floors keep a row/column from being absorbed into a fragment.
+TSR_CLEANUP_FAR = 5
+TSR_ROW_CLEANUP_PTION = 0.6
+TSR_COLUMN_CLEANUP_PTION = 0.5
+TSR_SORT_FZY = 10
+#: OCR confidence below which a box re-read from a rotated table is dropped.
+ROTATED_TABLE_MIN_CONFIDENCE = 0.5
+#: Tolerance (points) when matching a table box back to its layout region.
+ROTATED_TABLE_BOX_PADDING = 5
+
+# --- Text flow: column assignment and merging ------------------------------
+#: x0s within this fraction of the left margin are the same indent, so a hanging
+#: indent cannot be mistaken for a second column.
+COLUMN_INDENT_TOL_RATIO = 0.12
+#: Upper bound on the column counts KMeans may try on one page.
+COLUMN_MAX_CLUSTERS = 4
+#: A vertical gap wider than this many line heights separates paragraphs.
+VERTICAL_MERGE_GAP_RATIO = 1.5
+#: Horizontal overlap, as a share of the narrower box, below which two boxes sit
+#: in different columns and are never merged vertically.
+VERTICAL_MERGE_OVERLAP_RATIO = 0.3
+#: A jump across a page break wider than this many mean widths starts a new column.
+VERTICAL_MERGE_PAGEBREAK_WIDTH_RATIO = 4
+#: Fraction of a mean line height within which two boxes count as the same line
+#: (OCR line grouping and the horizontal text merge both use "a third of a line").
+LINE_MERGE_TOLERANCE_DIVISOR = 3
+#: Line height assumed when a page has no measurable characters at all.
+DEFAULT_LINE_HEIGHT = 10
+#: Guard for the ratios in the concatenation features, where a zero denominator
+#: is a legal (if degenerate) measurement.
+EPSILON = 0.000001
+#: Rows further apart than this many line heights are separate tables, not one
+#: table split across a page break.
+TABLE_STITCH_MAX_Y_DIS_RATIO = 23
+#: Boxes scanned forward for a table-of-contents entry's page-number run, and
+#: dirty glyphs per page above which a page is treated as OCR junk.
+TOC_LOOKAHEAD_BOXES = 128
+TOC_DIRTY_PAGE_MARKS = 3
+#: Lines scanned forward when collecting a scrap run's continuation.
+SCRAP_LOOKAHEAD_LINES = 20
+#: A scrap run narrower than this share of the page, and below the absolute cap,
+#: is dropped as noise.
+SCRAP_MIN_WIDTH_RATIO = 0.35
+SCRAP_MAX_WIDTH = 200
+#: A continuation line must start within a tenth of the page width of its head.
+SCRAP_X_ALIGN_DIVISOR = 10
+#: Gaps (in line heights) that end a scrap run, and the head height above which a
+#: box is treated as a paragraph rather than a scrap line.
+SCRAP_GAP_LINES = 3
+SCRAP_MAX_HEAD_HEIGHT_RATIO = 1.5
+
+# --- Cropping & samplers ----------------------------------------------------
+#: Context kept above the first and below the last crop segment, in points.
+CROP_CONTEXT_HEIGHT = 120
+CROP_GAP = 6
+#: Width floors so a degenerate position still yields a usable image.
+CROP_MIN_WIDTH = 6
+CROP_MIN_SEGMENT_WIDTH = 10
+#: Characters/boxes sampled when deciding whether a document is English, and the
+#: run length of Latin text that decides it.
+IS_ENGLISH_SAMPLE_CHARS = 100
+IS_ENGLISH_SAMPLE_BOXES = 30
+IS_ENGLISH_MIN_RUN = 30
+#: Latin-run probe used by both English detectors. The doubled braces are the
+#: literal quantifier braces; the f-string only injects the run length.
+IS_ENGLISH_PATTERN = rf"[ a-zA-Z0-9,/¸;:'\[\]\(\)!@#$%^&*\"?<>._-]{{{IS_ENGLISH_MIN_RUN},}}"
+#: The same probe for the OCR-box fallback, where newlines are letter runs too.
+IS_ENGLISH_BOX_PATTERN = rf"[ \na-zA-Z0-9,/¸;:'\[\]\(\)!@#$%^&*\"?<>._-]{{{IS_ENGLISH_MIN_RUN},}}"
+#: OCR progress is reported every N pages, as a share of the 0.6 the OCR pass
+#: owns in the extraction progress bar.
+OCR_PROGRESS_EVERY_PAGES = 6
+OCR_PROGRESS_SHARE = 0.6
+
+# --- Failure taxonomy -------------------------------------------------------
+# Only failures this module actually handles are named; anything else is a defect
+# here rather than a condition to swallow, so it is reported with a stack trace
+# instead. The imports are guarded and filtered because this module is loaded
+# directly by unit tests that stub pdfplumber / pypdf / xgboost: a hard import
+# from a submodule of a stubbed package would break collection, and a stubbed
+# attribute is a placeholder object, not an exception class — one of those inside
+# an ``except`` tuple would turn a handled failure into a ``TypeError``.
+
+try:
+    from pdfminer.pdfdocument import PDFEncryptionError, PDFPasswordIncorrect
+    from pdfminer.pdfparser import PDFSyntaxError
+    from pdfminer.psparser import PSException
+
+    _PDFMINER_ERRORS: tuple[Any, ...] = (PDFSyntaxError, PDFEncryptionError, PDFPasswordIncorrect, PSException)
+except ImportError:  # pragma: no cover - depends on the deployed PDF stack
+    _PDFMINER_ERRORS = ()
+
+try:
+    from pypdf.errors import PdfReadError
+
+    _PYPDF_ERRORS: tuple[Any, ...] = (PdfReadError,)
+except ImportError:  # pragma: no cover - depends on the deployed PDF stack
+    _PYPDF_ERRORS = ()
+
+try:
+    from xgboost.core import XGBoostError
+
+    _XGBOOST_ERRORS: tuple[Any, ...] = (XGBoostError,)
+except ImportError:  # pragma: no cover - depends on the deployed PDF stack
+    _XGBOOST_ERRORS = ()
+
+
+def _error_types(*candidates: Any) -> tuple[type[Exception], ...]:
+    """Filter ``candidates`` down to real exception classes (see the note above)."""
+    return tuple(c for c in candidates if isinstance(c, type) and issubclass(c, Exception))
+
+
+#: "This file cannot be read": a missing or unreadable path, a malformed PDF, or
+#: an encrypted one. Callers report these and carry on with no content; anything
+#: else escaping a parse is a bug and is logged with its stack.
+PDF_READ_ERRORS: tuple[type[Exception], ...] = (OSError, *_error_types(*_PDFMINER_ERRORS, *_PYPDF_ERRORS))
+#: Failures of the local concatenation model (missing file, unreadable booster).
+MODEL_LOAD_ERRORS: tuple[type[Exception], ...] = (OSError, *_error_types(*_XGBOOST_ERRORS))
 
 
 class RAGFlowPdfParser:
@@ -98,26 +283,31 @@ class RAGFlowPdfParser:
         try:
             model_dir = os.path.join(get_project_base_directory(), "rag/res/deepdoc")
             self.updown_cnt_mdl.load_model(os.path.join(model_dir, "updown_concat_xgb.model"))
-        except Exception:
+        except MODEL_LOAD_ERRORS:
+            # The bundled booster is missing or unreadable (a checkout that never
+            # fetched rag/res/deepdoc, or a truncated download). Fetch it and retry;
+            # a failure there is an installation defect, so it propagates with its
+            # stack instead of being swallowed.
+            logging.exception("updown_concat_xgb.model is not usable under %s; fetching it from the hub", get_project_base_directory())
             model_dir = snapshot_download(repo_id="InfiniFlow/text_concat_xgb_v1.0", local_dir=os.path.join(get_project_base_directory(), "rag/res/deepdoc"))
             self.updown_cnt_mdl.load_model(os.path.join(model_dir, "updown_concat_xgb.model"))
 
         self.page_from = 0
         self.column_num = 1
 
-    def __char_width(self, c):
+    def __char_width(self, c: dict[str, Any]) -> float:
         return (c["x1"] - c["x0"]) // max(len(c["text"]), 1)
 
-    def __height(self, c):
+    def __height(self, c: dict[str, Any]) -> float:
         return c["bottom"] - c["top"]
 
-    def _x_dis(self, a, b):
+    def _x_dis(self, a: dict[str, Any], b: dict[str, Any]) -> float:
         return min(abs(a["x1"] - b["x0"]), abs(a["x0"] - b["x1"]), abs(a["x0"] + a["x1"] - b["x0"] - b["x1"]) / 2)
 
-    def _y_dis(self, a, b):
+    def _y_dis(self, a: dict[str, Any], b: dict[str, Any]) -> float:
         return (b["top"] + b["bottom"] - a["top"] - a["bottom"]) / 2
 
-    def _match_proj(self, b):
+    def _match_proj(self, b: dict[str, Any]) -> bool:
         proj_patt = [
             r"第[零一二三四五六七八九十百]+章",
             r"第[零一二三四五六七八九十百]+[条节]",
@@ -130,10 +320,11 @@ class RAGFlowPdfParser:
         ]
         return any([re.match(p, b["text"]) for p in proj_patt])
 
-    def _updown_concat_features(self, up, down):
+    def _updown_concat_features(self, up: dict[str, Any], down: dict[str, Any]) -> list[Any]:
         w = max(self.__char_width(up), self.__char_width(down))
         h = max(self.__height(up), self.__height(down))
         y_dis = self._y_dis(up, down)
+        # Characters of context taken from each side of the boundary.
         LEN = 6
         tks_down = rag_tokenizer.tokenize(down["text"][:LEN]).split()
         tks_up = rag_tokenizer.tokenize(up["text"][-LEN:]).split()
@@ -163,7 +354,7 @@ class RAGFlowPdfParser:
             up["text"].strip()[-2:] == down["text"].strip()[-2:] if len(up["text"].strip()) > 1 and len(down["text"].strip()) > 1 else False,
             up["x0"] > down["x1"],
             abs(self.__height(up) - self.__height(down)) / min(self.__height(up), self.__height(down)),
-            self._x_dis(up, down) / max(w, 0.000001),
+            self._x_dis(up, down) / max(w, EPSILON),
             (len(up["text"]) - len(down["text"])) / max(len(up["text"]), len(down["text"])),
             len(tks_all) - len(tks_up) - len(tks_down),
             len(tks_down) - len(tks_up),
@@ -176,7 +367,7 @@ class RAGFlowPdfParser:
         return fea
 
     @staticmethod
-    def sort_X_by_page(arr, threshold):
+    def sort_X_by_page(arr: list[dict[str, Any]], threshold: float) -> list[dict[str, Any]]:
         arr = sorted(arr, key=lambda r: (r["page_number"], r["x0"], r["top"]))
         for i in range(len(arr) - 1):
             for j in range(i, -1, -1):
@@ -186,7 +377,7 @@ class RAGFlowPdfParser:
                     arr[j + 1] = tmp
         return arr
 
-    def _has_color(self, o):
+    def _has_color(self, o: dict[str, Any]) -> bool:
         if o.get("ncs", "") == "DeviceGray":
             if o["stroking_color"] and o["stroking_color"][0] == 1 and o["non_stroking_color"] and o["non_stroking_color"][0] == 1:
                 if re.match(r"[a-zT_\[\]\(\)-]+", o.get("text", "")):
@@ -197,7 +388,7 @@ class RAGFlowPdfParser:
     _OCR_ALPHABET = None
 
     @classmethod
-    def _ocr_can_represent(cls, text, min_coverage=0.8):
+    def _ocr_can_represent(cls, text: str, min_coverage: float = OCR_ALPHABET_MIN_COVERAGE) -> bool:
         if not text:
             return True
         if cls._OCR_ALPHABET is None:
@@ -219,7 +410,7 @@ class RAGFlowPdfParser:
     _CJK_PATTERN = re.compile(r"[ᄀ-ᇿ぀-ヿ㄰-㆏㐀-䶿一-鿿가-힯豈-﫿]|[\U00020000-\U0002fa1f]")
 
     @classmethod
-    def _insert_word_spaces(cls, chars, gap_ratio=0.25):
+    def _insert_word_spaces(cls, chars: list[dict[str, Any]], gap_ratio: float = WORD_GAP_RATIO) -> None:
         widths = [c["width"] for c in chars if c["text"] and c["text"].strip()]
         mean_w = sum(widths) / len(widths) if widths else 0
         if mean_w <= 0:
@@ -237,7 +428,7 @@ class RAGFlowPdfParser:
                 cur["text"] += " "
 
     @staticmethod
-    def _is_garbled_char(ch):
+    def _is_garbled_char(ch: str) -> bool:
         if not ch:
             return False
         cp = ord(ch)
@@ -253,7 +444,7 @@ class RAGFlowPdfParser:
         return False
 
     @staticmethod
-    def _is_garbled_text(text, threshold=0.5):
+    def _is_garbled_text(text: str | None, threshold: float = GARBLED_CHAR_THRESHOLD) -> bool:
         if not text or not text.strip():
             return False
         if RAGFlowPdfParser._CID_PATTERN.search(text):
@@ -271,13 +462,13 @@ class RAGFlowPdfParser:
         return garbled_count / total >= threshold
 
     @staticmethod
-    def _has_subset_font_prefix(fontname):
+    def _has_subset_font_prefix(fontname: str | None) -> bool:
         if not fontname:
             return False
         return bool(re.match(r"^[A-Z0-9]{2,6}\+", fontname))
 
     @staticmethod
-    def _is_garbled_by_font_encoding(page_chars, min_chars=20):
+    def _is_garbled_by_font_encoding(page_chars: list[dict[str, Any]] | None, min_chars: int = GARBLED_FONT_MIN_CHARS) -> bool:
         if not page_chars or len(page_chars) < min_chars:
             return False
 
@@ -306,17 +497,23 @@ class RAGFlowPdfParser:
             return False
 
         subset_ratio = subset_font_count / total_non_space
-        if subset_ratio < 0.3:
+        if subset_ratio < GARBLED_FONT_SUBSET_RATIO:
             return False
 
         cjk_ratio = cjk_like / total_non_space
         punct_ratio = ascii_punct_sym / total_non_space
-        if cjk_ratio < 0.05 and punct_ratio > 0.4:
+        if cjk_ratio < GARBLED_FONT_CJK_RATIO and punct_ratio > GARBLED_FONT_PUNCT_RATIO:
             return True
 
         return False
 
-    def _evaluate_table_orientation(self, table_img, sample_ratio=0.3):
+    def _evaluate_table_orientation(self, table_img: Any, sample_ratio: float = TABLE_ORIENTATION_SAMPLE_RATIO) -> tuple[int, Any, dict[int, dict[str, float]]]:
+        """Pick the rotation whose crop the OCR is most confident about.
+
+        ``sample_ratio`` is part of the caller's surface and is passed through
+        unchanged, but the probe scores the WHOLE crop — sampling it would change
+        which rotation wins, and the rotation feeds back into table coordinates.
+        """
         rotations = [
             (0, "original"),
             (90, "rotate_90"),
@@ -324,7 +521,7 @@ class RAGFlowPdfParser:
             (270, "rotate_270"),
         ]
 
-        results = {}
+        results: dict[int, dict[str, float]] = {}
         best_score = -1
         best_angle = 0
         best_img = table_img
@@ -340,13 +537,16 @@ class RAGFlowPdfParser:
                     scores = [conf for _, (_, conf) in ocr_results]
                     avg_score = sum(scores) / len(scores) if scores else 0
                     total_regions = len(scores)
-                    combined_score = avg_score * (1 + 0.1 * min(total_regions, 50) / 50)
+                    combined_score = avg_score * (1 + TABLE_ORIENTATION_REGION_BONUS * min(total_regions, TABLE_ORIENTATION_REGION_CAP) / TABLE_ORIENTATION_REGION_CAP)
                 else:
                     avg_score = 0
                     total_regions = 0
                     combined_score = 0
-            except Exception as e:
-                logging.warning(f"OCR failed for angle {angle}: {e}")
+            except Exception:
+                # The OCR engine failed on one of four probes. Scoring that probe
+                # zero is the point of the fallback, but the reason it failed is
+                # still needed to tell a broken model from an unusable crop.
+                logging.exception("OCR failed while scoring table rotation %s", angle)
                 avg_score = 0
                 total_regions = 0
                 combined_score = 0
@@ -363,7 +563,7 @@ class RAGFlowPdfParser:
                 best_img = rotated_img
 
         if best_angle != 0 and score_0 is not None:
-            if not (best_score - score_0 > 0.2 and score_0 < 0.8):
+            if not (best_score - score_0 > TABLE_ORIENTATION_MIN_GAIN and score_0 < TABLE_ORIENTATION_BASELINE_CAP):
                 best_angle = 0
                 best_img = table_img
                 best_score = score_0
@@ -373,7 +573,7 @@ class RAGFlowPdfParser:
         return best_angle, best_img, results
 
     @staticmethod
-    def _map_clockwise_rotated_point_to_original(x, y, angle, width, height):
+    def _map_clockwise_rotated_point_to_original(x: float, y: float, angle: int, width: float, height: float) -> tuple[float, float]:
         if angle == 0:
             return x, y
         if angle == 90:
@@ -384,14 +584,14 @@ class RAGFlowPdfParser:
             return width - y, x
         return x, y
 
-    def _table_transformer_job(self, ZM, auto_rotate=None):
+    def _table_transformer_job(self, ZM: int, auto_rotate: bool | None = None) -> None:
         if auto_rotate is None:
             auto_rotate = os.getenv("TABLE_AUTO_ROTATE", "true").lower() in ("true", "1", "yes")
 
         logging.debug("Table processing...")
         imgs, pos = [], []
         tbcnt = [0]
-        MARGIN = 10
+        MARGIN = TABLE_CROP_MARGIN
         self.tb_cpns = []
         self.table_rotations = {}
         self.rotated_table_imgs = {}
@@ -446,7 +646,7 @@ class RAGFlowPdfParser:
         if auto_rotate:
             self._ocr_rotated_tables(ZM, table_layouts, recos, tbcnt)
 
-        def _map_tsr_component_to_page_space(component, table_pos):
+        def _map_tsr_component_to_page_space(component: dict[str, Any], table_pos: tuple[float, float, int, int, str]) -> None:
             crop_left, crop_top, page, table_index, _ = table_pos
             rotation_info = self.table_rotations.get(table_index, {})
             angle = rotation_info.get("best_angle", 0)
@@ -484,27 +684,27 @@ class RAGFlowPdfParser:
                     pg.append(it)
             self.tb_cpns.extend(pg)
 
-        def gather(kwd, fzy=10, ption=0.6):
+        def gather(kwd: str, fzy: float = TSR_SORT_FZY, ption: float = TSR_ROW_CLEANUP_PTION) -> list[dict[str, Any]]:
             eles = Recognizer.sort_Y_firstly([r for r in self.tb_cpns if re.match(kwd, r["label"])], fzy)
-            eles = Recognizer.layouts_cleanup(self.boxes, eles, 5, ption)
+            eles = Recognizer.layouts_cleanup(self.boxes, eles, TSR_CLEANUP_FAR, ption)
             return Recognizer.sort_Y_firstly(eles, 0)
 
         headers = gather(r".*header$")
         rows = gather(r".* (row|header)")
         spans = gather(r".*spanning")
         clmns = sorted([r for r in self.tb_cpns if re.match(r"table column$", r["label"])], key=lambda x: (x["pn"], x["layoutno"], x["x0"]))
-        clmns = Recognizer.layouts_cleanup(self.boxes, clmns, 5, 0.5)
+        clmns = Recognizer.layouts_cleanup(self.boxes, clmns, TSR_CLEANUP_FAR, TSR_COLUMN_CLEANUP_PTION)
 
         for b in self.boxes:
             if b.get("layout_type", "") != "table":
                 continue
-            ii = Recognizer.find_overlapped_with_threshold(b, rows, thr=0.3)
+            ii = Recognizer.find_overlapped_with_threshold(b, rows, thr=TSR_OVERLAP_THRESHOLD)
             if ii is not None:
                 b["R"] = ii
                 b["R_top"] = rows[ii]["top"]
                 b["R_bott"] = rows[ii]["bottom"]
 
-            ii = Recognizer.find_overlapped_with_threshold(b, headers, thr=0.3)
+            ii = Recognizer.find_overlapped_with_threshold(b, headers, thr=TSR_OVERLAP_THRESHOLD)
             if ii is not None:
                 b["H_top"] = headers[ii]["top"]
                 b["H_bott"] = headers[ii]["bottom"]
@@ -518,7 +718,7 @@ class RAGFlowPdfParser:
                 b["C_left"] = clmns[ii]["x0"]
                 b["C_right"] = clmns[ii]["x1"]
 
-            ii = Recognizer.find_overlapped_with_threshold(b, spans, thr=0.3)
+            ii = Recognizer.find_overlapped_with_threshold(b, spans, thr=TSR_OVERLAP_THRESHOLD)
             if ii is not None:
                 b["H_top"] = spans[ii]["top"]
                 b["H_bott"] = spans[ii]["bottom"]
@@ -526,10 +726,10 @@ class RAGFlowPdfParser:
                 b["H_right"] = spans[ii]["x1"]
                 b["SP"] = ii
 
-    def _ocr_rotated_tables(self, ZM, table_layouts, tsr_results, tbcnt):
+    def _ocr_rotated_tables(self, ZM: int, table_layouts: list[dict[str, Any]], tsr_results: list[Any], tbcnt: list[int]) -> None:
         tbcnt = np.cumsum(tbcnt)
 
-        def _table_region(layout, page_index):
+        def _table_region(layout: dict[str, Any], page_index: int) -> tuple[float, float, float, float, float, float]:
             table_x0 = layout["x0"]
             table_top = layout["top"]
             table_x1 = layout["x1"]
@@ -538,17 +738,17 @@ class RAGFlowPdfParser:
             table_bottom_cum = table_bottom + self.page_cum_height[page_index]
             return table_x0, table_top, table_x1, table_bottom, table_top_cum, table_bottom_cum
 
-        def _collect_table_boxes(page_index, table_x0, table_x1, table_top_cum, table_bottom_cum):
+        def _collect_table_boxes(page_index: int, table_x0: float, table_x1: float, table_top_cum: float, table_bottom_cum: float) -> tuple[list[dict[str, Any]], int]:
             indices = [
                 i
                 for i, b in enumerate(self.boxes)
                 if (
                     b.get("page_number") == page_index + self.page_from
                     and b.get("layout_type") == "table"
-                    and b["x0"] >= table_x0 - 5
-                    and b["x1"] <= table_x1 + 5
-                    and b["top"] >= table_top_cum - 5
-                    and b["bottom"] <= table_bottom_cum + 5
+                    and b["x0"] >= table_x0 - ROTATED_TABLE_BOX_PADDING
+                    and b["x1"] <= table_x1 + ROTATED_TABLE_BOX_PADDING
+                    and b["top"] >= table_top_cum - ROTATED_TABLE_BOX_PADDING
+                    and b["bottom"] <= table_bottom_cum + ROTATED_TABLE_BOX_PADDING
                 )
             ]
             original_boxes = [self.boxes[i] for i in indices]
@@ -557,16 +757,27 @@ class RAGFlowPdfParser:
                 self.boxes.pop(i)
             return original_boxes, insert_at
 
-        def _restore_boxes(original_boxes, insert_at):
+        def _restore_boxes(original_boxes: list[dict[str, Any]], insert_at: int) -> int:
             for b in original_boxes:
                 self.boxes.insert(insert_at, b)
                 insert_at += 1
             return insert_at
 
-        def _insert_ocr_boxes(ocr_results, page_index, crop_left, crop_top, insert_at, table_index, layoutno, best_angle, table_w_px, table_h_px):
+        def _insert_ocr_boxes(
+            ocr_results: list[Any],
+            page_index: int,
+            crop_left: float,
+            crop_top: float,
+            insert_at: int,
+            table_index: int,
+            layoutno: str,
+            best_angle: int,
+            table_w_px: float,
+            table_h_px: float,
+        ) -> int:
             added = 0
             for bbox, (text, conf) in ocr_results:
-                if conf < 0.5:
+                if conf < ROTATED_TABLE_MIN_CONFIDENCE:
                     continue
                 mapped = [self._map_clockwise_rotated_point_to_original(p[0], p[1], best_angle, table_w_px, table_h_px) for p in bbox]
                 x_coords = [p[0] for p in mapped]
@@ -641,7 +852,7 @@ class RAGFlowPdfParser:
 
             logging.info(f"Added {added} OCR results from rotated table {table_index}")
 
-    def __ocr(self, pagenum, img, chars, ZM=3, device_id: int | None = None):
+    def __ocr(self, pagenum: int, img: Any, chars: list[dict[str, Any]], ZM: int = DEFAULT_ZOOMIN, device_id: int | None = None) -> None:
         bxs = self.ocr.detect(np.array(img), device_id)
         if not bxs:
             self.boxes.append([])
@@ -653,7 +864,7 @@ class RAGFlowPdfParser:
                 for b, t in bxs
                 if b[0][0] <= b[1][0] and b[0][1] <= b[-1][1]
             ],
-            self.mean_height[pagenum - 1] / 3,
+            self.mean_height[pagenum - 1] / LINE_MERGE_TOLERANCE_DIVISOR,
         )
 
         for c in chars:
@@ -663,7 +874,7 @@ class RAGFlowPdfParser:
                 continue
             ch = c["bottom"] - c["top"]
             bh = bxs[ii]["bottom"] - bxs[ii]["top"]
-            if abs(ch - bh) / max(ch, bh) >= 0.7 and c["text"] != " ":
+            if abs(ch - bh) / max(ch, bh) >= GARBLED_BOX_HEIGHT_RATIO and c["text"] != " ":
                 self.lefted_chars.append(c)
                 continue
             bxs[ii]["chars"].append(c)
@@ -689,7 +900,7 @@ class RAGFlowPdfParser:
                                 garbled_count += 1
             del b["chars"]
 
-            if total_count > 0 and garbled_count / total_count >= 0.5:
+            if total_count > 0 and garbled_count / total_count >= GARBLED_CHAR_THRESHOLD:
                 logging.info(
                     "Page %d: detected garbled pdfplumber text (garbled=%d/%d), falling back to OCR for box at (%.1f, %.1f)",
                     pagenum,
@@ -704,7 +915,7 @@ class RAGFlowPdfParser:
             if total_count > 0 and not self._ocr_can_represent(b["text"]):
                 continue
 
-            if total_count > 0 and self._is_garbled_by_font_encoding(box_chars, min_chars=5):
+            if total_count > 0 and self._is_garbled_by_font_encoding(box_chars, min_chars=GARBLED_BOX_MIN_CHARS):
                 logging.info(
                     "Page %d: detected font-encoding garbled text (%d chars), falling back to OCR for box at (%.1f, %.1f)",
                     pagenum,
@@ -736,22 +947,30 @@ class RAGFlowPdfParser:
             self.mean_height[pagenum - 1] = np.median([b["bottom"] - b["top"] for b in bxs])
         self.boxes.append(bxs)
 
-    def _layouts_rec(self, ZM, drop=True):
+    def _layouts_rec(self, ZM: int, drop: bool = True) -> None:
         assert len(self.page_images) == len(self.boxes)
         self.boxes, self.page_layout = self.layouter(self.page_images, self.boxes, ZM, drop=drop)
         for i in range(len(self.boxes)):
             self.boxes[i]["top"] += self.page_cum_height[self.boxes[i]["page_number"] - 1]
             self.boxes[i]["bottom"] += self.page_cum_height[self.boxes[i]["page_number"] - 1]
 
-    def _assign_column(self, boxes, zoomin=3):
+    def _assign_column(self, boxes: list[dict[str, Any]], zoomin: int = DEFAULT_ZOOMIN) -> list[dict[str, Any]]:
+        """Tag every box with ``col_id`` — its column on its page.
+
+        KMeans over the box left edges, tried for 1..:data:`COLUMN_MAX_CLUSTERS`
+        columns, scored by silhouette; the count the majority of pages agree on
+        becomes the document's column count. ``zoomin`` is accepted because the
+        callers pass the render scale, but the clustering only ever sees
+        coordinates that are already in PDF points.
+        """
         if not boxes or all("col_id" in b for b in boxes):
             return boxes
 
-        by_page = defaultdict(list)
+        by_page: dict[int, list[dict[str, Any]]] = defaultdict(list)
         for b in boxes:
             by_page[b["page_number"]].append(b)
 
-        page_cols = {}
+        page_cols: dict[int, int] = {}
         for pg, bxs in by_page.items():
             if not bxs:
                 page_cols[pg] = 1
@@ -762,7 +981,7 @@ class RAGFlowPdfParser:
             max_x1 = np.max([b["x1"] for b in bxs])
             width = max_x1 - min_x0
 
-            INDENT_TOL = width * 0.12
+            INDENT_TOL = width * COLUMN_INDENT_TOL_RATIO
             x0s = []
             for x in x0s_raw:
                 if abs(x - min_x0) < INDENT_TOL:
@@ -771,7 +990,7 @@ class RAGFlowPdfParser:
                     x0s.append([x])
             x0s = np.array(x0s, dtype=float)
 
-            max_try = min(4, len(bxs))
+            max_try = min(COLUMN_MAX_CLUSTERS, len(bxs))
             if max_try < 2:
                 max_try = 1
             best_k = 1
@@ -786,6 +1005,9 @@ class RAGFlowPdfParser:
                     try:
                         score = silhouette_score(x0s, labels)
                     except ValueError:
+                        # Fewer distinct points than clusters: this k is not
+                        # scoreable, which is not a reason to abandon the page.
+                        logging.debug("[Page %s] silhouette undefined for k=%s; skipping", pg, k)
                         continue
                 else:
                     score = 0
@@ -818,7 +1040,7 @@ class RAGFlowPdfParser:
 
         return boxes
 
-    def _text_merge(self, zoomin=3):
+    def _text_merge(self, zoomin: int = DEFAULT_ZOOMIN) -> None:
         bxs = self._assign_column(self.boxes, zoomin)
 
         i = 0
@@ -834,7 +1056,7 @@ class RAGFlowPdfParser:
                 i += 1
                 continue
 
-            if abs(self._y_dis(b, b_)) < self.mean_height[bxs[i]["page_number"] - 1] / 3:
+            if abs(self._y_dis(b, b_)) < self.mean_height[bxs[i]["page_number"] - 1] / LINE_MERGE_TOLERANCE_DIVISOR:
                 bxs[i]["x1"] = b_["x1"]
                 bxs[i]["top"] = (b["top"] + b_["top"]) / 2
                 bxs[i]["bottom"] = (b["bottom"] + b_["bottom"]) / 2
@@ -844,19 +1066,24 @@ class RAGFlowPdfParser:
             i += 1
         self.boxes = bxs
 
-    def _naive_vertical_merge(self, zoomin=3):
+    def _naive_vertical_merge(self, zoomin: int = DEFAULT_ZOOMIN) -> None:
+        """Join vertically adjacent boxes of the same layout block into paragraphs.
+
+        ``zoomin`` is accepted for caller parity with the other merge passes and
+        is not read: the merge compares point coordinates only.
+        """
         bxs = self.boxes
-        grouped = defaultdict(list)
+        grouped: dict[tuple[int, str], list[dict[str, Any]]] = defaultdict(list)
         for b in bxs:
             grouped[(b["page_number"], "x")].append(b)
 
-        merged_boxes = []
+        merged_boxes: list[dict[str, Any]] = []
         for (pg, col), bxs in grouped.items():
             bxs = sorted(bxs, key=lambda x: (x["top"], x["x0"]))
             if not bxs:
                 continue
 
-            mh = self.mean_height[pg - 1] if self.mean_height else np.median([b["bottom"] - b["top"] for b in bxs]) or 10
+            mh = self.mean_height[pg - 1] if self.mean_height else np.median([b["bottom"] - b["top"] for b in bxs]) or DEFAULT_LINE_HEIGHT
 
             i = 0
             while i + 1 < len(bxs):
@@ -875,12 +1102,12 @@ class RAGFlowPdfParser:
                     i += 1
                     continue
 
-                if b_["top"] - b["bottom"] > mh * 1.5:
+                if b_["top"] - b["bottom"] > mh * VERTICAL_MERGE_GAP_RATIO:
                     i += 1
                     continue
 
                 overlap = max(0, min(b["x1"], b_["x1"]) - max(b["x0"], b_["x0"]))
-                if overlap / max(1, min(b["x1"] - b["x0"], b_["x1"] - b_["x0"])) < 0.3:
+                if overlap / max(1, min(b["x1"] - b["x0"], b_["x1"] - b_["x0"])) < VERTICAL_MERGE_OVERLAP_RATIO:
                     i += 1
                     continue
 
@@ -893,8 +1120,8 @@ class RAGFlowPdfParser:
                     b.get("layoutno", 0) != b_.get("layoutno", 0),
                     b["text"].strip()[-1] in "。？！?",
                     self.is_english and b["text"].strip()[-1] in ".!?",
-                    b["page_number"] == b_["page_number"] and b_["top"] - b["bottom"] > self.mean_height[b["page_number"] - 1] * 1.5,
-                    b["page_number"] < b_["page_number"] and abs(b["x0"] - b_["x0"]) > self.mean_width[b["page_number"] - 1] * 4,
+                    b["page_number"] == b_["page_number"] and b_["top"] - b["bottom"] > self.mean_height[b["page_number"] - 1] * VERTICAL_MERGE_GAP_RATIO,
+                    b["page_number"] < b_["page_number"] and abs(b["x0"] - b_["x0"]) > self.mean_width[b["page_number"] - 1] * VERTICAL_MERGE_PAGEBREAK_WIDTH_RATIO,
                 ]
                 detach_feats = [b["x1"] < b_["x0"], b["x0"] > b_["x1"]]
                 if (any(feats) and not any(concatting_feats)) or any(detach_feats):
@@ -911,7 +1138,7 @@ class RAGFlowPdfParser:
 
         self.boxes = merged_boxes
 
-    def _final_reading_order_merge(self, zoomin=3):
+    def _final_reading_order_merge(self, zoomin: int = DEFAULT_ZOOMIN) -> None:
         if not self.boxes:
             return
 
@@ -934,10 +1161,11 @@ class RAGFlowPdfParser:
 
         self.boxes = new_boxes
 
-    def _concat_downward(self, concat_between_pages=True):
+    def _concat_downward(self, concat_between_pages: bool = True) -> None:
         self.boxes = Recognizer.sort_Y_firstly(self.boxes, 0)
 
-    def _filter_forpages(self):
+    def _filter_forpages(self) -> None:
+        """Drop table-of-contents pages, then pages that are OCR junk end to end."""
         if not self.boxes:
             return
         findit = False
@@ -960,7 +1188,7 @@ class RAGFlowPdfParser:
             self.boxes.pop(i)
             if i >= len(self.boxes) or not prefix:
                 break
-            for j in range(i, min(i + 128, len(self.boxes))):
+            for j in range(i, min(i + TOC_LOOKAHEAD_BOXES, len(self.boxes))):
                 if not re.match(prefix, self.boxes[j]["text"]):
                     continue
                 for k in range(i, j):
@@ -973,7 +1201,7 @@ class RAGFlowPdfParser:
         for b in self.boxes:
             if re.search(r"(··|··|··)", b["text"]):
                 page_dirty[b["page_number"] - 1] += 1
-        page_dirty = set([i + 1 for i, t in enumerate(page_dirty) if t > 3])
+        page_dirty = set([i + 1 for i, t in enumerate(page_dirty) if t > TOC_DIRTY_PAGE_MARKS])
         if not page_dirty:
             return
         i = 0
@@ -983,7 +1211,7 @@ class RAGFlowPdfParser:
                 continue
             i += 1
 
-    def _merge_with_same_bullet(self):
+    def _merge_with_same_bullet(self) -> None:
         i = 0
         while i + 1 < len(self.boxes):
             b = self.boxes[i]
@@ -1009,9 +1237,9 @@ class RAGFlowPdfParser:
             b_["top"] = b["top"]
             self.boxes.pop(i)
 
-    def _extract_table_figure(self, need_image, ZM, return_html, need_position, separate_tables_figures=False):
-        tables = {}
-        figures = {}
+    def _extract_table_figure(self, need_image: bool, ZM: int, return_html: bool, need_position: bool, separate_tables_figures: bool = False) -> Any:
+        tables: dict[str, list[dict[str, Any]]] = {}
+        figures: dict[str, list[dict[str, Any]]] = {}
         i = 0
         lst_lout_no = ""
         nomerge_lout_no = []
@@ -1055,12 +1283,12 @@ class RAGFlowPdfParser:
             if k0 in nomerge_lout_no or bxs[0]["page_number"] == bxs0[0]["page_number"] or bxs[0]["page_number"] - bxs0[0]["page_number"] > 1:
                 continue
             mh = self.mean_height[bxs[0]["page_number"] - 1]
-            if self._y_dis(bxs0[-1], bxs[0]) > mh * 23:
+            if self._y_dis(bxs0[-1], bxs[0]) > mh * TABLE_STITCH_MAX_Y_DIS_RATIO:
                 continue
             tables[k0].extend(tables[k])
             del tables[k]
 
-        def x_overlapped(a, b):
+        def x_overlapped(a: dict[str, Any], b: dict[str, Any]) -> bool:
             return not any([a["x1"] < b["x0"], a["x0"] > b["x1"]])
 
         i = 0
@@ -1070,10 +1298,10 @@ class RAGFlowPdfParser:
                 i += 1
                 continue
 
-            def nearest(tbls):
+            def nearest(tbls: dict[str, list[dict[str, Any]]]) -> tuple[str, float]:
                 nonlocal c
                 mink = ""
-                minv = 1000000000
+                minv = float("inf")
                 for k, bxs in tbls.items():
                     for b in bxs:
                         if b.get("layout_type", "").find("caption") >= 0:
@@ -1096,11 +1324,11 @@ class RAGFlowPdfParser:
                 logging.debug("FIGURE:" + self.boxes[i]["text"] + "; Cap: " + tk)
             self.boxes.pop(i)
 
-        def cropout(bxs, ltype, poss):
+        def cropout(bxs: list[dict[str, Any]], ltype: str, poss: list[Any]) -> Any:
             nonlocal ZM
             max_page_index = len(self.page_images) - 1
 
-            def local_page_index(page_number):
+            def local_page_index(page_number: int) -> int:
                 idx = page_number - 1 if page_number > 0 else 0
                 if idx > max_page_index and self.page_from:
                     idx = page_number - 1 - self.page_from
@@ -1141,7 +1369,7 @@ class RAGFlowPdfParser:
             imgs = [img for img in imgs if img is not None]
             if not imgs:
                 return None
-            pic = Image.new("RGB", (int(np.max([i.size[0] for i in imgs])), int(np.sum([m.size[1] for m in imgs]))), (245, 245, 245))
+            pic = Image.new("RGB", (int(np.max([i.size[0] for i in imgs])), int(np.sum([m.size[1] for m in imgs]))), IMAGE_CANVAS_BACKGROUND)
             height = 0
             for img in imgs:
                 pic.paste(img, (0, int(height)))
@@ -1196,7 +1424,7 @@ class RAGFlowPdfParser:
             else:
                 return res
 
-    def proj_match(self, line):
+    def proj_match(self, line: str) -> int | None:
         if len(line) <= 2 or re.match(r"[0-9 ().,%%+/-]+$", line):
             return False
         for p, j in [
@@ -1218,7 +1446,7 @@ class RAGFlowPdfParser:
                 return j
         return
 
-    def _line_tag(self, bx, ZM):
+    def _line_tag(self, bx: dict[str, Any], ZM: int) -> str:
         pn = [bx["page_number"]]
         top = bx["top"] - self.page_cum_height[pn[0] - 1]
         bott = bx["bottom"] - self.page_cum_height[pn[0] - 1]
@@ -1233,17 +1461,24 @@ class RAGFlowPdfParser:
 
         return "@@{}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}##".format("-".join([str(p) for p in pn]), bx["x0"], bx["x1"], top, bott)
 
-    def __filterout_scraps(self, boxes, ZM):
-        def width(b):
+    def __filterout_scraps(self, boxes: list[dict[str, Any]], ZM: int) -> str:
+        """Keep the useful lines of ``boxes`` and tag each with its position.
+
+        Scraps are the short fragments a layout model could not attribute to a
+        block; ``dfs`` walks the run they belong to and the run is kept only when
+        it looks like a real line (projected like a heading, or wide enough).
+        """
+
+        def width(b: dict[str, Any]) -> float:
             return b["x1"] - b["x0"]
 
-        def height(b):
+        def height(b: dict[str, Any]) -> float:
             return b["bottom"] - b["top"]
 
-        def usefull(b):
+        def usefull(b: dict[str, Any]) -> bool:
             if b.get("layout_type"):
                 return True
-            if width(b) > self.page_images[b["page_number"] - 1].size[0] / ZM / 3:
+            if width(b) > self.page_images[b["page_number"] - 1].size[0] / ZM / LINE_MERGE_TOLERANCE_DIVISOR:
                 return True
             if b["bottom"] - b["top"] > self.mean_height[b["page_number"] - 1]:
                 return True
@@ -1257,20 +1492,20 @@ class RAGFlowPdfParser:
             mh = self.mean_height[boxes[0]["page_number"] - 1]
             mj = self.proj_match(boxes[0]["text"]) or boxes[0].get("layout_type", "") == "title"
 
-            def dfs(line, st):
+            def dfs(line: dict[str, Any], st: int) -> None:
                 nonlocal mh, pw, lines, widths
                 lines.append(line)
                 widths.append(width(line))
                 mmj = self.proj_match(line["text"]) or line.get("layout_type", "") == "title"
-                for i in range(st + 1, min(st + 20, len(boxes))):
+                for i in range(st + 1, min(st + SCRAP_LOOKAHEAD_LINES, len(boxes))):
                     if (boxes[i]["page_number"] - line["page_number"]) > 0:
                         break
-                    if not mmj and self._y_dis(line, boxes[i]) >= 3 * mh and height(line) < 1.5 * mh:
+                    if not mmj and self._y_dis(line, boxes[i]) >= SCRAP_GAP_LINES * mh and height(line) < SCRAP_MAX_HEAD_HEIGHT_RATIO * mh:
                         break
 
                     if not usefull(boxes[i]):
                         continue
-                    if mmj or (self._x_dis(boxes[i], line) < pw / 10):
+                    if mmj or (self._x_dis(boxes[i], line) < pw / SCRAP_X_ALIGN_DIVISOR):
                         dfs(boxes[i], i)
                         boxes.pop(i)
                         break
@@ -1281,10 +1516,12 @@ class RAGFlowPdfParser:
                 else:
                     logging.debug("WASTE: " + boxes[0]["text"])
             except Exception:
-                pass
+                # A malformed box must not lose the rest of the page: the run
+                # collected so far is still emitted below.
+                logging.exception("scrap collection failed for %r; emitting the lines collected so far", boxes[0].get("text", ""))
             boxes.pop(0)
             mw = np.mean(widths)
-            if mj or mw / pw >= 0.35 or mw > 200:
+            if mj or mw / pw >= SCRAP_MIN_WIDTH_RATIO or mw > SCRAP_MAX_WIDTH:
                 res.append("\n".join([c["text"] + self._line_tag(c, ZM) for c in lines]))
             else:
                 logging.debug("REMOVED: " + "<<".join([c["text"] for c in lines]))
@@ -1292,17 +1529,34 @@ class RAGFlowPdfParser:
         return "\n\n".join(res)
 
     @staticmethod
-    def total_page_number(fnm, binary=None):
+    def total_page_number(fnm: str | bytes, binary: bytes | None = None) -> int | None:
+        """Page count of ``fnm``; ``None`` when the file cannot be read at all.
+
+        The handle is closed on every path, including the failure path: this runs
+        once per document, so a batch import of unreadable files used to leak one
+        pdfplumber handle (and its parsed object graph) per file. The lock still
+        covers exactly what it covered before — opening — so concurrency is
+        unchanged.
+        """
+        pdf = None
         try:
             with sys.modules[LOCK_KEY_pdfplumber]:
                 pdf = pdfplumber.open(fnm) if not binary else pdfplumber.open(BytesIO(binary))
-            total_page = len(pdf.pages)
-            pdf.close()
-            return total_page
+            return len(pdf.pages)
+        except PDF_READ_ERRORS:
+            logging.exception("total_page_number: %s is not a readable PDF", fnm)
+            return None
         except Exception:
-            logging.exception("total_page_number")
+            logging.exception("total_page_number: unexpected failure for %s", fnm)
+            return None
+        finally:
+            if pdf is not None:
+                try:
+                    pdf.close()
+                except Exception:
+                    logging.exception("total_page_number: closing the handle for %s failed", fnm)
 
-    def __images__(self, fnm, zoomin=3, page_from=0, page_to=MAXIMUM_PAGE_NUMBER, callback=None):
+    def __images__(self, fnm: str | bytes, zoomin: int = DEFAULT_ZOOMIN, page_from: int = 0, page_to: int = MAXIMUM_PAGE_NUMBER, callback: Any = None) -> None:
         self.lefted_chars = []
         self.mean_height = []
         self.mean_width = []
@@ -1316,20 +1570,23 @@ class RAGFlowPdfParser:
             with sys.modules[LOCK_KEY_pdfplumber]:
                 with pdfplumber.open(fnm) if isinstance(fnm, str) else pdfplumber.open(BytesIO(fnm)) as pdf:
                     self.pdf = pdf
-                    self.page_images = [p.to_image(resolution=72 * zoomin, antialias=True).annotated for i, p in enumerate(self.pdf.pages[page_from:page_to])]
+                    self.page_images = [p.to_image(resolution=PDF_RENDER_DPI * zoomin, antialias=True).annotated for i, p in enumerate(self.pdf.pages[page_from:page_to])]
 
                     try:
                         self.page_chars = [[c for c in page.dedupe_chars().chars if self._has_color(c)] for page in self.pdf.pages[page_from:page_to]]
-                    except Exception as e:
-                        logging.warning(f"Failed to extract characters for pages {page_from}-{page_to}: {str(e)}")
+                    except PDF_READ_ERRORS:
+                        # One page whose character stream cannot be decoded must not
+                        # cost the whole document: fall back to OCR text for every
+                        # page and log which window failed.
+                        logging.exception("Failed to extract characters for pages %s-%s; using OCR text", page_from, page_to)
                         self.page_chars = [[] for _ in range(len(self.page_images))]
 
                     for pi, page_ch in enumerate(self.page_chars):
                         if not page_ch:
                             continue
-                        sample = page_ch if len(page_ch) <= 200 else page_ch[:200]
+                        sample = page_ch if len(page_ch) <= GARBLED_PAGE_SAMPLE_CHARS else page_ch[:GARBLED_PAGE_SAMPLE_CHARS]
                         sample_text = "".join(c.get("text", "") for c in sample)
-                        if self._is_garbled_text(sample_text, threshold=0.3):
+                        if self._is_garbled_text(sample_text, threshold=GARBLED_PAGE_THRESHOLD):
                             logging.warning(
                                 "Page %d: pdfplumber extracted mostly garbled characters (%d chars), clearing to use OCR fallback.",
                                 page_from + pi + 1,
@@ -1347,13 +1604,19 @@ class RAGFlowPdfParser:
 
                     self.total_page = len(self.pdf.pages)
 
-        except Exception as e:
-            logging.exception(f"RAGFlowPdfParser __images__, exception: {e}")
+        except PDF_READ_ERRORS:
+            # The document could not be opened or read as a PDF. Leaving
+            # ``page_images`` unset and reporting it lets the caller decide
+            # between an empty result and an error, which is what happened before
+            # this handler existed.
+            logging.exception("RAGFlowPdfParser __images__: %s is not a readable PDF", fnm)
+        except Exception:
+            logging.exception("RAGFlowPdfParser __images__: unexpected failure for %s", fnm)
         logging.info(f"__images__ dedupe_chars cost {timer() - start}s")
 
         logging.debug("Images converted.")
         self.is_english = [
-            re.search(r"[ a-zA-Z0-9,/¸;:'\[\]\(\)!@#$%^&*\"?<>._-]{30,}", "".join(random.choices([c["text"] for c in self.page_chars[i]], k=min(100, len(self.page_chars[i])))))
+            re.search(IS_ENGLISH_PATTERN, "".join(random.choices([c["text"] for c in self.page_chars[i]], k=min(IS_ENGLISH_SAMPLE_CHARS, len(self.page_chars[i])))))
             for i in range(len(self.page_chars))
         ]
         if sum([1 if e else 0 for e in self.is_english]) > len(self.page_images) / 2:
@@ -1361,7 +1624,7 @@ class RAGFlowPdfParser:
         else:
             self.is_english = False
 
-        async def __img_ocr(i, id, img, chars, limiter):
+        async def __img_ocr(i: int, id: int, img: Any, chars: list[dict[str, Any]], limiter: Any) -> None:
             self._insert_word_spaces(chars)
 
             if limiter:
@@ -1370,11 +1633,11 @@ class RAGFlowPdfParser:
             else:
                 self.__ocr(i + 1, img, chars, zoomin, id)
 
-            if callback and i % 6 == 5:
-                callback((i + 1) * 0.6 / len(self.page_images))
+            if callback and i % OCR_PROGRESS_EVERY_PAGES == OCR_PROGRESS_EVERY_PAGES - 1:
+                callback((i + 1) * OCR_PROGRESS_SHARE / len(self.page_images))
 
-        async def __img_ocr_launcher():
-            def __ocr_preprocess():
+        async def __img_ocr_launcher() -> None:
+            def __ocr_preprocess() -> list[dict[str, Any]]:
                 chars = self.page_chars[i] if not self.is_english else []
                 self.mean_height.append(np.median(sorted([c["height"] for c in chars])) if chars else 0)
                 self.mean_width.append(np.median(sorted([c["width"] for c in chars])) if chars else 8)
@@ -1395,8 +1658,10 @@ class RAGFlowPdfParser:
 
                 try:
                     await asyncio.gather(*tasks, return_exceptions=False)
-                except Exception as e:
-                    logging.error(f"Error in OCR: {e}")
+                except Exception:
+                    # Cancel the siblings, drain them, then re-raise: the first
+                    # failure is the one worth reporting, with its stack.
+                    logging.exception("Error in OCR")
                     for t in tasks:
                         t.cancel()
                     await asyncio.gather(*tasks, return_exceptions=True)
@@ -1412,15 +1677,15 @@ class RAGFlowPdfParser:
 
         if not self.is_english and not any([c for c in self.page_chars]) and self.boxes:
             bxes = [b for bxs in self.boxes for b in bxs]
-            self.is_english = re.search(r"[ \na-zA-Z0-9,/¸;:'\[\]\(\)!@#$%^&*\"?<>._-]{30,}", "".join([b["text"] for b in random.choices(bxes, k=min(30, len(bxes)))]))
+            self.is_english = re.search(IS_ENGLISH_BOX_PATTERN, "".join([b["text"] for b in random.choices(bxes, k=min(IS_ENGLISH_SAMPLE_BOXES, len(bxes)))]))
 
         logging.debug(f"Is it English: {self.is_english}")
         self.page_cum_height = np.cumsum(self.page_cum_height)
         assert len(self.page_cum_height) == len(self.page_images) + 1
-        if len(self.boxes) == 0 and zoomin < 9:
-            self.__images__(fnm, zoomin * 3, page_from, page_to, callback)
+        if len(self.boxes) == 0 and zoomin < MAX_ZOOMIN_RETRY:
+            self.__images__(fnm, zoomin * ZOOMIN_RETRY_FACTOR, page_from, page_to, callback)
 
-    def __call__(self, fnm, need_image=True, zoomin=3, return_html=False, auto_rotate_tables=None, **kwargs):
+    def __call__(self, fnm: str | bytes, need_image: bool = True, zoomin: int = DEFAULT_ZOOMIN, return_html: bool = False, auto_rotate_tables: bool | None = None, **kwargs: Any) -> tuple[str, Any]:
         """
         Parse a PDF file.
 
@@ -1442,7 +1707,7 @@ class RAGFlowPdfParser:
         tbls = self._extract_table_figure(need_image, zoomin, return_html, False)
         return self.__filterout_scraps(deepcopy(self.boxes), zoomin), tbls
 
-    def parse_into_bboxes(self, fnm, callback=None, zoomin=3, from_page=0, to_page=MAXIMUM_PAGE_NUMBER):
+    def parse_into_bboxes(self, fnm: str | bytes, callback: Any = None, zoomin: int = DEFAULT_ZOOMIN, from_page: int = 0, to_page: int = MAXIMUM_PAGE_NUMBER) -> list[dict[str, Any]]:
         self.outlines = extract_pdf_outlines(fnm)
         batch_size = max(1, int(os.getenv("PDF_PARSER_PAGE_BATCH_SIZE", "50")))
         if isinstance(fnm, str):
@@ -1474,7 +1739,7 @@ class RAGFlowPdfParser:
         logging.info("parse_into_bboxes chunk mode cost %.2fs", timer() - start)
         return all_boxes
 
-    def _parse_loaded_window_into_bboxes(self, zoomin=3, callback=None):
+    def _parse_loaded_window_into_bboxes(self, zoomin: int = DEFAULT_ZOOMIN, callback: Any = None) -> list[dict[str, Any]]:
         start = timer()
         self._layouts_rec(zoomin)
         if callback:
@@ -1495,8 +1760,8 @@ class RAGFlowPdfParser:
         start = timer()
         tbls, figs = self._extract_table_figure(True, zoomin, True, True, True)
 
-        def insert_table_figures(tbls_or_figs, layout_type):
-            def min_rectangle_distance(rect1, rect2):
+        def insert_table_figures(tbls_or_figs: list[Any], layout_type: str) -> None:
+            def min_rectangle_distance(rect1: tuple[Any, ...], rect2: tuple[Any, ...]) -> float:
                 pn1, left1, right1, top1, bottom1 = rect1
                 pn2, left2, right2, top2, bottom2 = rect2
                 if right1 >= left2 and right2 >= left1 and bottom1 >= top2 and bottom2 >= top1:
@@ -1562,17 +1827,17 @@ class RAGFlowPdfParser:
         return deepcopy(self.boxes)
 
     @staticmethod
-    def _offset_position_tag(text, page_offset):
+    def _offset_position_tag(text: str, page_offset: int) -> str:
         if not text or page_offset <= 0:
             return text
 
-        def _replace(match):
+        def _replace(match: re.Match) -> str:
             pages = [str(int(p) + page_offset) for p in match.group(1).split("-")]
             return f"@@{'-'.join(pages)}\t"
 
         return re.sub(r"@@([0-9-]+)\t", _replace, text)
 
-    def _to_global_boxes(self, boxes):
+    def _to_global_boxes(self, boxes: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if self.page_from <= 0:
             return boxes
 
@@ -1585,11 +1850,11 @@ class RAGFlowPdfParser:
         return boxes
 
     @staticmethod
-    def remove_tag(txt):
+    def remove_tag(txt: str) -> str:
         return re.sub(r"@@[\t0-9.-]+?##", "", txt)
 
     @staticmethod
-    def extract_positions(txt):
+    def extract_positions(txt: str) -> list[tuple[list[int], float, float, float, float]]:
         poss = []
         for tag in re.findall(r"@@[0-9-]+\t[0-9.\t]+##", txt):
             pn, left, right, top, bottom = tag.strip("#").strip("@").split("\t")
@@ -1597,7 +1862,12 @@ class RAGFlowPdfParser:
             poss.append(([int(p) - 1 for p in pn.split("-")], left, right, top, bottom))
         return poss
 
-    def crop(self, text, ZM=3, need_position=False):
+    def crop(self, text: str, ZM: int = DEFAULT_ZOOMIN, need_position: bool = False) -> Any:
+        """Stitch the image(s) covering the ``@@page`` tags in ``text``.
+
+        Returns the merged image, or ``(image, positions)`` when ``need_position``
+        is set, or ``None`` when there is nothing to crop.
+        """
         imgs = []
         poss = self.extract_positions(text)
         if not poss:
@@ -1625,12 +1895,12 @@ class RAGFlowPdfParser:
             logging.warning("No valid positions after filtering; skip cropping.")
             return (None, None) if need_position else None
 
-        max_width = max(np.max([right - left for (_, left, right, _, _) in poss]), 6)
-        GAP = 6
+        max_width = max(np.max([right - left for (_, left, right, _, _) in poss]), CROP_MIN_WIDTH)
+        GAP = CROP_GAP
 
         pos = poss[0]
         first_page_idx = pos[0][0]
-        poss.insert(0, ([first_page_idx], pos[1], pos[2], max(0, pos[3] - 120), max(pos[3] - GAP, 0)))
+        poss.insert(0, ([first_page_idx], pos[1], pos[2], max(0, pos[3] - CROP_CONTEXT_HEIGHT), max(pos[3] - GAP, 0)))
 
         pos = poss[-1]
         last_page_idx = pos[0][-1]
@@ -1645,14 +1915,14 @@ class RAGFlowPdfParser:
                 pos[1],
                 pos[2],
                 min(last_page_height, pos[4] + GAP),
-                min(last_page_height, pos[4] + 120),
+                min(last_page_height, pos[4] + CROP_CONTEXT_HEIGHT),
             )
         )
 
         positions = []
         for ii, (pns, left, right, top, bottom) in enumerate(poss):
             if 0 < ii < len(poss) - 1:
-                right = max(left + 10, right)
+                right = max(left + CROP_MIN_SEGMENT_WIDTH, right)
             else:
                 right = left + max_width
 
@@ -1689,7 +1959,7 @@ class RAGFlowPdfParser:
         total_height = sum(img.size[1] for img in imgs)
         max_img_width = max(img.size[0] for img in imgs)
 
-        merged_image = Image.new("RGB", (int(max_img_width), int(total_height)), (245, 245, 245))
+        merged_image = Image.new("RGB", (int(max_img_width), int(total_height)), IMAGE_CANVAS_BACKGROUND)
 
         current_y = 0
         for img in imgs:
@@ -1701,7 +1971,7 @@ class RAGFlowPdfParser:
 
         return merged_image
 
-    def get_position(self, bx, ZM):
+    def get_position(self, bx: dict[str, Any], ZM: int) -> list[tuple[int, float, float, float, float]]:
         poss = []
         pn = bx["page_number"]
         top = bx["top"] - self.page_cum_height[pn - 1]
@@ -1716,46 +1986,69 @@ class RAGFlowPdfParser:
 
 
 class PlainParser:
-    def __call__(self, filename, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, **kwargs):
-        lines = []
+    def __call__(self, filename: str | bytes, from_page: int = 0, to_page: int = MAXIMUM_PAGE_NUMBER, **kwargs: Any) -> tuple[list[tuple[str, str]], list]:
+        """Read ``filename`` page by page with pypdf and return ``(lines, [])``.
+
+        The reader is closed by the ``with`` block. pypdf keeps the whole parsed
+        object graph (xref, trailer, resolved objects) alive on the reader, so
+        without this a batch import holds one document's worth of objects per file
+        for as long as the caller keeps the parser.
+        """
+        lines: list[str] = []
         try:
-            self.pdf = pdf2_read(filename if isinstance(filename, str) else BytesIO(filename))
-            for page in self.pdf.pages[from_page:to_page]:
-                lines.extend([t for t in page.extract_text().split("\n")])
+            with pdf2_read(filename if isinstance(filename, str) else BytesIO(filename)) as pdf:
+                self.pdf = pdf
+                for page in pdf.pages[from_page:to_page]:
+                    lines.extend([t for t in page.extract_text().split("\n")])
+        except PDF_READ_ERRORS:
+            logging.exception("PlainParser: %s is not a readable PDF", filename)
         except Exception:
-            logging.exception("Outlines exception")
+            logging.exception("PlainParser: unexpected failure for %s", filename)
         self.outlines = extract_pdf_outlines(filename)
 
         return [(line, "") for line in lines], []
 
-    def crop(self, ck, need_position):
+    def crop(self, ck: str, need_position: bool) -> Any:
         raise NotImplementedError
 
     @staticmethod
-    def remove_tag(txt):
+    def remove_tag(txt: str) -> str:
         raise NotImplementedError
 
 
 class VisionParser(RAGFlowPdfParser):
-    def __init__(self, vision_model, *args, **kwargs):
+    def __init__(self, vision_model: Any, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.vision_model = vision_model
         self.outlines = []
 
-    def __images__(self, fnm, zoomin=3, page_from=0, page_to=MAXIMUM_PAGE_NUMBER, callback=None):
+    def __images__(self, fnm: str | bytes, zoomin: int = DEFAULT_ZOOMIN, page_from: int = 0, page_to: int = MAXIMUM_PAGE_NUMBER, callback: Any = None) -> None:
+        """Render the requested page window to images for the vision model.
+
+        The handle is opened and closed inside one ``with``: this parser renders
+        EVERY page of the window into a PIL image and keeps them in
+        ``self.page_images``, so the pdfplumber handle itself is dead weight after
+        the loop — and an unclosed one leaks a file descriptor per document plus
+        the page/stream graph behind it, which is what a parallel ingest of a
+        large batch exhausts first.
+        """
         try:
-            with sys.modules[LOCK_KEY_pdfplumber]:
-                self.pdf = pdfplumber.open(fnm) if isinstance(fnm, str) else pdfplumber.open(BytesIO(fnm))
-                self.page_images = [p.to_image(resolution=72 * zoomin).annotated for i, p in enumerate(self.pdf.pages[page_from:page_to])]
-                self.total_page = len(self.pdf.pages)
+            with sys.modules[LOCK_KEY_pdfplumber], (pdfplumber.open(fnm) if isinstance(fnm, str) else pdfplumber.open(BytesIO(fnm))) as pdf:
+                self.pdf = pdf
+                self.page_images = [p.to_image(resolution=PDF_RENDER_DPI * zoomin).annotated for i, p in enumerate(pdf.pages[page_from:page_to])]
+                self.total_page = len(pdf.pages)
+        except PDF_READ_ERRORS:
+            self.page_images = None
+            self.total_page = 0
+            logging.exception("VisionParser __images__: %s is not a readable PDF", fnm)
         except Exception:
             self.page_images = None
             self.total_page = 0
-            logging.exception("VisionParser __images__")
+            logging.exception("VisionParser __images__: unexpected failure for %s", fnm)
 
-    def __call__(self, filename, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, **kwargs):
+    def __call__(self, filename: str | bytes, from_page: int = 0, to_page: int = MAXIMUM_PAGE_NUMBER, **kwargs: Any) -> tuple[list[tuple[str, str]], list]:
         callback = kwargs.get("callback", lambda prog, msg: None)
-        zoomin = kwargs.get("zoomin", 3)
+        zoomin = kwargs.get("zoomin", DEFAULT_ZOOMIN)
         self.__images__(fnm=filename, zoomin=zoomin, page_from=from_page, page_to=to_page, callback=callback)
 
         total_pdf_pages = self.total_page
