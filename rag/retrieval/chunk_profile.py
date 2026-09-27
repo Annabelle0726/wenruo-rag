@@ -38,6 +38,7 @@ treating it as "this is a table row" would relabel the whole corpus.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from typing import Sequence
 
@@ -63,6 +64,8 @@ _TABLE_MARKUP_RE = re.compile(r"<table[\s>]|<t[dh][\s>]|<tr[\s>]", re.IGNORECASE
 HOLLOW_TABLE_EMPTY_RATIO = 0.5
 
 _CELL_RE = re.compile(r"<t[dh][^>]*>(.*?)</t[dh]>", re.DOTALL)
+_HTML_CAPTION_RE = re.compile(r"<caption\b[^>]*>(.*?)</caption>", re.IGNORECASE | re.DOTALL)
+_HTML_ROW_RE = re.compile(r"<tr\b.*?</tr>", re.IGNORECASE | re.DOTALL)
 
 
 def table_fill_ratio(chunk: dict) -> float | None:
@@ -127,6 +130,40 @@ def is_image_chunk(chunk: dict) -> bool:
 def is_prose_chunk(chunk: dict) -> bool:
     """A passage a normative clause can be read out of."""
     return not is_table_chunk(chunk) and not is_image_chunk(chunk)
+
+
+def table_family_key(chunk: dict) -> str | None:
+    """Identify the TABLE a passage is a part of, or ``None`` when it is not a part.
+
+    A long table is stored as several chunks, and every part repeats the caption and the
+    header row (``table_to_markdown`` / ``split_html_table`` guarantee it), so the caption
+    plus that header identifies the table across its parts. Selection uses it to keep a
+    table's parts TOGETHER: the part holding ``3.8 → 1×400`` and the part holding
+    ``3.9 → 1×800`` are one answer, and a window that keeps one and drops the other
+    answers the question halfway - measured, on the 220kV Part 2 report, as "金属套平均
+    厚度一栏只截取到了 1×400 mm² 截面这一行".
+    """
+    if not is_table_chunk(chunk):
+        return None
+    body = _content(chunk)
+    if "<t" in body:
+        caption = _HTML_CAPTION_RE.search(body)
+        rows = _HTML_ROW_RE.findall(body)
+        head = next((row for row in rows if re.search(r"<th\b", row, re.IGNORECASE)), rows[0] if rows else "")
+        marker = _plain(caption.group(1) if caption else "") + "|" + _plain(head)
+    else:
+        lines = [line for line in body.splitlines() if line.strip()]
+        caption = "" if lines and lines[0].lstrip().startswith("|") else (lines[0] if lines else "")
+        header = next((line for line in lines if line.lstrip().startswith("|")), "")
+        marker = _plain(caption) + "|" + _plain(header)
+    if not marker.strip("|"):
+        return None
+    return f"{document_key(chunk)}::{hashlib.sha1(marker.encode('utf-8', 'surrogatepass')).hexdigest()[:12]}"
+
+
+def _plain(text: str) -> str:
+    text = re.sub(r"<[^>]+>", " ", str(text or ""))
+    return re.sub(r"\s+", " ", text).strip().lower()
 
 
 def document_key(chunk: dict) -> str:

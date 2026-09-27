@@ -1,6 +1,6 @@
 #
 #  Copyright 2026 The InfiniFlow Authors. All Rights Reserved.
-#  Modifications Copyright 2026 线缆工业智搜平台. All Rights Reserved.
+#  Modifications Copyright 2026 绾跨紗宸ヤ笟鏅烘悳骞冲彴. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-"""Module C — rerank the merged pool against the original question and cut the
+"""Module C 鈥?rerank the merged pool against the original question and cut the
 context the answer model receives.
 
 Two decisions here are what separate this stage from the fused score the routes
@@ -40,16 +40,16 @@ question's routes recall different chapters, and those chapters do not score
 equally against the whole question: measured on the cable corpus with a
 five-parameter question, twelve near-identical parameter tables of the dimension
 the question leads with scored 0.596-0.603 and filled all twelve slots, while the
-``6.2.3 交流电压试验`` clause the corpus does hold sat at 0.577 and was dropped -
+``6.2.3 浜ゆ祦鐢靛帇璇曢獙`` clause the corpus does hold sat at 0.577 and was dropped -
 the same "the window is filled by one topic" failure the routes exist to undo,
 one stage later. One slot per route is therefore reserved before the remaining
 slots take the highest scoring passages left.
 
 The fourth decision is about passage TYPE, and it is the one four live smoke
-tests turned up. A 专用技术规范's bidder fill-in tables repeat every parameter
+tests turned up. A 涓撶敤鎶€鏈鑼?s bidder fill-in tables repeat every parameter
 name and unit a question uses, so they out-score the normative prose of the
-通用技术规范 and take the whole window; the answer layer then reports "只有表格，
-没有正文规定" for a question whose clause IS in the corpus. When the question asks
+閫氱敤鎶€鏈鑼?and take the whole window; the answer layer then reports "鍙湁琛ㄦ牸锛?
+娌℃湁姝ｆ枃瑙勫畾" for a question whose clause IS in the corpus. When the question asks
 for a rule (``seeks_clause``), the cut therefore reserves a PROSE floor, caps how
 much of the window tables may take, and orders the pool with a small table
 penalty (:class:`DiversityPolicy`). Nothing here can invent a prose passage that
@@ -75,6 +75,7 @@ from rag.retrieval.chunk_profile import (
     resolve_compared_documents,
     resolve_core_documents,
     summarize,
+    table_family_key,
 )
 from rag.retrieval.decomposition import mentions_requirement, seeks_clause
 from rag.retrieval.multi_route import chunk_key
@@ -88,7 +89,7 @@ DEFAULT_FINAL_TOP_N = 8
 FINAL_TOP_N_RECOMMENDED = (6, 8)
 
 #: Room the context must leave for prose when the question asks for a rule.
-#: 4 is the "3-4 slots for the 通用技术规范 clause" the smoke tests asked for, and
+#: 4 is the "3-4 slots for the 閫氱敤鎶€鏈鑼?clause" the smoke tests asked for, and
 #: it is affordable inside both the 6-8 band and the cable assistant's 12.
 MIN_PROSE_PASSAGES = 4
 #: Share of the window tables may take at most, for the same question shape.
@@ -98,12 +99,12 @@ MAX_TABLE_SHARE = 0.5
 TABLE_PENALTY = 0.85
 #: Ordering nudge for a table whose cells are mostly EMPTY.
 #:
-#: Measured on 《Q/GDW 73286.2 第2部分：单芯》: the table holding the 金属套厚度 values
-#: (800mm² = 3.9, 1200mm² = 4.1) is 0% empty, while fourteen other chunks of the same
+#: Measured on 銆奞/GDW 73286.2 绗?閮ㄥ垎锛氬崟鑺€? the table holding the 閲戝睘濂楀帤搴?values
+#: (800mm虏 = 3.9, 1200mm虏 = 4.1) is 0% empty, while fourteen other chunks of the same
 #: document repeat 800/1200 with blank value cells (``<td>800 </td><td></td>``, 20-64%
 #: empty). The question names those numbers, so it matches the EMPTY grids harder than
-#: the table that answers it, and the answer model then reports "800 和 1200 对应的数值
-#: 并未出现" while holding a passage whose 800 row is blank. An unfilled grid is the
+#: the table that answers it, and the answer model then reports "800 鍜?1200 瀵瑰簲鐨勬暟鍊?
+#: 骞舵湭鍑虹幇" while holding a passage whose 800 row is blank. An unfilled grid is the
 #: recogniser's failure, not evidence, so it is ordered below every comparable passage -
 #: never dropped, because a corpus whose tables are all sparse still needs them.
 HOLLOW_TABLE_PENALTY = 0.6
@@ -121,12 +122,20 @@ HOLLOW_TABLE_PENALTY = 0.6
 #: prose and to anything else, and a pool that is nothing but empty grids still fills the
 #: window rather than coming back short.
 MAX_HOLLOW_TABLE_PER_DOCUMENT_SHARE = 0.25
+#: How many parts of ONE table may be claimed together (step 1c).
+#:
+#: A table split into row-batches is one answer in several chunks; keeping its parts
+#: together is what lets a question about ``1脳800mm虏`` reach the row that holds it. The
+#: bound is what stops "keep the family" from becoming "keep the whole document": the
+#: recorded case needs two parts (header + 400 row, and 500-1600), and four is the room a
+#: parameter table's continuation pages may legitimately need.
+MAX_TABLE_FAMILY_PARTS = 4
 #: Share of the window ONE auxiliary document may take.
 #:
 #: Document flooding, measured: nine recalled passages, seven of them from
-#: 《20_架空绝缘导线抽检工作规范.pdf》 (22,684 characters) and two from the standard
+#: 銆?0_鏋剁┖缁濈紭瀵肩嚎鎶芥宸ヤ綔瑙勮寖.pdf銆?(22,684 characters) and two from the standard
 #: the question was about (1,130 characters). A working document whose whole text
-#: repeats 例行试验 out-scores the clause that defines the test, and a plain
+#: repeats 渚嬭璇曢獙 out-scores the clause that defines the test, and a plain
 #: top-N then hands the answer model the working document and little else.
 #: 0.4 is the generous end of the 30-40% band, so an auxiliary file still
 #: contributes while it cannot own the window. The standard itself is exempt:
@@ -137,8 +146,8 @@ MAX_AUXILIARY_DOCUMENT_SHARE = 0.4
 CORE_DOCUMENT_BOOST = 1.15
 #: Share of the window ONE document may take when the question COMPARES documents.
 #:
-#: Measured: "…单芯与三芯要求是否一致？" over 《Q/GDW 73286.2 第2部分(单芯)》 and
-#: 《Q/GDW 73286.3 第3部分(三芯)》 recalled Part 2 only. Both files are standards, so
+#: Measured: "鈥﹀崟鑺笌涓夎姱瑕佹眰鏄惁涓€鑷达紵" over 銆奞/GDW 73286.2 绗?閮ㄥ垎(鍗曡姱)銆?and
+#: 銆奞/GDW 73286.3 绗?閮ㄥ垎(涓夎姱)銆?recalled Part 2 only. Both files are standards, so
 #: the auxiliary quota above never applied to either, and Part 2's higher-scoring table
 #: - split into row-batches, so a dozen near-identical passages - owned the window. The
 #: comparison cannot be answered from one side, so when the question names two sides and
@@ -153,11 +162,11 @@ class DiversityPolicy:
     """How the context cut balances passage TYPE and DOCUMENT.
 
     Two strengths on the type axis, because the two intents differ. A RULE
-    question ("例行交流电压试验的维持时间是多少", "两份规范对不上时以谁为准") gets the
+    question ("渚嬭浜ゆ祦鐢靛帇璇曢獙鐨勭淮鎸佹椂闂存槸澶氬皯", "涓や唤瑙勮寖瀵逛笉涓婃椂浠ヨ皝涓哄噯") gets the
     full policy: a window reserved for prose is the only way it gets answered,
     since a fill-in table cannot state a rule. A question that merely mentions a
     requirement or a test gets the ordering nudge alone - a parameter table IS
-    the right source for 绝缘电阻试验的数值是多少, so its window is not reserved for
+    the right source for 缁濈紭鐢甸樆璇曢獙鐨勬暟鍊兼槸澶氬皯, so its window is not reserved for
     prose.
 
     On the document axis the policy applies ONLY when the corpus advertises a
@@ -251,7 +260,7 @@ def apply_rank_adjustments(chunks: Sequence[dict], policy: DiversityPolicy) -> l
     comparable prose clause (``table_penalty``), a passage of the standard the question
     is about above one from an auxiliary file (``core_document_boost``), and a table
     whose cells are mostly EMPTY below a filled one (``HOLLOW_TABLE_PENALTY``) - the
-    last is what stops a blank 截面 grid from out-ranking the table that fills it.
+    last is what stops a blank 鎴潰 grid from out-ranking the table that fills it.
     """
     for chunk in chunks:
         base = _score(chunk, key="rerank_score") or _score(chunk)
@@ -409,6 +418,26 @@ def select_context(ordered: Sequence[dict], top_n: int, policy: DiversityPolicy 
         document_counts[bucket] = document_counts.get(bucket, 0) + 1
         return True
 
+    families_taken: set[str] = set()
+
+    def take_batch(chunk: dict, *, ignore_table_quota: bool = False) -> bool:
+        """Take ``chunk``, and with it as many parts of the SAME table as the window allows."""
+        if not take(chunk, ignore_table_quota=ignore_table_quota):
+            return False
+        key = table_family_key(chunk)
+        if key is None or key in families_taken:
+            return True
+        families_taken.add(key)
+        taken_in_family = 1
+        for sibling in ordered:
+            if taken_in_family >= MAX_TABLE_FAMILY_PARTS or len(chosen) >= top_n:
+                break
+            if chunk_key(sibling) in chosen_keys or table_family_key(sibling) != key:
+                continue
+            if take(sibling, ignore_table_quota=ignore_table_quota):
+                taken_in_family += 1
+        return True
+
     # 1. one slot per route
     route_order: list[str] = []
     for chunk in ordered:
@@ -418,7 +447,7 @@ def select_context(ordered: Sequence[dict], top_n: int, policy: DiversityPolicy 
     if len(route_order) > 1:
         for route in route_order:
             for chunk in ordered:
-                if route in routes_of(chunk) and take(chunk):
+                if route in routes_of(chunk) and take_batch(chunk):
                     break
 
     # 1b. one slot per document the question COMPARES. A route can come back with
@@ -431,13 +460,20 @@ def select_context(ordered: Sequence[dict], top_n: int, policy: DiversityPolicy 
                 if document_key(chunk) == key and take(chunk):
                     break
 
-    # 2. the prose floor
+    # 1c. a table's own parts are claimed together by ``take_batch`` below: a long table
+    # is stored as several chunks that each repeat the caption and the header, so the part
+    # holding `3.8 鈫?1脳400` and the part holding `3.9 鈫?1脳800` are ONE answer, and a window
+    # that keeps one and drops the rest answers it halfway ("閲戝睘濂楀钩鍧囧帤搴︿竴鏍忓彧鎴彇鍒颁簡
+    # 1脳400 mm虏 杩欎竴琛?). The caps above still apply to them, so a family cannot flood the
+    # window, and ``MAX_TABLE_FAMILY_PARTS`` bounds how many parts one table may claim.
+
+    # 2. the prose floor, when the question asks for a rule
     if policy.min_prose > 0:
         prose_taken = sum(1 for chunk in ordered if chunk_key(chunk) in chosen_keys and is_prose_chunk(chunk))
         for chunk in ordered:
             if prose_taken >= policy.min_prose or len(chosen) >= top_n:
                 break
-            if is_prose_chunk(chunk) and take(chunk):
+            if is_prose_chunk(chunk) and take_batch(chunk):
                 prose_taken += 1
 
     # 3. everything else by score. A table-capped cut takes non-table passages

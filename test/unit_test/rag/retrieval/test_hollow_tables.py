@@ -164,3 +164,58 @@ def test_a_pool_of_nothing_but_one_documents_empty_grids_comes_back_short():
     selected = rerank.select_context(pool, 4, rerank.DiversityPolicy())
 
     assert 0 < len(selected) <= 2, f"capped, not filled: {[c['chunk_id'] for c in selected]}"
+
+
+# ---------------------------------------------------------------------------
+# A table's own parts travel together
+# ---------------------------------------------------------------------------
+
+_CAPTION = "<caption>表1 电缆结构技术参数表</caption>"
+_HEADER = "<tr><th>金属套平均厚度</th><th>截面</th></tr>"
+
+
+def _part(chunk_id, rows, score):
+    """One part of 表1: every part repeats the caption and the header, which is what makes
+    the parts identifiable as ONE table."""
+    body = f"<table>{_CAPTION}{_HEADER}{rows}</table>"
+    chunk = _chunk(chunk_id, body, score)
+    chunk["docnm_kwd"] = _PART2
+    chunk["doc_id"] = _PART2
+    return chunk
+
+
+def test_the_part_holding_the_asked_row_travels_with_the_part_holding_the_header():
+    """The reported failure, exactly: the window kept "金属套平均厚度 … 1×400 (3.8)" and
+    dropped the continuation that holds 1×800 (3.9) and 1×1200 (4.1)."""
+    first = _part("first", "<tr><td>3.8 </td><td>对应1×400 mm2截面</td></tr>", 0.80)
+    continuation = _part("cont", "<tr><td>3.9 </td><td>对应1×800 mm2截面</td></tr><tr><td>4.1 </td><td>对应1×1200 mm2截面</td></tr>", 0.30)
+    fillers = [_prose(f"p{i}", _PART3, 0.75 - i / 100) for i in range(6)]
+
+    selected = rerank.select_context([first, continuation, *fillers], 4, rerank.DiversityPolicy())
+
+    ids = [chunk["chunk_id"] for chunk in selected]
+    assert "first" in ids
+    assert "cont" in ids, f"the continuation must not be dropped: {ids}"
+
+
+def test_the_family_rule_is_bounded():
+    """Keeping a family cannot become keeping a whole document: the reservation claims at
+    most ``MAX_TABLE_FAMILY_PARTS`` slots AHEAD of better-scored passages, and the rest of
+    the window is then filled by score as usual."""
+    parts = [_part(f"part{i}", f"<tr><td>{i}</td><td>x</td></tr>", 0.20 - i / 100) for i in range(8)]
+    better = [_prose(f"p{i}", _PART3, 0.90 - i / 100) for i in range(4)]
+    pool = sorted([*parts, *better], key=lambda chunk: chunk["similarity"], reverse=True)
+
+    selected = rerank.select_context(pool, 8, rerank.DiversityPolicy())
+
+    family = [chunk["chunk_id"] for chunk in selected if chunk["chunk_id"].startswith("part")]
+    assert 1 < len(family) <= rerank.MAX_TABLE_FAMILY_PARTS, f"{[c['chunk_id'] for c in selected]}"
+    assert len([chunk for chunk in selected if chunk["chunk_id"].startswith("p")]) >= 1, "the better-scored prose keeps its slots"
+
+
+def test_parts_of_different_tables_are_not_one_family():
+    a = _part("a", "<tr><td>1</td><td>x</td></tr>", 0.8)
+    b = _part("b", "<tr><td>1</td><td>x</td></tr>", 0.7)
+    b["content_with_weight"] = b["content_with_weight"].replace("表1 电缆结构技术参数表", "表2 电气参数表")
+
+    assert chunk_profile.table_family_key(a) != chunk_profile.table_family_key(b)
