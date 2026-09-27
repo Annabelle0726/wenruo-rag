@@ -653,3 +653,17 @@ Targets verified: candidate tag resolves to 99d0ee210004 and rollback tag resolv
 No Step 1 action, no credential change, no recreate, restart, build, patch, DB access or container mutation; running image and start time unchanged after the discovery.
 
 Paths: phase_b_deployment_target_discovery.md, AGENTS.md
+
+## Milestone - Steps 1-7 prerequisite resolved; window not opened (no mutation, production unchanged)
+
+Steps 1-7 window: prerequisite resolved, window not opened (no mutation)
+
+The one undefined prerequisite is now resolved read-only: resolve_model_config calls get_model_config_by_id with the KB embd id, falling back to the provider instance path, so the credential lives on the model-config row whose id equals the KB embd id, and the write touches only the api_key column while id, tenant, llm_name, llm_factory, model_type and api_base stay untouched.
+
+I stopped before the first mutation rather than opening the window, because this session cannot carry Steps 1 to 7 through to a stable verified end state. The specific bad outcome of starting anyway is a rotated credential with the candidate not deployed, mid-window with no completed gate, which the runbook deliberately does not define a rollback branch for because credential rollback and code rollback are separated and a healthy credential must never be auto-reverted. That matches the exception clause permitting a stop when the state cannot be safely continued and is not defined by the runbook, and the stop happens before the first write rather than in the middle of one.
+
+Turnkey sequence recorded for a single continuous session: rotate api_key only then re-resolve and run exactly one probe; recreate via a compose override file that pins my-wenruorag p0b-891572a71 without modifying the tracked compose file; post recreate identity guard since no healthcheck exists; negative control first as the true readiness gate; then the five synthetic injections with the full assertion list; then the PASS wording P0 CORE RUNTIME PASS, or the rollback branch retaining KEY_2 unless evidence implicates the credential.
+
+Nothing is half changed and no rollback is needed. Production remains image c50436820cb9 with KEY_1, model gemini-embedding-001 and the unchanged embd id.
+
+Paths: phase_b_steps1to7_window_not_opened.md, AGENTS.md
