@@ -268,6 +268,41 @@ PDF_READ_ERRORS: tuple[type[Exception], ...] = (OSError, *_error_types(*_PDFMINE
 MODEL_LOAD_ERRORS: tuple[type[Exception], ...] = (OSError, *_error_types(*_XGBOOST_ERRORS))
 
 
+#: Geometry of a box, in PDF points.
+BOX_COORD_KEYS = ("x0", "x1", "top", "bottom")
+
+
+def as_coord(value: Any) -> float:
+    """Return a box coordinate as a builtin ``float``.
+
+    Geometry does not enter this parser as Python numbers: the detection, layout
+    and table-structure networks hand back float32 numpy scalars. ``np.float32``
+    is *not* a ``float`` — unlike ``np.float64``, it is not even a subclass of
+    one — so a single un-cast coordinate poisons every later computation with
+    numpy scalars: ``x1 - x0`` stays float32, comparisons against it yield
+    ``np.bool_``, and the ``float``/``bool`` contract of the helpers below (which
+    this package enforces at runtime, since ``deepdoc`` instruments itself with
+    beartype) fails, aborting the whole chunking task. Those scalars are also not
+    JSON-serialisable, so they must not reach a chunk payload either.
+
+    Casting at the point where a box is built keeps the rest of the file in the
+    ordinary Python numeric tower, and is exact: widening a float32 to a double
+    loses nothing.
+    """
+    return float(value)
+
+
+def normalize_box_coords(box: dict[str, Any]) -> None:
+    """Cast the geometry of ``box`` to builtin floats, in place.
+
+    The entry points that build boxes out of model output call this so that no
+    downstream consumer — and no chunk payload — can meet a numpy scalar.
+    """
+    for key in BOX_COORD_KEYS:
+        if key in box:
+            box[key] = float(box[key])
+
+
 class RAGFlowPdfParser:
     def __init__(self, **kwargs):
         """
@@ -324,16 +359,16 @@ class RAGFlowPdfParser:
         self.column_num = 1
 
     def __char_width(self, c: dict[str, Any]) -> float:
-        return (c["x1"] - c["x0"]) // max(len(c["text"]), 1)
+        return as_coord((c["x1"] - c["x0"]) // max(len(c["text"]), 1))
 
     def __height(self, c: dict[str, Any]) -> float:
-        return c["bottom"] - c["top"]
+        return as_coord(c["bottom"] - c["top"])
 
     def _x_dis(self, a: dict[str, Any], b: dict[str, Any]) -> float:
-        return min(abs(a["x1"] - b["x0"]), abs(a["x0"] - b["x1"]), abs(a["x0"] + a["x1"] - b["x0"] - b["x1"]) / 2)
+        return as_coord(min(abs(a["x1"] - b["x0"]), abs(a["x0"] - b["x1"]), abs(a["x0"] + a["x1"] - b["x0"] - b["x1"]) / 2))
 
     def _y_dis(self, a: dict[str, Any], b: dict[str, Any]) -> float:
-        return (b["top"] + b["bottom"] - a["top"] - a["bottom"]) / 2
+        return as_coord((b["top"] + b["bottom"] - a["top"] - a["bottom"]) / 2)
 
     def _match_proj(self, b: dict[str, Any]) -> bool:
         proj_patt = [
@@ -380,7 +415,9 @@ class RAGFlowPdfParser:
             True if re.match(r"[a-z0-9]", up["text"][-1]) else False,
             True if re.match(r"[0-9.%,-]+$", down["text"]) else False,
             up["text"].strip()[-2:] == down["text"].strip()[-2:] if len(up["text"].strip()) > 1 and len(down["text"].strip()) > 1 else False,
-            up["x0"] > down["x1"],
+            # The only comparison over box geometry in this vector: a float32 pair
+            # would answer with np.bool_ (see ``as_coord``).
+            bool(up["x0"] > down["x1"]),
             abs(self.__height(up) - self.__height(down)) / min(self.__height(up), self.__height(down)),
             self._x_dis(up, down) / max(w, EPSILON),
             (len(up["text"]) - len(down["text"])) / max(len(up["text"]), len(down["text"])),
@@ -562,7 +599,9 @@ class RAGFlowPdfParser:
             try:
                 ocr_results = self.ocr(img_array)
                 if ocr_results:
-                    scores = [conf for _, (_, conf) in ocr_results]
+                    # OCR confidences are float32; the scores below are reported as
+                    # floats (see ``as_coord``).
+                    scores = [as_coord(conf) for _, (_, conf) in ocr_results]
                     avg_score = sum(scores) / len(scores) if scores else 0
                     total_regions = len(scores)
                     combined_score = avg_score * (1 + TABLE_ORIENTATION_REGION_BONUS * min(total_regions, TABLE_ORIENTATION_REGION_CAP) / TABLE_ORIENTATION_REGION_CAP)
@@ -690,10 +729,10 @@ class RAGFlowPdfParser:
             mapped = [self._map_clockwise_rotated_point_to_original(x, y, angle, width, height) for x, y in points]
             xs = [p[0] for p in mapped]
             ys = [p[1] for p in mapped]
-            component["x0"] = min(xs) / ZM + crop_left / ZM
-            component["x1"] = max(xs) / ZM + crop_left / ZM
-            component["top"] = min(ys) / ZM + crop_top / ZM + self.page_cum_height[page]
-            component["bottom"] = max(ys) / ZM + crop_top / ZM + self.page_cum_height[page]
+            component["x0"] = as_coord(min(xs) / ZM + crop_left / ZM)
+            component["x1"] = as_coord(max(xs) / ZM + crop_left / ZM)
+            component["top"] = as_coord(min(ys) / ZM + crop_top / ZM + self.page_cum_height[page])
+            component["bottom"] = as_coord(max(ys) / ZM + crop_top / ZM + self.page_cum_height[page])
 
         tbcnt = np.cumsum(tbcnt)
         for i in range(len(tbcnt) - 1):
@@ -701,6 +740,9 @@ class RAGFlowPdfParser:
             for j, tb_items in enumerate(recos[tbcnt[i] : tbcnt[i + 1]]):
                 poss = pos[tbcnt[i] : tbcnt[i + 1]]
                 for it in tb_items:
+                    # The structure recogniser reads its boxes out of float32
+                    # tensors; everything downstream of here treats them as points.
+                    normalize_box_coords(it)
                     it["x0_rotated"] = it["x0"]
                     it["x1_rotated"] = it["x1"]
                     it["top_rotated"] = it["top"]
@@ -807,13 +849,14 @@ class RAGFlowPdfParser:
             for bbox, (text, conf) in ocr_results:
                 if conf < ROTATED_TABLE_MIN_CONFIDENCE:
                     continue
-                mapped = [self._map_clockwise_rotated_point_to_original(p[0], p[1], best_angle, table_w_px, table_h_px) for p in bbox]
+                mapped = [self._map_clockwise_rotated_point_to_original(as_coord(p[0]), as_coord(p[1]), best_angle, table_w_px, table_h_px) for p in bbox]
                 x_coords = [p[0] for p in mapped]
                 y_coords = [p[1] for p in mapped]
-                box_x0 = min(x_coords) / ZM
-                box_x1 = max(x_coords) / ZM
-                box_top = min(y_coords) / ZM
-                box_bottom = max(y_coords) / ZM
+                # The rotated-table OCR returns the same float32 boxes as the page OCR.
+                box_x0 = as_coord(min(x_coords) / ZM)
+                box_x1 = as_coord(max(x_coords) / ZM)
+                box_top = as_coord(min(y_coords) / ZM)
+                box_bottom = as_coord(max(y_coords) / ZM)
                 new_box = {
                     "text": text,
                     "x0": box_x0 + crop_left / ZM,
@@ -888,7 +931,18 @@ class RAGFlowPdfParser:
         bxs = [(line[0], line[1][0]) for line in bxs]
         bxs = Recognizer.sort_Y_firstly(
             [
-                {"x0": b[0][0] / ZM, "x1": b[1][0] / ZM, "top": b[0][1] / ZM, "text": "", "txt": t, "bottom": b[-1][1] / ZM, "chars": [], "page_number": pagenum}
+                {
+                    # ``detect`` returns float32 boxes: without the cast every box
+                    # this page builds would carry numpy scalars (see ``as_coord``).
+                    "x0": as_coord(b[0][0] / ZM),
+                    "x1": as_coord(b[1][0] / ZM),
+                    "top": as_coord(b[0][1] / ZM),
+                    "text": "",
+                    "txt": t,
+                    "bottom": as_coord(b[-1][1] / ZM),
+                    "chars": [],
+                    "page_number": pagenum,
+                }
                 for b, t in bxs
                 if b[0][0] <= b[1][0] and b[0][1] <= b[-1][1]
             ],
@@ -979,8 +1033,13 @@ class RAGFlowPdfParser:
         assert len(self.page_images) == len(self.boxes)
         self.boxes, self.page_layout = self.layouter(self.page_images, self.boxes, ZM, drop=drop)
         for i in range(len(self.boxes)):
-            self.boxes[i]["top"] += self.page_cum_height[self.boxes[i]["page_number"] - 1]
-            self.boxes[i]["bottom"] += self.page_cum_height[self.boxes[i]["page_number"] - 1]
+            box = self.boxes[i]
+            cum_height = self.page_cum_height[box["page_number"] - 1]
+            box["top"] += cum_height
+            box["bottom"] += cum_height
+            # The layouter returns the OCR boxes it was handed along with its own;
+            # normalising after the page offset is applied covers both.
+            normalize_box_coords(box)
 
     def _assign_column(self, boxes: list[dict[str, Any]], zoomin: int = DEFAULT_ZOOMIN) -> list[dict[str, Any]]:
         """Tag every box with ``col_id`` — its column on its page.
@@ -1375,6 +1434,7 @@ class RAGFlowPdfParser:
                 pn = list(pn)[0]
                 ht = self.page_cum_height[pn]
                 b = {"x0": np.min([b["x0"] for b in bxs]), "top": np.min([b["top"] for b in bxs]) - ht, "x1": np.max([b["x1"] for b in bxs]), "bottom": np.max([b["bottom"] for b in bxs]) - ht}
+                normalize_box_coords(b)
                 louts = [layout for layout in self.page_layout[pn] if layout["type"] == ltype]
                 ii = Recognizer.find_overlapped(b, louts, naive=True)
                 if ii is not None:
@@ -1508,10 +1568,10 @@ class RAGFlowPdfParser:
         """
 
         def width(b: dict[str, Any]) -> float:
-            return b["x1"] - b["x0"]
+            return as_coord(b["x1"] - b["x0"])
 
         def height(b: dict[str, Any]) -> float:
-            return b["bottom"] - b["top"]
+            return as_coord(b["bottom"] - b["top"])
 
         def usefull(b: dict[str, Any]) -> bool:
             if b.get("layout_type"):
@@ -1774,7 +1834,10 @@ class RAGFlowPdfParser:
             self.is_english = re.search(IS_ENGLISH_BOX_PATTERN, "".join(b["text"] for b in _evenly_spaced(bxes, IS_ENGLISH_SAMPLE_BOXES)))
 
         logging.debug(f"Is it English: {self.is_english}")
-        self.page_cum_height = np.cumsum(self.page_cum_height)
+        # ``tolist`` rather than the ndarray: these offsets are added to box
+        # coordinates on every page, and an ndarray element would turn each sum
+        # into a numpy scalar (see ``as_coord``). The values are identical.
+        self.page_cum_height = np.cumsum(self.page_cum_height).tolist()
         assert len(self.page_cum_height) == len(self.page_images) + 1
         if len(self.boxes) == 0 and zoomin < MAX_ZOOMIN_RETRY:
             self.__images__(fnm, zoomin * ZOOMIN_RETRY_FACTOR, page_from, page_to, callback)
@@ -1894,20 +1957,21 @@ class RAGFlowPdfParser:
                             insert_at += 1
                 else:
                     logging.debug("No text boxes available; append %s block directly.", layout_type)
-                self.boxes.insert(
-                    insert_at,
-                    {
-                        "page_number": pn + 1,
-                        "x0": left,
-                        "x1": right,
-                        "top": top + self.page_cum_height[pn],
-                        "bottom": bott + self.page_cum_height[pn],
-                        "layout_type": layout_type,
-                        "text": txt,
-                        "image": img,
-                        "positions": [[pn + 1, int(left), int(right), int(top), int(bott)]],
-                    },
-                )
+                table_or_figure_box = {
+                    "page_number": pn + 1,
+                    "x0": left,
+                    "x1": right,
+                    "top": top + self.page_cum_height[pn],
+                    "bottom": bott + self.page_cum_height[pn],
+                    "layout_type": layout_type,
+                    "text": txt,
+                    "image": img,
+                    "positions": [[pn + 1, int(left), int(right), int(top), int(bott)]],
+                }
+                # Table regions come from the structure recogniser, whose boxes are
+                # float32; this box goes on to be chunked.
+                normalize_box_coords(table_or_figure_box)
+                self.boxes.insert(insert_at, table_or_figure_box)
 
         for b in self.boxes:
             b["position_tag"] = self._line_tag(b, zoomin)
