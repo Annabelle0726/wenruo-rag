@@ -18,7 +18,7 @@ import sys
 sys.path.insert(0, "/ragflow")
 
 PROBE_TEXT = "线缆标准检索探针 fixed probe text"
-MODEL = "gemini-embedding-1.0"
+MODEL = "gemini-embedding-001"
 
 
 def fingerprint(key: str) -> str:
@@ -31,9 +31,9 @@ def classify(message: str) -> str:
         return "QUOTA_EXHAUSTED"
     if any(token in low for token in ("401", "403", "api key not valid", "invalid api key", "permission_denied", "unauthenticated")):
         return "INVALID"
-    if any(token in low for token in ("404", "not_found", "not found")):
-        return "ENDPOINT_FAILURE"
-    return "NOT_DETERMINED"
+    if any(token in low for token in ("404", "not_found", "not found", "endpoint")):
+        return "OTHER_PROVIDER_FAILURE"
+    return "OTHER_PROVIDER_FAILURE"
 
 
 def probe(alias: str, key: str) -> dict:
@@ -80,6 +80,7 @@ def probe(alias: str, key: str) -> dict:
                 "http_result": "provider call returned normally (SDK)",
                 "dimension": int(array.shape[0]),
                 "norm": round(float(np.linalg.norm(array)), 6),
+                "all_finite": bool(np.isfinite(array).all()),
                 "vector_sha256_16": hashlib.sha256(array.tobytes()).hexdigest()[:16],
                 "_vector": array,
             }

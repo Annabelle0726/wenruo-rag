@@ -607,3 +607,19 @@ Still undetermined and not guessed: remaining quota on either key and whether th
 Read-only: no DB or KB mutation, no credential or environment change, no re-embedding, no recreate, no deployment, no model-id switch, no P1 entry.
 
 Paths: phase_b_gemini_model_compat_audit.md, tools/scripts/gemini_model_compat_audit.py, AGENTS.md
+
+## Milestone - Final credential probe: KEY_1 QUOTA_EXHAUSTED, KEY_2 HEALTHY (3072), rotation candidate available, nothing executed
+
+final credential capacity probe for gemini-embedding-001: key one exhausted, key two healthy at 3072 dimensions
+
+Executed exactly two provider requests, one per credential, both through the deployed GeminiEmbed plain-string call path with the model id taken from production configuration. No model exploration and no plaintext key or vector recorded.
+
+KEY_1, the current production credential whose fingerprint matches the deployed config, returned 429 RESOURCE_EXHAUSTED and the deployment own layer classifies it as EmbeddingQuotaExhausted, so acceptance rule C2 trigger condition is satisfied by real provider output rather than only by an injected fixture. KEY_2 returned a healthy 3072 dimension vector, all finite, unit norm, so it is the same confirmed model and dimension compatible with the 3072 index: this is credential rotation, not model migration, and carries no re-index implication.
+
+Quota scope: independence is VERIFIED behaviourally, because at the same moment on the same model one credential was exhausted while the other succeeded, which excludes a shared quota. Residual limit stated: project identity cannot be read from these responses.
+
+Branch rule applied and nothing executed: SAFE_CREDENTIAL_ROTATION_CANDIDATE_AVAILABLE. No DB change, no credential installation, no rotation, no deployment, no recreate, no re-embedding, no real retrieval, production still running c50436820cb9.
+
+Live gate capacity is AVAILABLE but conditional on an authorised credential installation at the DB-backed model configuration, which is not an environment variable. The blocker changed character: it is no longer that no healthy dense leg can be shown, but that the healthy leg exists under a different credential than the one installed.
+
+Paths: phase_b_final_credential_probe_report.md, tools/scripts/credential_probe.py, AGENTS.md
