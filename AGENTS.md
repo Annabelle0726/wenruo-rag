@@ -459,3 +459,21 @@ Negative control: overall full, every leg explicit with no unresolved leg, zero 
 Honest status: P0-A complete, P0-B implemented in the repository, P0-C verified on the wired chain with zero external quota, and the production silent-degradation defect NOT closed until the container is rebuilt from a commit containing the producers and their four insertion points. No container file patched, no service restarted, no index or configuration touched.
 
 Paths: rag/retrieval/health.py, rag/retrieval/health_producers.py, test/unit_test/rag/retrieval/test_retrieval_health.py, tools/scripts/p0c_runtime_fault_injection.py, p0c_runtime_fault_injection_result.json, phase_b_p0b_p0c_report.md, AGENTS.md
+
+## Milestone - Phase B P0 deployment readiness audit (read-only; rebuild NOT ready)
+
+phase B P0 deployment readiness audit (read-only, no behaviour change)
+
+Verdicts: item 1 runtime path FAIL and blocked by revision drift; item 2 API backward compatibility PASS with two obligations; item 3 exception boundary PASS with one hard constraint; item 4 rollback ACTION REQUIRED because no rollback tag exists. Rebuild therefore NOT ready for approval.
+
+Item 1: the live path is confirmed, dialog_service imports retrieve_multi_route at line 53 and calls it at line 897, the package re-exports it, and the route fan-out with per-route isolation is on that chain, so the four insertion points are on a real path. The blocker is that the working tree is not the deployed retrieval revision: multi_route.py 337 lines, decomposition.py 396 and rerank.py 740 match the container exactly, but pipeline.py is 329 lines deployed against 475 in the tree, retrieve_multi_route sits at line 190 deployed against 307 in the tree, the tree adds a module-level cross_part_fallback that the deployment does not have, and _retrieve is a nested closure deployed against a module-level function in the tree. A rebuild from HEAD would therefore ship a retrieval-behaviour feature rather than pure health instrumentation.
+
+Item 2: no strict unpacking, key-set assertion, splatting or dict-length assumption exists in production; the only three strict-shape matches are my own diagnostic tooling and two test fixtures. Additive keys are already an established pattern in this codebase through generic_fallback, memory and pre_summary. Obligations: the additive key becomes visible inside the API response reference object so client tolerance must be confirmed, and the field must be attached at the retrieval entry rather than inside dialog_service post-processing.
+
+Item 3: the deployed policy isolates route failures deliberately, catching Exception and returning RouteResult with failed=True, so health recording belongs inside that existing handler. The producer helper catches Exception only, the same class, so propagation semantics are unchanged and BaseException still escapes. Binding rules recorded: reporter-only wiring, no new catching layer above the guard or around gather, no BaseException handling, and a live-gate check that a still-propagating exception reaches dialog_service unchanged.
+
+Item 4: only one image exists, my-wenruorag:latest with id c50436820cb9, and it is also the running container image, so no rollback tag is preserved. Preparation step, deliberately not executed in this read-only round, is to tag that id as my-wenruorag:rollback-pre-p0-20260927 and record the digest, to build P0 under a distinct immutable tag, and to recreate rather than restart. Also recorded: the negative control needs a working dense leg, so the deployment window must follow the daily embedding quota reset or the gate must be recorded as BLOCKED_BY_QUOTA.
+
+No retrieval behaviour changed, no code modified, no container file patched, no service restarted, no image tagged or rebuilt.
+
+Paths: phase_b_p0_deployment_readiness.md, AGENTS.md
