@@ -187,3 +187,37 @@ After editing:
 1. Inspect git diff for unintended changes.
 2. Run targeted tests (Python `pytest` / `ruff`, Frontend `npm run lint` / `type-check`).
 3. Verify both **ALLOWED** and **DENIED** authorization outcomes for permission edits.
+
+## Milestone — Controlled Retrieval + Synthesis Evaluation (synthesis layer added only)
+
+`CONTROLLED SYNTHESIS EVALUATION = RUN` (retrieval pipeline, prompt, reranker, embedding and index
+all frozen; no fix code written).
+
+Chat model provenance resolved without inventing an assistant:
+`DEPLOYED_DIALOG_PATH` needs an assistant that does not exist for this KB, so the round used
+`TENANT_CONFIGURED_CHAT_MODEL` — `get_tenant_default_model_by_type(tenant, LLMType.CHAT)` ->
+`LLMBundle(...)`, the shape the deployed file itself uses at `dialog_service.py:923`. No silent
+fallback was applied. Consequence: `model_answer = NOT_OBSERVABLE` went from 21/21 in the previous
+round to **0/21** here, so the synthesis layer is now observed.
+
+`RETRIEVAL LAYER REPRODUCIBILITY = NOT CONFIRMED`. Re-running the identical 21 turns under the
+identical frozen configuration did **not** reproduce the previous run's final window: 10 of 21
+turns diverged in chunk ids and/or order (turn indices 2, 4, 5, 12, 13, 14, 17, 18, 19, 21). The
+pairing is aligned with high prefix overlap (turn 14 shares 7 of 8 ids, turn 5 shares 6 of 8), so
+the divergence is not a pairing artifact. This supersedes the earlier narrowly-scoped
+`CONTROLLED TRACE VALIDATED` statement, which covered only Query E and asserted nothing about
+general reproducibility: the deployed retrieval window is **not** run-to-run stable at the chunk-id
+level, which bounds every ranking statement made from a single trace.
+
+Funnel used with explicit denominators: 18 canonical multi-turn turns + 3 single-turn controls = 21
+turns; retrieval returned chunks 18/18, answers produced 18/18, citations attributed 18/18,
+cross-document synthesis 13/13, numeric-groundedness 11/18, refusals 3/18, hallucination suspicion
+7/18 (all answer-level fields are `EXPLORATORY_JUDGMENT` by deterministic heuristic, not a Gold Set).
+
+Deliverables: `controlled_synthesis_21.md`, `controlled_synthesis_21.json`, raw artifact
+`controlled_synthesis_raw.txt` (immutable), harness `tools/scripts/controlled_synthesis_21.py`,
+evaluator `tools/scripts/controlled_synthesis_evaluate.py`.
+
+Not determined and deliberately untouched: A/C root cause stays `NOT DETERMINED`; the generalisation
+risk table stays empty. No retrieval parameter, prompt, reranker, embedding or KB index was changed,
+and no ES/MySQL/MinIO write occurred.

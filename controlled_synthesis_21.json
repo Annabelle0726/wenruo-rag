@@ -1,0 +1,3488 @@
+{
+  "tier": "RETRIEVAL (deployed retrieve_multi_route) + LLM SYNTHESIS (tenant chat model), no assistant configuration",
+  "chat_model_path": "TENANT_CONFIGURED_CHAT_MODEL (get_tenant_default_model_by_type(tenant, LLMType.CHAT) -> LLMBundle, the shape used at dialog_service.py:923)",
+  "multi_turn_context": "HARNESS_MANAGED_HISTORY",
+  "configuration_frozen": {
+    "similarity_threshold": 0.2,
+    "vector_similarity_weight": 0.6,
+    "routes_top_k": 12,
+    "final_top_n": 8,
+    "knn_top_k": 1024,
+    "max_sub_queries": 4,
+    "allow_dense_fallback": true
+  },
+  "retrieval_validation": {
+    "previous_turns_found": 21,
+    "current_turns": 21,
+    "turns_compared": 21,
+    "divergent_turns": 10,
+    "verdict": "DIVERGENCE_REPORTED",
+    "provenance": "OBSERVED (chunk_id list equality between the two frozen runs)",
+    "detail": [
+      {
+        "turn_index": 2,
+        "previous": [
+          "f6bf347f95c33598",
+          "7402cf6c99cbd67e",
+          "af100b79a9e9734d",
+          "a2aa88912e75ca47",
+          "6940892bba5934b6",
+          "545e7b340cc0f7c2",
+          "2491aa2ce5eacd8d",
+          "d17f1d620732e24d"
+        ],
+        "now": [
+          "f6bf347f95c33598",
+          "7402cf6c99cbd67e",
+          "ea4a0fbc49651bc5",
+          "af100b79a9e9734d",
+          "a2aa88912e75ca47",
+          "6940892bba5934b6",
+          "545e7b340cc0f7c2",
+          "2491aa2ce5eacd8d"
+        ],
+        "provenance": "OBSERVED (harness comparison)"
+      },
+      {
+        "turn_index": 4,
+        "previous": [
+          "bac8e77cef90c8cf",
+          "ff249ff52cf67152",
+          "a0bd8a6bde77b17e",
+          "af74d2eeaaf2c4a4",
+          "663de80696a67296",
+          "844f7e6b59d9764e",
+          "a14eb97907268118",
+          "5ab5e9b5f2bf95e9"
+        ],
+        "now": [
+          "bac8e77cef90c8cf",
+          "af74d2eeaaf2c4a4",
+          "a0bd8a6bde77b17e",
+          "bc2a6dfa54206eab",
+          "ff249ff52cf67152",
+          "cc4443ca2f4783ac",
+          "c7347587e61a3532",
+          "663de80696a67296"
+        ],
+        "provenance": "OBSERVED (harness comparison)"
+      },
+      {
+        "turn_index": 5,
+        "previous": [
+          "f224470a51f32350",
+          "a18b9160c4084d5f",
+          "48f12a5a8ce5eb6c",
+          "8b1911d054c3a036",
+          "c3a92b28cfd524d3",
+          "cc73de0f16418d16",
+          "090dfb645da31bf7",
+          "d5f07f5d24ec3cc7"
+        ],
+        "now": [
+          "f224470a51f32350",
+          "a18b9160c4084d5f",
+          "48f12a5a8ce5eb6c",
+          "8b1911d054c3a036",
+          "cc73de0f16418d16",
+          "090dfb645da31bf7",
+          "ff6344911eb4df75",
+          "d5f07f5d24ec3cc7"
+        ],
+        "provenance": "OBSERVED (harness comparison)"
+      },
+      {
+        "turn_index": 12,
+        "previous": [
+          "f224470a51f32350",
+          "a18b9160c4084d5f",
+          "c3a92b28cfd524d3",
+          "d5f07f5d24ec3cc7",
+          "ff6344911eb4df75",
+          "48f12a5a8ce5eb6c",
+          "d8277d37a03a2b0a",
+          "d79d92725b46b084"
+        ],
+        "now": [
+          "48f12a5a8ce5eb6c",
+          "bac8e77cef90c8cf",
+          "f224470a51f32350",
+          "91b65c311693d243",
+          "4859566265b332b6",
+          "8b1911d054c3a036",
+          "a18b9160c4084d5f",
+          "ea4a0fbc49651bc5"
+        ],
+        "provenance": "OBSERVED (harness comparison)"
+      },
+      {
+        "turn_index": 13,
+        "previous": [
+          "bac8e77cef90c8cf",
+          "43e96b415797394b",
+          "3fb0a03b92cc70d7",
+          "8065ad3f4096ca30",
+          "a0bd8a6bde77b17e",
+          "ff6344911eb4df75",
+          "a3e9d12dd321aec1",
+          "9b0947b801d49c2d"
+        ],
+        "now": [
+          "bac8e77cef90c8cf",
+          "43e96b415797394b",
+          "3fb0a03b92cc70d7",
+          "4859566265b332b6",
+          "109c57a8471be6fa",
+          "8065ad3f4096ca30",
+          "a3e9d12dd321aec1",
+          "9b0947b801d49c2d"
+        ],
+        "provenance": "OBSERVED (harness comparison)"
+      },
+      {
+        "turn_index": 14,
+        "previous": [
+          "6e574ac15bab9329",
+          "07f34402b3cdd4d9",
+          "3c3118930a4f6e39",
+          "5d52c3f6cbe9e4c5",
+          "91b65c311693d243",
+          "d19a079b425d93b4",
+          "877394408084e1be",
+          "3746a7eb6438f7fd"
+        ],
+        "now": [
+          "6e574ac15bab9329",
+          "07f34402b3cdd4d9",
+          "3c3118930a4f6e39",
+          "91b65c311693d243",
+          "5d52c3f6cbe9e4c5",
+          "d19a079b425d93b4",
+          "877394408084e1be",
+          "3746a7eb6438f7fd"
+        ],
+        "provenance": "OBSERVED (harness comparison)"
+      },
+      {
+        "turn_index": 17,
+        "previous": [
+          "d19a079b425d93b4",
+          "9fa9e164a3e3ca7a",
+          "07f34402b3cdd4d9",
+          "6e574ac15bab9329",
+          "834c0774c8fad3e2",
+          "3fb0a03b92cc70d7",
+          "d79d92725b46b084",
+          "0b4e3c1a73c1e334"
+        ],
+        "now": [
+          "9fa9e164a3e3ca7a",
+          "3fb0a03b92cc70d7",
+          "d19a079b425d93b4",
+          "07f34402b3cdd4d9",
+          "6e574ac15bab9329",
+          "834c0774c8fad3e2",
+          "d79d92725b46b084",
+          "0b4e3c1a73c1e334"
+        ],
+        "provenance": "OBSERVED (harness comparison)"
+      },
+      {
+        "turn_index": 18,
+        "previous": [
+          "ff6344911eb4df75",
+          "a18b9160c4084d5f",
+          "d5f07f5d24ec3cc7",
+          "f224470a51f32350",
+          "d79d92725b46b084",
+          "d8277d37a03a2b0a",
+          "ecaeb84e531f4871",
+          "809afdd0e1b83482"
+        ],
+        "now": [
+          "a18b9160c4084d5f",
+          "d79d92725b46b084",
+          "f224470a51f32350",
+          "d8277d37a03a2b0a",
+          "ecaeb84e531f4871",
+          "8b1911d054c3a036",
+          "809afdd0e1b83482",
+          "ff6344911eb4df75"
+        ],
+        "provenance": "OBSERVED (harness comparison)"
+      },
+      {
+        "turn_index": 19,
+        "previous": [
+          "bac8e77cef90c8cf",
+          "ff249ff52cf67152",
+          "af74d2eeaaf2c4a4",
+          "109c57a8471be6fa",
+          "bc2a6dfa54206eab",
+          "cc4443ca2f4783ac",
+          "a6989cb86469df8a",
+          "a14eb97907268118"
+        ],
+        "now": [
+          "bac8e77cef90c8cf",
+          "af74d2eeaaf2c4a4",
+          "109c57a8471be6fa",
+          "43e96b415797394b",
+          "3fb0a03b92cc70d7",
+          "ff249ff52cf67152",
+          "bc2a6dfa54206eab",
+          "cc4443ca2f4783ac"
+        ],
+        "provenance": "OBSERVED (harness comparison)"
+      },
+      {
+        "turn_index": 21,
+        "previous": [
+          "48f12a5a8ce5eb6c",
+          "c3a92b28cfd524d3",
+          "d5f07f5d24ec3cc7",
+          "ff6344911eb4df75",
+          "43e96b415797394b",
+          "8065ad3f4096ca30",
+          "646ab90775aa14a5",
+          "a0bd8a6bde77b17e"
+        ],
+        "now": [
+          "48f12a5a8ce5eb6c",
+          "646ab90775aa14a5",
+          "7de0deabdfbdccdc",
+          "43e96b415797394b",
+          "c3a92b28cfd524d3",
+          "d5f07f5d24ec3cc7",
+          "8065ad3f4096ca30",
+          "ff6344911eb4df75"
+        ],
+        "provenance": "OBSERVED (harness comparison)"
+      }
+    ]
+  },
+  "output_funnel": {
+    "denominator_note": "18 canonical multi-turn turns (3 sessions x 6 rounds) + 3 single-turn controls = 21 turns; the funnel below uses the 18 canonical turns as its denominator and reports the controls separately",
+    "turns_total": 18,
+    "retrieval_returned_chunks": "18/18 (100%)",
+    "retrieval_returned_spanning_target_specs": "18/18 (100%)",
+    "answer_produced": "18/18 (100%)",
+    "answer_grounded_without_unsupported_numbers": "11/18 (61%)",
+    "citation_attribution_correct": "18/18 (100%)",
+    "cross_document_synthesis_success": "13/13 (100%)",
+    "refusals": "3/18 (17%)",
+    "hallucination_suspicion": "7/18 (39%)",
+    "provenance": "OBSERVED + EXPLORATORY_JUDGMENT (deterministic heuristic, not a Gold Set)"
+  },
+  "answers_unobservable": 0,
+  "session_B_deep_dive": {
+    "turns": [
+      {
+        "round": 1,
+        "user_query": "220kV 三芯海底电缆一般有哪些主要结构？",
+        "retrieved_parts": [
+          "第3部分",
+          "第2部分",
+          "第2部分",
+          "第3部分",
+          "第3部分",
+          "第1部分",
+          "第2部分",
+          "第1部分"
+        ],
+        "labels": {
+          "answer_produced": "YES",
+          "refusal": "NONE",
+          "citation_attribution": "CORRECT",
+          "groundedness": "SUPPORTED",
+          "completeness": "COMPLETE",
+          "cross_document_synthesis": "SUCCESS",
+          "hallucination_suspicion": "NO",
+          "unsupported_claims": [],
+          "claims": [
+            {
+              "claim": "11",
+              "supporting_chunk_id": "b5aaf72bcd33d44a",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "2026",
+              "supporting_chunk_id": "3fb0a03b92cc70d7",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "220",
+              "supporting_chunk_id": "d1d75672f2dbc333",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "5.1",
+              "supporting_chunk_id": "bac8e77cef90c8cf",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "73286.1",
+              "supporting_chunk_id": "bac8e77cef90c8cf",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            }
+          ],
+          "context_parts": [
+            "第1部分",
+            "第2部分",
+            "第3部分"
+          ],
+          "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+        },
+        "answer_head": "220kV三芯海底电缆的主要结构，根据国家电网企业标准Q/GDW 73286.1—2026《220kV海底电力电缆系统采购标准 第1部分：通用技术规范》第5.1.2条的规定，一般包括以下结构层：\n\n- **导体**\n- **线芯阻水结构**\n- **导体屏蔽层**\n- **绝缘层**\n- **绝缘屏蔽层**\n- **阻水缓冲层**\n- **金属套**\n- **外护套**\n- **成缆和填充**\n- **光纤单元**\n- **内衬层**\n"
+      },
+      {
+        "round": 2,
+        "user_query": "铠装层有什么要求？",
+        "retrieved_parts": [
+          "第3部分",
+          "第3部分",
+          "第1部分",
+          "第1部分",
+          "第1部分",
+          "第1部分",
+          "第1部分",
+          "第3部分"
+        ],
+        "labels": {
+          "answer_produced": "YES",
+          "refusal": "NONE",
+          "citation_attribution": "CORRECT",
+          "groundedness": "SUPPORTED",
+          "completeness": "COMPLETE",
+          "cross_document_synthesis": "NOT_NEEDED",
+          "hallucination_suspicion": "NO",
+          "unsupported_claims": [],
+          "claims": [
+            {
+              "claim": "0.01",
+              "supporting_chunk_id": "663de80696a67296",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "1.5",
+              "supporting_chunk_id": "ff249ff52cf67152",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "12",
+              "supporting_chunk_id": "c7347587e61a3532",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "13",
+              "supporting_chunk_id": "a0bd8a6bde77b17e",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "2.0",
+              "supporting_chunk_id": "bc2a6dfa54206eab",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "2.5",
+              "supporting_chunk_id": "bc2a6dfa54206eab",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "2026",
+              "supporting_chunk_id": "bc2a6dfa54206eab",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "220",
+              "supporting_chunk_id": "a0bd8a6bde77b17e",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "3.0",
+              "supporting_chunk_id": "bc2a6dfa54206eab",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "3082",
+              "supporting_chunk_id": "ff249ff52cf67152",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "32346.1",
+              "supporting_chunk_id": "cc4443ca2f4783ac",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "4.0",
+              "supporting_chunk_id": "bc2a6dfa54206eab",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "5.0",
+              "supporting_chunk_id": "ff249ff52cf67152",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "5.1",
+              "supporting_chunk_id": "bc2a6dfa54206eab",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "6.0",
+              "supporting_chunk_id": "bc2a6dfa54206eab",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "7.0",
+              "supporting_chunk_id": "bc2a6dfa54206eab",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "73286.1",
+              "supporting_chunk_id": "bc2a6dfa54206eab",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "8.0",
+              "supporting_chunk_id": "bc2a6dfa54206eab",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            }
+          ],
+          "context_parts": [
+            "第1部分",
+            "第3部分"
+          ],
+          "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+        },
+        "answer_head": "220kV海底电缆的铠装层，标准里规定得还是挺细的，我按Q/GDW 73286.1—2026《220kV海底电力电缆系统采购标准 第1部分：通用技术规范》第5.1.12、5.1.13条给你梳理一下：\n\n**一、铠装层下面得有内衬层**\n\n金属丝铠装层下应设内衬层，采用**聚丙烯绳绕包**，并在外面均匀涂敷沥青防腐材料。内衬层的近似厚度**不小于1.5 mm**。\n\n**二、铠装材料**\n\n金属丝铠装材料采用**镀锌钢丝**或者**铜丝*"
+      },
+      {
+        "round": 3,
+        "user_query": "内衬层厚度呢？",
+        "retrieved_parts": [
+          "第3部分",
+          "第2部分",
+          "第1部分",
+          "第3部分",
+          "第3部分",
+          "第1部分",
+          "第2部分",
+          "第1部分"
+        ],
+        "labels": {
+          "answer_produced": "YES",
+          "refusal": "NONE",
+          "citation_attribution": "CORRECT",
+          "groundedness": "SUPPORTED",
+          "completeness": "COMPLETE",
+          "cross_document_synthesis": "NOT_NEEDED",
+          "hallucination_suspicion": "NO",
+          "unsupported_claims": [],
+          "claims": [
+            {
+              "claim": "1.5",
+              "supporting_chunk_id": "844f7e6b59d9764e",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "12",
+              "supporting_chunk_id": "844f7e6b59d9764e",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "2026",
+              "supporting_chunk_id": "a14eb97907268118",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "220",
+              "supporting_chunk_id": "844f7e6b59d9764e",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "5.1",
+              "supporting_chunk_id": "ff249ff52cf67152",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "73286.1",
+              "supporting_chunk_id": "ff249ff52cf67152",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "73286.2",
+              "supporting_chunk_id": "a14eb97907268118",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "73286.3",
+              "supporting_chunk_id": "844f7e6b59d9764e",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            }
+          ],
+          "context_parts": [
+            "第1部分",
+            "第2部分",
+            "第3部分"
+          ],
+          "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+        },
+        "answer_head": "内衬层的厚度要求是这样的：\n\n根据Q/GDW 73286.1—2026《220kV海底电力电缆系统采购标准 第1部分：通用技术规范》第5.1.12条，内衬层采用**聚丙烯绳绕包**，并要在外面均匀涂敷沥青防腐材料，内衬层的近似厚度**不小于1.5 mm**。\n\n这个数值在专用技术规范的参数表里也能对应上：\n\n- **三芯海缆**（Q/GDW 73286.3）表1中，内衬层平均厚度要求**≥1.5 mm**，材料为聚丙烯绳绕包层，并在外面"
+      },
+      {
+        "round": 4,
+        "user_query": "这个数值是在哪份规范里规定的？",
+        "retrieved_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分",
+          "第1部分",
+          "第1部分",
+          "第1部分",
+          "第1部分",
+          "第1部分"
+        ],
+        "labels": {
+          "answer_produced": "YES",
+          "refusal": "NONE",
+          "citation_attribution": "CORRECT",
+          "groundedness": "SUPPORTED",
+          "completeness": "COMPLETE",
+          "cross_document_synthesis": "SUCCESS",
+          "hallucination_suspicion": "NO",
+          "unsupported_claims": [],
+          "claims": [
+            {
+              "claim": "1.5",
+              "supporting_chunk_id": "c3a92b28cfd524d3",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "12",
+              "supporting_chunk_id": "ea4a0fbc49651bc5",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] GB/T 3",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "2026",
+              "supporting_chunk_id": "48f12a5a8ce5eb6c",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "220",
+              "supporting_chunk_id": "8b1911d054c3a036",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 3",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "5.1",
+              "supporting_chunk_id": "c3a92b28cfd524d3",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "73286.1",
+              "supporting_chunk_id": "8b1911d054c3a036",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 3",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "73286.2",
+              "supporting_chunk_id": "f224470a51f32350",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "73286.3",
+              "supporting_chunk_id": "a18b9160c4084d5f",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            }
+          ],
+          "context_parts": [
+            "第1部分",
+            "第2部分",
+            "第3部分"
+          ],
+          "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+        },
+        "answer_head": "这个**不小于1.5 mm**的内衬层厚度要求，出处是在通用技术规范里：\n\n**Q/GDW 73286.1—2026《220kV海底电力电缆系统采购标准 第1部分：通用技术规范》第5.1.12条。**\n\n另外，两个专用技术规范的表1里也有对应的参数要求，可以互相印证：\n\n- **Q/GDW 73286.2—2026**《220kV海底电力电缆系统采购标准 第2部分：220kV单芯海底电力电缆系统专用技术规范》表1；\n- **Q/GDW "
+      },
+      {
+        "round": 5,
+        "user_query": "三芯专用规范里面没有吗？",
+        "retrieved_parts": [
+          "第3部分",
+          "第3部分",
+          "第3部分",
+          "第2部分",
+          "第2部分",
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "labels": {
+          "answer_produced": "YES",
+          "refusal": "NONE",
+          "citation_attribution": "CORRECT",
+          "groundedness": "PARTIALLY_SUPPORTED",
+          "completeness": "COMPLETE",
+          "cross_document_synthesis": "SUCCESS",
+          "hallucination_suspicion": "YES",
+          "unsupported_claims": [
+            "12",
+            "2026"
+          ],
+          "claims": [
+            {
+              "claim": "1.5",
+              "supporting_chunk_id": "c3a92b28cfd524d3",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "12",
+              "supporting_chunk_id": "NOT_OBSERVABLE",
+              "supporting_excerpt": "NOT_OBSERVABLE",
+              "verdict": "NOT_FOUND",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "2026",
+              "supporting_chunk_id": "NOT_OBSERVABLE",
+              "supporting_excerpt": "NOT_OBSERVABLE",
+              "verdict": "NOT_FOUND",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "220",
+              "supporting_chunk_id": "a18b9160c4084d5f",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "5.1",
+              "supporting_chunk_id": "c3a92b28cfd524d3",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "73286.3",
+              "supporting_chunk_id": "a18b9160c4084d5f",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            }
+          ],
+          "context_parts": [
+            "第1部分",
+            "第2部分",
+            "第3部分"
+          ],
+          "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+        },
+        "answer_head": "有的，三芯专用规范里也有。\n\n**Q/GDW 73286.3—2026**《220kV海底电力电缆系统采购标准 第3部分：220kV三芯海底电力电缆系统专用技术规范》的**表1**里，就明确列出了内衬层的参数要求——平均厚度**≥1.5 mm**，材料为聚丙烯绳绕包层，并在外面均匀涂沥青（或其他防腐材料）。\n\n所以三芯规范里不但有，数值还和通用规范的5.1.12条完全对得上，都是**不小于1.5 mm**。\n\n刚才我上一条回答里也把三芯"
+      },
+      {
+        "round": 6,
+        "user_query": "那你把专用规范和通用规范的要求区分开告诉我。",
+        "retrieved_parts": [
+          "第1部分",
+          "第1部分",
+          "第2部分",
+          "第1部分",
+          "第1部分",
+          "第1部分",
+          "第3部分",
+          "第1部分"
+        ],
+        "labels": {
+          "answer_produced": "YES",
+          "refusal": "NONE",
+          "citation_attribution": "CORRECT",
+          "groundedness": "PARTIALLY_SUPPORTED",
+          "completeness": "COMPLETE",
+          "cross_document_synthesis": "SUCCESS",
+          "hallucination_suspicion": "YES",
+          "unsupported_claims": [
+            "1.5"
+          ],
+          "claims": [
+            {
+              "claim": "1.5",
+              "supporting_chunk_id": "NOT_OBSERVABLE",
+              "supporting_excerpt": "NOT_OBSERVABLE",
+              "verdict": "NOT_FOUND",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "12",
+              "supporting_chunk_id": "91b65c311693d243",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "2026",
+              "supporting_chunk_id": "48f12a5a8ce5eb6c",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "220",
+              "supporting_chunk_id": "48f12a5a8ce5eb6c",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "5.1",
+              "supporting_chunk_id": "bac8e77cef90c8cf",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "73286.1",
+              "supporting_chunk_id": "48f12a5a8ce5eb6c",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "73286.2",
+              "supporting_chunk_id": "f224470a51f32350",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            },
+            {
+              "claim": "73286.3",
+              "supporting_chunk_id": "a18b9160c4084d5f",
+              "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+              "verdict": "SUPPORTED",
+              "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+            }
+          ],
+          "context_parts": [
+            "第1部分",
+            "第2部分",
+            "第3部分"
+          ],
+          "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+        },
+        "answer_head": "好的，我把这三份规范里跟内衬层厚度有关的要求分开列一下：\n\n**一、通用技术规范**\n\n**Q/GDW 73286.1—2026《220kV海底电力电缆系统采购标准 第1部分：通用技术规范》第5.1.12条：**\n\n- 金属丝铠装层下应设内衬层；\n- 采用聚丙烯绳绕包，并在外面均匀涂敷沥青防腐材料；\n- 内衬层的近似厚度**不小于1.5 mm**。\n\n这是给出原则性要求的地方。\n\n**二、单芯专用技术规范**\n\n**Q/GDW 7328"
+      }
+    ],
+    "mid_session_chunk_stability": "OBSERVED",
+    "provenance": "OBSERVED (deployed trace) + EXPLORATORY_JUDGMENT (labels)"
+  },
+  "single_turn_controls": [
+    {
+      "user_query": "220kV 单芯海底电缆的导体、内衬层、铠装层技术要求是什么？",
+      "retrieved_parts": [
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第2部分",
+        "第2部分",
+        "第1部分",
+        "第1部分",
+        "第1部分"
+      ],
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "PARTIAL",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "NOT_NEEDED",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "0.9",
+            "supporting_chunk_id": "af74d2eeaaf2c4a4",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "1.5",
+            "supporting_chunk_id": "af74d2eeaaf2c4a4",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "220",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "300",
+            "supporting_chunk_id": "af74d2eeaaf2c4a4",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "32346.1",
+            "supporting_chunk_id": "af74d2eeaaf2c4a4",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3956",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "6.0",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "7.0",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "8.0",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "answer_head": "好的，我来帮您梳理一下220kV单芯海底电缆在这几个结构层上的技术要求。\n\n**先说导体。** 根据Q/GDW 73286.1的规定，海缆导体采用TR型软铜线，结构上是符合GB/T 3956第2类的紧压绞合圆形结构，而且要带阻水结构。导体表面要光洁，不能有油污、毛刺、锐边或者断裂的单线。绞合导体的单线允许焊接，但同一层内相邻两个接头之间的距离不能小于300mm，整芯或整股焊接是绝对不允许的。导体紧压系数要求不小于0.9，挤包绝缘层之前导"
+    },
+    {
+      "user_query": "220kV 三芯海底电缆的内衬层厚度要求是什么？",
+      "retrieved_parts": [
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第3部分",
+        "第3部分"
+      ],
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "NOT_NEEDED",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "1.5",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "12",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "220",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.1",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.3",
+            "supporting_chunk_id": "c7347587e61a3532",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "answer_head": "根据 Q/GDW 73286.1《220kV海底电力电缆系统采购标准 第1部分：通用技术规范》第5.1.12条的规定，海底电缆金属丝铠装层下应设置内衬层，具体要求是：内衬层采用聚丙烯绳绕包，并在其外面均匀涂敷沥青防腐材料，内衬层的近似厚度不小于1.5 mm。\n\n需要注意的是，这是针对海底电缆的通用要求，适用于包括三芯在内的各种海底电缆结构。如果您需要三芯海缆更有针对性的专用技术规范内容，建议进一步查阅 Q/GDW 73286.3 的相关"
+    },
+    {
+      "user_query": "Q/GDW 73286 的通用规范与单芯/三芯专用规范分别规定什么？",
+      "retrieved_parts": [
+        "第1部分",
+        "第2部分",
+        "第2部分",
+        "第2部分",
+        "第1部分",
+        "第2部分",
+        "第3部分",
+        "第3部分"
+      ],
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "NOT_NEEDED",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "220",
+            "supporting_chunk_id": "48f12a5a8ce5eb6c",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286",
+            "supporting_chunk_id": "48f12a5a8ce5eb6c",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "48f12a5a8ce5eb6c",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.2",
+            "supporting_chunk_id": "646ab90775aa14a5",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.3",
+            "supporting_chunk_id": "8065ad3f4096ca30",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "answer_head": "Q/GDW 73286 这套标准是分层设计的，通用规范和专用规范各有分工、配套使用。具体来说：\n\n**通用技术规范（第1部分，Q/GDW 73286.1）**\n它管的是一整类物资的“共性要求”。按标准的编写原则，通用技术规范针对的是一类招标物资，提出这一类物资共同的、通用的技术规定，不针对某一种具体采购对象。它和对应的专用技术规范配套，共同组成招标采购中的规范技术文件。\n\n**专用技术规范（第2部分、第3部分）**\n它管的是“个性化要求"
+    }
+  ],
+  "turns": [
+    {
+      "session": "A",
+      "user_query": "Q/GDW 73286.2-2026 是什么标准？",
+      "retrieved_chunk_ids": [
+        "646ab90775aa14a5",
+        "43e96b415797394b",
+        "3fb0a03b92cc70d7",
+        "455737939ddb4a47",
+        "7de0deabdfbdccdc",
+        "0b4e3c1a73c1e334",
+        "af100b79a9e9734d",
+        "9ac2797e006f5b84"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用"
+      ],
+      "retrieved_parts": [
+        "第2部分",
+        "第2部分",
+        "第2部分",
+        "第2部分",
+        "第2部分",
+        "第1部分",
+        "第2部分",
+        "第2部分"
+      ],
+      "final_context_chars": 3649,
+      "model_answer": "Q/GDW 73286.2—2026 是国家电网有限公司的企业标准，全称是《220 kV海底电力电缆系统采购标准 第2部分：220 kV单芯海底电力电缆系统专用技术规范》。\n\n这份标准代替了旧版 Q/GDW 13286.2—2019，主要针对 220 kV 单芯海底电力电缆系统，规定了以下几块内容：\n\n- **第4章**是标准技术参数表，包括电缆结构、电气、非电气、其他技术参数，以及户外终端、GIS终端、各类接头等参数，要求投标人逐项填写保证值，不能留空，也不能简单写\"响应\"了事。\n- **第5章**是组件材料配置表，规定海底电力电缆组件材料的配置内容。\n- **第6章**是使用环境条件表，规定海底电力电缆的使用环境条件。\n- **第7章**是投标人应提供的设备图纸及资料表。\n\n另外需要提一句，Q/GDW 73286 这个标准是个系列，一共分了三个部分：第1部分是通用技术规范，第2部分就是您问的这个单芯海底电缆专用技术规范，第3部分是三芯海底电力电缆系统专用技术规范。\n\n还有一点值得注意：第1部分和第2部分如果有冲突，以第2部分（也就是这份 Q/GDW 73286.2）为准，说明专用技术规范的优先级更高。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "NOT_NEEDED",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "13286.2",
+            "supporting_chunk_id": "43e96b415797394b",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2019",
+            "supporting_chunk_id": "43e96b415797394b",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2026",
+            "supporting_chunk_id": "646ab90775aa14a5",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "220",
+            "supporting_chunk_id": "646ab90775aa14a5",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286",
+            "supporting_chunk_id": "646ab90775aa14a5",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.2",
+            "supporting_chunk_id": "646ab90775aa14a5",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 1
+    },
+    {
+      "session": "A",
+      "user_query": "这个标准适用于什么类型的电缆？",
+      "retrieved_chunk_ids": [
+        "f6bf347f95c33598",
+        "7402cf6c99cbd67e",
+        "ea4a0fbc49651bc5",
+        "af100b79a9e9734d",
+        "a2aa88912e75ca47",
+        "6940892bba5934b6",
+        "545e7b340cc0f7c2",
+        "2491aa2ce5eacd8d"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用"
+      ],
+      "retrieved_parts": [
+        "第1部分",
+        "第3部分",
+        "第1部分",
+        "第2部分",
+        "第3部分",
+        "第2部分",
+        "第2部分",
+        "第3部分"
+      ],
+      "final_context_chars": 6169,
+      "model_answer": "根据标准文件的内容，Q/GDW 73286.2—2026 适用的对象很明确，可以从几个维度来说：\n\n**电压等级**：220 kV 交联聚乙烯绝缘海底电力电缆系统。\n\n**芯数**：单芯。这个标准的全称里就写明了\"单芯海底电力电缆系统专用技术规范\"，所以它专门管的是单芯结构的海底电缆，三芯的对应的是第3部分（Q/GDW 73286.3）。\n\n**敷设环境**：海底。\n\n简单说，这份标准就是针对 **220 kV 单芯交联聚乙烯绝缘海底电力电缆系统** 的采购而制定的专用技术规范。\n\n如果您做的是三芯海底电缆的项目，那要看的是 Q/GDW 73286.3；如果是问通用的、不分单芯三芯的基础要求，那对应的是 Q/GDW 73286.1 通用技术规范。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "NOT_NEEDED",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "2026",
+            "supporting_chunk_id": "ea4a0fbc49651bc5",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] GB/T 3",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "220",
+            "supporting_chunk_id": "f6bf347f95c33598",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 本文件适用于",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "f6bf347f95c33598",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 本文件适用于",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.2",
+            "supporting_chunk_id": "ea4a0fbc49651bc5",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] GB/T 3",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.3",
+            "supporting_chunk_id": "7402cf6c99cbd67e",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 2
+    },
+    {
+      "session": "A",
+      "user_query": "那 220kV 单芯海底电缆的主要结构有哪些？",
+      "retrieved_chunk_ids": [
+        "b5aaf72bcd33d44a",
+        "3fb0a03b92cc70d7",
+        "d1d75672f2dbc333",
+        "bac8e77cef90c8cf",
+        "43e96b415797394b",
+        "83d1e77c201be56a",
+        "ab96130b7a5d5c8f",
+        "e518c08d493651a2"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用"
+      ],
+      "retrieved_parts": [
+        "第2部分",
+        "第2部分",
+        "第3部分",
+        "第1部分",
+        "第2部分",
+        "第2部分",
+        "第2部分",
+        "第2部分"
+      ],
+      "final_context_chars": 8306,
+      "model_answer": "根据 Q/GDW 73286.1 通用技术规范第 5.1.2 条的规定，220 kV 海底电缆应具备以下主要结构层：\n\n导体、线芯阻水、导体屏蔽层、绝缘层、绝缘屏蔽层、阻水缓冲层、金属套、外护套、成缆和填充、光纤单元、内衬层、铠装层、外被层。\n\n另外补充两点：\n- 如果是光纤复合缆，还必须另外配置光纤单元。\n- 标准 5.1.1 条同时明确，海底电缆采用**单芯铜导体结构，交联聚乙烯绝缘**。\n\n至于导体本身的具体要求，5.1.4 条也有规定：材料应采用符合 GB/T 3956 的 TR 型软铜线，结构上采用 GB/T 3956 第 2 类紧压绞合圆形结构并具有阻水性能，表面要求光洁、无油污、无毛刺锐边等问题。\n\n不过这里要说明一下，以上是通用技术规范（第1部分）里给出的结构框架。至于各结构层的具体尺寸、材质厚度等细节参数，属于专用技术规范里技术参数表的内容，当前检索到的片段暂未完整覆盖，如果您需要某个具体结构层的参数，建议补充关键词或指定表号再查。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "UNNECESSARY",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "SUCCESS",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "220",
+            "supporting_chunk_id": "b5aaf72bcd33d44a",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3956",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.1",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 3
+    },
+    {
+      "session": "A",
+      "user_query": "导体、内衬层和铠装层分别有什么技术要求？",
+      "retrieved_chunk_ids": [
+        "bac8e77cef90c8cf",
+        "af74d2eeaaf2c4a4",
+        "a0bd8a6bde77b17e",
+        "bc2a6dfa54206eab",
+        "ff249ff52cf67152",
+        "cc4443ca2f4783ac",
+        "c7347587e61a3532",
+        "663de80696a67296"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+      ],
+      "retrieved_parts": [
+        "第1部分",
+        "第1部分",
+        "第3部分",
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第3部分",
+        "第1部分"
+      ],
+      "final_context_chars": 4740,
+      "model_answer": "根据 Q/GDW 73286.1 通用技术规范的要求，我逐项给您说说。\n\n**一、导体（5.1.4 条）**\n\n导体要符合 GB/T 3956 和 GB/T 32346.2 的规定，具体要求是：\n\n- 材料用符合 GB/T 3956 的 TR 型软铜线；\n- 结构采用 GB/T 3956 第 2 类紧压绞合圆形结构，并且要带阻水结构；\n- 表面得光洁，不能有油污，也不能有会损伤屏蔽和绝缘的毛刺、锐边，更不能有凸起或断裂的单线；\n- 各种绞合导体不允许整芯或整股焊接。单线可以焊，但同一层内相邻两个接头的距离不得小于 300 mm；\n- 导体紧压系数不小于 0.9；\n- 挤包绝缘层前，导体必须预加热；\n- 直流电阻要符合 GB/T 3956 对第 2 类紧压绞合导体的规定；\n- 纵向阻水性能要符合 GB/T 32346.1。\n\n**二、内衬层（5.1.12 条）**\n\n- 位置在金属丝铠装层下面；\n- 采用聚丙烯绳绕包；\n- 内衬层外面要均匀涂敷沥青防腐材料；\n- 近似厚度不小于 1.5 mm。\n\n**三、铠装层（5.1.13、5.1.7 条）**\n\n先说材料：采用镀锌钢丝或者铜丝，或者其它经过验证耐海水腐蚀的金属材料。镀锌钢丝要符合 GB/T 3082。\n\n芯数不同，选材倾向也不同：\n- 三芯电缆宜采用镀锌钢丝铠装，钢丝可以是圆钢丝也可以是扁钢丝；\n- 单芯电缆采用铜丝或镀锌钢丝铠装。如果是镀锌钢丝铠装，要充分考虑钢丝铠装层的交流损耗以及对电缆载流量的影响。\n\n关于尺寸（5.1.7 条）：\n- 铠装圆钢丝直径一般为 4.0 mm、5.0 mm、6.0 mm、8.0 mm（这个直径不含钢丝上可能有的非金属防蚀层），如果业主有需求或协商同意，允许用比规定直径更大的钢丝；\n- 铠装扁铜丝厚度一般为 2.0 mm、2.5 mm、3.0 mm，同样，业主需求或协商同意的话，允许用比规定更厚的铜线；\n- 铠装圆铜丝直径一般应为 6.0 mm、7.0 mm 和 8.0 mm，如招标人另有要求，允许用比规定直径更大的铜丝。\n\n另外，金属丝铠装要很紧密，相邻金属线之间的间隙要很小，必要时可以在铠装外再绕一条金属带。\n\n还有一点提醒您注意，铠装层的测量要求（6.6.8 条）也有规定：圆铠装丝尺寸低于标称值的量不能超过 5%，扁铠装丝不能超过 8%。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "SUCCESS",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "0.9",
+            "supporting_chunk_id": "af74d2eeaaf2c4a4",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "1.5",
+            "supporting_chunk_id": "af74d2eeaaf2c4a4",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "12",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "13",
+            "supporting_chunk_id": "a0bd8a6bde77b17e",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2.0",
+            "supporting_chunk_id": "af74d2eeaaf2c4a4",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2.5",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3.0",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "300",
+            "supporting_chunk_id": "af74d2eeaaf2c4a4",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3082",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "32346.1",
+            "supporting_chunk_id": "af74d2eeaaf2c4a4",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "32346.2",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3956",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "4.0",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.0",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.1",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "6.0",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "6.6",
+            "supporting_chunk_id": "663de80696a67296",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "7.0",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "8.0",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 4
+    },
+    {
+      "session": "A",
+      "user_query": "这些要求都是这个专用技术规范自己规定的吗？",
+      "retrieved_chunk_ids": [
+        "f224470a51f32350",
+        "a18b9160c4084d5f",
+        "48f12a5a8ce5eb6c",
+        "8b1911d054c3a036",
+        "cc73de0f16418d16",
+        "090dfb645da31bf7",
+        "ff6344911eb4df75",
+        "d5f07f5d24ec3cc7"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用"
+      ],
+      "retrieved_parts": [
+        "第2部分",
+        "第3部分",
+        "第1部分",
+        "第1部分",
+        "第2部分",
+        "第3部分",
+        "第3部分",
+        "第2部分"
+      ],
+      "final_context_chars": 5196,
+      "model_answer": "不是的，这里得给您说清楚——我刚才回答的那些技术要求，来源是 **Q/GDW 73286.1 通用技术规范**，不是第2部分（也就是您最开始问的 Q/GDW 73286.2 单芯专用技术规范）。\n\n这两份文件的关系是这样的：\n\nQ/GDW 73286 这个系列，一份通用技术规范 + 对应的一个或多个专用技术规范，共同组成一个独立的标准号。通用技术规范提出的是对**一类物资的共性要求**，专用技术规范提出的是对**某一种具体采购对象**的个性化要求。\n\n具体到导体、内衬层、铠装层这些结构层的技术要求，属于共性部分，所以是写在通用技术规范（第1部分）里的。第2部分专用技术规范主要管的是——220 kV 单芯海底电缆的个性化内容，比如单芯专用的技术参数表（第4章）、组件材料配置表（第5章）、使用环境条件表（第6章）、投标人应提供的图纸资料表（第7章）。\n\n实际采购时，这两份是**配套使用**的，共同组成招标采购的规范技术文件。而且有个重要原则：如果第1部分和第2部分有冲突，以第2部分为准。\n\n所以完整的理解是——结构层的基础要求看第1部分（通用），单芯电缆的具体参数、配置看第2部分（专用）。如果您需要单芯电缆某些结构层的具体尺寸或参数值，那还得进一步查第2部分的参数表，当前检索到的片段暂未覆盖这部分内容，需要的话可以补充关键词或指定表号再查。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "UNNECESSARY",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "SUCCESS",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "220",
+            "supporting_chunk_id": "f224470a51f32350",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286",
+            "supporting_chunk_id": "f224470a51f32350",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "48f12a5a8ce5eb6c",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.2",
+            "supporting_chunk_id": "f224470a51f32350",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 5
+    },
+    {
+      "session": "A",
+      "user_query": "如果不是，把通用技术规范里的要求也一起告诉我，并说明来源。",
+      "retrieved_chunk_ids": [
+        "8b1911d054c3a036",
+        "f224470a51f32350",
+        "a18b9160c4084d5f",
+        "c3a92b28cfd524d3",
+        "d5f07f5d24ec3cc7",
+        "ff6344911eb4df75",
+        "4859566265b332b6",
+        "48f12a5a8ce5eb6c"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+      ],
+      "retrieved_parts": [
+        "第1部分",
+        "第2部分",
+        "第3部分",
+        "第1部分",
+        "第2部分",
+        "第3部分",
+        "第1部分",
+        "第1部分"
+      ],
+      "final_context_chars": 5345,
+      "model_answer": "您别急，我上一条可能把话说岔了——让我重新捋一下。\n\n**我前面回答导体、内衬层、铠装层那批技术要求，来源本来就是 Q/GDW 73286.1 通用技术规范，不是专用规范。** 您问\"是不是专用技术规范自己规定的\"，我回答\"不是\"，指的就是这个意思：那些要求来自**通用技术规范（第1部分）**。\n\n所以不存在\"把通用规范的要求另外再告诉您\"这回事——前面那批内容本身就是通用规范里的。我把它按来源重新标注一遍，您看得更清楚：\n\n**来源：Q/GDW 73286.1 通用技术规范**\n\n- **导体（5.1.4 条）**：符合 GB/T 3956、GB/T 32346.2；TR 型软铜线；第 2 类紧压绞合圆形结构、带阻水；表面光洁无油污无毛刺锐边；不允许整芯或整股焊接，单线焊接相邻接头间距不小于 300 mm；紧压系数不小于 0.9；挤包绝缘前预加热；直流电阻符合 GB/T 3956 第 2 类紧压绞合导体规定；纵向阻水性能符合 GB/T 32346.1。\n- **内衬层（5.1.12 条）**：位于金属丝铠装层下面；聚丙烯绳绕包；外面均匀涂敷沥青防腐材料；近似厚度不小于 1.5 mm。\n- **铠装层（5.1.13、5.1.7 条）**：材料为镀锌钢丝、铜丝或其他经验证耐海水腐蚀的金属材料；镀锌钢丝符合 GB/T 3082；三芯电缆宜用镀锌钢丝铠装（圆丝或扁丝），单芯电缆用铜丝或镀锌钢丝铠装，用镀锌钢丝时要考虑交流损耗及对载流量的影响；铠装圆钢丝直径一般 4.0/5.0/6.0/8.0 mm，铠装扁铜丝厚度一般 2.0/2.5/3.0 mm，铠装圆铜丝直径一般 6.0/7.0/8.0 mm，业主有需求或协商同意时允许更大；铠装要紧密，必要时外绕金属带；铠装层测量要求（6.6.8 条）圆铠装丝尺寸低于标称值不超过 5%，扁铠装丝不超过 8%。\n\n**再说一遍两份文件的分工，免得混淆：**\n\n- **通用技术规范（第1部分）**：一类物资的**共性要求**——结构层、材料、试验等的通用规定。\n- **专用技术规范（第2部分，即 Q/GDW 73286.2）**：单芯电缆的**个性化要求**——技术参数表（第4章）、组件材料配置表（第5章）、使用环境条件表（第6章）、投标人图纸资料表（第7章）。\n- 两份**配套使用**，冲突时以第2部分为准。\n\n如果您想要单芯电缆某个结构层的**具体参数值**（比如某个截面对应的铠装丝直径、绝缘厚度等），那属于专用规范参数表的内容，当前检索片段没覆盖到，您补充关键词或指定表号我再帮您查。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "PARTIALLY_SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "SUCCESS",
+        "hallucination_suspicion": "YES",
+        "unsupported_claims": [
+          "0.9",
+          "12",
+          "2.0",
+          "2.5",
+          "3.0",
+          "300",
+          "3082",
+          "32346.1"
+        ],
+        "claims": [
+          {
+            "claim": "0.9",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "1.5",
+            "supporting_chunk_id": "c3a92b28cfd524d3",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "12",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "13",
+            "supporting_chunk_id": "c3a92b28cfd524d3",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2.0",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2.5",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3.0",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "300",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3082",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "32346.1",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "32346.2",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3956",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "4.0",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.0",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.1",
+            "supporting_chunk_id": "c3a92b28cfd524d3",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "6.0",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "6.6",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "7.0",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "8b1911d054c3a036",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 3",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.2",
+            "supporting_chunk_id": "f224470a51f32350",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "8.0",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 6
+    },
+    {
+      "session": "B",
+      "user_query": "220kV 三芯海底电缆一般有哪些主要结构？",
+      "retrieved_chunk_ids": [
+        "d1d75672f2dbc333",
+        "b5aaf72bcd33d44a",
+        "3fb0a03b92cc70d7",
+        "5f81fce4a4628ebf",
+        "f96c7773551514ae",
+        "bac8e77cef90c8cf",
+        "43e96b415797394b",
+        "cc4443ca2f4783ac"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+      ],
+      "retrieved_parts": [
+        "第3部分",
+        "第2部分",
+        "第2部分",
+        "第3部分",
+        "第3部分",
+        "第1部分",
+        "第2部分",
+        "第1部分"
+      ],
+      "final_context_chars": 7350,
+      "model_answer": "220kV三芯海底电缆的主要结构，根据国家电网企业标准Q/GDW 73286.1—2026《220kV海底电力电缆系统采购标准 第1部分：通用技术规范》第5.1.2条的规定，一般包括以下结构层：\n\n- **导体**\n- **线芯阻水结构**\n- **导体屏蔽层**\n- **绝缘层**\n- **绝缘屏蔽层**\n- **阻水缓冲层**\n- **金属套**\n- **外护套**\n- **成缆和填充**\n- **光纤单元**\n- **内衬层**\n- **铠装层**\n- **外被层**\n\n如果做成**光纤复合缆**，其中还应包含光纤单元。\n\n另外，从材料选择上看，标准5.1.1条明确海底电缆采用**单芯铜导体结构，交联聚乙烯绝缘**。而三芯缆在成缆环节，标准5.1.11条要求绝缘线芯应进行**分相标识**，这也是三芯结构区别于单芯的一个重要工艺特点。\n\n简单来说，三芯海缆就是把三根绝缘线芯绞合成缆，外面依次配上内衬层、铠装层和外被层这些\"防护铠甲\"，整体构成一根能扛住海底复杂环境的复合结构电缆。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "SUCCESS",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "11",
+            "supporting_chunk_id": "b5aaf72bcd33d44a",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2026",
+            "supporting_chunk_id": "3fb0a03b92cc70d7",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "220",
+            "supporting_chunk_id": "d1d75672f2dbc333",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.1",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 1
+    },
+    {
+      "session": "B",
+      "user_query": "铠装层有什么要求？",
+      "retrieved_chunk_ids": [
+        "a0bd8a6bde77b17e",
+        "c7347587e61a3532",
+        "bc2a6dfa54206eab",
+        "ff249ff52cf67152",
+        "bac8e77cef90c8cf",
+        "cc4443ca2f4783ac",
+        "663de80696a67296",
+        "844f7e6b59d9764e"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用"
+      ],
+      "retrieved_parts": [
+        "第3部分",
+        "第3部分",
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第3部分"
+      ],
+      "final_context_chars": 5394,
+      "model_answer": "220kV海底电缆的铠装层，标准里规定得还是挺细的，我按Q/GDW 73286.1—2026《220kV海底电力电缆系统采购标准 第1部分：通用技术规范》第5.1.12、5.1.13条给你梳理一下：\n\n**一、铠装层下面得有内衬层**\n\n金属丝铠装层下应设内衬层，采用**聚丙烯绳绕包**，并在外面均匀涂敷沥青防腐材料。内衬层的近似厚度**不小于1.5 mm**。\n\n**二、铠装材料**\n\n金属丝铠装材料采用**镀锌钢丝**或者**铜丝**，或者其他经过验证耐海水腐蚀的金属材料。其中镀锌钢丝应符合GB/T 3082的规定。\n\n具体到不同芯数：\n- **三芯电缆**宜采用**镀锌钢丝铠装**，铠装钢丝可以是圆钢丝或扁钢丝。\n- **单芯电缆**采用**铜丝或镀锌钢丝铠装**；如果采用镀锌钢丝铠装，需要充分考虑钢丝铠装层的交流损耗以及对电缆载流量的要求。\n\n**三、铠装尺寸**\n\n**圆钢丝直径**一般为4.0 mm、5.0 mm、6.0 mm、8.0 mm（这里的钢丝直径不包括钢丝上可能有的非金属防蚀层）。如业主有需求或协商同意，允许采用比规定直径**更大**的钢丝。\n\n顺便说一下，如果是铜丝铠装，同一份标准的5.1.7条还有补充规定：\n- **铠装扁铜丝厚度**一般为2.0 mm、2.5 mm、3.0 mm，如有业主需求或协商同意，允许采用比规定**更厚**的铜线；\n- **铠装圆铜丝直径**一般应为6.0 mm、7.0 mm和8.0 mm，如招标人另有要求，允许采用比规定直径**更大**的铜丝。\n\n**四、铠装紧密性**\n\n金属丝铠装应很紧密，也就是相邻金属线之间的间隙要很小。必要时，可在金属丝铠装外绕一条金属带。\n\n**五、铠装金属丝的测量要求**\n\n按照GB/T 32346.1进行，使用具有两个平面测量头、准确度为±0.01 mm的测微计来测量圆铠装金属丝直径和扁铠装金属丝的厚度。圆铠装金属丝测量应在同一截面上两个互成直角的位置各测一次，取两次测量的平均值作为金属丝的直径。\n\n铠装金属丝尺寸低于标称尺寸的量值应不超过：\n- 圆金属丝：**5%**\n- 扁金属丝：**8%**\n\n总的来说，铠装层就是海缆的\"外层铠甲\"，既要扛住敷设和运行中的机械外力，又得耐海水腐蚀，所以在材料、尺寸和紧密程度上都有明确要求。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "NOT_NEEDED",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "0.01",
+            "supporting_chunk_id": "663de80696a67296",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "1.5",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "12",
+            "supporting_chunk_id": "c7347587e61a3532",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "13",
+            "supporting_chunk_id": "a0bd8a6bde77b17e",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2.0",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2.5",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2026",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "220",
+            "supporting_chunk_id": "a0bd8a6bde77b17e",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3.0",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3082",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "32346.1",
+            "supporting_chunk_id": "cc4443ca2f4783ac",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "4.0",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.0",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.1",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "6.0",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "7.0",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "8.0",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 2
+    },
+    {
+      "session": "B",
+      "user_query": "内衬层厚度呢？",
+      "retrieved_chunk_ids": [
+        "844f7e6b59d9764e",
+        "a14eb97907268118",
+        "ff249ff52cf67152",
+        "acc2f7b2530f0d90",
+        "a2aa88912e75ca47",
+        "bac8e77cef90c8cf",
+        "255c187f4e228542",
+        "bc2a6dfa54206eab"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+      ],
+      "retrieved_parts": [
+        "第3部分",
+        "第2部分",
+        "第1部分",
+        "第3部分",
+        "第3部分",
+        "第1部分",
+        "第2部分",
+        "第1部分"
+      ],
+      "final_context_chars": 7704,
+      "model_answer": "内衬层的厚度要求是这样的：\n\n根据Q/GDW 73286.1—2026《220kV海底电力电缆系统采购标准 第1部分：通用技术规范》第5.1.12条，内衬层采用**聚丙烯绳绕包**，并要在外面均匀涂敷沥青防腐材料，内衬层的近似厚度**不小于1.5 mm**。\n\n这个数值在专用技术规范的参数表里也能对应上：\n\n- **三芯海缆**（Q/GDW 73286.3）表1中，内衬层平均厚度要求**≥1.5 mm**，材料为聚丙烯绳绕包层，并在外面均匀涂沥青（或其他防腐材料）；\n- **单芯海缆**（Q/GDW 73286.2）表1中，内衬层平均厚度同样要求**≥1.5 mm**，材料也是聚丙烯绳绕包层，外面均匀涂沥青或其他防腐材料。\n\n所以不管是单芯还是三芯，内衬层厚度这道\"底线\"都是**不小于1.5 mm**，算是统一的硬性要求。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "NOT_NEEDED",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "1.5",
+            "supporting_chunk_id": "844f7e6b59d9764e",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "12",
+            "supporting_chunk_id": "844f7e6b59d9764e",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2026",
+            "supporting_chunk_id": "a14eb97907268118",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "220",
+            "supporting_chunk_id": "844f7e6b59d9764e",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.1",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.2",
+            "supporting_chunk_id": "a14eb97907268118",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.3",
+            "supporting_chunk_id": "844f7e6b59d9764e",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 3
+    },
+    {
+      "session": "B",
+      "user_query": "这个数值是在哪份规范里规定的？",
+      "retrieved_chunk_ids": [
+        "8b1911d054c3a036",
+        "f224470a51f32350",
+        "a18b9160c4084d5f",
+        "48f12a5a8ce5eb6c",
+        "c3a92b28cfd524d3",
+        "4859566265b332b6",
+        "ea4a0fbc49651bc5",
+        "0b4e3c1a73c1e334"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+      ],
+      "retrieved_parts": [
+        "第1部分",
+        "第2部分",
+        "第3部分",
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第1部分"
+      ],
+      "final_context_chars": 5823,
+      "model_answer": "这个**不小于1.5 mm**的内衬层厚度要求，出处是在通用技术规范里：\n\n**Q/GDW 73286.1—2026《220kV海底电力电缆系统采购标准 第1部分：通用技术规范》第5.1.12条。**\n\n另外，两个专用技术规范的表1里也有对应的参数要求，可以互相印证：\n\n- **Q/GDW 73286.2—2026**《220kV海底电力电缆系统采购标准 第2部分：220kV单芯海底电力电缆系统专用技术规范》表1；\n- **Q/GDW 73286.3—2026**《220kV海底电力电缆系统采购标准 第3部分：220kV三芯海底电力电缆系统专用技术规范》表1。\n\n简单说，通用规范5.1.12条是给出这个\"不小于1.5 mm\"原则要求的正主，两份专用规范的表1则是把它落实成具体采购参数。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "SUCCESS",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "1.5",
+            "supporting_chunk_id": "c3a92b28cfd524d3",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "12",
+            "supporting_chunk_id": "ea4a0fbc49651bc5",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] GB/T 3",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2026",
+            "supporting_chunk_id": "48f12a5a8ce5eb6c",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "220",
+            "supporting_chunk_id": "8b1911d054c3a036",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 3",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.1",
+            "supporting_chunk_id": "c3a92b28cfd524d3",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "8b1911d054c3a036",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 3",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.2",
+            "supporting_chunk_id": "f224470a51f32350",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.3",
+            "supporting_chunk_id": "a18b9160c4084d5f",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 4
+    },
+    {
+      "session": "B",
+      "user_query": "三芯专用规范里面没有吗？",
+      "retrieved_chunk_ids": [
+        "a18b9160c4084d5f",
+        "ff6344911eb4df75",
+        "d79d92725b46b084",
+        "f224470a51f32350",
+        "d5f07f5d24ec3cc7",
+        "c3a92b28cfd524d3",
+        "d8277d37a03a2b0a",
+        "ed78116f271cd2a9"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用"
+      ],
+      "retrieved_parts": [
+        "第3部分",
+        "第3部分",
+        "第3部分",
+        "第2部分",
+        "第2部分",
+        "第1部分",
+        "第2部分",
+        "第3部分"
+      ],
+      "final_context_chars": 5131,
+      "model_answer": "有的，三芯专用规范里也有。\n\n**Q/GDW 73286.3—2026**《220kV海底电力电缆系统采购标准 第3部分：220kV三芯海底电力电缆系统专用技术规范》的**表1**里，就明确列出了内衬层的参数要求——平均厚度**≥1.5 mm**，材料为聚丙烯绳绕包层，并在外面均匀涂沥青（或其他防腐材料）。\n\n所以三芯规范里不但有，数值还和通用规范的5.1.12条完全对得上，都是**不小于1.5 mm**。\n\n刚才我上一条回答里也把三芯、单芯两份专用规范的表1都列出来了，可能表述上让你觉得三芯那份被漏掉了，其实两份专用规范的表1都包含这个内衬层厚度要求。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "PARTIALLY_SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "SUCCESS",
+        "hallucination_suspicion": "YES",
+        "unsupported_claims": [
+          "12",
+          "2026"
+        ],
+        "claims": [
+          {
+            "claim": "1.5",
+            "supporting_chunk_id": "c3a92b28cfd524d3",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "12",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2026",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "220",
+            "supporting_chunk_id": "a18b9160c4084d5f",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.1",
+            "supporting_chunk_id": "c3a92b28cfd524d3",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.3",
+            "supporting_chunk_id": "a18b9160c4084d5f",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 5
+    },
+    {
+      "session": "B",
+      "user_query": "那你把专用规范和通用规范的要求区分开告诉我。",
+      "retrieved_chunk_ids": [
+        "48f12a5a8ce5eb6c",
+        "bac8e77cef90c8cf",
+        "f224470a51f32350",
+        "91b65c311693d243",
+        "4859566265b332b6",
+        "8b1911d054c3a036",
+        "a18b9160c4084d5f",
+        "ea4a0fbc49651bc5"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+      ],
+      "retrieved_parts": [
+        "第1部分",
+        "第1部分",
+        "第2部分",
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第3部分",
+        "第1部分"
+      ],
+      "final_context_chars": 5759,
+      "model_answer": "好的，我把这三份规范里跟内衬层厚度有关的要求分开列一下：\n\n**一、通用技术规范**\n\n**Q/GDW 73286.1—2026《220kV海底电力电缆系统采购标准 第1部分：通用技术规范》第5.1.12条：**\n\n- 金属丝铠装层下应设内衬层；\n- 采用聚丙烯绳绕包，并在外面均匀涂敷沥青防腐材料；\n- 内衬层的近似厚度**不小于1.5 mm**。\n\n这是给出原则性要求的地方。\n\n**二、单芯专用技术规范**\n\n**Q/GDW 73286.2—2026《220kV海底电力电缆系统采购标准 第2部分：220kV单芯海底电力电缆系统专用技术规范》表1：**\n\n- 内衬层材料：聚丙烯绳绕包层，外面均匀涂沥青或其他防腐材料；\n- 内衬层平均厚度：**≥1.5 mm**。\n\n**三、三芯专用技术规范**\n\n**Q/GDW 73286.3—2026《220kV海底电力电缆系统采购标准 第3部分：220kV三芯海底电力电缆系统专用技术规范》表1：**\n\n- 内衬层材料：聚丙烯绳绕包层，外面均匀涂沥青或其他防腐材料；\n- 内衬层平均厚度：**≥1.5 mm**。\n\n**区分来看：**\n\n从这几份规范的内容看，通用规范和两份专用规范在内衬层这个参数上是**一致的**——都是聚丙烯绳绕包、外面涂沥青防腐、平均厚度不小于1.5 mm。通用规范以条文形式提出要求，专用规范则在表1中把它作为具体采购参数列出来，单芯和三芯两份专用规范在这一点上没有差别。\n\n需要说明的是，我目前检索到的片段主要是这些条文的文字描述，如果你需要确认专用规范表1里是否还有内衬层相关的其他附注或例外规定，建议直接调阅表1原文核对会更稳妥。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "PARTIALLY_SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "SUCCESS",
+        "hallucination_suspicion": "YES",
+        "unsupported_claims": [
+          "1.5"
+        ],
+        "claims": [
+          {
+            "claim": "1.5",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "12",
+            "supporting_chunk_id": "91b65c311693d243",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2026",
+            "supporting_chunk_id": "48f12a5a8ce5eb6c",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "220",
+            "supporting_chunk_id": "48f12a5a8ce5eb6c",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.1",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "48f12a5a8ce5eb6c",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.2",
+            "supporting_chunk_id": "f224470a51f32350",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.3",
+            "supporting_chunk_id": "a18b9160c4084d5f",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 6
+    },
+    {
+      "session": "C",
+      "user_query": "220kV 单芯和三芯海底电缆的技术要求有什么区别？",
+      "retrieved_chunk_ids": [
+        "bac8e77cef90c8cf",
+        "43e96b415797394b",
+        "3fb0a03b92cc70d7",
+        "4859566265b332b6",
+        "109c57a8471be6fa",
+        "8065ad3f4096ca30",
+        "a3e9d12dd321aec1",
+        "9b0947b801d49c2d"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用"
+      ],
+      "retrieved_parts": [
+        "第1部分",
+        "第2部分",
+        "第2部分",
+        "第1部分",
+        "第1部分",
+        "第3部分",
+        "第2部分",
+        "第2部分"
+      ],
+      "final_context_chars": 4929,
+      "model_answer": "您好！关于220kV单芯和三芯海底电缆的技术要求区别，我先跟您说说目前知识库里能查到的情况。\n\nQ/GDW 73286 这套标准分了三个部分：第1部分是通用技术规范，第2部分是单芯海缆专用技术规范，第3部分是三芯海缆专用技术规范。从标准的分卷结构就能看出，单芯和三芯的技术要求在专用规范里是分开规定的，各自成册。\n\n不过说实话，目前检索到的这些片段，主要还是第1部分通用规范里的内容（像海底电缆结构层、导体要求、工厂接头、附件等），以及第2部分、第3部分的封面、目次和前言部分。真正涉及单芯与三芯在技术参数上具体差异的条文，比如第2部分和第3部分各自\"标准技术参数表\"里列出的结构参数、电气参数、非电气参数等详细内容，当前片段暂时还没有展开。\n\n所以目前能给您的判断是：\n\n1. **框架上的区别**：标准把单芯和三芯分别放在第2部分和第3部分单独规定，说明两者在技术参数表（电缆结构、电气、非电气、其他参数，以及各类终端和接头参数）上是分别成表的，需要各自对照各自的部分查阅。\n\n2. **能确认的共性要求**（来自第1部分通用规范）：不管单芯三芯，海缆都采用单芯铜导体、交联聚乙烯绝缘、全干式交联三层共挤，导体要符合 GB/T 3956 和 GB/T 32346.2，采用第2类紧压绞合圆形阻水结构等等。\n\n至于两者在具体数值上的差异——比如铠装结构、载流量、外径、质量、接头型式这些——当前检索到的片段里还没有包含，我不能凭经验给您补数字。建议您补充一下关键词，比如直接指定第2部分或第3部分的\"表1 电缆结构技术参数\"\"表2 电气技术参数\"，或者指定具体条款号，我再帮您把两边的对应内容调出来做逐一对比。\n\n您方便告诉我想重点比较哪一块吗？是结构参数、载流量，还是接头/终端配置？这样我能更快帮您定位到差异点。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "SUCCESS",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "220",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "32346.2",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3956",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 1
+    },
+    {
+      "session": "C",
+      "user_query": "先只比较结构方面。",
+      "retrieved_chunk_ids": [
+        "6e574ac15bab9329",
+        "07f34402b3cdd4d9",
+        "3c3118930a4f6e39",
+        "91b65c311693d243",
+        "5d52c3f6cbe9e4c5",
+        "d19a079b425d93b4",
+        "877394408084e1be",
+        "3746a7eb6438f7fd"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用"
+      ],
+      "retrieved_parts": [
+        "第1部分",
+        "第3部分",
+        "第2部分",
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第3部分",
+        "第3部分"
+      ],
+      "final_context_chars": 4959,
+      "model_answer": "您好！针对\"结构方面\"的对比，我把知识库里目前能查到的相关内容给您梳理一下。\n\n先说结论：**单芯和三芯在结构上的差异，标准是放在第2部分和第3部分各自的\"标准技术参数表\"里分别规定的，但当前检索到的片段中，这两部分的技术参数表内容还没有被调出来，所以具体数值差异暂时给不了准确答案。**\n\n不过，第1部分通用规范里有一段关于海底电缆结构的共性描述，可以作为底座参考，这块单芯三芯是通用的：\n\n- 导体采用 GB/T 3956 中的 **第2类紧压绞合圆形导体**，铜导体应符合 GB/T 3956 和 GB/T 32346.2，且为**纵向阻水结构**；\n- 绝缘采用**交联聚乙烯（XLPE）**，全干式交联、三层共挤；\n- 金属屏蔽、阻水层、铠装、外被层等按海缆通用结构配置。\n\n也就是说，通用结构逻辑是一致的，**真正的差异点在于第2部分（单芯）和第3部分（三芯）各自技术参数表里对结构参数的取值**——比如导体截面、绝缘厚度、金属护套/屏蔽结构、铠装型式、外径、单位长度质量这些。\n\n现在的问题是：当前检索到的片段里，第2部分和第3部分只覆盖到封面、目次、前言和采购原则那部分，**还没有包含各自的\"表1 电缆结构技术参数\"内容**，所以我无法给您列出单芯和三芯在结构参数上的具体区别数值。这不是标准里没有，而是本轮片段没检索到。\n\n建议您这样帮我定位：\n1. 指定标准号，比如 **Q/GDW 73286.2（单芯）** 和 **Q/GDW 73286.3（三芯）**；\n2. 指定条款或表号，比如\"表1 电缆结构技术参数\"或\"4 标准技术参数表\"里结构相关的部分。\n\n您把这两个部分的结构参数表分别调出来，我就能帮您做逐项对比了。方便的话告诉我您最关心哪个结构项？比如导体截面、铠装型式，还是外径/质量？",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "UNNECESSARY",
+        "citation_attribution": "CORRECT",
+        "groundedness": "PARTIALLY_SUPPORTED",
+        "completeness": "PARTIAL",
+        "cross_document_synthesis": "NOT_NEEDED",
+        "hallucination_suspicion": "YES",
+        "unsupported_claims": [
+          "32346.2",
+          "3956"
+        ],
+        "claims": [
+          {
+            "claim": "32346.2",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3956",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.2",
+            "supporting_chunk_id": "3c3118930a4f6e39",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.3",
+            "supporting_chunk_id": "07f34402b3cdd4d9",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 2
+    },
+    {
+      "session": "C",
+      "user_query": "哪些要求是它们共同的？",
+      "retrieved_chunk_ids": [
+        "c3a92b28cfd524d3",
+        "ff6344911eb4df75",
+        "d5f07f5d24ec3cc7",
+        "63e02a0f356894e8",
+        "090dfb645da31bf7",
+        "cc73de0f16418d16",
+        "8b1911d054c3a036",
+        "f224470a51f32350"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用"
+      ],
+      "retrieved_parts": [
+        "第1部分",
+        "第3部分",
+        "第2部分",
+        "第1部分",
+        "第3部分",
+        "第2部分",
+        "第1部分",
+        "第2部分"
+      ],
+      "final_context_chars": 4997,
+      "model_answer": "您好！这个问题问得好，我帮您把目前知识库里能确认的\"单芯三芯共同要求\"梳理出来。\n\n先说一句：Q/GDW 73286 这套标准的设计逻辑就是——**第1部分通用技术规范提出对一类物资的共性要求，第2部分（单芯）和第3部分（三芯）的专用技术规范只提出各自个性化的要求，两者配套使用。** 所以理论上，两份专用规范都没另外写、没修改的内容，就是它们共同的。\n\n目前检索到的片段里，能确认的\"共同要求\"主要有以下几块：\n\n**一、结构方面的共性要求（来自第1部分通用规范）**\n\n- 导体采用 GB/T 3956 中的**第2类紧压绞合圆形导体**，铜导体符合 GB/T 3956 和 GB/T 32346.2，且为**纵向阻水结构**；\n- 绝缘采用**交联聚乙烯（XLPE）**，全干式交联、三层共挤。\n\n**二、标准体系与配套关系（第1、2、3部分均同样表述）**\n\n- 通用技术规范与对应的专用技术规范**配套使用**，共同组成招标采购的规范技术文件；\n- 采购标准经招标文件引用后成为招标文件组成部分，与招标文件具有**同等法律效力**；\n- 招标文件中**不再重复通用技术规范的内容**；\n- 如工程招标确需修改技术要求，项目需求单位应编填\"**项目单位技术差异表**\"和辅助说明文件。\n\n**三、编制原则（第2、3部分均同样表述）**\n\n- **安全可靠、技术先进**原则；\n- **\"五统一\"**原则：统一分类编码、统一型号种类、统一技术参数、统一技术规范、统一技术接口；\n- **\"两个全面应用\"**原则；\n- **\"三个充分发挥\"**原则。\n\n**四、验收相关（来自第1部分通用规范）**\n\n- 验收时间为安装、调试和试运行完成后并**稳定运行72 h**；\n- 在此期间所有合同设备都应达到各项运行性能指标要求；\n- 买卖双方可签署合同设备的**验收证明书**（一式两份，双方各执一份）；\n- 若在安装、调试、试运行及质保期内设备发生异常，**买卖双方共同分析原因、分清责任**，按合同规定执行。\n\n**五、应满足的文件（第1部分通用规范）**\n\n- 应满足国家电网有限公司标准化成果中相关条款要求，包括《十八项电网重大反事故措施》《输变电工程通用设备35～750 kV变电站分册》《设备抽检规范》《电网设备及材料质量管控重点措施》《输变电工程通用设计》等。\n\n**六、备品备件要求（第1部分通用规范）**\n\n- 备品备件应为**全新产品**，能与已安装设备的相应部件互换，具有相同的技术规范、规格、材质、制造工艺；\n- 备品备件应**防尘、防潮、防止损坏**，与主设备一并发运，并标注\"**备品备件**\"以区别于本体。\n\n---\n\n需要提醒两点：\n\n1. 上面这些是从当前检索到的片段里能确认的共同内容，主要来自第1部分通用规范。**单芯和三芯专用规范里各自技术参数表（电缆结构、电气、非电气、终端及接头参数等）的差异**，当前片段还没调出来，所以不能给您做逐项对比。\n2. 另外，第1部分和第2部分的前言都提到一点差异：**第1部分（通用）删除了绝缘平均厚度的要求（见5.1.5）**，而第2部分（单芯）也删除了绝缘平均厚度的要求（见表1），第3部分（三芯）的技术变化说明在当前片段里没看到完整内容。\n\n如果您想进一步锁定\"哪些专用规范里单芯三芯各自另做了规定\"，建议把第2部分和第3部分的**标准技术参数表**调出来，我再帮您逐项区分哪些是共同、哪些是各自独有的。您看要不要继续往这个方向挖？",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "PARTIALLY_SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "SUCCESS",
+        "hallucination_suspicion": "YES",
+        "unsupported_claims": [
+          "32346.2",
+          "3956"
+        ],
+        "claims": [
+          {
+            "claim": "32346.2",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "35",
+            "supporting_chunk_id": "63e02a0f356894e8",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 4",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3956",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.1",
+            "supporting_chunk_id": "c3a92b28cfd524d3",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "72",
+            "supporting_chunk_id": "63e02a0f356894e8",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 4",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286",
+            "supporting_chunk_id": "c3a92b28cfd524d3",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "750",
+            "supporting_chunk_id": "63e02a0f356894e8",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 4",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 3
+    },
+    {
+      "session": "C",
+      "user_query": "哪些是单芯或三芯专用规范单独规定的？",
+      "retrieved_chunk_ids": [
+        "f224470a51f32350",
+        "48f12a5a8ce5eb6c",
+        "c3a92b28cfd524d3",
+        "a18b9160c4084d5f",
+        "d5f07f5d24ec3cc7",
+        "ff6344911eb4df75",
+        "c7347587e61a3532",
+        "d8277d37a03a2b0a"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用"
+      ],
+      "retrieved_parts": [
+        "第2部分",
+        "第1部分",
+        "第1部分",
+        "第3部分",
+        "第2部分",
+        "第3部分",
+        "第3部分",
+        "第2部分"
+      ],
+      "final_context_chars": 5485,
+      "model_answer": "您好！这个问题正好切到关键点上了——不过我得先跟您说实话：**目前在检索到的片段里，能明确看到\"改动\"的只有两处，够不上做完整对比。**\n\n我把能确认的信息先摆给您：\n\n**一、能确认的改动（来自前言里的技术变化说明）**\n\n1. **第2部分（单芯专用规范）的改动**：\n   - 代替 Q/GDW 13286.2—2019；\n   - 相比旧版，**删除了绝缘平均厚度的要求（见表1）**。\n\n2. **第3部分（三芯专用规范）的改动**：\n   - 代替 Q/GDW 13286.3—2019；\n   - 相比旧版，**删除了绝缘平均厚度的要求（见表1）**；\n   - 另外**增加了金属丝铠装层（见表1）**。\n\n**3. 第1部分（通用规范）的改动**：\n   - 代替 Q/GDW 13286.1—2019；\n   - **删除了绝缘平均厚度的要求（见5.1.5）**。\n\n这三处改动都指向\"删绝缘平均厚度\"这一件事，说明这是整版修订的共同动作；而**\"增加金属丝铠装层\"目前只在第3部分（三芯）的技术变化说明里出现**——这一点在片段里是明确的。\n\n**二、需要说清楚的边界**\n\n您问的是\"单芯或三芯专用规范**单独规定**的内容\"，也就是两份专用规范各自独有的技术要求。当前片段能覆盖到的，只有上面这些**前言的修订说明**，以及第2部分、第3部分各自的目次里提到的\"标准技术参数表\"\"组件材料配置表\"\"使用环境条件表\"这些**框架性的表项**，但**表里具体怎么规定的、哪些项是单芯独有、哪些是三芯独有，当前片段里没有展开**。\n\n所以我不能凭推理给您编出\"单芯专用规定A、三芯专用规定B\"这样的清单——那就成了拿经验补数字，不靠谱。\n\n**三、给您两个务实的定位建议**\n\n1. 想看**结构上的独有规定**：请把第2部分和第3部分的\"**表1 电缆结构技术参数**\"分别调出来。三芯那版已经明确\"增加了金属丝铠装层\"，单芯那版对应位置是什么，一对比就清楚了。\n\n2. 想看**参数表整体差异**：指定\"**标准技术参数表**\"这个关键词，调出两份规范各自的参数表内容（包括电缆结构、电气、非电气、终端和接头参数等），我再帮您逐项区分哪些是共性的、哪些是单芯或三芯各自独有的。\n\n您先告诉我最想锁定哪一张表——是\"表1 电缆结构技术参数\"，还是完整的\"标准技术参数表\"？我按您指定的方向帮您查。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "SUCCESS",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "13286.1",
+            "supporting_chunk_id": "48f12a5a8ce5eb6c",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "13286.2",
+            "supporting_chunk_id": "d5f07f5d24ec3cc7",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "13286.3",
+            "supporting_chunk_id": "ff6344911eb4df75",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2019",
+            "supporting_chunk_id": "48f12a5a8ce5eb6c",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.1",
+            "supporting_chunk_id": "c3a92b28cfd524d3",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 6",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 4
+    },
+    {
+      "session": "C",
+      "user_query": "不要把投标人填写的空白参数表当成已经规定的参数。",
+      "retrieved_chunk_ids": [
+        "9fa9e164a3e3ca7a",
+        "3fb0a03b92cc70d7",
+        "d19a079b425d93b4",
+        "07f34402b3cdd4d9",
+        "6e574ac15bab9329",
+        "834c0774c8fad3e2",
+        "d79d92725b46b084",
+        "0b4e3c1a73c1e334"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+      ],
+      "retrieved_parts": [
+        "第3部分",
+        "第2部分",
+        "第1部分",
+        "第3部分",
+        "第1部分",
+        "第1部分",
+        "第3部分",
+        "第1部分"
+      ],
+      "final_context_chars": 5050,
+      "model_answer": "您指出的这一点非常对，我接受这个纠正。\n\n前面几轮我确实有个地方需要更正：\n\n**\"表1 电缆结构技术参数\"这类表，是投标人逐项填写\"投标人保证值\"的响应表——它本身是空白的格式框架，不是标准已经填好的、规定死的数值。** 我把它说成\"标准里各自规定的参数\"，这个表述是不准确的。真实情况是：\n\n- 标准在**4 标准技术参数表**里说的是\"投标人应认真逐项填写技术参数响应表中投标人保证值，不能空格，也不能以'响应'两字代替，不允许改动招标人要求值\"——也就是说这些表是**给投标人填的**，是招投标环节的响应载体；\n- 具体每个参数项要求填什么、招标人要求值是多少，要看表里逐项列出的内容，而**这些逐项内容，恰恰是当前检索片段没有覆盖到的部分**。\n\n所以我之前说\"单芯和三芯的差异在第2、第3部分技术参数表里\"——这个方向本身没错，但我**把空白参数表当成了已经规定好的参数内容**，这是不对的。参数表的存在，只说明\"这里要填参数\"，不等于\"标准已经规定了参数值\"。\n\n那么真正由**标准文本明确规定**、而非由投标人填写的部分，当前能确认的有这几类：\n\n1. **第1部分通用规范**里对导体、绝缘等结构性文字要求（如\"导体符合GB/T 3956和GB/T 32346.2\"\"绝缘为交联聚乙烯，全干式交联、三层共挤\"）；\n2. **前言的技术变化说明**里的修订内容（如\"删除绝缘平均厚度的要求\"\"三芯增加金属丝铠装层\"）；\n3. 标准的**配套使用关系、编制原则、验收时间（72 h）、备品备件**等管理性条款。\n\n至于**结构参数层面单芯和三芯到底差异在哪**，只能从标准正文明确写出的条款去判断，不能拿投标人要填的空白表来说事。目前检索到的片段里，能直接支持的只有一句较明确的结构差异信号——**第3部分（三芯）在修订中\"增加了金属丝铠装层\"**；单芯那边有没有对应的结构性规定或改动，当前片段还没有覆盖到。\n\n所以如果要继续深挖，正确的方式是去找**第2、第3部分正文里真正写出来的结构条款**（比如某条对铠装、金属护套、外被层的文字规定），而不是那张让投标人填的参数表。您这边手头如果方便，可以指定具体条款号或章节，我帮您核对原话。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "UNSUPPORTED",
+        "completeness": "INSUFFICIENT",
+        "cross_document_synthesis": "SUCCESS",
+        "hallucination_suspicion": "YES",
+        "unsupported_claims": [
+          "32346.2",
+          "3956",
+          "72"
+        ],
+        "claims": [
+          {
+            "claim": "32346.2",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3956",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "72",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 5
+    },
+    {
+      "session": "C",
+      "user_query": "重新总结一次，并标明每条来自通用规范、单芯专用规范还是三芯专用规范。",
+      "retrieved_chunk_ids": [
+        "a18b9160c4084d5f",
+        "d79d92725b46b084",
+        "f224470a51f32350",
+        "d8277d37a03a2b0a",
+        "ecaeb84e531f4871",
+        "8b1911d054c3a036",
+        "809afdd0e1b83482",
+        "ff6344911eb4df75"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用"
+      ],
+      "retrieved_parts": [
+        "第3部分",
+        "第3部分",
+        "第2部分",
+        "第2部分",
+        "第3部分",
+        "第1部分",
+        "第2部分",
+        "第3部分"
+      ],
+      "final_context_chars": 5917,
+      "model_answer": "好的，我按您的要求重新梳理一遍，并且**严格区分来源**，同时把\"标准明确规定的内容\"和\"投标人填写的空白参数表\"区分开——后者不算规定。\n\n先说明检索边界：当前片段里能确认内容的，主要是**第1部分通用规范**和**第2部分、第3部分专用规范**各自的前言、目次、编制说明部分；专用的技术参数表逐项内容本轮未检索到。\n\n---\n\n**一、来自【第1部分 通用技术规范】Q/GDW 73286.1**\n\n**1. 结构文字要求（明确规定的）**\n- 导体采用 GB/T 3956 中的第2类紧压绞合圆形导体，铜导体符合 GB/T 3956 和 GB/T 32346.2，为纵向阻水结构；\n- 绝缘采用交联聚乙烯，全干式交联、三层共挤（见 5.1.5 相关条款）。\n\n**2. 修订说明**\n- 代替 Q/GDW 13286.1—2019；相比旧版**删除了绝缘平均厚度的要求（见 5.1.5）**。\n\n**3. 标准体系与配套关系**\n- 通用规范与对应专用规范配套使用，共同组成招标采购的规范技术文件；\n- 采购标准经招标文件引用后成为其组成部分，具同等法律效力；招标文件不再重复通用规范内容；\n- 如确需修改技术要求，项目需求单位应编填\"项目单位技术差异表\"和辅助说明文件。\n\n**4. 验收要求**\n- 验收时间为安装、调试和试运行完成后并稳定运行 **72 h**；验收证明书一式两份；异常时买卖双方共同分析、分清责任。\n\n**5. 应满足的文件**\n- 应满足国家电网有限公司标准化成果相关条款，包括《十八项电网重大反事故措施》《输变电工程通用设备35～750 kV变电站分册》《设备抽检规范》《电网设备及材料质量管控重点措施》《输变电工程通用设计》等。\n\n**6. 备品备件要求**\n- 备品备件应为全新产品，能与已安装设备相应部件互换，技术规范、规格、材质、制造工艺相同；应防尘、防潮、防止损坏，与主设备一并发运，并标注\"备品备件\"。\n\n---\n\n**二、来自【第2部分 单芯专用技术规范】Q/GDW 73286.2**\n\n**1. 适用范围**\n- 适用 220 kV **单芯**海底电力电缆系统（单芯，海底敷设）。\n\n**2. 修订说明**\n- 代替 Q/GDW 13286.2—2019；相比旧版**删除了绝缘平均厚度的要求（见表1）**。\n\n**3. 编制原则**\n- 安全可靠、技术先进；\"五统一\"（统一分类编码、统一型号种类、统一技术参数、统一技术规范、统一技术接口）；\"两个全面应用\"；\"三个充分发挥\"。\n\n**4. 标准体系与配套关系**\n- 与通用规范配套使用；引用后成为招标文件组成部分；招标文件不重复通用规范内容；确需修改应编填\"项目单位技术差异表\"。\n\n**5. 结构参数逐项内容**\n- 表项框架存在（标准技术参数表、组件材料配置表、使用环境条件表等），但**具体参数由投标人填写**，本轮片段未覆盖逐项内容，**不作为标准已规定的参数**。\n\n---\n\n**三、来自【第3部分 三芯专用技术规范】Q/GDW 73286.3**\n\n**1. 适用范围**\n- 适用 220 kV **三芯**海底电力电缆系统（三芯，海底敷设）。\n\n**2. 修订说明**\n- 代替 Q/GDW 13286.3—2019；相比旧版**删除了绝缘平均厚度的要求（见表1）**；并**增加了金属丝铠装层（见表1）**。\n\n**3. 编制原则**\n- 安全可靠、技术先进；\"五统一\"；\"两个全面应用\"；\"三个充分发挥\"。\n\n**4. 标准体系与配套关系**\n- 与通用规范配套使用；引用后成为招标文件组成部分；招标文件不重复通用规范内容；确需修改应编填\"项目单位技术差异表\"。\n\n**5. 结构参数逐项内容**\n- 表项框架存在，**具体参数由投标人填写**，本轮片段未覆盖逐项内容，**不作为标准已规定的参数**。\n\n---\n\n**四、需要特别说明的三点**\n\n1. **真正能确认\"单芯与三芯在结构上差异\"的证据，目前只有一条**：第3部分（三芯）在修订中\"增加了金属丝铠装层\"。单芯对应位置有无结构性规定，本轮片段未覆盖。\n\n2. **三份规范都删除了\"绝缘平均厚度\"的要求**——这是共同动作，不是差异。\n\n3. **第2、第3部分的技术参数表逐项内容本轮未检索到**。这些表是投标人填写响应值的格式，不等于标准已规定的参数值；若要判断单芯、三芯在结构参数上是否另有明确规定，需调出两份专用规范正文中真正写出的结构条款，而不是那张空白响应表。\n\n如果您能指定第2、第3部分正文中的具体条款号或章节，我可以据此继续核对，把这三部分的规定补齐。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "PARTIALLY_SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "SUCCESS",
+        "hallucination_suspicion": "YES",
+        "unsupported_claims": [
+          "13286.1",
+          "13286.2",
+          "32346.2",
+          "35",
+          "3956",
+          "5.1",
+          "72",
+          "750"
+        ],
+        "claims": [
+          {
+            "claim": "13286.1",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "13286.2",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "13286.3",
+            "supporting_chunk_id": "ff6344911eb4df75",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "2019",
+            "supporting_chunk_id": "d79d92725b46b084",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "220",
+            "supporting_chunk_id": "a18b9160c4084d5f",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "32346.2",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "35",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3956",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.1",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "72",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "8b1911d054c3a036",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 3",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.2",
+            "supporting_chunk_id": "f224470a51f32350",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.3",
+            "supporting_chunk_id": "a18b9160c4084d5f",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "750",
+            "supporting_chunk_id": "NOT_OBSERVABLE",
+            "supporting_excerpt": "NOT_OBSERVABLE",
+            "verdict": "NOT_FOUND",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 6
+    },
+    {
+      "session": "CTRL",
+      "user_query": "220kV 单芯海底电缆的导体、内衬层、铠装层技术要求是什么？",
+      "retrieved_chunk_ids": [
+        "bac8e77cef90c8cf",
+        "af74d2eeaaf2c4a4",
+        "109c57a8471be6fa",
+        "43e96b415797394b",
+        "3fb0a03b92cc70d7",
+        "ff249ff52cf67152",
+        "bc2a6dfa54206eab",
+        "cc4443ca2f4783ac"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+      ],
+      "retrieved_parts": [
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第2部分",
+        "第2部分",
+        "第1部分",
+        "第1部分",
+        "第1部分"
+      ],
+      "final_context_chars": 4712,
+      "model_answer": "好的，我来帮您梳理一下220kV单芯海底电缆在这几个结构层上的技术要求。\n\n**先说导体。** 根据Q/GDW 73286.1的规定，海缆导体采用TR型软铜线，结构上是符合GB/T 3956第2类的紧压绞合圆形结构，而且要带阻水结构。导体表面要光洁，不能有油污、毛刺、锐边或者断裂的单线。绞合导体的单线允许焊接，但同一层内相邻两个接头之间的距离不能小于300mm，整芯或整股焊接是绝对不允许的。导体紧压系数要求不小于0.9，挤包绝缘层之前导体必须预加热。直流电阻方面，要符合GB/T 3956对第2类紧压绞合导体的规定；纵向阻水性能则要满足GB/T 32346.1的要求。\n\n**再来看内衬层。** 标准要求金属丝铠装层下面必须要有内衬层，材料是聚丙烯绳绕包，绕包完成后在内衬层外面均匀涂敷沥青防腐材料。厚度上，内衬层的近似厚度不小于1.5mm。\n\n**最后说铠装层，这块规定比较细。** 对于单芯电缆，铠装材料可以采用铜丝或者镀锌钢丝。这里有个需要特别注意的点——采用镀锌钢丝铠装时，标准明确要求必须充分考虑钢丝铠装层的交流损耗以及对电缆载流量的影响，这是因为单芯电缆钢丝铠装会产生较大的涡流损耗，这个在选型时很关键。如果采用铜丝铠装，圆铜丝的直径一般应为6.0mm、7.0mm和8.0mm，当然如果招标人另有要求，也允许采用比规定直径更大的铜丝。铠装层要求绕得很紧密，相邻金属线之间的间隙要很小，必要时可以在铠装外再绕一条金属带。\n\n总结一下，导体核心是TR软铜、紧压绞合、阻水结构加0.9的紧压系数；内衬层是聚丙烯绳绕包加沥青防腐，不小于1.5mm；单芯铠装用铜丝或镀锌钢丝，用钢丝时要特别关注交流损耗问题。如果您需要具体的铠装丝直径选型或者载流量计算方面的进一步信息，可以再告诉我。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "PARTIAL",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "NOT_NEEDED",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "0.9",
+            "supporting_chunk_id": "af74d2eeaaf2c4a4",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "1.5",
+            "supporting_chunk_id": "af74d2eeaaf2c4a4",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "220",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "300",
+            "supporting_chunk_id": "af74d2eeaaf2c4a4",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "32346.1",
+            "supporting_chunk_id": "af74d2eeaaf2c4a4",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "3956",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "6.0",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "7.0",
+            "supporting_chunk_id": "bc2a6dfa54206eab",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "bac8e77cef90c8cf",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "8.0",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 1
+    },
+    {
+      "session": "CTRL",
+      "user_query": "220kV 三芯海底电缆的内衬层厚度要求是什么？",
+      "retrieved_chunk_ids": [
+        "ff249ff52cf67152",
+        "bac8e77cef90c8cf",
+        "bc2a6dfa54206eab",
+        "cc4443ca2f4783ac",
+        "af74d2eeaaf2c4a4",
+        "109c57a8471be6fa",
+        "c7347587e61a3532",
+        "a0bd8a6bde77b17e"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用"
+      ],
+      "retrieved_parts": [
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第1部分",
+        "第3部分",
+        "第3部分"
+      ],
+      "final_context_chars": 4698,
+      "model_answer": "根据 Q/GDW 73286.1《220kV海底电力电缆系统采购标准 第1部分：通用技术规范》第5.1.12条的规定，海底电缆金属丝铠装层下应设置内衬层，具体要求是：内衬层采用聚丙烯绳绕包，并在其外面均匀涂敷沥青防腐材料，内衬层的近似厚度不小于1.5 mm。\n\n需要注意的是，这是针对海底电缆的通用要求，适用于包括三芯在内的各种海底电缆结构。如果您需要三芯海缆更有针对性的专用技术规范内容，建议进一步查阅 Q/GDW 73286.3 的相关条款。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "NOT_NEEDED",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "1.5",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "12",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "220",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "5.1",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "ff249ff52cf67152",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底 | 章节: 5",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.3",
+            "supporting_chunk_id": "c7347587e61a3532",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 1
+    },
+    {
+      "session": "CTRL",
+      "user_query": "Q/GDW 73286 的通用规范与单芯/三芯专用规范分别规定什么？",
+      "retrieved_chunk_ids": [
+        "48f12a5a8ce5eb6c",
+        "646ab90775aa14a5",
+        "7de0deabdfbdccdc",
+        "43e96b415797394b",
+        "c3a92b28cfd524d3",
+        "d5f07f5d24ec3cc7",
+        "8065ad3f4096ca30",
+        "ff6344911eb4df75"
+      ],
+      "retrieved_documents": [
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+        "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+        "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用"
+      ],
+      "retrieved_parts": [
+        "第1部分",
+        "第2部分",
+        "第2部分",
+        "第2部分",
+        "第1部分",
+        "第2部分",
+        "第3部分",
+        "第3部分"
+      ],
+      "final_context_chars": 5187,
+      "model_answer": "Q/GDW 73286 这套标准是分层设计的，通用规范和专用规范各有分工、配套使用。具体来说：\n\n**通用技术规范（第1部分，Q/GDW 73286.1）**\n它管的是一整类物资的“共性要求”。按标准的编写原则，通用技术规范针对的是一类招标物资，提出这一类物资共同的、通用的技术规定，不针对某一种具体采购对象。它和对应的专用技术规范配套，共同组成招标采购中的规范技术文件。\n\n**专用技术规范（第2部分、第3部分）**\n它管的是“个性化要求”，也就是针对该类物资中某一种具体采购对象的专门规定：\n\n- **第2部分（Q/GDW 73286.2）**：针对 220 kV 单芯海底电力电缆系统，提出其专用技术要求。\n- **第3部分（Q/GDW 73286.3）**：针对 220 kV 三芯海底电力电缆系统，提出其专用技术要求。\n\n**两者的关系**\n标准里写得很清楚：通用技术规范提出共性要求，专用技术规范提出具体采购对象的个性化要求；在采购过程中，通用规范和对应的某一个专用规范必须**配套使用**，共同组成物资招标采购的规范技术文件。换句话说，一个通用规范可以对应一个或多个专用规范，合起来构成一个独立的标准编号（Q/GDW 73286）。\n\n如果您想进一步了解某一部分（比如第2部分或第3部分）具体包含哪些章节内容，可以告诉我，我再帮您细看。",
+      "labels": {
+        "answer_produced": "YES",
+        "refusal": "NONE",
+        "citation_attribution": "CORRECT",
+        "groundedness": "SUPPORTED",
+        "completeness": "COMPLETE",
+        "cross_document_synthesis": "NOT_NEEDED",
+        "hallucination_suspicion": "NO",
+        "unsupported_claims": [],
+        "claims": [
+          {
+            "claim": "220",
+            "supporting_chunk_id": "48f12a5a8ce5eb6c",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286",
+            "supporting_chunk_id": "48f12a5a8ce5eb6c",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.1",
+            "supporting_chunk_id": "48f12a5a8ce5eb6c",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.1 | 文档: 220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf | 电压: 220kV | 敷设环境: 海底] 附件22 国",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.2",
+            "supporting_chunk_id": "646ab90775aa14a5",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.2 | 文档: 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          },
+          {
+            "claim": "73286.3",
+            "supporting_chunk_id": "8065ad3f4096ca30",
+            "supporting_excerpt": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯",
+            "verdict": "SUPPORTED",
+            "provenance": "EXPLORATORY_JUDGMENT (deterministic substring check)"
+          }
+        ],
+        "context_parts": [
+          "第1部分",
+          "第2部分",
+          "第3部分"
+        ],
+        "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+      },
+      "round": 1
+    }
+  ],
+  "limitations": [
+    "All answer-level fields are EXPLORATORY_JUDGMENT by deterministic heuristic; no Gold Set, no human review.",
+    "Multi-turn history is HARNESS_MANAGED_HISTORY, not the deployed assistant's refine_multiturn path.",
+    "Numeric claims are checked by substring presence in the retrieved window: NOT_FOUND means insufficient evidence here, never a proven contradiction.",
+    "Retrieval was not tuned in this round; the pipeline, prompt, reranker, embedding and index are unchanged."
+  ]
+}
