@@ -117,7 +117,14 @@ class MetadataCandidate:
 
 @dataclass
 class CanonicalMetadata:
-    """What is known about ONE document, after conflict resolution."""
+    """What is known about ONE document, after conflict resolution.
+
+    ``document_standard_no`` is the DISPLAY form (``Q/GDW 73286.3-2026``) because it is
+    what a retrieval header shows a reader and what a person searches for;
+    :attr:`standard_no_key` is the comparison form and is never written to a chunk. The
+    two are separate on purpose: normalizing for matching must not destroy the spelling,
+    and a header that printed ``QGDW73286.3`` would be a number no user would search.
+    """
 
     document_id: str = ""
     title: str = ""
@@ -142,6 +149,76 @@ class CanonicalMetadata:
             return self.category
         return self.attributes.get(key)
 
+    @property
+    def standard_no_key(self) -> str:
+        """The comparison form of the identity, or "" - never a chunk's header value."""
+        return designation_key(self.document_standard_no or "")
+
+
+# ---------------------------------------------------------------------------
+# A standard number has a display form and a comparison form, and they are not the same
+# ---------------------------------------------------------------------------
+
+#: ``Q/GDW 73286.3-2026`` - the qualifier, a space, the number (with its part) and the
+#: year. Kept exactly as a reader writes it.
+_DISPLAY_RE = re.compile(r"^(?P<prefix>QGDW|GBT|GB|DLT|JBT|NBT|YDT|IEC|ISO)(?P<number>\d+(?:\.\d+)*?)(?:\.(?P<part>\d+))?(?:[-_](?P<year>\d{4}))?$")
+
+#: How a qualifier is spelled out when the stored form has lost its punctuation.
+_QUALIFIER_SPELLING = {
+    "QGDW": "Q/GDW",
+    "GBT": "GB/T",
+    "GB": "GB",
+    "DLT": "DL/T",
+    "JBT": "JB/T",
+    "NBT": "NB/T",
+    "YDT": "YD/T",
+    "IEC": "IEC",
+    "ISO": "ISO",
+}
+
+
+def normalize_designation(text: str) -> str:
+    """``Q/GDW 73286.3-2026`` / ``Q_GDW 73286.3-2026`` -> ``QGDW73286.3-2026``.
+
+    The form the corpus and the file names do not agree on is the SEPARATOR (a slash
+    cannot live in a file name, so an archived document writes ``Q_GDW``), which is why
+    normalization is limited to it: spaces, ``_`` and both slash spellings are dropped,
+    while the number's own dots and the year's hyphen are kept, because they are part of
+    what the number means. An ``_`` BETWEEN DIGITS is the year separator in a fully
+    underscored spelling (``Q_GDW_73286.3_2026``) and becomes the hyphen, so the year is
+    never glued onto the number.
+    """
+    prepared = re.sub(r"(?<=\d)_(?=\d)", "-", str(text or ""))
+    return re.sub(r"[\s\u3000/_／]+", "", prepared).upper()
+
+
+def display_designation(text: str) -> str:
+    """``QGDW73286.3-2026`` -> ``Q/GDW 73286.3-2026``; unknown shapes pass through.
+
+    The inverse of :func:`normalize_designation` for every designation this corpus uses,
+    and the ONLY form allowed into a retrieval header - a normalized key in a header
+    would be a number no user would ever search for.
+    """
+    match = _DISPLAY_RE.match(normalize_designation(text))
+    if not match:
+        return str(text or "").strip()
+    number = match.group("number")
+    if match.group("part"):
+        number += "." + match.group("part")
+    spelled = _QUALIFIER_SPELLING.get(match.group("prefix"), match.group("prefix"))
+    return f"{spelled} {number}" + (f"-{match.group('year')}" if match.group("year") else "")
+
+
+def designation_key(text: str) -> str:
+    """The comparison key: ``Q/GDW 73286.3-2026`` -> ``q_gdw_73286_3_2026``.
+
+    Used for equality, grouping and family matching. It is deliberately LOSSY (it drops
+    the punctuation that distinguishes the display form) and is therefore never what a
+    header prints.
+    """
+    display = display_designation(text) if _DISPLAY_RE.match(normalize_designation(text)) else str(text or "")
+    return re.sub(r"[^0-9a-z]+", "_", display.strip().lower()).strip("_")
+
 
 def resolve_metadata(candidates: Iterable[MetadataCandidate], *, document_id: str = "", title: str = "", category: str = "") -> CanonicalMetadata:
     """Candidates -> canonical metadata, one winner per key, losers kept as evidence.
@@ -162,7 +239,7 @@ def resolve_metadata(candidates: Iterable[MetadataCandidate], *, document_id: st
             continue
         if candidate.key == "document_standard_no":
             if resolved.document_standard_no is None and candidate.confidence >= MIN_CONFIDENCE:
-                resolved.document_standard_no = str(candidate.value)
+                resolved.document_standard_no = display_designation(str(candidate.value))
             continue
         if candidate.key == "referenced_standard_nos":
             values = tuple(str(value) for value in candidate.value if value)
@@ -195,12 +272,19 @@ class RetrievalField:
     label: str
 
 
+#: The one field every profile ends with, because a section is a property of the PASSAGE
+#: and not of the domain: the frozen Phase A contract is identity, title, domain
+#: attributes, then the section, for a cable and for a transformer alike.
+SECTION_FIELD = RetrievalField("section", "章节")
+
+
 @dataclass(frozen=True)
 class DocumentProfile:
     """A domain: what it calls its fields, and which of them retrieval indexes.
 
     ``identity_fields`` say WHAT the document is (and are the minimum a header needs);
     ``retrieval_fields`` are the domain attributes worth matching a question against.
+    :data:`SECTION_FIELD` is appended by :func:`profile_fields` for every profile.
     """
 
     category: str
@@ -210,7 +294,12 @@ class DocumentProfile:
 
     @property
     def fields(self) -> tuple[RetrievalField, ...]:
-        return (*self.identity_fields, *self.retrieval_fields)
+        return profile_fields(self)
+
+
+def profile_fields(profile: DocumentProfile) -> tuple[RetrievalField, ...]:
+    """``identity -> domain attributes -> section``, the order the contract fixes."""
+    return (*profile.identity_fields, *profile.retrieval_fields, SECTION_FIELD)
 
 
 #: The identity every profile shares: a standard number when the document has one, and
@@ -301,7 +390,7 @@ def render_retrieval_header(metadata: CanonicalMetadata, profile: DocumentProfil
     """
     profile = profile or profile_for(metadata.category)
     parts: list[str] = []
-    for spec in profile.fields:
+    for spec in profile_fields(profile):
         value = metadata.value_of(spec.key)
         if isinstance(value, (list, tuple)):
             value = "、".join(str(item) for item in value if item)
@@ -353,11 +442,11 @@ def declared_prefix_kind(text: str, *, current_fields: Sequence[str] = ()) -> st
 
     The distinction a backfill needs is "does this body already start with a header",
     which :func:`split_retrieval_header` answers, plus "is that header the shape this
-    version writes". The IDENTITY labels cannot tell the two apart - every version
-    prints 标准号 and 文档 - so a header counts as CURRENT only when it carries a label
-    from a profile's RETRIEVAL fields (芯数/电压/纤芯数…), which is exactly the difference
-    between the live 3-field legacy header and the projection this module renders. A
-    caller may pass its own labels for a domain whose header it knows.
+    version writes". The IDENTITY and SECTION labels cannot tell the two apart - the
+    legacy header already prints 标准号, 文档 and 章节 - so a header counts as CURRENT only
+    when it carries a DOMAIN attribute label (芯数/电压/线缆类别/纤芯数…), which is exactly
+    what the live legacy header never has. A caller may pass its own labels for a domain
+    whose header it knows.
     """
     header, body = split_retrieval_header(text)
     if not header:

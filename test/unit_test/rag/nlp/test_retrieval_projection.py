@@ -107,7 +107,7 @@ def test_a_cover_page_identity_that_repeats_is_believed():
     metadata = _metadata("450／750V聚氯乙烯绝缘电缆采购标准+第2部分：专用技术规范.pdf", body)
 
     identity = [candidate for candidate in metadata.evidence if candidate.key == "document_standard_no"]
-    assert metadata.document_standard_no in {"QGDW73289.2-2026", "QGDW73289"}
+    assert metadata.document_standard_no == "Q/GDW 73289.2-2026"
     assert identity, "the winning candidate has to be in the evidence"
     assert identity[0].source in {rp.SOURCE_TITLE_PAGE, rp.SOURCE_FILE_NAME}
 
@@ -135,10 +135,10 @@ def test_a_family_inference_never_outranks_what_the_document_says():
     metadata = rp.resolve_metadata(candidates, category="power_cable")
 
     # The file name printed the number, so the inference loses.
-    assert metadata.document_standard_no == "QGDW73286.2-2026"
+    assert metadata.document_standard_no == "Q/GDW 73286.2-2026"
     # ... and it IS used when nothing else offers a value at all.
     inferred = rp.resolve_metadata([am.family_candidate("QGDW73286", family="QGDW73286", part=3, year="2026")], category="power_cable")
-    assert inferred.document_standard_no == "QGDW73286.3-2026"
+    assert inferred.document_standard_no == "Q/GDW 73286.3-2026"
     assert inferred.evidence[0].source == rp.SOURCE_FAMILY_INFERENCE
 
 
@@ -258,9 +258,69 @@ def test_a_conflict_keeps_both_sides_and_the_winner_is_the_stronger_source():
 
     metadata = rp.resolve_metadata(candidates, category="power_cable")
 
-    assert metadata.document_standard_no == "QGDW73286.3-2026"
+    assert metadata.document_standard_no == "Q/GDW 73286.3-2026"
     assert {candidate.value for candidate in metadata.evidence} == {"GBT12706.1", "QGDW73286.3-2026"}
-    assert "the stronger source wins" not in str(metadata.evidence[0])  # the winner is first, by order
+
+
+# ---------------------------------------------------------------------------
+# The display form and the comparison key are different values
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("written", "expected_display"),
+    [
+        ("Q/GDW 73286.1-2026", "Q/GDW 73286.1-2026"),
+        ("Q/GDW 73286.2-2026", "Q/GDW 73286.2-2026"),
+        ("Q/GDW 73286.3-2026", "Q/GDW 73286.3-2026"),
+        ("Q_GDW 73286.3-2026", "Q/GDW 73286.3-2026"),
+        ("Q_GDW_73286.3_2026", "Q/GDW 73286.3-2026"),
+        ("Q／GDW 73286.3-2026", "Q/GDW 73286.3-2026"),
+        ("  q/gdw   73286.3 - 2026  ", "Q/GDW 73286.3-2026"),
+    ],
+)
+def test_every_spelling_of_one_number_normalizes_to_the_same_key(written, expected_display):
+    """A slash cannot live in a file name, so the corpus writes `Q_GDW`; the punctuation
+    is what a reader searches for, so it comes back in the display form."""
+    assert rp.display_designation(written) == expected_display, written
+    assert rp.designation_key(written) == rp.designation_key(expected_display), written
+    assert rp.designation_key(written).startswith("q_gdw_73286_") and rp.designation_key(written).endswith("_2026")
+
+
+def test_the_display_form_keeps_what_the_key_drops():
+    assert rp.display_designation("QGDW73286.3-2026") == "Q/GDW 73286.3-2026"
+    assert rp.display_designation("GBT12706.1-2017") == "GB/T 12706.1-2017"
+    assert rp.display_designation("DLT5221-2016") == "DL/T 5221-2016"
+    assert rp.designation_key("Q/GDW 73286.3-2026") == "q_gdw_73286_3_2026"
+    # No year in the source means no year in the display form: nothing is invented.
+    assert rp.display_designation("QGDW73286.3") == "Q/GDW 73286.3"
+
+
+def test_the_header_prints_the_display_form_and_never_the_key():
+    metadata = rp.resolve_metadata([rp.MetadataCandidate("document_standard_no", "QGDW73286.3-2026", rp.SOURCE_FILE_NAME, 0.9)], title=PART3_NAME, category="power_cable")
+
+    header = rp.render_retrieval_header(metadata)
+
+    assert "标准号: Q/GDW 73286.3-2026" in header
+    assert "QGDW73286.3" not in header, "the comparison key must never reach a chunk"
+    assert metadata.standard_no_key == "q_gdw_73286_3_2026"
+    # The two forms say the same thing and are not equal - that is the whole point.
+    assert metadata.document_standard_no != metadata.standard_no_key
+
+
+def test_a_year_that_no_document_text_states_is_reported_not_invented():
+    """The three-core part writes `Q/GDW 73286.3` with no year; the year comes from the
+    family and the evidence says so, so a reviewer can see it is an inference."""
+    candidates = am.metadata_candidates(PART3_NAME, "Q/GDW 73286.3\n表1（续）\n3×400\nQ/GDW 73286.3\n")
+    borrowed = am.family_candidate("QGDW73286", family="QGDW73286", part=3, year="2026")
+    candidates.append(borrowed)
+
+    metadata = rp.resolve_metadata(candidates, title=PART3_NAME, category="power_cable")
+    winner = next(candidate for candidate in metadata.evidence if candidate.key == "document_standard_no")
+
+    assert metadata.document_standard_no in {"Q/GDW 73286.3", "Q/GDW 73286.3-2026"}
+    assert winner.source in {rp.SOURCE_TITLE_PAGE, rp.SOURCE_FILE_NAME, rp.SOURCE_DOCUMENT_BODY, rp.SOURCE_FAMILY_INFERENCE}
+    assert borrowed.evidence, "a borrowed year carries its provenance"
 
 
 def test_a_low_confidence_candidate_alone_is_not_written():

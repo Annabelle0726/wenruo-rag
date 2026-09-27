@@ -59,6 +59,15 @@ SCAN_CHAR_LIMIT = 4000
 TITLE_CHAR_LIMIT = 60
 SECTION_CHAR_LIMIT = 40
 
+#: How long the TEXT after a section number may be before it stops being a heading.
+#: A clause heading is a few words ("5.1 电缆结构", "6.2.3 例行交流电压试验"); anything
+#: longer is the clause's own prose, and the section is then the number alone.
+SECTION_TAIL_CHAR_LIMIT = 16
+
+#: What ends a heading's text: sentence punctuation. A Chinese comma is NOT a terminator,
+#: because a real heading uses one ("5.1 导体，屏蔽").
+_HEADING_TAIL_BREAK_RE = re.compile(r"[。！？；;!?]|\s-\s")
+
 #: Allowlist of standard-designation prefixes: Chinese
 #: national/industry/enterprise standards plus the common international bodies. An
 #: allowlist rather than a permissive pattern keeps ordinary technical prose —
@@ -295,8 +304,26 @@ def _heading_of(line: str) -> str:
     # that is the shape of a real clause heading ("5.1 电缆结构"), while parameter
     # rows lead with a unit ("1.5 mm2 铜芯线", "0.6/1 kV 电缆"). A missing section is
     # far better than a section that names a measurement.
-    if _NUMERIC_MARKER_RE.match(marker) and not _CJK_LEAD_RE.match(tail):
+    numeric = bool(_NUMERIC_MARKER_RE.match(marker))
+    if numeric and not _CJK_LEAD_RE.match(tail):
+        # A line that is NOTHING but a clause number is a heading too ("4.5.2" alone),
+        # which the CJK rule rejected. Two dotted levels are required for that, because
+        # a bare one-dot number on its own line is a table value ("1.5", "0.6") far more
+        # often than it is a clause.
+        if not tail and marker.count(".") >= 2:
+            return _truncate(marker, SECTION_CHAR_LIMIT)
         return ""
+
+    # A clause's FIRST sentence is not its title. Measured live: 20 of the 57 stored
+    # section values ran to the 40-character cap because the line was "4.5.2 完成合同设备
+    # 安装后，买方和卖方应检查和确认安装工作…" - the extractor swallowed the paragraph,
+    # which then rode into every header of that document. The tail is cut at the first
+    # sentence terminator and dropped entirely when what remains is longer than a
+    # heading; `4.5.2` alone is the honest answer for a clause whose line is prose.
+    if tail:
+        tail = _HEADING_TAIL_BREAK_RE.split(tail, maxsplit=1)[0].strip(" 　、,，:：-—_")
+        if len(tail) > SECTION_TAIL_CHAR_LIMIT:
+            tail = ""
     return _truncate(marker + (" " + tail if tail else ""), SECTION_CHAR_LIMIT)
 
 

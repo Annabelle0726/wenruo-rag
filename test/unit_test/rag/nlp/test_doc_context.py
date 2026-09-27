@@ -140,6 +140,50 @@ def test_apply_document_context_skips_empty_and_textless_chunks():
     assert "content_with_weight" not in chunks[3]
 
 
+# ---------------------------------------------------------------------------
+# A section is an identifier/title, never a paragraph
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.p2
+@pytest.mark.parametrize(
+    ("first_line", "expected"),
+    [
+        ("4.5.2", "4.5.2"),
+        ("4.5.2 内衬层", "4.5.2 内衬层"),
+        ("5.3.3 绝缘标称厚度", "5.3.3 绝缘标称厚度"),
+        ("6.2.3 例行交流电压试验", "6.2.3 例行交流电压试验"),
+        ("表1 技术参数特性表", "表1 技术参数特性表"),
+        ("第5章 结构", "第5章 结构"),
+        # The measured defect: the line is the CLAUSE, and the extractor used to carry
+        # its first forty characters into every header of the document.
+        ("4.5.2 完成合同设备安装后，买方和卖方应检查和确认安装工作，并签署安装工作完成证明书，共两份。", "4.5.2"),
+        ("5.3.4 内衬层厚度应不小于1.5mm，外被层厚度应不小于4.0mm，偏心度应不大于6%。", "5.3.4"),
+        ("4.5.2 完成合同设备安装后，买方和卖方应检查", "4.5.2"),
+        # A heading that ends its own sentence keeps its title.
+        ("5.1 电缆结构。", "5.1 电缆结构"),
+    ],
+)
+def test_a_section_never_carries_a_paragraph(first_line, expected):
+    assert doc_context.document_sections([first_line + "\n正文段"]) == [expected]
+
+
+@pytest.mark.p2
+def test_every_stored_section_stays_within_the_heading_budget():
+    """The live index's worst case was 40 characters; nothing may exceed that again."""
+    lines = [
+        "4.5.2 完成合同设备安装后，买方和卖方应检查和确认安装工作，并签署安装工作完成证明书，共两份，双方各执一份。",
+        "表A.2（续）",
+        "6.2.3 例行交流电压试验",
+    ]
+
+    sections = doc_context.document_sections(lines)
+
+    assert sections[0] == "4.5.2"
+    assert max(len(section) for section in sections) <= doc_context.SECTION_CHAR_LIMIT
+    assert all(len(section) <= doc_context.SECTION_TAIL_CHAR_LIMIT + 12 for section in sections)
+
+
 @pytest.mark.p2
 @pytest.mark.parametrize(
     ("doc_name", "texts", "expected"),
