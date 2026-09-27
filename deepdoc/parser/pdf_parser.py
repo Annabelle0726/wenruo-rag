@@ -1497,7 +1497,8 @@ class RAGFlowPdfParser:
             if img is None:
                 continue
             content = self.tbl_det.construct_table(bxs, html=return_html, is_english=self.is_english)
-            if not str(content or "").strip():
+            recognised = str(content or "").strip()
+            if not recognised:
                 # The structure recogniser produced nothing for a region the LAYOUT
                 # model called a table. That is the missed-table report on a cable
                 # datasheet: a large or borderless table whose grid the model cannot
@@ -1506,6 +1507,7 @@ class RAGFlowPdfParser:
                 # (`deepdoc/parser/table_extractor.py`), which reads the ruling - or,
                 # when there is none, the columns the words line up into.
                 content = self._rule_based_table_markdown(poss) or content
+            self._log_table_evidence(bxs, poss, content, recognised=recognised)
             res.append((img, content))
             positions.append(poss)
 
@@ -1673,6 +1675,37 @@ class RAGFlowPdfParser:
         except Exception:  # noqa: BLE001 - an enhancement must never fail the parse
             logging.exception("rule-based table fallback failed")
         return ""
+
+    def _log_table_evidence(self, bxs: list[dict[str, Any]], poss: list[Any], content: Any, *, recognised: str) -> None:
+        """One line per extracted table: where it is, how it was read, how much it holds.
+
+        A table the structure recogniser read as its HEAD only is the "the tail rows are
+        missing" report on a cable standard: those rows are in NO chunk, so no retrieval
+        change can reach them. This line and the warning below tell that apart from a
+        table that was extracted whole and merely did not score - and
+        ``tools/audit_document_chunks.py`` reads the stored chunks for the other half of
+        the answer.
+        """
+        from deepdoc.parser.table_extractor import count_table_rows
+
+        pages = ",".join(str(page) for page in sorted({int(b.get("page_number", 0)) for b in bxs})) or "?"
+        rows = count_table_rows(content)
+        geometry_rows = count_table_rows(self._rule_based_table_markdown(poss))
+        logging.info(
+            "[Table] page(s) %s: %d row(s) from the %s (%d char(s)); the rule-based reading of the same region holds %d row(s)",
+            pages,
+            rows,
+            "structure recogniser" if recognised else "rule-based extraction",
+            len(str(content or "")),
+            geometry_rows,
+        )
+        if rows and geometry_rows >= 2 * rows:
+            logging.warning(
+                "[Table] page(s) %s: the stored table carries %d row(s) while the rule-based reading of the same region carries %d - the rows in between are in NO chunk (see tools/audit_document_chunks.py)",
+                pages,
+                rows,
+                geometry_rows,
+            )
 
     @staticmethod
     def total_page_number(fnm: str | bytes, binary: bytes | None = None) -> int | None:

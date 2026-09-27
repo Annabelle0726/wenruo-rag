@@ -500,6 +500,27 @@ def split_html_table(html: str, max_chars: int) -> list[str]:
     return parts or [text]
 
 
+def count_table_rows(table_text: Any) -> int:
+    """How many DATA rows a rendered table carries, in either shape this project emits.
+
+    Used by the parser's per-table evidence line: a table the model recognised as its
+    HEAD only is the "the tail rows are missing" report, and the row count is what tells
+    a partial grid from a complete one. The header is not counted, so an HTML reading and
+    a Markdown reading of the same region are comparable.
+    """
+    text = str(table_text or "")
+    if not text.strip():
+        return 0
+    html_rows = _HTML_ROW_RE.findall(text)
+    if html_rows:
+        _, _, body = parse_html_table(text)
+        return len(body) if body else len(html_rows)
+    _, header, body = parse_markdown_table(text)
+    if header:
+        return len(body)
+    return len([line for line in text.splitlines() if line.strip()])
+
+
 def _find_caption(page: Any, bbox: tuple[float, float, float, float] | None, gap: float = CAPTION_MAX_GAP) -> str:
     """The ``表N …`` line just above ``bbox``, if there is one."""
     if bbox is None:
