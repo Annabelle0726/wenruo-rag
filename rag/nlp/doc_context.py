@@ -160,9 +160,18 @@ def detect_standard_id(doc_name: str, texts: Iterable[str]) -> str:
     """Return the normalized standard number the document declares, or "".
 
     The document name is scanned first so a standard number embedded in the file
-    name wins over a chance match deeper in the body.
+    name wins over a chance match deeper in the body, and the name is scanned in
+    both spellings of its qualifier separator: "/" is illegal in a file name, so the
+    corpus files 《Q/GDW 73289.2-2026》 as "Q_GDW 73289.2-2026" and a slash-only scan
+    would miss the very designation the document is filed under. Both spellings
+    return the same normalized value, so the metadata field and the chunk prefix
+    cannot disagree.
     """
-    parts = [" ".join((doc_name or "").split())]
+    name = " ".join((doc_name or "").split())
+    parts = [name]
+    slash_spelling = name.replace("_", "/")
+    if slash_spelling != name:
+        parts.append(slash_spelling)
     budget = SCAN_CHAR_LIMIT
     for index, text in enumerate(texts):
         if index >= SCAN_CHUNK_LIMIT or budget <= 0:

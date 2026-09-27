@@ -346,6 +346,48 @@ async def get_storage_binary(bucket, name):
 
 @timed_with_recording
 @timeout(60 * 80, 1)
+async def _auto_tag_document(task, cks, language):
+    """Extract and persist a document's metadata. Never raises.
+
+    Two consumers, one write: the document's metadata row is what the document list
+    counts fields from AND what the ``auto`` metadata filter pushes down on (the
+    doc-meta store IS the vector-side payload for document-level metadata - see
+    ``DocMetadataService.update_document_metadata``), so a single persistence call
+    feeds both. Existing keys are preserved: the operator's own metadata and the
+    parser's (outline, table aggregations) must not be overwritten by an automatic
+    pass.
+
+    Returns the fields that were written, or ``{}`` when there were none.
+    """
+    from rag.nlp.auto_metadata import LLM_SCAN_CHARS, auto_tag, document_text
+
+    text = document_text(cks, limit=LLM_SCAN_CHARS)
+    llm = None
+    if task.get("llm_id"):
+        try:
+            chat_model_config = resolve_model_config(task["tenant_id"], LLMType.CHAT, task["llm_id"])
+            llm = LLMBundle(task["tenant_id"], chat_model_config, lang=language)
+        except Exception:
+            logging.warning("auto metadata tagging: no chat model for tenant %s; the regex pass runs alone", task.get("tenant_id"), exc_info=True)
+
+    result = await auto_tag(task["name"], text, llm=llm)
+    if not result.fields:
+        logging.info("auto metadata tagging found nothing for %s (source=%s)", task["name"], result.source)
+        return {}
+
+    existing = DocMetadataService.get_document_metadata(task["doc_id"]) or {}
+    merged = update_metadata_to(dict(result.fields), existing)
+    ret = DocMetadataService.update_document_metadata(task["doc_id"], merged)
+    get_recording_context().save_func_return_value("DocMetadataService.update_document_metadata", ret)
+    logging.info(
+        "auto metadata tagging (%s) for %s: %s",
+        result.source,
+        task["name"],
+        ", ".join(f"{key}={value}" for key, value in result.fields.items()),
+    )
+    return result.fields
+
+
 async def build_chunks(task, progress_callback, on_chunking_start=None):
     if task["size"] > settings.DOC_MAXIMUM_SIZE:
         set_progress(task["id"], prog=-1, msg="File size exceeds( <= %dMb )" % (int(settings.DOC_MAXIMUM_SIZE / 1024 / 1024)))
@@ -436,6 +478,23 @@ async def build_chunks(task, progress_callback, on_chunking_start=None):
     # here as well as in the refactored executor so both paths (TE_RUN_MODE) and
     # the dry-run comparator see the same raw_chunks.
     apply_document_context(cks, task["name"], language=task_language)
+
+    # Auto metadata tagging: the standard number, voltage level, cable type and
+    # document type a cable document declares are IN the document, but nothing put
+    # them into the document's metadata - so the list shows "0 fields", and an
+    # assistant whose metadata matching is on has no key to match. A regex pass over
+    # the name and the document head (zero tokens) runs first; ONE model call is
+    # spent only when it could not identify the document (see
+    # `rag/nlp/auto_metadata.py`). It runs HERE - after the parse, after the document
+    # context bound the standard number into the chunks (so the field and the
+    # `[标准号: …]` prefix cannot disagree), and before the embedding stage and the
+    # vector write, which are the irreversible ones. Never raises.
+    try:
+        await _auto_tag_document(task, cks, task_language)
+    except Exception:
+        # _auto_tag_document is already fail-safe; this is the second belt, because a
+        # metadata enhancement must never be the reason an ingest fails.
+        logging.exception("auto metadata tagging failed for %s; continuing without it", task["name"])
 
     # Record raw chunks for comparison
     get_recording_context().record("raw_chunks", cks)
