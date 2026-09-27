@@ -69,6 +69,7 @@ from rag.retrieval.chunk_profile import (
     document_key,
     document_name,
     is_comparative_question,
+    is_hollow_table,
     is_prose_chunk,
     is_table_chunk,
     resolve_compared_documents,
@@ -95,6 +96,17 @@ MAX_TABLE_SHARE = 0.5
 #: Ordering nudge for a tabular passage: enough to put a comparable prose clause
 #: first, not enough to reorder passages whose scores actually differ.
 TABLE_PENALTY = 0.85
+#: Ordering nudge for a table whose cells are mostly EMPTY.
+#:
+#: Measured on 《Q/GDW 73286.2 第2部分：单芯》: the table holding the 金属套厚度 values
+#: (800mm² = 3.9, 1200mm² = 4.1) is 0% empty, while fourteen other chunks of the same
+#: document repeat 800/1200 with blank value cells (``<td>800 </td><td></td>``, 20-64%
+#: empty). The question names those numbers, so it matches the EMPTY grids harder than
+#: the table that answers it, and the answer model then reports "800 和 1200 对应的数值
+#: 并未出现" while holding a passage whose 800 row is blank. An unfilled grid is the
+#: recogniser's failure, not evidence, so it is ordered below every comparable passage -
+#: never dropped, because a corpus whose tables are all sparse still needs them.
+HOLLOW_TABLE_PENALTY = 0.6
 #: Share of the window ONE auxiliary document may take.
 #:
 #: Document flooding, measured: nine recalled passages, seven of them from
@@ -220,10 +232,18 @@ def apply_rank_adjustments(chunks: Sequence[dict], policy: DiversityPolicy) -> l
     Writes ``rank_score`` (the value the cut orders by) and leaves the model's own
     numbers untouched: ``similarity`` still means what the reranker or the fused
     score said, so a transcript can tell a relevance decision from a tie-break.
+
+    Three nudges, all multiplications on the ordering value only: a table below a
+    comparable prose clause (``table_penalty``), a passage of the standard the question
+    is about above one from an auxiliary file (``core_document_boost``), and a table
+    whose cells are mostly EMPTY below a filled one (``HOLLOW_TABLE_PENALTY``) - the
+    last is what stops a blank 截面 grid from out-ranking the table that fills it.
     """
     for chunk in chunks:
         base = _score(chunk, key="rerank_score") or _score(chunk)
         penalty = policy.table_penalty if is_table_chunk(chunk) else 1.0
+        if is_table_chunk(chunk) and is_hollow_table(chunk):
+            penalty *= HOLLOW_TABLE_PENALTY
         boost = policy.core_document_boost if policy.is_core_document(chunk) else 1.0
         chunk["rank_score"] = base * penalty * boost
     return sorted(chunks, key=lambda chunk: _score(chunk, key="rank_score"), reverse=True)

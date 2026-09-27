@@ -52,6 +52,54 @@ _IMAGE_TYPES = frozenset({DOC_TYPE_IMAGE, DOC_TYPE_VIDEO})
 _TABLE_MARKUP_RE = re.compile(r"<table[\s>]|<t[dh][\s>]|<tr[\s>]", re.IGNORECASE)
 
 
+#: Share of a table's cells that may be EMPTY before the passage stops being evidence.
+#:
+#: Measured on 《Q/GDW 73286.2 第2部分：单芯》 (26 pages, 39 table chunks): the two
+#: chunks that hold the 金属套厚度 values are 0% and 17% empty, while the fourteen
+#: chunks that merely repeat the question's numbers - ``<td>800 </td><td></td>``, a
+#: section label with a blank value cell - run 20% to 64% empty. Those are not answers,
+#: they are the structure recogniser's unfilled grid, and a question that names 800 and
+#: 1200 matches them harder than it matches the table that answers it.
+HOLLOW_TABLE_EMPTY_RATIO = 0.5
+
+_CELL_RE = re.compile(r"<t[dh][^>]*>(.*?)</t[dh]>", re.DOTALL)
+
+
+def table_fill_ratio(chunk: dict) -> float | None:
+    """Share of a table passage's cells that carry text, or ``None`` when it has none.
+
+    Works for both shapes the parsers emit (HTML from the structure recogniser, Markdown
+    from the geometry extractor). ``None`` - not 0.0 - for a passage with no cells at
+    all, because "no cells" and "empty cells" are different answers.
+    """
+    body = _content(chunk)
+    if "<t" in body:
+        cells = [re.sub(r"<[^>]+>", "", cell).strip() for cell in _CELL_RE.findall(body)]
+    else:
+        cells = []
+        for line in body.splitlines():
+            if not line.lstrip().startswith("|"):
+                continue
+            row = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            if row and all(set(cell) <= set("-: ") for cell in row):
+                continue  # the Markdown separator row
+            cells.extend(row)
+    if not cells:
+        return None
+    filled = sum(1 for cell in cells if cell and cell not in {"&nbsp;", "无", "-"})
+    return filled / len(cells)
+
+
+def is_hollow_table(chunk: dict, threshold: float = HOLLOW_TABLE_EMPTY_RATIO) -> bool:
+    """Whether a table passage is mostly unfilled cells (see the constant).
+
+    ``threshold`` is the share of cells that may be EMPTY, so the boundary itself counts
+    as hollow: a table that is half blank is not evidence either.
+    """
+    ratio = table_fill_ratio(chunk)
+    return ratio is not None and ratio <= 1.0 - threshold
+
+
 def doc_type(chunk: dict) -> str:
     return str(chunk.get("doc_type_kwd") or "").strip().lower()
 
