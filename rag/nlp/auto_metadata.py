@@ -372,6 +372,178 @@ async def extract_by_llm(llm: Any, filename: str, text: str, *, scan_chars: int 
     return parse_llm_fields(answer)
 
 
+#: How far into a document a designation has to appear to count as cover-page identity,
+#: and how often it has to appear in total. The pair is what separates the document's own
+#: number from a citation: a standard prints its own number on the cover, in the running
+#: head and in its clauses, while the standards it APPLIES appear once, in a list.
+TITLE_PAGE_CHARS = 300
+IDENTITY_REPEATS = 2
+
+#: How many leading lines count as the cover, and how much text a line may carry AROUND
+#: a designation and still read as a cover line rather than as a sentence.
+COVER_LINES = 4
+COVER_TAIL_CHARS = 30
+
+#: Words that turn a designation into a CITATION of somebody else's document. This is
+#: what keeps "本产品符合 GB/T 12706.1 的规定" - a 规格书's own cover line - from becoming
+#: that document's identity, which the repeat count alone cannot see.
+_CITATION_CUES = ("依据", "按照", "符合", "引用", "参见", "参照", "遵守", "执行", "根据", "满足", "采用", "适用", "见 ") 
+
+#: Designations that are never a document's OWN number: GB/T 1.1 is the standardisation
+#: directive every Chinese standard cites in its foreword.
+_GUIDELINE_DESIGNATIONS = ("GBT1.1", "GBT1.2", "GBT20001", "GBT20000", "GB1.1")
+
+_DESIGNATION_RE = re.compile(r"(?:Q\s*/?\s*GDW|GB\s*/?\s*T|GB|DL\s*/?\s*T|JB\s*/?\s*T|NB\s*/?\s*T|YD\s*/?\s*T|IEC|ISO)\s*\d+(?:\.\d+)?(?:-\d{4})?", re.IGNORECASE)
+
+
+def designation_scan_text(text: str) -> str:
+    """The text a designation is matched in, with ``_`` read as the separator it is.
+
+    An archived file routinely spells the qualifier with underscores
+    (``Q_GDW 73289.2-2026 450_750V…``) because a slash cannot live in a file name, and
+    the folder's own convention says the three spellings are the same designation. The
+    substitution is length-preserving, so an offset found in the result is an offset in
+    the original - which is what lets the cover-line check look at what comes BEFORE a
+    match.
+    """
+    return re.sub(r"_", " ", str(text or ""))
+
+#: Where a cable is laid, as the corpus names it. Domain knowledge, so it lives here
+#: with the rest of the cable rules rather than in the generic projection.
+_ENVIRONMENT_CUES = (("海底", "海底"), ("海缆", "海底"), ("直埋", "直埋"), ("隧道", "隧道"), ("桥架", "桥架"), ("架空", "架空"), ("水下", "水下"))
+
+
+def cover_identity(text: str, *, limit: int = TITLE_PAGE_CHARS) -> tuple[str, str]:
+    """``(designation, evidence)`` when the document's COVER states its own number.
+
+    A cover line states the number and little else: ``Q/GDW 73289.2-2026`` on its own
+    line, or ``标准号：…``. A line that CITES a standard - "本产品符合 GB/T 12706.1 的
+    规定" - is the same shape to a frequency count and a different thing to a reader, so
+    the cue in front of the designation disqualifies the line. That distinction is the
+    whole reason this is not "the number that repeats most".
+    """
+    head = str(text or "")[: max(0, int(limit or 0))]
+    for line in designation_scan_text(head).splitlines()[:COVER_LINES]:
+        stripped = " ".join(line.split())
+        if not stripped or len(stripped) > 120:
+            continue
+        for match in _DESIGNATION_RE.finditer(stripped):
+            designation = re.sub(r"[\s/]+", "", match.group(0)).upper()
+            if any(designation.startswith(prefix) for prefix in _GUIDELINE_DESIGNATIONS):
+                continue
+            before = stripped[: match.start()]
+            after = stripped[match.end() :]
+            if any(cue in before for cue in _CITATION_CUES):
+                continue
+            if len(before.strip(" -—_|:：")) > 12 or len(after.strip(" -—_|:：")) > COVER_TAIL_CHARS:
+                continue
+            return designation, f"stated on the cover line {stripped[:60]!r}"
+    return "", ""
+
+
+def metadata_candidates(filename: str, text: str, *, fields: dict[str, str] | None = None, scan_chars: int = REGEX_SCAN_CHARS) -> list:
+    """The CANDIDATES this document offers, each with its source and its confidence.
+
+    The cable-domain extractor: everything cable-specific lives here (the voltage
+    patterns, the core-count rules, the seat environment), and the generic projection in
+    ``rag/nlp/retrieval_projection.py`` never learns a cable word.
+
+    Two things are deliberately never merged. ``document_standard_no`` is offered by the
+    file name, by a cover-page identity, by the metadata store and - last and weakest -
+    by the standard family; ``referenced_standard_nos`` is offered by every OTHER
+    designation the body carries. A document that only cites standards therefore gets no
+    identity at all rather than the most-cited one.
+    """
+    from rag.nlp.retrieval_projection import (
+        SOURCE_DOCUMENT_BODY,
+        SOURCE_FILE_NAME,
+        SOURCE_METADATA_STORE,
+        SOURCE_TITLE_PAGE,
+        MetadataCandidate,
+    )
+
+    name = " ".join(str(filename or "").split())
+    body = str(text or "")
+    head = body[: max(0, int(scan_chars or 0))]
+    fields = fields or {}
+    candidates: list[MetadataCandidate] = []
+
+    name_designations = _designations(name)
+    counts: dict[str, int] = {}
+    # Counted over the MATCHES, not over `_designations`, which is a set: counting its
+    # elements gives every designation exactly one vote and quietly disables the
+    # cover-page identity rule.
+    for match in _DESIGNATION_RE.finditer(designation_scan_text(body)):
+        designation = re.sub(r"[\s/]+", "", match.group(0)).upper()
+        if any(designation.startswith(prefix) for prefix in _GUIDELINE_DESIGNATIONS):
+            continue
+        counts[designation] = counts.get(designation, 0) + 1
+
+    for designation in sorted(name_designations):
+        candidates.append(MetadataCandidate("document_standard_no", designation, SOURCE_FILE_NAME, 0.9, "printed in the file name"))
+    cover, cover_evidence = cover_identity(body, limit=TITLE_PAGE_CHARS)
+    if cover and counts.get(cover, 0) >= IDENTITY_REPEATS:
+        candidates.append(MetadataCandidate("document_standard_no", cover, SOURCE_TITLE_PAGE, 0.95, f"{cover_evidence}, and {counts[cover]} times in the document"))
+    stored = clean_value(fields.get("standard_no"))
+    if stored:
+        candidates.append(MetadataCandidate("document_standard_no", normalize_standard_no(stored), SOURCE_METADATA_STORE, 0.85, "metadata store"))
+
+    own = {str(candidate.value) for candidate in candidates if candidate.key == "document_standard_no"}
+    referenced = sorted(designation for designation in counts if designation not in own)
+    if referenced:
+        candidates.append(MetadataCandidate("referenced_standard_nos", tuple(referenced), SOURCE_DOCUMENT_BODY, 0.5, "cited in this document's own text"))
+
+    voltage = _voltage_level(name)
+    if voltage:
+        candidates.append(MetadataCandidate("voltage_level", voltage, SOURCE_FILE_NAME, 0.9, "printed in the file name"))
+    else:
+        voltage = _voltage_level(body[:TITLE_PAGE_CHARS])
+        if voltage:
+            candidates.append(MetadataCandidate("voltage_level", voltage, SOURCE_DOCUMENT_BODY, 0.6, f"within the first {TITLE_PAGE_CHARS} characters"))
+
+    core = core_type_of(name, head, scan_chars=scan_chars)
+    if core:
+        source = SOURCE_FILE_NAME if _core_type(name) else SOURCE_DOCUMENT_BODY
+        candidates.append(MetadataCandidate("core_count", core, source, 0.9 if source == SOURCE_FILE_NAME else 0.7, "printed in the file name" if source == SOURCE_FILE_NAME else f"one core count dominates the first {scan_chars} characters"))
+
+    cable_type = clean_value(fields.get("cable_type"))
+    if cable_type:
+        candidates.append(MetadataCandidate("cable_type", cable_type, SOURCE_METADATA_STORE if fields.get("cable_type") else SOURCE_DOCUMENT_BODY, 0.8, "metadata store"))
+    doc_type = _doc_type(head) or clean_value(fields.get("doc_type"))
+    if doc_type:
+        source = SOURCE_FILE_NAME if doc_type in name else SOURCE_DOCUMENT_BODY
+        candidates.append(MetadataCandidate("document_type", doc_type, source, 0.85 if source == SOURCE_FILE_NAME else 0.65, "the document type its own words state"))
+    for cue, value in _ENVIRONMENT_CUES:
+        if cue in name:
+            candidates.append(MetadataCandidate("cable_environment", value, SOURCE_FILE_NAME, 0.85, f"the file name says {cue}"))
+            break
+    return candidates
+
+
+def _designations(text: str) -> set[str]:
+    """Every standard designation in a text, normalized, guidelines excluded."""
+    found = set()
+    for match in _DESIGNATION_RE.finditer(designation_scan_text(text)):
+        designation = re.sub(r"[\s/]+", "", match.group(0)).upper()
+        if any(designation.startswith(prefix) for prefix in _GUIDELINE_DESIGNATIONS):
+            continue
+        found.add(designation)
+    return found
+
+
+def family_candidate(designation: str, *, family: str, part: int, year: str = "") -> Any:
+    """A ``document_standard_no`` the FAMILY implies - the constrained last resort.
+
+    Only a caller that has established the family from the corpus may use it, and it is
+    ordered last and carries the lowest confidence precisely so that it can never
+    outrank anything the document says about itself.
+    """
+    from rag.nlp.retrieval_projection import SOURCE_FAMILY_INFERENCE, MetadataCandidate
+
+    value = f"{designation}.{part}-{year}" if year else f"{designation}.{part}"
+    return MetadataCandidate("document_standard_no", value, SOURCE_FAMILY_INFERENCE, 0.6, f"inferred as part {part} of {family}")
+
+
 async def auto_tag(
     filename: str, text: str, *, llm: Any = None, scan_chars: int = REGEX_SCAN_CHARS, llm_scan_chars: int = LLM_SCAN_CHARS, timeout_seconds: float = LLM_TIMEOUT_SECONDS
 ) -> AutoTagResult:
@@ -454,6 +626,8 @@ __all__ = [
     "document_text",
     "extract_by_llm",
     "extract_by_regex",
+    "family_candidate",
+    "metadata_candidates",
     "missing_core_fields",
     "needs_llm",
     "normalize_standard_no",

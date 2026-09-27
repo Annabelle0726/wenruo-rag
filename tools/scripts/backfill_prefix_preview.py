@@ -38,8 +38,8 @@ import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
-from rag.nlp.auto_metadata import _voltage_level, core_type_of  # noqa: E402
-from rag.nlp.doc_context import detect_standard_id, document_title, render_document_context  # noqa: E402
+from rag.nlp import auto_metadata as am  # noqa: E402
+from rag.nlp import retrieval_projection as rp  # noqa: E402
 from rag.retrieval.chunk_profile import designation_parts, name_family  # noqa: E402
 
 HEAD_CHARS = 4000
@@ -228,83 +228,45 @@ def gather(host, index, meta_index, auth):
 
     for doc_id, entry in documents.items():
         head = "".join(entry["bodies"])[:HEAD_CHARS]
-        scan = entry["name"] + "\n" + head
         family = name_family(entry["name"])
         meta = metadata.get(doc_id) or {}
-        meta_designation = str(meta.get("standard_no") or "")
-
-        designation, source = _document_designation(entry)
-        head_designation = detect_standard_id(entry["name"], entry["bodies"][:5])
-        if not designation and head_designation:
-            designation, source = head_designation, "document head"
-        if not designation and meta_designation:
-            designation, source = meta_designation, "metadata index"
-        part_number = None
-        if designation:
-            parsed = designation_parts(designation)
-            part_number = parsed[1] if parsed else None
-        if not designation and family:
-            # The family's other parts name the standard; this part is the next one.
-            known = families.get(family) or {}
-            numbered = {part: value for part, value in known.items() if part}
-            if numbered:
-                inferred_part = max(numbered) + 1
-                parsed = designation_parts(numbered[max(numbered)])
-                if parsed:
-                    prefix, _part, year = parsed
-                    designation = f"{prefix}.{inferred_part}-{year}" if year else f"{prefix}.{inferred_part}"
-                    source = f"INFERRED as part {inferred_part} of {numbered[max(numbered)]}"
-                    part_number = inferred_part
-        if not designation and family:
-            known = families.get(family) or {}
-            # A generic part that was archived without a number is still part 1.
-            for part, sample in sorted(known.items()):
-                parsed = designation_parts(sample)
-                if parsed and parsed[1] == 1:
-                    prefix, _part, year = parsed
-                    designation = f"{prefix}.1-{year}" if year else f"{prefix}.1"
-                    source = f"INFERRED as part 1 of {sample}"
-                    part_number = 1
-                    break
-
-        voltage = _voltage_level(entry["name"])
-        voltage_source = "file name" if voltage else ""
-        if not voltage:
-            head_only = _voltage_level(scan[: len(entry["name"]) + 1 + VOLTAGE_HEAD_CHARS])
-            if head_only:
-                voltage, voltage_source = head_only, f"first {VOLTAGE_HEAD_CHARS} chars of the head"
-        core_type = core_type_of(entry["name"], head, scan_chars=HEAD_CHARS)
+        candidates = am.metadata_candidates(entry["name"], head, fields=meta)
+        # The family is established from the CORPUS, so it is offered here - and only
+        # here - as the constrained last resort the projection orders last.
+        known = (families.get(family) or {})
+        numbered = {part: value for part, value in known.items() if part}
+        if numbered and not any(candidate.key == "document_standard_no" for candidate in candidates):
+            sample = numbered[max(numbered)]
+            parsed = designation_parts(sample)
+            if parsed:
+                candidates.append(am.family_candidate(f"{parsed[0]}", family=parsed[0], part=max(numbered) + 1, year=parsed[2]))
+        category = rp.classify_category(entry["name"], head)
+        resolved = rp.resolve_metadata(candidates, document_id=doc_id, title=entry["name"], category=category)
+        counts = {kind: 0 for kind in (rp.PREFIX_LEGACY, rp.PREFIX_CURRENT, rp.PREFIX_NONE)}
+        for body_text in entry["bodies"]:
+            counts[rp.declared_prefix_kind(body_text)] += 1
         entry.update(
             {
                 "family": family,
-                "designation": designation,
-                "designation_source": source,
-                "core_type": core_type,
-                "voltage": voltage,
-                "voltage_source": voltage_source,
-                "title": document_title(entry["name"]),
-                "part": part_number,
-                "meta_fields": meta,
-                # A document that is NOT a standard (a 规格书, a 技术要求, a 核实指南) has no
-                # number of its own: the numbers its text repeats are the standards it
-                # CITES, and writing one into the prefix would claim an ownership that is
-                # not there. They are reported separately and given no 标准号 by default.
-                "is_standard": not any(cue in entry["name"] for cue in _NON_STANDARD_CUES),
-                # A prefix is only worth writing when it says something the passage does
-                # not already say: a bare document name identifies nothing a reader could
-                # match on, and the one test artifact in the corpus would get exactly that.
-                "identifying": bool(designation or core_type or voltage),
+                "metadata": resolved,
+                "candidates": candidates,
+                "prefix_counts": counts,
+                "title": rp.profile_for(category).fields and entry["name"],
+                "header": rp.render_retrieval_header(resolved),
             }
         )
-
     for entry in documents.values():
-        if entry["designation"]:
-            spelled = canonical_designation(entry["designation"])
-            year = family_year(documents, entry)
-            if year and not re.search(r"-\d{4}$", spelled):
-                spelled = f"{spelled}-{year}"
-                entry["designation_source"] += f"; year from the family ({year})"
-            entry["designation"] = spelled
+        resolved: rp.CanonicalMetadata = entry["metadata"]
+        entry["designation"] = resolved.document_standard_no or ""
+        entry["designation_source"] = next((str(candidate) for candidate in resolved.evidence if candidate.key == "document_standard_no" and candidate.value == resolved.document_standard_no), "not found")
+        entry["core_type"] = resolved.attributes.get("core_count", "")
+        entry["voltage"] = resolved.attributes.get("voltage_level", "")
+        entry["voltage_source"] = next((candidate.source for candidate in resolved.evidence if candidate.key == "voltage_level" and candidate.value == entry["voltage"]), "")
+        entry["part"] = (designation_parts(resolved.document_standard_no) or ("", None, ""))[1] if resolved.document_standard_no else None
+        entry["prefixed"] = entry["prefix_counts"][rp.PREFIX_LEGACY] + entry["prefix_counts"][rp.PREFIX_CURRENT]
+        entry["meta_fields"] = meta
+        entry["is_standard"] = not any(cue in entry["name"] for cue in _NON_STANDARD_CUES)
+        entry["identifying"] = bool(resolved.document_standard_no or entry["core_type"] or entry["voltage"])
     return documents
 
 
@@ -319,22 +281,22 @@ def render_report(documents) -> str:
     write("")
     write("## Documents that would be written")
     write("")
-    write("| # | document | chunks | prefixed | 标准号 (source) | 芯数 | 电压 (source) | prefix template |")
+    write("| # | document | chunks | legacy / new / none | 标准号 (winning candidate) | 芯数 | 电压 | projected retrieval header |")
     write("|---|---|---|---|---|---|---|---|")
     order = sorted(documents.items(), key=lambda item: (item[1]["prefixed"], item[1]["name"]))
     for position, (_doc_id, entry) in enumerate(order, 1):
         if entry["prefixed"] and entry["prefixed"] == len(entry["bodies"]):
             continue
+        counts = entry["prefix_counts"]
         if not entry["identifying"]:
-            write(f"| {position} | {entry['name']} | {len(entry['bodies'])} | {entry['prefixed']} | SKIPPED: nothing identifying beyond the file name | - | - | - |")
+            write(f"| {position} | {entry['name']} | {len(entry['bodies'])} | {counts[rp.PREFIX_LEGACY]} / {counts[rp.PREFIX_CURRENT]} / {counts[rp.PREFIX_NONE]} | SKIPPED: nothing identifying beyond the file name | - | - | - |")
             continue
         designation = entry["designation"] or "(none)"
-        source = entry["designation_source"] or "not found"
         if entry["designation"] and not entry["is_standard"]:
             # Reported below instead: a cited number is not this document's own.
             designation = f"({entry['designation']} CITED - not written by default)"
-        template = prefix_template({**entry, "designation": entry["designation"] if entry["is_standard"] else ""})
-        write(f"| {position} | {entry['name']} | {len(entry['bodies'])} | {entry['prefixed']} | {designation} ({source}) | {entry['core_type'] or '-'} | {entry['voltage'] or '-'} ({entry['voltage_source'] or '-'}) | `{template}` |")
+        header = entry["header"] if entry["is_standard"] else rp.render_retrieval_header(_without_identity(entry["metadata"]))
+        write(f"| {position} | {entry['name']} | {len(entry['bodies'])} | {counts[rp.PREFIX_LEGACY]} / {counts[rp.PREFIX_CURRENT]} / {counts[rp.PREFIX_NONE]} | {designation} | {entry['core_type'] or '-'} | {entry['voltage'] or '-'} | `{header}` |")
 
     citations = [entry for entry in documents.values() if entry["designation"] and not entry["is_standard"]]
     if citations:
@@ -366,6 +328,21 @@ def render_report(documents) -> str:
     write("  and does survive tokenization.")
     write("")
     return "\n".join(lines)
+
+
+def _without_identity(metadata):
+    """The same metadata with the cited number dropped, for a document that only cites."""
+    clone = rp.CanonicalMetadata(
+        document_id=metadata.document_id,
+        title=metadata.title,
+        document_type=metadata.document_type,
+        category=metadata.category,
+        document_standard_no=None,
+        referenced_standard_nos=metadata.referenced_standard_nos,
+        attributes=dict(metadata.attributes),
+        evidence=list(metadata.evidence),
+    )
+    return clone
 
 
 def prefix_template(entry) -> str:
@@ -405,8 +382,8 @@ def main() -> None:
     # per document, exactly as `apply_document_context` would produce it.
     spot = []
     for entry in sorted(documents.values(), key=lambda item: item["name"]):
-        if entry["designation"]:
-            spot.append(f"{entry['name']}\n    {render_document_context(entry['designation'], entry['title'], '4.5.2')}")
+        if entry["header"]:
+            spot.append(f"{entry['name']}\n    {rp.retrieval_text('<原始切片正文>', entry['header'])}")
     pathlib.Path("backfill_preview_examples.txt").write_text("\n".join(spot), encoding="utf-8")
     print("wrote backfill_preview_examples.txt")
 
