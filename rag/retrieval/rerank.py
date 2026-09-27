@@ -107,6 +107,20 @@ TABLE_PENALTY = 0.85
 #: recogniser's failure, not evidence, so it is ordered below every comparable passage -
 #: never dropped, because a corpus whose tables are all sparse still needs them.
 HOLLOW_TABLE_PENALTY = 0.6
+#: Share of the window ONE DOCUMENT's EMPTY-GRID table passages may take.
+#:
+#: Measured on the Part 2 document of the 220kV report: 26 pages produce THIRTY-NINE
+#: stored table chunks, the window (12) filled with 5 of them from that document and 7
+#: from its sibling, five of those repeating the question's own numbers, and the answer
+#: sitting in the one table that is 0% empty. A document whose long tables were split
+#: into row-batches competes with ITSELF, and the per-document quota cannot see it (they
+#: are all the same document). The cap applies to EMPTY-GRID tables only, because a
+#: parameter table IS the right source for a parameter question (the value-question
+#: contract the earlier milestone measured) - it is the unfilled grid, the recogniser's
+#: failure, that must not spend the slots. Freed slots stay available to that document's
+#: prose and to anything else, and a pool that is nothing but empty grids still fills the
+#: window rather than coming back short.
+MAX_HOLLOW_TABLE_PER_DOCUMENT_SHARE = 0.25
 #: Share of the window ONE auxiliary document may take.
 #:
 #: Document flooding, measured: nine recalled passages, seven of them from
@@ -298,10 +312,13 @@ def select_context(ordered: Sequence[dict], top_n: int, policy: DiversityPolicy 
     2. the prose floor, when the question asks for a rule: normative clauses
        first, because a parameter table cannot state one;
     3. everything else by score - non-table passages first, then tables up to
-       ``policy.max_table_share`` of the window, and never more than
+       ``policy.max_table_share`` of the window, never more than
        ``policy.max_auxiliary_document_share`` of it from ONE auxiliary
        document (or ``policy.max_document_share`` from any one document, when the
-       question compares sources).
+       question compares sources), and never more than
+       :data:`MAX_TABLE_PER_DOCUMENT_SHARE` of it in TABLES from one document, so a
+       document whose long tables were split into row-batches cannot fill the window
+       with near-duplicates of itself and crowd out the one table that answers.
 
     Both caps are quotas, not preferences: a slot a cap withholds is not handed
     to the passage the cap excluded just because nothing else is left, so a
@@ -339,6 +356,10 @@ def select_context(ordered: Sequence[dict], top_n: int, policy: DiversityPolicy 
     # including the standards, because a comparison read from one side is not an
     # answer. See ``MAX_COMPARED_DOCUMENT_SHARE``.
     every_document_cap = 0 if policy.max_document_share >= 1.0 else max(1, min(top_n, math.ceil(top_n * policy.max_document_share)))
+    # A per-document cap on EMPTY-GRID table passages. At least one slot, so a document
+    # whose only relevant passage is a table still contributes it.
+    hollow_per_document_cap = max(1, min(top_n, math.ceil(top_n * MAX_HOLLOW_TABLE_PER_DOCUMENT_SHARE)))
+    hollow_counts: dict[str, int] = {}
 
     def document_of(chunk: dict) -> str:
         """The quota bucket a passage is charged to (its own key when unknown)."""
@@ -348,6 +369,12 @@ def select_context(ordered: Sequence[dict], top_n: int, policy: DiversityPolicy 
     def document_quota_blocks(chunk: dict) -> bool:
         count = document_counts.get(document_of(chunk), 0)
         if every_document_cap and count >= every_document_cap:
+            return True
+        # Enforced on BOTH paths, like the document quota: an empty grid is not evidence,
+        # so a pool of nothing but empty grids returns a SHORT window rather than one
+        # filled with grids that cannot answer. (A filled table keeps the escape hatch -
+        # a table-only pool of real data is still better than a short window.)
+        if is_hollow_table(chunk) and hollow_counts.get(document_of(chunk), 0) >= hollow_per_document_cap:
             return True
         if document_cap and not policy.is_core_document(chunk) and count >= document_cap:
             return True
@@ -374,9 +401,11 @@ def select_context(ordered: Sequence[dict], top_n: int, policy: DiversityPolicy 
             return False
         chosen.append(key)
         chosen_keys.add(key)
+        bucket = document_of(chunk)
         if is_table_chunk(chunk):
             table_count += 1
-        bucket = document_of(chunk)
+            if is_hollow_table(chunk):
+                hollow_counts[bucket] = hollow_counts.get(bucket, 0) + 1
         document_counts[bucket] = document_counts.get(bucket, 0) + 1
         return True
 

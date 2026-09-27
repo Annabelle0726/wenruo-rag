@@ -101,3 +101,66 @@ def test_a_very_empty_grid_loses_a_near_tie_but_not_a_real_gap():
     ordered = rerank.apply_rank_adjustments([_chunk("v2", grid, 0.95), _chunk("p2", "本条规定了金属套厚度。", 0.5, shape="text")], rerank.DiversityPolicy())
 
     assert [chunk["chunk_id"] for chunk in ordered] == ["v2", "p2"]
+
+
+# ---------------------------------------------------------------------------
+# One document's row-batch table parts must not fill the window with themselves
+# ---------------------------------------------------------------------------
+
+_PART2 = "Q_GDW 73286.2-2026 第2部分：单芯.pdf"
+_PART3 = "Q_GDW 73286.3-2026 第3部分：三芯.pdf"
+
+
+def _table(chunk_id, doc, score, body="<table><tr><td>800 </td><td></td></tr></table>"):
+    chunk = _chunk(chunk_id, body, score)
+    chunk["docnm_kwd"] = doc
+    chunk["doc_id"] = doc  # the quota bucket each document is charged to
+    return chunk
+
+
+def _prose(chunk_id, doc, score):
+    chunk = _chunk(chunk_id, "本条规定了金属套的平均厚度要求。", score, shape="text")
+    chunk["docnm_kwd"] = doc
+    chunk["doc_id"] = doc
+    return chunk
+
+
+def test_one_documents_empty_grids_cannot_own_the_window():
+    """The measured Part 2 shape: 39 stored tables, five of them in a 12-slot window."""
+    pool = [_table(f"t{i}", _PART2, 0.70 - i / 100) for i in range(10)] + [_table(f"s{i}", _PART3, 0.60 - i / 100) for i in range(2)]
+
+    selected = rerank.select_context(pool, 12, rerank.DiversityPolicy())
+
+    assert len([chunk for chunk in selected if chunk["docnm_kwd"] == _PART2]) <= 3, "a quarter of 12"
+    assert any(chunk["docnm_kwd"] == _PART3 for chunk in selected)
+
+
+def test_the_cap_is_on_empty_grids_not_on_tables():
+    """A parameter table IS the right source for a parameter question: a FILLED one is
+    never withheld, however many of them one document contributes."""
+    filled = "<table><tr><td>800 </td><td>3.9 </td></tr><tr><td>1200 </td><td>4.1 </td></tr></table>"
+    pool = [_table(f"t{i}", _PART2, 0.70 - i / 100, filled) for i in range(6)]
+
+    selected = rerank.select_context(pool, 4, rerank.DiversityPolicy())
+
+    assert [chunk["chunk_id"] for chunk in selected] == ["t0", "t1", "t2", "t3"]
+
+
+def test_the_freed_slots_go_to_that_documents_prose():
+    pool = [_table(f"t{i}", _PART2, 0.70 - i / 100) for i in range(6)] + [_prose("p1", _PART2, 0.4)]
+
+    selected = rerank.select_context(pool, 4, rerank.DiversityPolicy())
+
+    ids = [chunk["chunk_id"] for chunk in selected]
+    assert "p1" in ids, "the prose takes a freed slot"
+    assert sum(1 for chunk in selected if chunk_profile.is_hollow_table(chunk)) <= 1
+
+
+def test_a_pool_of_nothing_but_one_documents_empty_grids_comes_back_short():
+    """An empty grid cannot answer, so a window of them is not better than a shorter one -
+    the short window is the honest signal that the parse, not the ranking, needs work."""
+    pool = [_table(f"t{i}", _PART2, 0.70 - i / 100) for i in range(6)]
+
+    selected = rerank.select_context(pool, 4, rerank.DiversityPolicy())
+
+    assert 0 < len(selected) <= 2, f"capped, not filled: {[c['chunk_id'] for c in selected]}"
