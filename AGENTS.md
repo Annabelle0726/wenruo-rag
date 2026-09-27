@@ -511,3 +511,17 @@ Client compatibility: web consumers use dot access on reference chunks and doc_a
 Not done and not claimed: production recreate is not authorized and not executed, and live P0-C acceptance is BLOCKED_BY_QUOTA with no substitute PASS.
 
 Paths: phase_b_p0b_build_and_image_gate.md, rag/retrieval/health_bridge.py, tools/scripts/p0_option_a_candidate.py, deploy/p0_build, AGENTS.md
+
+## Milestone - P0-C credential rotation BLOCKED: probe failed, env injection not a valid mechanism, nothing deployed
+
+phase B P0-C credential rotation attempt: BLOCKED, no deployment performed
+
+Probe gate failed: a single embedContent request to gemini-embedding-1.0 through the public endpoint with the key in the x-goog-api-key header returned HTTP 404 with an empty body for both aliases KEY_1 and KEY_2, so 200 and 3072 dimensions were not confirmed and BLOCKED_BY_QUOTA is unchanged. A 404 with an empty body is not a quota answer, and two explanations remain open: a host-side network or proxy artifact, or keys that are not valid for that endpoint, which an identical probe from inside the container can separate in one call.
+
+Independently of the probe, the proposed env injection cannot rotate this deployment credential: the running container exposes no GEMINI, GOOGLE or API_KEY variable, and no code path in rag or api reads GEMINI_API_KEY or GOOGLE_API_KEY, because the embedding client resolves its credential from the model configuration bound to the knowledge base. Injecting an env var would have recreated the container with the exhausted credential still in use and failed the live gate for unrelated reasons, consuming the recreate and its rollback for no information.
+
+Nothing was deployed: the verified candidate image 99d0ee210004 remains undeployed, latest and the rollback tag remain c50436820cb9, the production container was not restarted or recreated, and no live P0-C acceptance was run or claimed. Key material appears only under the aliases KEY_1 and KEY_2 and was never written to any artefact or log.
+
+Unblock path: confirm the key from inside a container that reaches the API, rotate the credential at its real injection point, then recreate from the verified image and run the negative control before the synthetic injections.
+
+Paths: phase_b_p0c_credential_rotation_blocked.md, AGENTS.md
