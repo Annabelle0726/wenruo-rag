@@ -54,6 +54,21 @@ class TestAggregation(unittest.TestCase):
         execution = legs(lexical=ok(), dense=ok(), rerank={"status": LegStatus.SKIPPED, "reason": ReasonCode.RERANK_UNAVAILABLE}, followup={"status": LegStatus.NOT_TRIGGERED})
         self.assertEqual(execution.overall(), OverallStatus.FULL)
 
+    def test_policy_skipped_evidence_leg_denies_full_and_is_reportable(self):
+        # Found by the P0-C gate: a policy stop on an evidence leg means evidence was never
+        # gathered, so it may not be neutral. Regression guard for that silent-degradation hole.
+        execution = legs(lexical=ok(), dense={"status": LegStatus.SKIPPED, "reason": "CIRCUIT_BREAKER_OPEN"})
+        self.assertEqual(execution.overall(), OverallStatus.DEGRADED)
+        report = RetrievalHealth(execution=execution, evidence=EvidenceState(completeness=Completeness.PARTIAL))
+        self.assertEqual(report.degradation_reason(), "CIRCUIT_BREAKER_OPEN")
+        self.assertEqual(report.validate(), [])
+        self.assertIn("dense", report.degraded_leg_names())
+
+    def test_policy_skipped_evidence_leg_without_reason_is_a_violation(self):
+        execution = legs(lexical=ok(), dense={"status": LegStatus.SKIPPED})
+        report = RetrievalHealth(execution=execution, evidence=EvidenceState(completeness=Completeness.PARTIAL))
+        self.assertTrue(any(problem.startswith("MISSING_REASON") for problem in report.validate()))
+
     def test_one_failed_leg_is_at_least_degraded(self):
         execution = legs(lexical=ok(), dense=ok(LegStatus.FAILED, 5, 0))
         execution.legs["dense"].reason = ReasonCode.EMBEDDING_QUOTA_EXHAUSTED
@@ -71,9 +86,10 @@ class TestAggregation(unittest.TestCase):
         execution = ExecutionHealth(legs={"lexical": LegHealth(name="lexical", status=LegStatus.SUCCESS)})
         self.assertEqual(execution.leg("dense").status, LegStatus.UNKNOWN)
         self.assertEqual(execution.overall(), OverallStatus.DEGRADED)  # an unreported leg denies full
-        for name in ("decomposition", "dense", "rerank", "followup"):
+        for name in ("decomposition", "rerank", "followup"):
             execution.legs[name] = LegHealth(name=name, status=LegStatus.SKIPPED)
-        self.assertEqual(execution.overall(), OverallStatus.FULL)  # explicit neutrality earns full
+        execution.legs["dense"] = LegHealth(name="dense", status=LegStatus.SUCCESS)
+        self.assertEqual(execution.overall(), OverallStatus.FULL)  # explicit reporting earns full
 
 
 class TestInvariants(unittest.TestCase):

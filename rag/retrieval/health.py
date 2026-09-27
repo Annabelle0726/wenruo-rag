@@ -88,7 +88,11 @@ RANK = {
     LegStatus.DEGRADED: 1,
     LegStatus.FAILED: 2,
 }
-NEUTRAL = (LegStatus.SKIPPED, LegStatus.NOT_TRIGGERED)
+#: `not_triggered` is always neutral: the plan or branch never required the leg.
+#: `skipped` is neutral only for a leg that does not produce evidence. A policy stop on an evidence
+#: leg means the evidence was never gathered, so it can never yield `full` — treating it as neutral
+#: was a silent-degradation hole and is exactly why the P0-C gate exists.
+NEUTRAL = (LegStatus.NOT_TRIGGERED,)
 
 
 def _value(item):
@@ -163,8 +167,11 @@ class ExecutionHealth:
         active = []
         for name in names:
             leg = self.legs.get(name) or LegHealth(name=name, status=LegStatus.UNKNOWN)
-            if leg.status not in NEUTRAL:
-                active.append(leg)
+            if leg.status in NEUTRAL:
+                continue
+            if leg.status is LegStatus.SKIPPED and name not in EVIDENCE_LEGS:
+                continue  # a policy stop on a non-evidence leg does not affect evidence coverage
+            active.append(leg)
         return active
 
     def overall(self) -> OverallStatus:
@@ -179,7 +186,13 @@ class ExecutionHealth:
         return OverallStatus.DEGRADED
 
     def degraded_legs(self) -> list:
-        return [(leg, leg.reason) for leg in self.legs.values() if leg.status in (LegStatus.FAILED, LegStatus.DEGRADED)]
+        reportable = []
+        for leg in self.legs.values():
+            if leg.status in (LegStatus.FAILED, LegStatus.DEGRADED):
+                reportable.append((leg, leg.reason))
+            elif leg.status is LegStatus.SKIPPED and leg.name in EVIDENCE_LEGS:
+                reportable.append((leg, leg.reason))
+        return reportable
 
     def to_dict(self) -> dict:
         return {name: leg.to_dict() for name, leg in self.legs.items()}
@@ -257,7 +270,8 @@ class RetrievalHealth:
         if self.overall is not OverallStatus.FULL and self.degradation_reason() is None:
             problems.append("SILENT_DEGRADATION: status is not full but no reason code is present")
         for leg in self.execution.legs.values():
-            if leg.status in (LegStatus.FAILED, LegStatus.DEGRADED) and leg.reason is None:
+            reportable = leg.status in (LegStatus.FAILED, LegStatus.DEGRADED) or (leg.status is LegStatus.SKIPPED and leg.name in EVIDENCE_LEGS)
+            if reportable and leg.reason is None:
                 problems.append(f"MISSING_REASON: leg {leg.name} is {leg.status.value} without a reason code")
             if leg.status is LegStatus.UNKNOWN:
                 problems.append(f"UNRESOLVED_LEG: leg {leg.name} has an unknown status")

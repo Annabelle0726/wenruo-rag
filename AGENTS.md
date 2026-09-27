@@ -443,3 +443,19 @@ Unit tests cover aggregation, neutrality, unreported and unknown legs, the silen
 Deployment note: the running container executes its own revision with no bind mount, so this lands in the repository and its gates run on the host; deploying it into the container needs a rebuild and separate authorization, and Phase A artifacts stay frozen.
 
 Paths: rag/retrieval/health.py, test/unit_test/rag/retrieval/test_retrieval_health.py, tools/scripts/p0_fault_injection.py, p0_fault_injection_result.json, phase_b_architecture_plan.md, AGENTS.md
+
+## Milestone - Phase B P0-B producers + P0-C runtime gate (contract hole closed; container deploy pending)
+
+phase B P0-B producers and P0-C runtime gate; contract hole found and closed
+
+The P0-C positive injections found a real silent-degradation hole in the P0-A contract: SKIPPED was treated as neutral for every leg, so a policy-skipped dense leg produced overall = full with no reason code. That is exactly the skipped versus not_triggered red line. Fixed in the contract rather than in the test: not_triggered stays always neutral, while a skipped evidence leg is no longer neutral, is reportable, must carry a policy reason, and can never yield full. Two regression tests were added, and one older test that had encoded the buggy behaviour was corrected.
+
+P0-B: producers report health where execution happens. route_execution is the exception boundary and maps failures to reason codes from the exception itself, so nothing infers failure from chunk counts, and the aggregator only aggregates. leg_skipped raises unless the reason is CIRCUIT_BREAKER_OPEN, BUDGET_GUARD_TRIPPED or POLICY_VETO. Evidence is conservative: the retrieval layer is capped at partial and only an explicit attributable AuthorityVerdict can upgrade it to full.
+
+P0-C: five synthetic failures verified end to end, dense 429, planner validation failure, empty plan, lexical failure and circuit-breaker policy skip, each tracing synthetic exception to producer report to aggregator to additive DTO to synthesis policy to disclosure or refusal to structured event, plus the negative control.
+
+Negative control: overall full, every leg explicit with no unresolved leg, zero contract violations, and both conservative properties asserted, the retrieval layer reporting partial and a constraint-bearing answer opening only through the named validator which records its attribution.
+
+Honest status: P0-A complete, P0-B implemented in the repository, P0-C verified on the wired chain with zero external quota, and the production silent-degradation defect NOT closed until the container is rebuilt from a commit containing the producers and their four insertion points. No container file patched, no service restarted, no index or configuration touched.
+
+Paths: rag/retrieval/health.py, rag/retrieval/health_producers.py, test/unit_test/rag/retrieval/test_retrieval_health.py, tools/scripts/p0c_runtime_fault_injection.py, p0c_runtime_fault_injection_result.json, phase_b_p0b_p0c_report.md, AGENTS.md
