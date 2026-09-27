@@ -409,3 +409,19 @@ Correction: the instrumentation-v2 stage capture is retracted. Every one of its 
 No fix, no parameter change, no index write, no Redis mutation.
 
 Paths: failure_mode_characterization.md, failure_mode_characterization.json, tools/scripts/failure_mode_characterization.py, tools/scripts/decomposition_cold_cache_probe.py, decomposition_cold_raw.txt, retrieval_reproducibility.md, AGENTS.md
+
+## Milestone - Phase B opened: architecture hardening design spec (proposal, no code)
+
+phase B: first architecture hardening design spec (no code)
+
+P0 retrieval health contract: versioned additive health block beside chunks/doc_aggs/total, monotonic worst-of aggregation, enumerated reason codes, disclosure mandatory and serving optional, propagation to trace, metrics, synthesis and answer layer, plus a fault-injection harness at the embedding boundary that consumes zero real quota.
+
+P1 query planner normalisation: explicit RetrievalPlan schema with plan_version and intent, determinism contract (pin sampling where supported, canonicalise, validate, then cache validated plans so the cache becomes a performance optimisation rather than a cache-lifetime accident), a plan cardinality floor so zero sub-queries is never terminal, a two-stage gate with corpus-independent structural features, and an offline de-identified gate test suite.
+
+P2 deterministic tie-breaker: fixed secondary key at the cross-route merge, the rank-adjusted selection sort and the store-side sort, with no fuzzy epsilon bands, plus equal-score fixtures and a Phase A neutrality check.
+
+Includes a traceability matrix from every Phase A finding to its Phase B item, seven decisions requested before implementation, and eight holdout acceptance gates over four document families with quota discipline that reports BLOCKED_BY_QUOTA instead of substituting a degraded result.
+
+No code, no diffs, no parameter change. Phase A remains frozen.
+
+Paths: phase_b_architecture_plan.md, phase_b_backlog.json, AGENTS.md

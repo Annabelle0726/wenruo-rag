@@ -1,0 +1,154 @@
+{
+  "phase": "B - Architecture Hardening",
+  "status": "PROPOSAL - no code submitted, no parameter change proposed for immediate merge",
+  "frozen": [
+    "Phase A artifacts and canary chunks (155) are frozen and untouched",
+    "no retrieval parameter tuning: vector_similarity_weight, similarity_threshold, routes_top_k, reranker, tokenizer/analyzer, metadata/header/profile, embedding model, KB index",
+    "no KB index writes, no Redis mutation"
+  ],
+  "governing_principles": [
+    "determinism over score",
+    "graceful degradation allowed, silent degradation forbidden",
+    "corpus independence: no domain vocabulary in rules, gates or tests",
+    "additive and backward compatible",
+    "observable by default",
+    "no Phase A regression"
+  ],
+  "items": [
+    {
+      "id": "P0-1",
+      "priority": "P0",
+      "title": "Retrieval health contract (versioned, additive)",
+      "deliverable": "retrieval_health schema with schema_version, overall in full/degraded/failed, per-leg status (decomposition, dense, lexical, rerank, followup), enumerated reason codes, evidence completeness, alerts",
+      "rules": ["monotonic worst-of aggregation", "unknown leg status is never full", "disclosure mandatory, serving optional", "no extra queries, retries or index operations"],
+      "acceptance": ["health present on every retrieval", "existing consumers unaffected", "schema reviewed and versioned"],
+      "traceability": ["SILENT_RETRIEVAL_DEGRADATION characterization"]
+    },
+    {
+      "id": "P0-2",
+      "priority": "P0",
+      "title": "Producer and aggregation points",
+      "deliverable": "per-route outcome captured where routes are isolated and at the recall-floor rescue; aggregated in the retrieval entry point beside chunks, doc_aggs and total",
+      "depends_on": ["P0-1", "P1-1 for plan identity and validation outcome"],
+      "acceptance": ["aggregate reflects worst leg", "no new write path"]
+    },
+    {
+      "id": "P0-3",
+      "priority": "P0",
+      "title": "Propagation to trace, metrics and synthesis",
+      "deliverable": "one structured event per retrieval; counters per leg and reason; trace attributes; health passed to the answer layer as a constraint",
+      "acceptance": ["dense-leg failure alarms without waiting for a customer", "single request explainable end to end"]
+    },
+    {
+      "id": "P0-4",
+      "priority": "P0",
+      "title": "Answer-layer policy under degraded evidence",
+      "deliverable": "two-tier policy: narrative questions answer with disclosure; numeric-constraint questions refuse or mark unverified; failed retrieval never produces an answer",
+      "invariant": "an answer may never assert hybrid-evidence confidence when a leg has failed",
+      "depends_on": ["D1", "D3"],
+      "acceptance": ["disclosure assertions pass on injected failures"]
+    },
+    {
+      "id": "P0-5",
+      "priority": "P0",
+      "title": "Fault-injection verification harness",
+      "deliverable": "test doubles at the embedding boundary injecting quota error, timeout, partial route failure and total failure",
+      "acceptance": ["status and reason codes correct per injection", "overall monotonic", "answer layer discloses", "zero real external quota consumed"]
+    },
+    {
+      "id": "P1-1",
+      "priority": "P1",
+      "title": "RetrievalPlan schema",
+      "deliverable": "plan_version, intent enum, source provenance, normalised question, ordered sub_queries with targets, constraints, validation result, determinism block",
+      "rules": ["fail-closed on structure", "rejected plan replaced by deterministic pass-through plan and reported as PLAN_VALIDATION_FAILED"],
+      "acceptance": ["schema reviewed", "plan identity usable as cache and health key"]
+    },
+    {
+      "id": "P1-2",
+      "priority": "P1",
+      "title": "Determinism contract for the planner",
+      "deliverable": "pin sampling where supported (temperature 0, explicit seed), canonical dedupe and stable first-mention order, schema validation, then cache validated plans keyed on plan_version + normalised question + model id",
+      "reframe": "the cache's documented role becomes performance optimisation; reproducibility becomes a proven property instead of a cache-lifetime accident",
+      "acceptance": ["cache hit and miss provably identical in plan, routes and window", "non-pinned provenance recorded honestly"]
+    },
+    {
+      "id": "P1-3",
+      "priority": "P1",
+      "title": "Plan cardinality floor",
+      "deliverable": "empty or rejected plan degrades to the deterministic pass-through plan",
+      "acceptance": ["zero sub-queries is never a terminal state"]
+    },
+    {
+      "id": "P1-4",
+      "priority": "P1",
+      "title": "Two-stage gate with corpus-independent features",
+      "deliverable": "stage 1 deterministic structural check outputting not_composite/composite/uncertain; stage 2 optional model confirmation for uncertain only, under the P1-2 determinism contract",
+      "forbidden": ["domain vocabulary", "corpus-specific strings", "document-part names"],
+      "acceptance": ["identical behaviour on a transformer datasheet and a software specification"]
+    },
+    {
+      "id": "P1-5",
+      "priority": "P1",
+      "title": "Gate test suite (offline, de-identified)",
+      "deliverable": "synthetic queries in six structure classes (single_fact, numeric_constraint, comparison, multi_hop, ambiguous, procedural) with expected labels; offline tier runs in CI without model or embedding; second tier measures plan quality",
+      "acceptance": ["single_fact false-positive rate ~0", "comparison/multi_hop false-negative rate low"]
+    },
+    {
+      "id": "P1-6",
+      "priority": "P1",
+      "title": "Route-set stability reporting",
+      "deliverable": "per retrieval: route set, which pool-dependent branches fired (recall-floor rescue, core-document follow-up)",
+      "rationale": "makes amplification visible instead of inferable",
+      "depends_on": ["P0-2"]
+    },
+    {
+      "id": "P2-1",
+      "priority": "P2",
+      "title": "Deterministic tie-breaker at all three ordering sites",
+      "deliverable": "fixed secondary key (stable chunk/document id, ascending) at the cross-route merge, the rank-adjusted selection sort and the store-side sort; application-imposed order after fusion because an approximate kNN clause offers no tie-break parameter",
+      "status_change": "LATENT TIE-BREAK RISK - NOT OBSERVED AS A FAILURE",
+      "rules": ["no fuzzy epsilon tie bands", "any tolerance must be a single documented constant applied identically"],
+      "acceptance": ["total order proven", "Phase A neutrality check itemised"]
+    },
+    {
+      "id": "P2-2",
+      "priority": "P2",
+      "title": "Tie-breaker verification",
+      "deliverable": "equal-score fixtures across documents and shards; shuffled-input property tests; neutrality check on the frozen corpus",
+      "acceptance": ["no observable change except where ties existed, each change itemised with cause"]
+    }
+  ],
+  "decisions_requested": [
+    {"id": "D1", "decision": "answer-layer behaviour under degraded evidence", "recommendation": "two-tier per P0-4"},
+    {"id": "D2", "decision": "determinism enforcement for the planner", "recommendation": "pin sampling where supported plus canonicalise and validate, recording provenance"},
+    {"id": "D3", "decision": "degraded-serving posture when the dense leg is unavailable", "recommendation": "serve with disclosure for narrative, refuse values"},
+    {"id": "D4", "decision": "API surface for health", "recommendation": "additive response field plus trace"},
+    {"id": "D5", "decision": "holdout corpus selection and ingestion", "recommendation": "approve OPGW/ADSS, transformer and software spec, read-only, Phase A artifacts untouched"},
+    {"id": "D6", "decision": "fault-injection mechanism", "recommendation": "test doubles at the embedding boundary, never spend real quota on failure tests"},
+    {"id": "D7", "decision": "quota availability control", "recommendation": "per-day budget guard and circuit breaker first; a fallback embedding model changes retrieval semantics and needs its own review"}
+  ],
+  "holdout_acceptance": {
+    "setup": "four families (existing cable corpus, OPGW/ADSS, transformer, software specification), ingested with no change to rewriting rules or retrieval code; Phase A artifacts, canary chunks and pinned configuration untouched",
+    "gates": [
+      {"id": "G1", "gate": "determinism per family", "threshold": "exact window match on all repeated pinned runs", "failure_meaning": "not reproducible on unseen content"},
+      {"id": "G2", "gate": "health coverage", "threshold": "100% correct reason codes and monotonic overall", "failure_meaning": "silent degradation"},
+      {"id": "G3", "gate": "disclosure integrity", "threshold": "100%", "failure_meaning": "product-level false confidence"},
+      {"id": "G4", "gate": "gate precision on single-fact", "threshold": "false-positive rate ~0", "failure_meaning": "unnecessary model randomness at the entrance"},
+      {"id": "G5", "gate": "gate recall on comparison/multi-hop", "threshold": "low false-negative rate", "failure_meaning": "lost recall on composite questions"},
+      {"id": "G6", "gate": "family isolation", "threshold": "0 cross-family hits in windows", "failure_meaning": "cross-family contamination"},
+      {"id": "G7", "gate": "no silent emptiness", "threshold": "empty or near-empty window never reports full", "failure_meaning": "the Phase A failure left unfixed"},
+      {"id": "G8", "gate": "Phase A neutrality", "threshold": "no unexplained diffs", "failure_meaning": "hardening changed judged behaviour"}
+    ],
+    "quota_discipline": "determinism and gate suites run offline; holdout validation runs inside a budget guard, and an unavailable quota is reported as BLOCKED_BY_QUOTA rather than replaced by a degraded substitute"
+  },
+  "sequencing": [
+    {"order": 1, "items": ["P0-1", "P0-2"]},
+    {"order": 2, "items": ["P0-5"]},
+    {"order": 3, "items": ["P0-3", "P0-4"]},
+    {"order": 4, "items": ["P1-1", "P1-2", "P1-3"]},
+    {"order": 5, "items": ["P1-4", "P1-5"]},
+    {"order": 6, "items": ["P1-6"]},
+    {"order": 7, "items": ["P2-1", "P2-2"]},
+    {"order": 8, "items": ["holdout validation"]}
+  ]
+}
