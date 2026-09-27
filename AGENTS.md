@@ -541,3 +541,21 @@ Chain audit. Operator observability: today a route failure is an unstructured wa
 No production mutation of any kind.
 
 Paths: phase_b_key_probe_and_quota_notice_audit.md, tools/scripts/credential_probe.py, AGENTS.md
+
+## Milestone - Forensic audit: historical embedding-failure toasts located (a785e1842) and silent-degradation transition confirmed
+
+forensic audit: embedding-failure toast history and the silent-degradation transition (read-only)
+
+Status correction accepted: the earlier conclusion should have been CURRENT retrieval_health notice NOT IMPLEMENTED plus HISTORICAL embedding failure toast OBSERVED BY USER, SOURCE UNDER AUDIT. The historical source is now identified: commit a785e1842, report a model refusal as a sentence not the provider JSON, which added common/model_errors.py, changed rag/llm/embedding_model.py, api/apps/restful_apis/search_api.py and api/utils/api_utils.py, and added the web model-service-unavailable component with new locale strings and tests. The front end consumes it through api-error.ts, whose comment states the upstream JSON must not reach a toast.
+
+Old-path hypothesis CONFIRMED. The embedding layer raised hard failures via embedding_failure, and the Search page catches per request with message.error in next-search and next-searches hooks, so N concurrent requests produced N toasts, which is the toast storm the user observed.
+
+Current-path hypothesis CONFIRMED. The route boundary now catches the exception, logs a warning and returns a failed RouteResult, so the caller receives a normal success payload built from surviving routes; the global response interceptor toasts only for 413 and 504, and the per-request catch never runs because the promise resolves. The same hardening that stopped the crash also removed the only user-visible signal, which is the silent degradation characterized earlier.
+
+Consequence for design: restoring the old toasts would be wrong, since they were per-request, duplicated and raw. The correct end state is one deliberate notice driven by the structured retrieval_health the candidate already produces, and that is currently unimplemented on the operator, answer and front-end layers.
+
+Not verified and stated as such: whether a785e1842 is exactly the commit implementing the user request, whether the running image contains it, which page produced the observed toasts, and the exact i18n wording.
+
+Read-only: no toast restored, no code changed, no exception propagation changed, no DB access, no recreate.
+
+Paths: phase_b_toast_history_forensic_audit.md, AGENTS.md
