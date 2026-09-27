@@ -591,3 +591,19 @@ Consistency check: all seven contract rules map onto existing backlog items, P0-
 Freeze honoured: documentation only, no front-end UI, no key probe, no model id change, no container recreate or deployment, no P1 entry.
 
 Paths: phase_b_backlog.json, tools/scripts/mirror_rev3_to_backlog.py, AGENTS.md
+
+## Milestone - Gemini 404 root cause identified (probe model-id error); credential rotation vs migration classified
+
+read-only audit: root cause of the gemini 404 and the vector-space judgement
+
+Root cause: the model id used by my probes, gemini-embedding-1.0, does not exist at the provider, while the exact model name in the KB model config is gemini-embedding-001, which the authorisation listing returns as available. The keys were never the problem, and no prefix stripping or aliasing is involved because the deployed class passes the bare name and adds no models prefix.
+
+This corrects my earlier speculation that the live failure mode might have moved from 429 quota to 404 model not found. The deployed configuration uses a valid model id, so the live dense-leg failure remains quota, and the 404 was introduced by the probe, which took the id from a quota-metric display string rather than from configuration. Git history confirms gemini-embedding-001 as the long-standing identifier, while gemini-embedding-1.0 appears only as a reference string in code and in this phase own artifacts, never as a configured id or default.
+
+Vector-space judgement: KEY_1 fingerprint matches the deployed credential exactly, so using it with gemini-embedding-001 is CREDENTIAL_ROTATION, same provider, same model, same vector space, with no re-index implication. gemini-embedding-2 and gemini-embedding-2-preview are also listed and are classified EMBEDDING_MODEL_MIGRATION, forbidden without a re-embedding and index evaluation, and not proposed.
+
+Still undetermined and not guessed: remaining quota on either key and whether they share a quota project. One authorised embedding call with the confirmed id would settle it; I did not run it because quota testing is paused and exploratory embedding calls are forbidden. embed_calls_made is zero.
+
+Read-only: no DB or KB mutation, no credential or environment change, no re-embedding, no recreate, no deployment, no model-id switch, no P1 entry.
+
+Paths: phase_b_gemini_model_compat_audit.md, tools/scripts/gemini_model_compat_audit.py, AGENTS.md
