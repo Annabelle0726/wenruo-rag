@@ -1,0 +1,35 @@
+{
+ "git_commit": "eb11fbe1ad9a5e629c6a8e466386a2b9c6d5637a",
+ "index": "ragflow_a9e28731ab7011f19b833887d563fb04",
+ "target_documents": [
+  "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+  "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+  "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf"
+ ],
+ "target_chunks": 155,
+ "target_ids_sha256": "b83b3b147ea2eaa3adc8aa5eddc5ff64f8878a526476728760b5e40245b12ff9",
+ "chunk_kinds": {
+  "legacy_prefix": 58,
+  "current_prefix": 0,
+  "no_prefix": 97
+ },
+ "outside_chunks": 326,
+ "outside_state_sha256": "8a80b385702e38f434be27990a5e43ab4042f5695fdd52bbd6677021bbea0863",
+ "expected": {
+  "documents": 3,
+  "chunks": 155,
+  "outside": 0,
+  "legacy": 58,
+  "no_prefix": 97,
+  "current": 0
+ },
+ "actual": {
+  "documents": 3,
+  "chunks": 155,
+  "outside": 0,
+  "legacy": 58,
+  "no_prefix": 97,
+  "current": 0
+ },
+ "guard_passed": true
+}

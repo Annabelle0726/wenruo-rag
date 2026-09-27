@@ -161,11 +161,15 @@ def plan(args, auth):
 
     entries = []
     for name, entry in headers.items():
-        # The section walk is over the document's chunks IN READING ORDER, which is how
-        # the ingest computes it too - a per-chunk call would read the section of the
-        # first chunk every time.
+        # The section walk is over the document's chunks IN READING ORDER, and over the RAW
+        # body - a body that already carries a header starts with the header line, which is
+        # not a heading, so walking the projected text would compute a DIFFERENT section on
+        # every run and a second execution would quietly degrade what the first one wrote.
+        # This is why the raw body is unwrapped first: it is what makes the projection
+        # idempotent.
         rows = entry["rows"]
-        sections = document_sections([str(row.get("content_with_weight") or "") for row in rows])
+        raw_bodies = [rp.split_retrieval_header(str(row.get("content_with_weight") or ""))[1] for row in rows]
+        sections = document_sections(raw_bodies)
         for row, section in zip(rows, sections):
             header, new_body = projected_body(row, entry["metadata"], section)
             body = str(row.get("content_with_weight") or "")
