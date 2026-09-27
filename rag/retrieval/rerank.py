@@ -64,7 +64,17 @@ from dataclasses import dataclass
 from typing import Any, Sequence
 
 from common.misc_utils import thread_pool_exec
-from rag.retrieval.chunk_profile import document_breakdown, document_key, document_name, is_prose_chunk, is_table_chunk, resolve_core_documents, summarize
+from rag.retrieval.chunk_profile import (
+    document_breakdown,
+    document_key,
+    document_name,
+    is_comparative_question,
+    is_prose_chunk,
+    is_table_chunk,
+    resolve_compared_documents,
+    resolve_core_documents,
+    summarize,
+)
 from rag.retrieval.decomposition import mentions_requirement, seeks_clause
 from rag.retrieval.multi_route import chunk_key
 
@@ -99,6 +109,17 @@ TABLE_PENALTY = 0.85
 MAX_AUXILIARY_DOCUMENT_SHARE = 0.4
 #: Ordering nudge for a passage from the standard the question is about.
 CORE_DOCUMENT_BOOST = 1.15
+#: Share of the window ONE document may take when the question COMPARES documents.
+#:
+#: Measured: "…单芯与三芯要求是否一致？" over 《Q/GDW 73286.2 第2部分(单芯)》 and
+#: 《Q/GDW 73286.3 第3部分(三芯)》 recalled Part 2 only. Both files are standards, so
+#: the auxiliary quota above never applied to either, and Part 2's higher-scoring table
+#: - split into row-batches, so a dozen near-identical passages - owned the window. The
+#: comparison cannot be answered from one side, so when the question names two sides and
+#: the pool holds both documents, no single one may take more than this: the other side
+#: keeps the rest even when it scores lower. Non-comparative questions are untouched,
+#: including the earlier milestone's winning eleven-passage single-document answer.
+MAX_COMPARED_DOCUMENT_SHARE = 0.5
 
 
 @dataclass(frozen=True)
@@ -119,6 +140,14 @@ class DiversityPolicy:
     (supplier datasheets, product manuals, test reports) keeps a plain top-N - a
     quota invented for a corpus we could not read would truncate exactly the
     answer it was meant to protect.
+
+    A COMPARATIVE question adds one axis, because it is the one shape where the
+    standard-is-exempt rule is wrong: two standards are being read against each
+    other, and the one that scores higher (its table split into row-batches, so many
+    near-identical passages) must not own the window. When the question names two
+    sides and the pool holds the documents those sides point at, no single document
+    may take more than :data:`MAX_COMPARED_DOCUMENT_SHARE` of it and each of those
+    documents is reserved a slot (see :func:`select_context`).
     """
 
     min_prose: int = 0
@@ -127,14 +156,22 @@ class DiversityPolicy:
     max_auxiliary_document_share: float = 1.0
     core_document_boost: float = 1.0
     core_documents: frozenset[str] = frozenset()
+    max_document_share: float = 1.0
+    compared_documents: frozenset[str] = frozenset()
 
     @classmethod
     def for_question(cls, question: str, chunks: Sequence[dict] = ()) -> "DiversityPolicy":
         core = frozenset(resolve_core_documents(chunks, question))
+        compared = frozenset(resolve_compared_documents(chunks, question)) if is_comparative_question(question) else frozenset()
         document_axes = {
             "max_auxiliary_document_share": MAX_AUXILIARY_DOCUMENT_SHARE if core else 1.0,
             "core_document_boost": CORE_DOCUMENT_BOOST if core else 1.0,
             "core_documents": core,
+            # Two documents actually present is what makes a comparison answerable;
+            # a question that names two sides the corpus does not separate keeps the
+            # plain behaviour rather than capping the only document there is.
+            "max_document_share": MAX_COMPARED_DOCUMENT_SHARE if len(compared) >= 2 else 1.0,
+            "compared_documents": compared if len(compared) >= 2 else frozenset(),
         }
         if seeks_clause(question):
             return cls(
@@ -150,7 +187,9 @@ class DiversityPolicy:
 
     @property
     def active(self) -> bool:
-        return self.min_prose > 0 or self.max_table_share < 1.0 or self.table_penalty != 1.0 or self.max_auxiliary_document_share < 1.0 or self.core_document_boost != 1.0
+        return (
+            self.min_prose > 0 or self.max_table_share < 1.0 or self.table_penalty != 1.0 or self.max_auxiliary_document_share < 1.0 or self.core_document_boost != 1.0 or self.max_document_share < 1.0
+        )
 
     def is_core_document(self, chunk: dict) -> bool:
         """Whether ``chunk`` belongs to the standard this question is about.
@@ -161,6 +200,11 @@ class DiversityPolicy:
         """
         key = document_key(chunk)
         return True if not key else key in self.core_documents
+
+    def is_compared_document(self, chunk: dict) -> bool:
+        """Whether ``chunk`` belongs to one of the documents a comparison names."""
+        key = document_key(chunk)
+        return bool(key) and key in self.compared_documents
 
 
 def _score(chunk: dict, *, key: str = "similarity") -> float:
@@ -230,13 +274,14 @@ def select_context(ordered: Sequence[dict], top_n: int, policy: DiversityPolicy 
 
     1. one slot per route, so a composite question's chapters are all
        represented (the failure the routes themselves exist to undo, one stage
-       later);
+       later), and one slot per document a COMPARATIVE question names;
     2. the prose floor, when the question asks for a rule: normative clauses
        first, because a parameter table cannot state one;
     3. everything else by score - non-table passages first, then tables up to
        ``policy.max_table_share`` of the window, and never more than
        ``policy.max_auxiliary_document_share`` of it from ONE auxiliary
-       document.
+       document (or ``policy.max_document_share`` from any one document, when the
+       question compares sources).
 
     Both caps are quotas, not preferences: a slot a cap withholds is not handed
     to the passage the cap excluded just because nothing else is left, so a
@@ -270,22 +315,32 @@ def select_context(ordered: Sequence[dict], top_n: int, policy: DiversityPolicy 
     # At least one slot, so an auxiliary document still contributes its best
     # passage instead of vanishing behind its own quota.
     document_cap = 0 if policy.max_auxiliary_document_share >= 1.0 else max(1, min(top_n, math.ceil(top_n * policy.max_auxiliary_document_share)))
+    # The comparative cap is not the auxiliary one: it charges EVERY document,
+    # including the standards, because a comparison read from one side is not an
+    # answer. See ``MAX_COMPARED_DOCUMENT_SHARE``.
+    every_document_cap = 0 if policy.max_document_share >= 1.0 else max(1, min(top_n, math.ceil(top_n * policy.max_document_share)))
 
     def document_of(chunk: dict) -> str:
         """The quota bucket a passage is charged to (its own key when unknown)."""
         key = document_key(chunk)
         return f"chunk:{chunk_key(chunk)}" if not key else key
 
-    def quota_blocks(chunk: dict) -> bool:
-        if is_table_chunk(chunk) and table_count >= table_cap:
+    def document_quota_blocks(chunk: dict) -> bool:
+        count = document_counts.get(document_of(chunk), 0)
+        if every_document_cap and count >= every_document_cap:
             return True
-        if document_cap and not policy.is_core_document(chunk) and document_counts.get(document_of(chunk), 0) >= document_cap:
+        if document_cap and not policy.is_core_document(chunk) and count >= document_cap:
             return True
         return False
 
+    def quota_blocks(chunk: dict) -> bool:
+        if is_table_chunk(chunk) and table_count >= table_cap:
+            return True
+        return document_quota_blocks(chunk)
+
     def take(chunk: dict, *, ignore_table_quota: bool = False) -> bool:
         """Claim a slot. ``ignore_table_quota`` is step 4's escape hatch: a
-        table-only pool may exceed the table cap, but never the document quota."""
+        table-only pool may exceed the table cap, but never a document quota."""
         nonlocal table_count
         if len(chosen) >= top_n:
             return False
@@ -293,7 +348,7 @@ def select_context(ordered: Sequence[dict], top_n: int, policy: DiversityPolicy 
         if key in chosen_keys:
             return False
         if ignore_table_quota:
-            if document_cap and not policy.is_core_document(chunk) and document_counts.get(document_of(chunk), 0) >= document_cap:
+            if document_quota_blocks(chunk):
                 return False
         elif quota_blocks(chunk):
             return False
@@ -315,6 +370,16 @@ def select_context(ordered: Sequence[dict], top_n: int, policy: DiversityPolicy 
         for route in route_order:
             for chunk in ordered:
                 if route in routes_of(chunk) and take(chunk):
+                    break
+
+    # 1b. one slot per document the question COMPARES. A route can come back with
+    # the wrong side's passage (both sides' tables match the same parameters), so
+    # the document itself is reserved for: without this the comparison is answered
+    # from whichever document the score fill happens to prefer.
+    if policy.compared_documents:
+        for key in [document_key(chunk) for chunk in ordered if policy.is_compared_document(chunk)]:
+            for chunk in ordered:
+                if document_key(chunk) == key and take(chunk):
                     break
 
     # 2. the prose floor

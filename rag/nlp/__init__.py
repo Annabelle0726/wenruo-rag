@@ -595,21 +595,27 @@ def tokenize_table(tbls, doc, eng, batch_size=10, language="English", max_table_
 def _table_content_chunks(table_text, max_table_chars):
     """Split one table's text into the chunks that will be stored.
 
-    Only a Markdown table is split, and only when a budget is configured: an HTML
-    table (what the structure recogniser emits) has no row to repeat a header with,
-    and a caller that passes no budget keeps one chunk per table. The splitter
-    itself lives with the extractor that produces the Markdown; the import is
-    deferred because ``deepdoc.parser`` imports this module (``rag_tokenizer``), so
-    a module-level import would be circular.
+    BOTH table shapes are split, because either one is otherwise stored as a single
+    chunk and an over-long chunk is only partly visible to the embedding: the rows past
+    the head of it contribute nothing to the vector, so no question can recall them. The
+    structure recogniser's HTML is split on its ``<tr>`` blocks with the caption and the
+    header row repeated in every part, and the rule-based extractor's Markdown on its
+    rows with the same repetition. A caller that passes no budget keeps one chunk per
+    table, which is what every caller did before this existed.
+
+    The splitters live with the extractor that produces the Markdown; the import is
+    deferred because ``deepdoc.parser`` imports this module (``rag_tokenizer``), so a
+    module-level import would be circular.
     """
     text = str(table_text or "")
     if not text or int(max_table_chars or 0) <= 0:
         return [text]
-    from deepdoc.parser.table_extractor import split_markdown_table
+    from deepdoc.parser.table_extractor import split_html_table, split_markdown_table
 
-    parts = split_markdown_table(text, int(max_table_chars))
+    budget = int(max_table_chars)
+    parts = split_html_table(text, budget) if "<table" in text.lower() else split_markdown_table(text, budget)
     if len(parts) > 1:
-        logging.debug("table split into %d chunk(s) with the header repeated (budget %s chars)", len(parts), max_table_chars)
+        logging.info("table split into %d chunk(s), each repeating the caption and the header (budget %s chars)", len(parts), max_table_chars)
     return parts
 
 

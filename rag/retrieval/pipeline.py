@@ -36,7 +36,8 @@ import logging
 from typing import Sequence
 
 from rag.retrieval.chunk_profile import document_id, document_key, document_name, is_prose_chunk, resolve_core_documents
-from rag.retrieval.decomposition import MAX_SUB_QUERIES, clause_route, decompose_question, looks_composite, seeks_clause
+from rag.retrieval.chunk_profile import comparison_sides, is_comparative_question
+from rag.retrieval.decomposition import MAX_SUB_QUERIES, clause_route, comparative_routes, decompose_question, looks_composite, seeks_clause
 from rag.retrieval.multi_route import (
     DEFAULT_ROUTES_TOP_K,
     DEFAULT_VECTOR_SIMILARITY_WEIGHT,
@@ -267,6 +268,17 @@ async def retrieve_multi_route(
     if looks_composite(question):
         sub_queries = await decompose_question(chat_mdl, question, max_sub_queries)
         routes.extend(sub_queries)
+    # A COMPARATIVE question also gets one route per side it names ("单芯" / "三芯",
+    # "第2部分" / "第3部分"). One shared query scores both documents' tables on the same
+    # words and the window fills with the higher-scoring one - measured as a comparison
+    # answered from a single part, with the other part never retrieved at all. A side
+    # route searches that side's own wording, and `select_context` reserves a slot per
+    # route, so both sides are in the window before the score fill.
+    sides = comparison_sides(question)
+    side_routes = comparative_routes(question, sides) if is_comparative_question(question) else []
+    if side_routes:
+        routes.extend(side_routes)
+        _LOG.info("[Multi-route] comparative question (sides=%s) -> %d side route(s): %s", sides, len(side_routes), side_routes)
     # A rule-seeking question also gets a route at the normative PROSE tier. It is
     # deterministic on purpose: it must fire on every clause question, including
     # the ones the LLM decomposition failed on or never saw (single-dimension
@@ -302,7 +314,7 @@ async def retrieve_multi_route(
     # it cannot bring back a clause no route retrieved. When an auxiliary document
     # out-recalled the standard on a question about several parameters (or about a
     # rule), one more pass searches the standard itself.
-    followup = core_document_followup(merged["chunks"], question, preferred_routes=[*sub_queries, *([targeted] if targeted else [])])
+    followup = core_document_followup(merged["chunks"], question, preferred_routes=[*sub_queries, *side_routes, *([targeted] if targeted else [])])
     if followup:
         scope, scope_name, queries = followup
         scoped = await _retrieve(queries, scope)

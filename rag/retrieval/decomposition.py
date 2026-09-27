@@ -45,9 +45,11 @@ from __future__ import annotations
 
 import logging
 import re
+from typing import Sequence
 
 from rag.prompts.generator import PROMPT_JINJA_ENV, gen_json
 from rag.prompts.template import load_prompt
+from rag.retrieval.chunk_profile import comparison_sides
 
 _LOG = logging.getLogger(__name__)
 
@@ -211,6 +213,48 @@ def clause_route(question: str) -> str | None:
     if not subject:
         return None
     return f"{subject} {CLAUSE_ROUTE_ANCHOR}"
+
+
+def comparative_routes(question: str, sides: Sequence[str] | None = None) -> list[str]:
+    """One deterministic route per side of a comparison, or ``[]``.
+
+    The second measured comparative failure: "…单芯与三芯要求是否一致？" recalled the
+    Part 2 (单芯) table and NOTHING from Part 3 (三芯), so the answer could only report
+    one side. One shared query scores both documents' tables on the same words, and a
+    slightly higher score for one of them fills the window with that document's table
+    parts - which, for a table split into row-batches, is a dozen near-identical
+    passages of ONE document. The other document's table was never retrieved, so no
+    cut policy could bring it back.
+
+    Each side therefore gets its own route: the side's own word plus the question's
+    parameters, with every side marker removed so a route cannot match the OTHER
+    side's wording. ``select_context`` reserves a slot per route, so both sides are in
+    the window before the score fill. No LLM call: a comparative question must expand
+    even when the decomposition node is unavailable.
+
+    ``sides`` is injectable for callers that have already resolved them (the pipeline
+    resolves them once and uses them for the document axis too).
+    """
+    text = _WHITESPACE_RE.sub(" ", str(question or "")).strip()
+    if not text:
+        return []
+    resolved = list(sides) if sides is not None else comparison_sides(text)
+    if len(resolved) < 2:
+        return []
+
+    subject = text
+    for side in resolved:
+        subject = subject.replace(side, " ")
+    subject = strip_section_references(" ".join(subject.split()))[:MAX_SUB_QUERY_CHARS].strip()
+    if not subject:
+        return []
+
+    routes: list[str] = []
+    for side in resolved:
+        route = _WHITESPACE_RE.sub(" ", f"{side} {subject}").strip()[:MAX_SUB_QUERY_CHARS].strip()
+        if route and route not in routes:
+            routes.append(route)
+    return routes
 
 
 def _sub_query_text(item) -> str:

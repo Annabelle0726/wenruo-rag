@@ -160,10 +160,98 @@ def core_document_score(chunk_or_name) -> int:
     return score
 
 
+#: Cues that a question wants TWO sources read together rather than one answer.
+#: "分别" is here because "…分别是多少？单芯与三芯是否一致" asks for both documents even
+#: when the comparison verb itself is implied.
+COMPARISON_CUES = (
+    "对比",
+    "对照",
+    "比较",
+    "区别",
+    "差异",
+    "异同",
+    "是否一致",
+    "一致吗",
+    "分别",
+    "各自",
+    "compare",
+    "comparison",
+    "versus",
+    " vs ",
+    "difference",
+)
+
+#: The sides a comparison names: a part number ("第2部分", "Part 3") or a core count
+#: ("单芯", "三芯", "3芯"). A corpus splits a standard by part and by construction, so
+#: these two families are what a comparative cable question actually points at.
+_COMPARISON_SIDE_PATTERNS = (
+    re.compile(r"第\s*[0-9一二三四五六七八九十]{1,3}\s*部分"),
+    re.compile(r"part\s*[0-9]{1,2}", re.IGNORECASE),
+    re.compile(r"[单双两三四五六七八九十0-9]{1,2}\s*芯"),
+)
+
+
+def comparison_sides(question: str) -> list[str]:
+    """The sources a comparative question names, in the order they appear.
+
+    ``"单芯与三芯要求是否一致"`` -> ``["单芯", "三芯"]``; ``"第2部分和第3部分的差异"`` ->
+    ``["第2部分", "第3部分"]``; ``"Part 2 vs Part 3"`` -> ``["Part 2", "Part 3"]``.
+    """
+    text = _normalized_name(question)
+    sides: list[str] = []
+    for pattern in _COMPARISON_SIDE_PATTERNS:
+        for match in pattern.finditer(text):
+            side = " ".join(match.group(0).split())
+            if side and side not in sides:
+                sides.append(side)
+    return sides
+
+
+def is_comparative_question(question: str) -> bool:
+    """Whether the question asks for more than one source to answer it.
+
+    A cue word, or two named sides by themselves: "单芯与三芯要求是否一致" carries both,
+    while a single-subject question ("400mm² 导体最大直流电阻是多少") carries neither and
+    keeps a plain top-N.
+    """
+    text = _normalized_name(question)
+    if any(cue in text for cue in COMPARISON_CUES):
+        return True
+    return len(comparison_sides(question)) >= 2
+
+
+def resolve_compared_documents(chunks: Sequence[dict], question: str) -> set[str]:
+    """The documents the question's own sides point at.
+
+    A side is matched against a document NAME, which is where a corpus that splits a
+    standard by part says so: 《…Q/GDW 73286.2-2026 第2部分：单芯…》 carries "单芯". A
+    document that advertises a designation without naming a side is deliberately NOT
+    guessed at - the side routes are what make such a document findable, and this
+    function only guarantees that a document the question explicitly named is
+    represented in the window.
+    """
+    sides = comparison_sides(question)
+    if len(sides) < 2:
+        return set()
+
+    names: dict[str, str] = {}
+    for chunk in chunks or []:
+        key = document_key(chunk)
+        if key and key not in names:
+            names[key] = _normalized_name(document_name(chunk))
+    hit: set[str] = set()
+    for side in sides:
+        wanted = _normalized_name(side)
+        if not wanted:
+            continue
+        for key, name in names.items():
+            if wanted in name:
+                hit.add(key)
+    return hit
+
+
 def resolve_core_documents(chunks: Sequence[dict], question: str = "") -> set[str]:
     """The documents that ARE the standard this question is about, if any.
-
-    Two rules, in order:
 
     1. the question names a designation (``Q/GDW 73237.1``) - the documents whose
        file name or whose own passage text carries it are the core;

@@ -89,14 +89,62 @@ def test_the_table_image_is_attached_to_every_part():
     assert all(chunk.get("image") == "<image>" for chunk in chunks)
 
 
-def test_an_html_table_is_never_split():
-    """The splitter repeats a header row; HTML has none to repeat."""
-    html = "<table><tr><th>序号</th><th>截面</th></tr>" + "<tr><td>1</td><td>3x25</td></tr>" * 40 + "</table>"
+HTML_CAPTION = "<caption>表1 电缆结构技术参数表</caption>"
+HTML_HEADER = "<tr><th>标称截面</th><th>金属套平均厚度</th><th>外径</th></tr>"
+HTML_ROWS = [
+    "<tr><td>400</td><td>3.8</td><td>54.0</td></tr>",
+    "<tr><td>630</td><td>3.8</td><td>62.0</td></tr>",
+    "<tr><td>800</td><td>3.9</td><td>68.0</td></tr>",
+    "<tr><td>1000</td><td>4.0</td><td>74.0</td></tr>",
+    "<tr><td>1200</td><td>4.1</td><td>80.0</td></tr>",
+]
+HTML = "<table>" + HTML_CAPTION + HTML_HEADER + "".join(HTML_ROWS) + "</table>"
 
-    chunks = _chunks(html, 200)
+
+def test_a_long_html_table_is_split_and_every_part_carries_caption_and_header():
+    """The structure recogniser emits HTML, and an over-long HTML table used to be ONE
+    chunk: the embedding reads only the head of what it is given, so the rows past it
+    (800mm², 1200mm² of 表1) were unreachable by any question."""
+    chunks = _chunks(HTML, 220)
+
+    assert len(chunks) > 1
+    for chunk in chunks:
+        body = chunk["content_with_weight"]
+        assert body.startswith("<table>"), "each part is a table of its own"
+        assert HTML_CAPTION in body, "the table name travels with every part"
+        assert HTML_HEADER in body, "so do the columns the rows belong to"
+        assert body.endswith("</table>")
+        assert chunk["doc_type_kwd"] == "table"
+
+
+def test_no_html_row_is_lost_or_duplicated_by_the_split():
+    chunks = _chunks(HTML, 220)
+
+    rows = []
+    for chunk in chunks:
+        body = chunk["content_with_weight"]
+        assert HTML_HEADER not in body.replace(HTML_HEADER, "", 1), "the header appears once per part"
+        rows.extend([row for row in HTML_ROWS if row in body])
+
+    assert rows == HTML_ROWS
+    for row in HTML_ROWS:
+        assert sum(row in chunk["content_with_weight"] for chunk in chunks) == 1
+
+
+def test_an_html_table_that_fits_stays_one_chunk():
+    chunks = _chunks(HTML, 100000)
 
     assert len(chunks) == 1
-    assert chunks[0]["content_with_weight"] == html
+    assert chunks[0]["content_with_weight"] == HTML
+
+
+def test_an_html_table_without_a_caption_still_repeats_its_header():
+    html = "<table>" + HTML_HEADER + "".join(HTML_ROWS) + "</table>"
+
+    chunks = _chunks(html, 220)
+
+    assert len(chunks) > 1
+    assert all(chunk["content_with_weight"].startswith("<table>" + HTML_HEADER) for chunk in chunks)
 
 
 def test_a_figure_row_list_is_untouched():

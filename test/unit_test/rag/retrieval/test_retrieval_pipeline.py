@@ -175,3 +175,28 @@ async def test_no_passages_means_an_empty_result_not_a_rerank(llm):
     )
 
     assert result == {"total": 0, "chunks": [], "doc_aggs": []}
+
+
+async def test_a_comparative_question_searches_each_side_separately(llm):
+    """One shared query cannot bring back the second document; a route per side can."""
+    llm({"sub_queries": []})
+    store = _Store([_chunk("c1", 0.8)])
+    question = "400 mm²、630 mm² 与 1600 mm² 截面电缆在 20°C 时的导体最大直流电阻标准值分别是多少？单芯与三芯要求是否一致？"
+
+    await pipeline.retrieve_multi_route(retriever=store, question=question, chat_mdl=object(), embd_mdl=object(), tenant_ids=["t-1"], kb_ids=["kb-1"])
+
+    assert store.questions[0] == question, "the user's own question is still the first route"
+    side_queries = [q for q in store.questions if q.startswith(("单芯 ", "三芯 "))]
+    assert len(side_queries) == 2, f"one route per side, got {side_queries}"
+    assert side_queries[0].startswith("单芯 ") and "1600" in side_queries[0]
+    assert side_queries[1].startswith("三芯 ") and "1600" in side_queries[1]
+    assert "三芯" not in side_queries[0] and "单芯" not in side_queries[1]
+
+
+async def test_a_single_subject_question_gets_no_side_route(llm):
+    llm({"sub_queries": []})
+    store = _Store([_chunk("c1", 0.8)])
+
+    await pipeline.retrieve_multi_route(retriever=store, question="三芯电缆的外径是多少", chat_mdl=object(), embd_mdl=object(), tenant_ids=["t-1"], kb_ids=["kb-1"])
+
+    assert store.questions == ["三芯电缆的外径是多少"]

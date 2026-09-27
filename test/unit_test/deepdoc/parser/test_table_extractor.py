@@ -432,3 +432,66 @@ def test_a_numeric_row_is_not_a_header():
     assert tables.looks_like_header(["1", "3x25", "0.9", "18.2", "10"]) is False
     assert tables.looks_like_header(HEADER) is True
     assert tables.looks_like_header(["—", "—"]) is False
+
+
+# ---------------------------------------------------------------------------
+# The HTML table the structure recogniser emits
+# ---------------------------------------------------------------------------
+
+HTML_CAPTION = "表1 电缆结构技术参数表"
+HTML_HEADER = "<tr><th>标称截面</th><th>金属套平均厚度</th></tr>"
+HTML_ROWS = [f"<tr><td>{section}</td><td>{thickness}</td></tr>" for section, thickness in ((400, 3.8), (630, 3.8), (800, 3.9), (1200, 4.1), (1600, 4.3))]
+HTML = f"<table><caption>{HTML_CAPTION}</caption>{HTML_HEADER}{''.join(HTML_ROWS)}</table>"
+
+
+def test_parsing_an_html_table_separates_caption_header_and_rows():
+    caption, header, rows = tables.parse_html_table(HTML)
+
+    assert caption == HTML_CAPTION
+    assert header == [HTML_HEADER]
+    assert rows == HTML_ROWS
+
+
+def test_parsing_an_html_table_without_a_header_treats_every_row_as_data():
+    html = "<table>" + "".join(HTML_ROWS) + "</table>"
+
+    caption, header, rows = tables.parse_html_table(html)
+
+    assert caption == ""
+    assert header == []
+    assert rows == HTML_ROWS
+
+
+def test_parsing_something_that_is_not_a_table_yields_nothing():
+    assert tables.parse_html_table("普通正文") == ("", [], [])
+
+
+def test_a_html_table_that_fits_is_returned_unchanged():
+    assert tables.split_html_table(HTML, len(HTML)) == [HTML]
+    assert tables.split_html_table(HTML, 0) == [HTML]
+
+
+def test_splitting_an_html_table_repeats_caption_and_header_in_every_part():
+    parts = tables.split_html_table(HTML, 200)
+
+    assert len(parts) > 1
+    for part in parts:
+        assert part.startswith("<table><caption>" + HTML_CAPTION + "</caption>" + HTML_HEADER)
+        assert part.endswith("</table>")
+
+
+def test_splitting_an_html_table_loses_no_row():
+    parts = tables.split_html_table(HTML, 200)
+
+    assert sorted(row for part in parts for row in HTML_ROWS if row in part) == sorted(HTML_ROWS)
+
+
+def test_an_html_table_part_keeps_the_rows_within_its_budget():
+    parts = tables.split_html_table(HTML, 220)
+
+    assert len(parts) > 1
+    # One row per part is the smallest a split can get; anything wider than that must
+    # respect the budget, which is what keeps a part inside the embedding's window.
+    for part in parts:
+        assert len(part) <= 220 or len(part) <= len("<table><caption>" + HTML_CAPTION + "</caption>" + HTML_HEADER + "</table>") + max(len(row) for row in HTML_ROWS)
+

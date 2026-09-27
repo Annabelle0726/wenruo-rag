@@ -421,6 +421,85 @@ def _split_by_lines(text: str, limit: int) -> list[str]:
     return parts
 
 
+#: One ``<tr>`` block, tags included.
+_HTML_ROW_RE = re.compile(r"<tr\b.*?</tr>|<tr\b[^>]*/>", re.IGNORECASE | re.DOTALL)
+_HTML_CAPTION_RE = re.compile(r"<caption\b[^>]*>(.*?)</caption>", re.IGNORECASE | re.DOTALL)
+_HTML_TABLE_RE = re.compile(r"<table\b", re.IGNORECASE)
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def parse_html_table(html: str) -> tuple[str, list[str], list[str]]:
+    """Split an HTML table into ``(caption, header_rows, body_rows)``.
+
+    Rows are kept as raw markup, because this runs on the chunker's path: the table
+    has already been rendered once by the structure recogniser, and re-parsing cells
+    (``colspan``/``rowspan``) here would be a second, worse renderer. A ``<tr>`` block
+    is the unit a part needs to stay readable, and it is what the splitter repeats.
+
+    A leading run of rows carrying ``<th>`` is the header; everything after it is body.
+    """
+    text = str(html or "")
+    if not _HTML_TABLE_RE.search(text):
+        return "", [], []
+    caption_match = _HTML_CAPTION_RE.search(text)
+    caption = normalize_cell(_HTML_TAG_RE.sub("", caption_match.group(1))) if caption_match else ""
+    rows = _HTML_ROW_RE.findall(text)
+    header: list[str] = []
+    body: list[str] = []
+    for row in rows:
+        if not body and re.search(r"<th\b", row, re.IGNORECASE):
+            header.append(row)
+            continue
+        body.append(row)
+    return caption, header, body
+
+
+def split_html_table(html: str, max_chars: int) -> list[str]:
+    """Split an HTML table into parts that each carry its caption and header row.
+
+    The structure recogniser emits HTML, and an over-long HTML table used to become
+    ONE chunk. That is the "tail of 表1 is missing" failure: the embedding only reads
+    the head of what it is given, so the rows past it (800mm², 1200mm²) contributed
+    nothing to the vector and could not be recalled by any question, no matter how the
+    cut rebalanced the window.
+
+    Every part repeats ``<table><caption>…`` and the header row(s), so a row is always
+    present underneath the columns it belongs to. A table that already fits is
+    returned whole, unchanged.
+    """
+    text = str(html or "").rstrip()
+    if not text:
+        return []
+    limit = int(max_chars or 0)
+    if limit <= 0 or len(text) <= limit:
+        return [text]
+
+    caption, header, body = parse_html_table(text)
+    if not body:
+        # Table-shaped markup with no rows to batch (or not a table at all).
+        return _split_by_lines(text, limit)
+
+    opening = "<table>" if _HTML_TABLE_RE.search(text) else ""
+    if caption:
+        opening += f"<caption>{caption}</caption>"
+    prefix = opening + "".join(header)
+    suffix = "</table>" if opening else ""
+    budget = max(limit - len(prefix) - len(suffix), 1)
+
+    parts: list[str] = []
+    current: list[str] = []
+    current_len = 0
+    for row in body:
+        if current and current_len + len(row) > budget:
+            parts.append(prefix + "".join(current) + suffix)
+            current, current_len = [], 0
+        current.append(row)
+        current_len += len(row)
+    if current:
+        parts.append(prefix + "".join(current) + suffix)
+    return parts or [text]
+
+
 def _find_caption(page: Any, bbox: tuple[float, float, float, float] | None, gap: float = CAPTION_MAX_GAP) -> str:
     """The ``表N …`` line just above ``bbox``, if there is one."""
     if bbox is None:
