@@ -559,3 +559,19 @@ Not verified and stated as such: whether a785e1842 is exactly the commit impleme
 Read-only: no toast restored, no code changed, no exception propagation changed, no DB access, no recreate.
 
 Paths: phase_b_toast_history_forensic_audit.md, AGENTS.md
+
+## Milestone - Phase B P0 Revision 3: target behaviour and frozen acceptance contract C1-C7 (documentation only)
+
+phase B P0 spec: Revision 3 freezes the target behaviour and acceptance contract (documentation only)
+
+Target behaviour: keep route isolation so a dead dense leg still lets the lexical leg return evidence; pass retrieval health through; provide exactly ONE retrieval-level friendly notice. Re-raising the dense exception to trigger a UI error is forbidden in every form, and notice granularity is one retrieval, so five failed routes on one retrieval still yield one notice.
+
+Frozen acceptance contract C1 to C7: full yields no notice at all; degraded with EMBEDDING_QUOTA_EXHAUSTED yields exactly one semantic-retrieval-limited notice; degraded with EMBEDDING_UNAVAILABLE yields exactly one generic degraded notice; any other reason yields one generic notice; N failed routes still yield one notice; notice text may never carry key material, provider JSON, endpoints, stack text or infrastructure detail; answer-policy enforcement stays DISABLED so partial evidence alone cannot refuse.
+
+Separate tracks: operator observability and user disclosure are accepted independently and never conflated. The honest gap is recorded, the candidate delivers the DTO but its structured event is only appended in process and is not written to logs or metrics, so operator observability is not yet accepted.
+
+Historical basis from the forensic audit: the old path raised hard failures and a per-request front-end catch produced one toast per in-flight request, which is forbidden to restore; the current path isolates the dense exception and returns a success payload, leaving complete silence, which is the defect being fixed.
+
+Scope and blockers: front-end implementation deferred, key probe and model-id question paused as an independent Blocker, no production mutation, no DB change, no restart, no P1 entry. The acceptance boundary is frozen and further changes require a new revision.
+
+Paths: phase_b_architecture_plan.md, AGENTS.md

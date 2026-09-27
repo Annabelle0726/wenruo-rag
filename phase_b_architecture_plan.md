@@ -393,3 +393,78 @@ artifacts stay frozen.
 **Stage order (single-threaded, as instructed).** P0 contract → P0 fault-injection gate → P1 planner normalisation
 and schema contract → P1 gate precision with a corpus-independent synthetic suite → P2 deterministic tie-breaker →
 holdout final acceptance. No parallel workstreams, and tie-breaker work does not start early.
+
+---
+
+# Revision 3 — P0 Target Behaviour and FROZEN Acceptance Contract
+
+Revision 3 incorporates the historical forensic audit (commit `69f16b336`) into the P0 design. It is binding and
+freezes the P0 acceptance boundary. Documentation only: **no front-end code is written in this revision, no key
+probe is run, and no production mutation is performed.**
+
+## R3.1 The historical root cause that defines the target
+
+| era | mechanism | user-perceived result |
+| --- | --- | --- |
+| old (pre-isolation) | embedding 429 → **hard failure** (`embedding_failure` raised) → request rejected → the Search page's **per-request** `.catch()` fires `message.error` once **per in-flight request** | toast storm: N concurrent requests → N toasts; later reworded by `a785e1842` into readable sentences |
+| current | route boundary isolates the Dense exception, logs a warning, returns `RouteResult(failed=True)` → retrieval returns a normal success payload from the surviving routes → the global interceptor toasts only on 413/504, so the `.catch()` never runs | **complete silence** — `SILENT_RETRIEVAL_DEGRADATION` as seen by the front end |
+
+Therefore: the old toast storm is **forbidden to restore**, and the current silence is **the defect to fix**. The
+fix is a single, deliberate, retrieval-scoped notice — never a re-raised exception.
+
+## R3.2 Target behaviour definition (binding)
+
+1. **Keep route isolation.** A dead Dense leg must continue to let the Lexical leg return evidence. The pipeline
+   must not re-raise the Dense exception, and no layer may convert a missing Dense leg into a request failure.
+   > **Forbidden rollback:** re-throwing the Dense exception to make the UI show an error is prohibited, in every
+   > form — no re-raise, no synthetic non-2xx, no error `code` for a partial retrieval.
+2. **Pass `retrieval_health` through** unchanged: collected at the execution points, aggregated once, attached
+   additively to the retrieval result, exposed on the DTO.
+3. **Exactly ONE retrieval-level friendly notice.** Granularity is **one retrieval**, not one route and not one
+   leg. If five routes fail on the same retrieval, the user sees **one** notice. The notice is a function of the
+   attached health block, so it is naturally deduplicated: one health block per retrieval → at most one notice.
+4. **Answer-policy enforcement stays `DISABLED`** (R2.1's refusal logic remains out of scope for P0). The notice
+   informs; it does not refuse, and it does not alter the baseline answer flow.
+
+## R3.3 FROZEN acceptance contract
+
+| # | condition | required user-visible outcome |
+| --- | --- | --- |
+| C1 | `overall = full` | **no degradation notice at all** — not a toast, banner, inline note or badge |
+| C2 | `overall = degraded` **and** `degradation_reason = EMBEDDING_QUOTA_EXHAUSTED` | **exactly one** friendly "semantic retrieval limited" notice for that retrieval |
+| C3 | `overall = degraded` **and** `degradation_reason = EMBEDDING_UNAVAILABLE` | **exactly one** generic "retrieval degraded" notice for that retrieval |
+| C4 | any other degraded/failed reason | **exactly one** generic retrieval-degraded notice; never a provider or infrastructure message |
+| C5 | N routes or N legs failed on one retrieval | **still exactly one** notice (multiplicity is a hard failure, not a cosmetic issue) |
+| C6 | safety red line | notice text must never contain an API key or key fragment, the provider's JSON error body, model/provider identifiers beyond what a user needs, endpoint/version strings, stack traces, or any infrastructure detail |
+| C7 | decoupling | answer-policy enforcement remains `DISABLED`; `partial` evidence must not by itself produce a refusal in P0 |
+
+**Separate acceptance tracks (must not be conflated).**
+
+- **Operator observability** (machine-readable DTO + log line + metrics/trace) and **user disclosure** (the single
+  notice) are accepted **independently**. Passing one never implies the other.
+- Note the current honest gap: the candidate delivers the DTO only. The structured event it builds is appended
+  in-process and is **not** written to logs or metrics, so operator observability is **not yet accepted**.
+
+## R3.4 Evidence required to accept each rule (for the future gate)
+
+| rule | evidence |
+| --- | --- |
+| C1 | healthy-path run: `overall = full`, notice count **0** |
+| C2 / C3 | injected quota failure and injected unavailable failure: notice count **1**, and the text matches the required semantic class |
+| C4 | injection with another reason: notice count **1**, generic text |
+| C5 | injection failing **all** Dense routes at once: notice count **1** (the deduplication proof) |
+| C6 | text assertion that the rendered notice contains no key material, no JSON body, no endpoint or stack text |
+| C7 | assertion that a `partial` evidence state alone produces no refusal and no answer-flow change |
+| isolation | assertion that no injection produces a non-2xx status, a non-zero `code`, or a re-raised exception |
+| tracks | separate reports for operator observability and user disclosure, each with its own PASS/FAIL |
+
+## R3.5 Scope and blockers recorded with this revision
+
+- **Front-end implementation is deferred.** R3.3 is now a frozen contract; the UI work is a separate, later work
+  order, and this revision writes no front-end code.
+- **Gemini credential compatibility is an independent Blocker.** The `KEY_1` / `KEY_2` probe and the model-id
+  question are **paused** (both returned HTTP 404 model-not-found; quota health undetermined) and are tracked
+  separately from P0. They must be resolved before any live gate, and the fact that a 404 would block the
+  healthy-path negative control is recorded, not worked around.
+- **No production mutation, no DB change, no restart, no P1 entry** in this revision.
+- The P0 acceptance boundary is now **frozen**: changes to C1–C7 require a new revision, not an in-flight edit.
