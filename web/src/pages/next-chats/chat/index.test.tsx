@@ -271,6 +271,21 @@ function FirstSendProbe({ sessionId }: { sessionId: string }) {
   );
 }
 
+/** Opens another conversation of the SAME chat, the way the rail's rows do. */
+function SwitchSessionProbe({ sessionId }: { sessionId: string }) {
+  const { setConversationBoth } = useChatUrlParams();
+
+  return (
+    <button
+      type="button"
+      data-testid="switch-session"
+      onClick={() => setConversationBoth(sessionId, '')}
+    >
+      switch
+    </button>
+  );
+}
+
 function renderChatPage(route: string) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -290,6 +305,7 @@ function renderChatPage(route: string) {
                 <>
                   <RouteParamsProbe />
                   <FirstSendProbe sessionId="server-9" />
+                  <SwitchSessionProbe sessionId="server-2" />
                   <Chat />
                 </>
               }
@@ -457,6 +473,31 @@ describe('a chat with nothing to retrieve from', () => {
     );
     // Same conversation, same close: a session that was not even open when the
     // panel was raised is not a reason to raise it again.
+    expect(settingsDrawer()).toBeNull();
+  });
+
+  it('does not raise it for the chat\'s next conversation either', async () => {
+    mockSessionList = [
+      { id: 'server-1', name: '国标查询' },
+      { id: 'server-2', name: '例行试验' },
+    ];
+
+    renderChatPage('/chat/assistant-1?conversationId=server-1');
+    await waitFor(() => expect(settingsDrawer()).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('chat-detail-settings-cancel'));
+    await waitFor(() => expect(settingsDrawer()).toBeNull());
+
+    // A DIFFERENT conversation of the same chat — a row the rail opens, not the
+    // session the panel was dismissed on. What has no datasets is the chat, and
+    // the user has already been told once: every new conversation would
+    // otherwise be one more chance to ask the same question.
+    fireEvent.click(screen.getByTestId('switch-session'));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('route-params')).toHaveTextContent('server-2|'),
+    );
+    await waitForOpenSession();
+
     expect(settingsDrawer()).toBeNull();
   });
 });

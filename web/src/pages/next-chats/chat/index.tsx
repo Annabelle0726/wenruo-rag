@@ -14,10 +14,7 @@ import type { BreadcrumbCrumb } from '@/layouts/components/breadcrumb-context';
 import { RootLayoutContainer } from '@/layouts/root-layout';
 import { cn } from '@/lib/utils';
 import { Routes } from '@/routes';
-import {
-  isPersistedConversationId,
-  isTemporaryConversationId,
-} from '@/utils/chat';
+import { isPersistedConversationId } from '@/utils/chat';
 import { isEmpty } from 'lodash';
 import { LucideArrowBigLeft } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -54,7 +51,7 @@ export default function Chat() {
   const { id: chatId } = useParams();
   const { clearConversationParams } = useChatUrlParams();
 
-  const { data: dialogList, loading: sessionsLoading } = useFetchSessionList();
+  const { data: dialogList } = useFetchSessionList();
   const { data: currentDialog, loading: chatLoading } = useFetchChat();
   const { patchChat } = usePatchChat();
 
@@ -242,66 +239,43 @@ export default function Chat() {
     loadState !== 'failed';
 
   /**
-   * Conversations whose empty dataset set has already raised the settings
-   * drawer. Keyed by the conversation the page is on — the open one, or `''`,
-   * the conversation a new session would start — so the rule below fires once
-   * for each of them for the whole visit.
+   * Chats whose empty dataset set has already raised the settings drawer, so the
+   * rule below fires at most ONCE for a chat in a visit.
+   *
+   * Keyed by the CHAT and not by the conversation, because the chat is what has
+   * no datasets: a chat with none would otherwise raise the panel again on every
+   * conversation opened under it — the first question of each one is not a new
+   * question for the user, and the panel has already said what it has to say.
    */
   const autoRaisedSettingsFor = useRef(new Set<string>());
 
   /**
-   * A session the page starts itself — the placeholder the rail's "+" seeds, or
-   * the one a first question creates with nothing open — and the session row it
-   * becomes are one conversation to the user, so a drawer already raised for it
-   * must not come back over the answer they just asked for: the record follows
-   * the route onto the real id.
-   */
-  const previousConversationId = useRef(conversationId);
-
-  useEffect(() => {
-    const previous = previousConversationId.current;
-    if (previous === conversationId) return;
-    previousConversationId.current = conversationId;
-
-    const wasStartedHere =
-      previous === '' || isTemporaryConversationId(previous);
-
-    if (wasStartedHere && autoRaisedSettingsFor.current.has(previous)) {
-      autoRaisedSettingsFor.current.add(conversationId);
-    }
-  }, [conversationId]);
-
-  /**
-   * The one rule behind the drawer raising itself: a CHAT with no datasets opens
-   * the settings drawer on its first conversation, marked by the notice inside
-   * it, so the selection is guided before the first question. That is the only
-   * case there is — a chat bound to datasets is never prompted about, because
-   * every conversation under it answers from them already.
+   * The one rule behind the drawer raising itself: a chat with NO datasets opens
+   * the settings drawer, marked by the notice inside it, so the selection is
+   * guided before the first question. That is the only case there is — a chat
+   * bound to datasets is never prompted about, because every conversation under
+   * it answers from them already, and a conversation that inherits a non-empty
+   * set is therefore never "missing" anything.
    *
-   * It fires once per conversation (the set above), which is what also stops it
-   * from looping and from reopening the panel over the user's own close: by the
-   * time they dismiss it the conversation is already recorded. It waits for the
-   * reads it derives the set from — the assistant record, the session list, and
-   * a session's own fetch — so a set still in flight is never read as empty, and
-   * for a list with rows in it to be resolved: the rail is about to open the
-   * first conversation.
+   * It fires once per chat (the record above), which is what also stops it from
+   * looping and from reopening the panel over the user's own close: by the time
+   * they dismiss it the chat is already recorded. It waits only for the read it
+   * derives the condition from — the chat itself — and for no answer to be
+   * mid-load, so a set still in flight is never read as empty and the panel
+   * never lands over a transcript being fetched.
    */
   useEffect(() => {
-    if (!conversationId && dialogList.length > 0) return;
-    if (!chatId || sessionsLoading || chatLoading || isLoadingMessages) return;
+    if (!chatId || chatLoading || isLoadingMessages) return;
     if (chatDatasetIds.length > 0) return;
-    if (autoRaisedSettingsFor.current.has(conversationId)) return;
+    if (autoRaisedSettingsFor.current.has(chatId)) return;
 
-    autoRaisedSettingsFor.current.add(conversationId);
+    autoRaisedSettingsFor.current.add(chatId);
     showSettings();
   }, [
     chatId,
-    sessionsLoading,
     chatLoading,
     isLoadingMessages,
-    dialogList.length,
     chatDatasetIds.length,
-    conversationId,
     showSettings,
   ]);
 
