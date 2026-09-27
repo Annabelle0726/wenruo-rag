@@ -1,0 +1,109 @@
+﻿{
+  "gate": "IMAGE_LEVEL_RUNTIME_SMOKE",
+  "image_tag": "my-wenruorag:p0b-leg-6543f5a3",
+  "image_id": "sha256:8694a5b943dc",
+  "module_source": "the actual built image, imported as rag.retrieval.multi_route (file: /ragflow/rag/retrieval/multi_route.py)",
+  "binding_smoke": {
+    "network": "none (zero external quota, structurally)",
+    "binding": {
+      "report_route_success": {
+        "bound": true,
+        "callable": true,
+        "bound_to_approved_reporter": true,
+        "object": "report_route_success"
+      },
+      "report_route_failure": {
+        "bound": true,
+        "callable": true,
+        "bound_to_approved_reporter": true,
+        "object": "report_route_failure"
+      }
+    },
+    "success_path": {
+      "exception_escaped": null,
+      "session_legs": {},
+      "route_counters": {
+        "attempted": 2,
+        "succeeded": 2,
+        "failed": 0
+      },
+      "route_calls": 2,
+      "result_keys": [
+        "chunks",
+        "doc_aggs",
+        "total"
+      ],
+      "merged_total": 1
+    },
+    "failure_path": {
+      "exception_escaped": null,
+      "session_legs": {
+        "dense": "failed"
+      },
+      "route_counters": {
+        "attempted": 1,
+        "succeeded": 0,
+        "failed": 1
+      },
+      "result_keys": [
+        "chunks",
+        "doc_aggs",
+        "total"
+      ]
+    },
+    "checks": {
+      "import_succeeded": true,
+      "report_route_success_bound": true,
+      "report_route_success_callable": true,
+      "report_route_failure_bound": true,
+      "report_route_failure_callable": true,
+      "reporters_bound_to_approved_implementation": true,
+      "reporter_success_path_executed": true,
+      "reporter_failure_path_executed": true,
+      "failure_reporter_did_not_escape_guard_handler": true,
+      "success_reporter_did_not_escape_guard_handler": true,
+      "no_nameerror": true,
+      "no_importerror": true,
+      "no_unresolved_reporter_symbol": true
+    },
+    "verdict": "PASS"
+  },
+  "healthy_producer_path_smoke": {
+    "network": "compose network; provider host blocked via --add-host",
+    "embedding_store": "test doubles (no provider call, no cluster query)",
+    "healthy_path_leg_status": {
+      "dense": "success",
+      "lexical": "success",
+      "rerank": "not_triggered",
+      "followup": "not_triggered",
+      "decomposition": "success"
+    },
+    "healthy_path_dto": {
+      "overall": "full",
+      "evidence_completeness": "partial",
+      "degradation_reason": null
+    },
+    "healthy_path_contract_violations": [],
+    "healthy_path_result_keys": [
+      "chunks",
+      "doc_aggs",
+      "retrieval_health",
+      "total"
+    ],
+    "negative_regression_dto": {
+      "overall": "degraded",
+      "evidence_completeness": "partial",
+      "degradation_reason": null
+    },
+    "negative_regression_passed": false,
+    "checks": {
+      "healthy_path_passes": true,
+      "negative_regression_fails_when_dense_unreported": true,
+      "negative_regression_sees_dense_missing": true,
+      "negative_regression_flags_silent_degradation": true,
+      "gate_does_not_self_heal": true
+    },
+    "verdict": "PASS"
+  },
+  "verdict": "PASS"
+}

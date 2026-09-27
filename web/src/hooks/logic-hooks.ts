@@ -37,6 +37,7 @@ import {
   consumeListDeletionMarker,
   discardListDeletionMarker,
 } from '@/utils/list-deletion-util';
+import { notifyRetrievalHealth } from '@/utils/retrieval-health-notice';
 import axios from 'axios';
 import { EventSourceParserStream } from 'eventsource-parser/stream';
 import { has, isEmpty, omit } from 'lodash';
@@ -682,6 +683,9 @@ export const useSelectDerivedMessages = () => {
 
   // Add the streaming message to the last item in the message list
   const addNewestAnswer = useCallback((answer: IAnswer) => {
+    // Outside the state updater on purpose: this effect can run more than once
+    // for one answer, and the helper dedupes per answer.
+    notifyRetrievalHealth(answer.reference, answer.id);
     setDerivedMessages((pre) => {
       return [
         ...(pre?.slice(0, -1) ?? []),
@@ -703,6 +707,7 @@ export const useSelectDerivedMessages = () => {
 
   // Add the streaming message to the last item in the message list
   const addNewestOneAnswer = useCallback((answer: IAnswer) => {
+    notifyRetrievalHealth(answer.reference, answer.id);
     setDerivedMessages((pre) => {
       const idx = pre.findIndex((x) => x.id === answer.id);
 

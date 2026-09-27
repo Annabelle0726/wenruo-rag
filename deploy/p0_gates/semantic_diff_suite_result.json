@@ -1,0 +1,111 @@
+{
+  "gate": "P0-B leg-attribution repair — semantic-diff suite",
+  "approved_reporter_only_gate_rerun": [
+    {
+      "scope": "pipeline.py (vs deployed baseline)",
+      "checks": {
+        "function_set_unchanged": true,
+        "all_signatures_unchanged": true,
+        "except_types_unchanged": true,
+        "try_block_count_unchanged": true,
+        "preserved_call_sites_unchanged": true,
+        "return_count_unchanged": true,
+        "returns_only_wrapped_not_altered": true,
+        "only_reporter_calls_introduced": true,
+        "no_answer_policy_enforcement_symbols": true,
+        "no_module_level_statement_removed": true,
+        "module_level_additions_are_import_only": true,
+        "module_level_sequence_preserved": true
+      },
+      "passed": true,
+      "introduced_calls": [
+        "attach_retrieval_health",
+        "begin_retrieval_health",
+        "mark_empty_window",
+        "mark_no_question"
+      ],
+      "added_module_level_nodes": 1,
+      "bind_then_return_proofs": {}
+    },
+    {
+      "scope": "multi_route.py (vs deployed baseline)",
+      "checks": {
+        "function_set_unchanged": true,
+        "all_signatures_unchanged": true,
+        "except_types_unchanged": true,
+        "try_block_count_unchanged": true,
+        "preserved_call_sites_unchanged": true,
+        "return_count_unchanged": true,
+        "returns_only_wrapped_not_altered": true,
+        "only_reporter_calls_introduced": true,
+        "no_answer_policy_enforcement_symbols": true,
+        "no_module_level_statement_removed": true,
+        "module_level_additions_are_import_only": true,
+        "module_level_sequence_preserved": true
+      },
+      "passed": true,
+      "introduced_calls": [
+        "report_route_failure",
+        "report_route_success"
+      ],
+      "added_module_level_nodes": 1,
+      "bind_then_return_proofs": {
+        "multi_route_retrieve:result": "assignment value identical to the baseline return; temporary used exactly twice (assignment + return)",
+        "_guard:result": "assignment value identical to the baseline return; temporary used exactly twice (assignment + return)"
+      }
+    }
+  ],
+  "search_layer_report": {
+    "scope": "search.py (vs deployed baseline)",
+    "checks": {
+      "no_preexisting_function_removed": true,
+      "only_allowlisted_helpers_added": true,
+      "all_preexisting_signatures_unchanged": true,
+      "all_other_preexisting_bodies_unchanged_after_stripping_reporters": true,
+      "get_vector_body_unchanged_inside_the_try": true,
+      "single_new_handler_reports_then_reraises_identically": true,
+      "introduced_calls_are_reporting_only": true,
+      "no_answer_policy_symbols_introduced": true
+    },
+    "passed": true,
+    "functions_removed": [],
+    "functions_added": [
+      "_health_bridge",
+      "_report",
+      "health_producer_error"
+    ],
+    "introduced_calls": [
+      "_health_bridge",
+      "_report",
+      "getattr",
+      "type"
+    ],
+    "bodies_unchanged": {}
+  },
+  "health_bridge_report": {
+    "scope": "health_bridge.py (authorised attribution change)",
+    "checks": {
+      "contract_module_unchanged_this_round": true,
+      "producer_api_unchanged_this_round": true,
+      "route_reporters_signatures_unchanged": true,
+      "leg_fact_reporters_added": true,
+      "route_reporting_no_longer_erases_legs": true,
+      "no_answer_policy_enforcement_symbols": true
+    },
+    "passed": true
+  },
+  "baselines": {
+    "pipeline.py": "f3a1af567f7f3dbc84c77aa4e91a2540449083b28d69e251e9403e273386c6bb",
+    "multi_route.py": "0c13ccca46e1f773559d2897d8d60cc1ef04e667c70cfb62a7d934bdb3af1c21",
+    "search.py": "f029c806ee355e7120e7b140004d58141e1599e069a03145f80f47a5a2535587"
+  },
+  "candidates": {
+    "pipeline.py": "c9174c52926de66bceb4b033d9c5dd24b928284da820d964072f7dcd46effae7",
+    "multi_route.py": "b72e95406e252fbdfc3c5007ef2685b58a5aaa58197fa747c9e1405b7809e028",
+    "search.py": "2de4965540a2b022e9b2ab520c7f01222c6526ce33f67f2424a3105201c4fe47",
+    "health.py": "ff04f8f6f07a8f01e761473209394ceeb8b797701f9103392f34401ec1d4cee4",
+    "health_producers.py": "391d0ced5b8e4b9824436547b3a7fc36a2ba7d7235b396fdf1aa6a6dbb31c68b",
+    "health_bridge.py": "baad7915bed0102b60bf6b86e0cf18d318fdef98f35f02cfe26f46eb939f7e10"
+  },
+  "verdict": "PASS"
+}

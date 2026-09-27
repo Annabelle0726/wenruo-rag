@@ -1,0 +1,12 @@
+# Phase B P0-B wiring-repair deployment override.
+#
+# Pins the REPAIRED candidate image (multi_route.py reporter symbol binding fixed).
+# Supersedes p0b_image_override.yml, whose candidate (99d0ee210004) failed the live negative
+# control with NameError: report_route_success / report_route_failure not defined.
+#
+# The tracked docker/docker-compose.yml is not modified, and the mutable `latest` tag is never used.
+#
+# Applied as:  docker compose -f docker/docker-compose.yml -f <this file> up -d --force-recreate --no-deps wenruo-rag-cpu
+services:
+  wenruo-rag-cpu:
+    image: my-wenruorag:p0b-fix-b72e9540

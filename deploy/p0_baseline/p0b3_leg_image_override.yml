@@ -1,0 +1,13 @@
+# Phase B P0-B leg-attribution deployment override.
+#
+# Pins the leg-attribution candidate image: the dense/lexical evidence-leg facts are now produced at
+# their real boundaries (the query-embedding request and the store round trip) instead of being
+# synthesised by the route layer, which previously left `dense` UNKNOWN and made every healthy
+# retrieval aggregate to `degraded` with a null reason.
+#
+# The tracked docker/docker-compose.yml is not modified, and the mutable `latest` tag is never used.
+#
+# Applied as:  docker compose -f docker/docker-compose.yml -f <this file> up -d --force-recreate --no-deps wenruo-rag-cpu
+services:
+  wenruo-rag-cpu:
+    image: my-wenruorag:p0b-leg-6543f5a3

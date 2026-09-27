@@ -41,6 +41,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
+from rag.retrieval.health_bridge import report_route_failure, report_route_success
+
 _LOG = logging.getLogger(__name__)
 
 #: Passages recalled per route. The recommended band is 10-15: wide enough that a

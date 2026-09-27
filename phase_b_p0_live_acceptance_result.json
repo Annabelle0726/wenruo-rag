@@ -1,0 +1,226 @@
+{
+  "gate": "Phase B P0 core deployment — live acceptance window (Steps 1-7)",
+  "window": "2026-09-27T21:2xZ live execution window",
+  "verdict": "FAIL_CORE_DEPLOYMENT_ROLLED_BACK",
+  "reached_stable_terminal_state": true,
+  "rollback_performed": true,
+
+  "milestones": {
+    "P0-A Health Contract": "PASS (unchanged; contract modules regress nothing on their own)",
+    "P0-B Production Wiring": "FAIL (candidate wiring does not execute: missing names at the real call site)",
+    "P0-C Live Core Acceptance": "FAIL (live negative control raised NameError; injections correctly not run)",
+    "P0 CORE RUNTIME": "NOT ESTABLISHED / FAIL",
+    "P0-6 User Disclosure UI": "DEFERRED_NOT_IMPLEMENTED",
+    "C1-C6 User-visible Acceptance": "NOT RUN / NOT IMPLEMENTED",
+    "P0-7 Operator Observability Sink": "NOT_ACCEPTED_NOT_WIRED",
+    "P1": "LOCKED / NOT ENTERED"
+  },
+  "success_wording_for_core_runtime": {
+    "correct_wording_on_success": "P0 CORE RUNTIME: PASS",
+    "applicable_here": false,
+    "reason": "The live readiness gate (healthy negative control) failed, so this wording must not be used."
+  },
+  "phase_b_p0_declared_complete": false,
+
+  "step_0_preflight": {
+    "guards": {
+      "running_image_before": "c50436820cb9 (my-wenruorag:latest)",
+      "rollback_tag_resolves_to": "c50436820cb9",
+      "candidate_tag_resolves_to": "99d0ee210004",
+      "kb_binding": "gemini-embedding-001",
+      "kb_embd_id": "f79e37e5ab7611f18ecb3887d563fb04",
+      "installed_credential_fingerprint_sha256_12": "3c29c2a7b87c",
+      "compose_file": "C:\\Projects\\RAG\\wenruo-rag\\docker\\docker-compose.yml",
+      "compose_service": "wenruo-rag-cpu",
+      "compose_project": "wenruo-rag"
+    },
+    "passed": true
+  },
+
+  "step_1_credential_rotation": {
+    "injection_point_physical": "tenant_model_instance.api_key (provider Gemini, instance 'G')",
+    "injection_point_resolution": "kb.embd_id -> tenant_model.id -> tenant_model.instance_id -> tenant_model_instance.api_key",
+    "model_config_row_id": "f79e37e5ab7611f18ecb3887d563fb04",
+    "instance_row_id": "f7825d47ab7611f18d8d3887d563fb04",
+    "provider_row_id": "ee6cb91bab7611f18f0b3887d563fb04",
+    "tenant_id": "a9e28731ab7011f19b833887d563fb04",
+    "columns_written": ["api_key"],
+    "credential_before_fingerprint_sha256_12": "3c29c2a7b87c",
+    "credential_after_fingerprint_sha256_12": "062bcd934443",
+    "key_bytes_roundtrip_identical": true,
+    "other_columns_verified_identical": ["id", "create_time", "update_time", "instance_name", "provider_id", "status", "extra"],
+    "credential_length_before_after": 53,
+    "blast_radius": "exactly one model config (the Gemini provider holds only gemini-embedding-001); legacy tenant_llm table empty and untouched",
+    "passed": true
+  },
+
+  "step_2_re_resolve_and_probe": {
+    "resolver_used": "api.db.joint_services.tenant_model_service.resolve_model_config (the application's own resolver, in-container)",
+    "resolved_llm_name": "gemini-embedding-001",
+    "resolved_model_type": "embedding",
+    "resolved_llm_factory": "Gemini",
+    "resolved_credential_fingerprint_sha256_12": "062bcd934443",
+    "deployed_client_probe_calls": 1,
+    "probe_result": "SUCCESS",
+    "probe_dimension": 3072,
+    "probe_all_finite": true,
+    "probe_norm": 1.0,
+    "external_embedding_calls_total_this_step": 1,
+    "passed": true
+  },
+
+  "step_3_recreate": {
+    "method": "docker compose -f docker/docker-compose.yml -f deploy/p0_baseline/p0b_image_override.yml up -d --force-recreate --no-deps wenruo-rag-cpu",
+    "tracked_compose_file_modified": false,
+    "override_pins": "my-wenruorag:p0b-891572a71",
+    "compose_default_image_used": false,
+    "latest_used": false,
+    "executed": true
+  },
+
+  "step_4_runtime_identity_guard": {
+    "running_image_id": "sha256:99d0ee210004d3ebcc5ed333261b1971aa96ce2208e9fa477c134626fc619b82",
+    "image_id_is_exactly_99d0ee210004": true,
+    "image_tag_pinned": "my-wenruorag:p0b-891572a71",
+    "container_replaced": true,
+    "ports_preserved": true,
+    "mounts_preserved": true,
+    "mounts_note": "identical as a set (3 binds); Docker inspect returned a different ordering after recreate",
+    "network_preserved": true,
+    "restart_policy_preserved": true,
+    "command_preserved": true,
+    "ulimits_preserved": true,
+    "environment_preserved_zero_diff": true,
+    "passed": true
+  },
+
+  "step_5_live_negative_control": {
+    "gate_role": "application readiness gate (no Docker healthcheck exists in this deployment)",
+    "path": "LIVE deployed pipeline retrieve_multi_route, real KB Cable_Tech_Docs, real rotated credential",
+    "kb_id": "014e4f2aab7911f191ac3887d563fb04",
+    "query": "220kV 三芯海缆的主要结构有哪些？",
+    "exception_raised": true,
+    "exception_type": "NameError",
+    "exception_message": "name 'report_route_failure' is not defined",
+    "exception_origin": "/ragflow/rag/retrieval/multi_route.py line 323 (report_route_success) then line 327 (report_route_failure)",
+    "propagation": "multi_route.py:330 asyncio.gather -> pipeline.py:320 await _retrieve (unguarded)",
+    "container_log_corroboration": "[Multi-route] route '220kV 三芯海缆的主要结构有哪些？' failed: name 'report_route_success' is not defined",
+    "usable_evidence_returned": false,
+    "retrieval_health_present": false,
+    "overall_is_full": false,
+    "degradation_reason_is_null": false,
+    "original_keys_preserved": false,
+    "answer_policy_enforcement_disabled": true,
+    "credential_is_key2": true,
+    "model_is_expected": true,
+    "checks_passed": 3,
+    "checks_total": 10,
+    "verdigt": "FAIL",
+    "verdict": "FAIL"
+  },
+
+  "step_6_injections": {
+    "executed": false,
+    "reason": "Sequence rule: the five frozen injections run only if the healthy negative control passes. It failed, so injections were suppressed and the rollback branch was taken.",
+    "frozen_injections_not_run": [
+      "SYNTHETIC_429_DENSE",
+      "SYNTHETIC_PLANNER_FAILURE",
+      "SYNTHETIC_EMPTY_PLAN",
+      "SYNTHETIC_LEXICAL_FAILURE",
+      "POLICY_SKIP_CIRCUIT_BREAKER"
+    ],
+    "live_contract_chain_verified": false
+  },
+
+  "root_cause": {
+    "defect_class": "missing import / unbound reporter name at the real call site",
+    "file": "rag/retrieval/multi_route.py",
+    "call_sites": [323, 327],
+    "names_called": ["report_route_success", "report_route_failure"],
+    "names_defined_in": "rag/retrieval/health_bridge.py (lines 95, 102)",
+    "names_imported_into": "rag/retrieval/pipeline.py (lines 190-197) only",
+    "names_imported_into_multi_route": false,
+    "static_proof": "in-container: hasattr(multi_route,'report_route_success')=False, hasattr(multi_route,'report_route_failure')=False",
+    "control_flow": "route succeeds -> report_route_success() NameError -> caught by the route's own except -> report_route_failure(exc) NameError -> escapes _guard -> asyncio.gather raises -> pipeline.py:320 unguarded -> retrieve_multi_route raises",
+    "impact": "every question reaching the route loop fails outright: a total retrieval outage regression, strictly worse than the silent-degradation defect this change targets",
+    "why_the_frozen_harness_missed_it": "the frozen P0-C harness loaded health.py / health_producers.py from the repository and drove a simulated pipeline with test doubles; it never imported or executed the deployed multi_route.py, so an unbound name at the real call site was invisible to it",
+    "why_the_semantic_diff_gate_missed_it": "the gate proved the introduced calls were additive reporter calls only (only_reporter_calls_introduced=true) but did not check that the introduced symbols were importable in the module that calls them",
+    "fix_not_performed": "in-place fix is not authorized in this window"
+  },
+
+  "rollback": {
+    "trigger": "candidate acceptance failure (live negative control FAIL)",
+    "method": "docker compose -f docker/docker-compose.yml -f deploy/p0_baseline/p0b_rollback_override.yml up -d --force-recreate --no-deps wenruo-rag-cpu",
+    "running_image_tag": "my-wenruorag:rollback-pre-p0-20260927",
+    "running_image_id": "sha256:c50436820cb99f0244b29d2443c9de184b97896c82c060ac8bd58ef04aa190b0",
+    "image_id_is_c50436820cb9": true,
+    "in_place_fix_attempted": false,
+    "runtime_identity_preserved": {
+      "ports": true,
+      "mounts": true,
+      "network": true,
+      "restart_policy": true,
+      "command": true,
+      "environment_zero_diff": true
+    },
+    "production_functionality_verified": {
+      "path": "LIVE retrieve_multi_route on the rolled-back image with the retained KEY_2",
+      "exception": null,
+      "chunk_count": 7,
+      "doc_agg_count": 2,
+      "total": 7,
+      "result_keys": ["chunks", "doc_aggs", "total"],
+      "retrieval_health_present": false,
+      "retrieval_health_absence_explained": "the pre-P0 image has no health contract; this is the expected baseline shape",
+      "verdict": "PRODUCTION_RESTORED"
+    }
+  },
+
+  "credential_isolation": {
+    "rule_applied": "credential rollback is independent from code rollback",
+    "evidence_implicating_credential": false,
+    "key2_retained": true,
+    "installed_credential_final_fingerprint_sha256_12": "062bcd934443",
+    "key1_status": "QUOTA_EXHAUSTED (unchanged; not reinstalled)",
+    "proof_key2_is_not_implicated": "the rolled-back production image served a real retrieval with KEY_2 (7 chunks, no exception), so the failure is attributable to the candidate code, not the credential"
+  },
+
+  "external_cost": {
+    "embedding_provider_calls_step_2_probe": 1,
+    "embedding_provider_calls_step_5_live_negative_control": "1 (failed at the route loop after the embedding leg)",
+    "embedding_provider_calls_restore_check": "1",
+    "synthetic_429_manufactured_with_real_quota": false
+  },
+
+  "touched": [
+    "tenant_model_instance.api_key for instance f7825d47ab7611f18d8d3887d563fb04 (credential rotation, intended and retained)",
+    "wenruo-rag-cpu container (recreated twice: to candidate, then to rollback)",
+    "new file deploy/p0_baseline/p0b_image_override.yml",
+    "new file deploy/p0_baseline/p0b_rollback_override.yml"
+  ],
+  "untouched": [
+    "docker/docker-compose.yml (tracked compose file unmodified)",
+    "knowledgebase.embd_id and all 5 KB bindings",
+    "tenant_model model row and all other model configs",
+    "tenant_llm (empty, untouched)",
+    "embedding model identity and dimension (gemini-embedding-001 / 3072)",
+    "index and mapping (no re-embedding, no index write)",
+    "prompts and reranker parameters",
+    "retrieval tuning parameters",
+    "answer-policy enforcement (remains DISABLED)",
+    "mysql, elasticsearch, redis, minio containers (not restarted)",
+    "front end"
+  ],
+
+  "candidate_artifacts_retained": {
+    "my-wenruorag:p0b-891572a71": "sha256:99d0ee210004d3ebcc5ed333261b1971aa96ce2208e9fa477c134626fc619b82 (retained for diagnosis; not deployed)",
+    "my-wenruorag:rollback-pre-p0-20260927": "sha256:c50436820cb99f0244b29d2443c9de184b97896c82c060ac8bd58ef04aa190b0 (currently running)"
+  },
+
+  "next_window_requirements": [
+    "authorize a code fix in rag/retrieval/multi_route.py (import the two bridge reporters, or drop the calls)",
+    "add a build/CI gate that imports every deployed retrieval module and asserts every introduced reporter symbol resolves in the module that calls it",
+    "add a live smoke gate that executes the deployed retrieve_multi_route against one real KB question before acceptance, so a runtime-unbound name cannot pass a static semantic diff",
+    "then re-run the full Steps 1-7 sequence, negative control first, and only then the five frozen injections"
+  ]
+}

@@ -144,10 +144,22 @@ export interface IReferenceChunk {
   document_metadata?: Record<string, any>;
 }
 
+/**
+ * Additive retrieval-health signal the backend attaches beside the existing
+ * reference keys. Optional and additive: a response from an older backend, or
+ * any non-retrieval answer, simply omits it.
+ */
+export interface IRetrievalHealth {
+  overall: 'full' | 'degraded' | 'failed' | string;
+  evidence_completeness: 'full' | 'partial' | 'insufficient' | string;
+  degradation_reason: string | null;
+}
+
 export interface IReference {
   chunks: IReferenceChunk[];
   doc_aggs: Docagg[];
   total: number;
+  retrieval_health?: IRetrievalHealth;
 }
 
 export interface IReferenceObject {

@@ -37,11 +37,21 @@ IMPORT_BLOCK = """from rag.retrieval.health_bridge import (
 """
 
 
-def replace_once(text: str, old: str, new: str, label: str) -> str:
+def replace_exact(text: str, old: str, new: str, expected: int, label: str) -> str:
+    """Replace `old` with `new` only when it occurs exactly `expected` times.
+
+    A transformation whose anchor is stale must FAIL the build, never return the source unchanged:
+    silently doing nothing is what shipped a candidate that raised NameError on every retrieval.
+    """
     count = text.count(old)
-    if count != 1:
-        raise SystemExit(f"ANCHOR FAILURE [{label}]: expected exactly 1 match, found {count}")
-    return text.replace(old, new, 1)
+    if count != expected:
+        raise SystemExit(f"ANCHOR FAILURE [{label}]: expected exactly {expected} match(es), found {count}")
+    return text.replace(old, new, expected)
+
+
+def replace_once(text: str, old: str, new: str, label: str) -> str:
+    """Declared expected match count of exactly 1."""
+    return replace_exact(text, old, new, 1, label)
 
 
 def build_pipeline_candidate(baseline: str) -> str:
@@ -68,7 +78,16 @@ def build_pipeline_candidate(baseline: str) -> str:
 
 
 def build_multi_route_candidate(source: str) -> str:
-    return replace_once(
+    """Instrument the route loop.
+
+    EVERY anchor goes through `replace_once`, which hard-fails on 0 or >1 matches. The previous
+    revision used a bare `str.replace()` for the import and anchored it on
+    `from rag.retrieval.rerank import`, which does not exist in this file; `str.replace` returned the
+    source unchanged, the build reported success, and the deployed candidate called two reporter
+    symbols it never bound (NameError on every retrieval). A silent no-op is not an acceptable
+    success state.
+    """
+    text = replace_once(
         source,
         """    async def _guard(query: str) -> RouteResult:
         try:
@@ -79,7 +98,9 @@ def build_multi_route_candidate(source: str) -> str:
             result = await _retrieve_route(
 """,
         "multi_route guard success binding",
-    ).replace(
+    )
+    text = replace_once(
+        text,
         """                allow_dense_fallback=allow_dense_fallback,
             )
         except Exception as exc:  # noqa: BLE001 - one dead route must not sink the others
@@ -95,15 +116,69 @@ def build_multi_route_candidate(source: str) -> str:
             report_route_failure(exc)
             return RouteResult(query=query, failed=True)
 """,
-        1,
-    ).replace(
-        "from rag.retrieval.rerank import",
-        "from rag.retrieval.health_bridge import report_route_failure, report_route_success\nfrom rag.retrieval.rerank import",
-        1,
+        "multi_route route reporters",
     )
+    text = replace_once(
+        text,
+        "from typing import Any, Sequence\n",
+        "from typing import Any, Sequence\n\nfrom rag.retrieval.health_bridge import report_route_failure, report_route_success\n",
+        "multi_route health reporter import",
+    )
+    return text
 
 
 REPORTER_CALLS = {"attach_retrieval_health", "begin_retrieval_health", "mark_empty_window", "mark_no_question", "report_route_failure", "report_route_success"}
+
+
+def module_level_bound_names(tree: ast.AST) -> set:
+    """Names bound at module level: imports, defs, classes and simple assignments."""
+    bound = set()
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom):
+            bound.update(alias.asname or alias.name for alias in node.names)
+        elif isinstance(node, ast.Import):
+            bound.update((alias.asname or alias.name).split(".")[0] for alias in node.names)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            bound.add(node.name)
+        elif isinstance(node, ast.Assign):
+            bound.update(t.id for t in node.targets if isinstance(t, ast.Name))
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            bound.add(node.target.id)
+    return bound
+
+
+def verify_candidate_symbols(source: str, label: str) -> dict:
+    """Post-transformation proof: every reporter the candidate CALLS must be BOUND where it calls it.
+
+    This is the check whose absence let a candidate ship that raised
+    `NameError: name 'report_route_success' is not defined` on every retrieval. The semantic gate
+    proved the calls were additive; nothing proved they were resolvable.
+    """
+    tree = ast.parse(source)
+    bound = module_level_bound_names(tree)
+    called_reporters = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in REPORTER_CALLS:
+            called_reporters.add(node.func.id)
+    unbound = sorted(called_reporters - bound)
+    imported_bridge_symbols = set()
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom) and node.module == "rag.retrieval.health_bridge":
+            imported_bridge_symbols.update(alias.name for alias in node.names)
+    missing_from_bridge_import = sorted(called_reporters - imported_bridge_symbols)
+    report = {
+        "label": label,
+        "reporter_symbols_called": sorted(called_reporters),
+        "reporter_symbols_bound": sorted(called_reporters & bound),
+        "unbound_reporter_symbols": unbound,
+        "reporter_symbols_imported_from_bridge": sorted(imported_bridge_symbols),
+        "called_but_not_imported_from_bridge": missing_from_bridge_import,
+        "passed": not unbound and not missing_from_bridge_import,
+    }
+    if not report["passed"]:
+        raise SystemExit(f"BINDING FAILURE [{label}]: unbound={unbound} not_imported_from_bridge={missing_from_bridge_import}")
+    return report
+
 
 #: Answer policy stays out of this deployment (see health_bridge.ANSWER_POLICY_ENFORCEMENT).
 FORBIDDEN_POLICY_SYMBOLS = ("decide_answer_action", "required_notice", "AnswerAction", "refuse_insufficient", "refuse_failed")
@@ -254,6 +329,10 @@ def main() -> int:
     PATCH.write_text("".join(diff), encoding="utf-8", newline="\n")
 
     gates = [semantic_gate(baseline_pipeline, cand_pipeline, "pipeline.py"), semantic_gate(baseline_multi_route, cand_multi_route, "multi_route.py")]
+    binding_proofs = [
+        verify_candidate_symbols(cand_pipeline, "pipeline.py"),
+        verify_candidate_symbols(cand_multi_route, "multi_route.py"),
+    ]
     payload = {
         "gate": "P0 Option-A Semantic-Diff Gate",
         "baseline": {
@@ -266,7 +345,8 @@ def main() -> int:
         },
         "diff_hunks": "".join(diff).count("\n@@"),
         "gates": gates,
-        "verdict": "PASS" if all(gate["passed"] for gate in gates) else "FAIL",
+        "symbol_binding_proofs": binding_proofs,
+        "verdict": "PASS" if all(gate["passed"] for gate in gates) and all(p["passed"] for p in binding_proofs) else "FAIL",
     }
     RESULT.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(payload, ensure_ascii=False, indent=2))

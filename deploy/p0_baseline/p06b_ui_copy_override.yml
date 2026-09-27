@@ -1,0 +1,18 @@
+# P0-6 corrected-copy deploy override (planned, NOT executed).
+#
+# Pins the image carrying the accepted, corrected user-disclosure wording:
+#   zh: 语义检索暂时受限，本次回答可能不完整。
+#   en: Semantic search is temporarily degraded; this answer may be incomplete.
+#
+# The phrase "已自动切换为文本检索模式" / "fell back to text search" was removed because the
+# deployment cannot observe a fallback: measured, an embedding failure aborts the route before the
+# store round trip (store_round_trips = 0), so lexical search never runs in that route.
+#
+# The running production container is deliberately NOT recreated from this file yet; deploy requires
+# an explicit go-ahead (see phase_b_p0_7_operator_observability_design_audit.md §4). `latest` also
+# deliberately still points at the currently accepted image 858c04e89fdd.
+#
+# Applied as:  docker compose -f docker/docker-compose.yml -f <this file> up -d --force-recreate --no-deps wenruo-rag-cpu
+services:
+  wenruo-rag-cpu:
+    image: my-wenruorag:p0-6-ui-copy-984e7036

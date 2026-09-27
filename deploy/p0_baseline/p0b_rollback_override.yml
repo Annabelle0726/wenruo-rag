@@ -1,0 +1,10 @@
+# Phase B P0-B ROLLBACK override — restores the verified pre-P0 production image.
+#
+# Used because the candidate image 99d0ee210004 failed the live negative control
+# (NameError: report_route_success/report_route_failure not defined in the deployed
+# rag/retrieval/multi_route.py), so acceptance is FAIL and an in-place fix is not authorized.
+#
+# Applied as:  docker compose -f docker/docker-compose.yml -f <this file> up -d --force-recreate --no-deps wenruo-rag-cpu
+services:
+  wenruo-rag-cpu:
+    image: my-wenruorag:rollback-pre-p0-20260927

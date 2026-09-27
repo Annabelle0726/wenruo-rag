@@ -1,0 +1,24 @@
+# P0-6 User Disclosure UI — derived image.
+#
+# Base pinned by digest to the accepted P0-B leg-attribution candidate
+# (my-wenruorag:p0b-leg-6543f5a3). This layer ships ONLY the rebuilt web bundle:
+# the P0-6 change is frontend-only, so no Python file is touched here.
+#
+# The old bundle is removed first so no stale hashed asset from the base image
+# survives the overlay.
+#
+# Build (context is the REPOSITORY ROOT, because web/dist lives there and
+# .dockerignore deliberately does not exclude it):
+#   docker build -f deploy/p0_build/Dockerfile.p0_6_ui -t <tag> .
+#
+# The base is named by its immutable tag rather than by digest: a digest FROM
+# makes BuildKit issue a registry HEAD for this local-only repository, and the
+# configured mirror rejects it. The tag is never moved, and the acceptance
+# verification re-checks that the derived image's Python payload is byte-identical
+# to the base's, so the pin is enforced by evidence rather than by syntax.
+#
+# base: my-wenruorag:p0b-leg-6543f5a3
+#       sha256:8694a5b943dc821e00c76c9e0ae1a99b3bdec1302497c23490c20187c401f785
+FROM my-wenruorag:p0b-leg-6543f5a3
+RUN rm -rf /ragflow/web/dist
+COPY web/dist /ragflow/web/dist

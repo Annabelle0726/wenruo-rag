@@ -1,0 +1,589 @@
+{
+  "gate": "Phase B P0-B leg-attribution repair + live re-acceptance",
+  "verdict": "PASS",
+  "reached_stable_terminal_state": true,
+  "rollback_performed": false,
+  "credential_modified_this_window": false,
+  "milestones": {
+    "GENERATOR_ANCHOR_GATE": "PASS",
+    "RUNTIME_SYMBOL_BINDING_GATE": "PASS",
+    "HEALTHY_PATH_CONTRACT_GATE": "PASS",
+    "P0-A Health Contract": "PASS",
+    "P0-B Production Wiring": "PASS",
+    "P0-C Live Core Acceptance": "PASS",
+    "P0 CORE RUNTIME": "PASS",
+    "P0-6 User Disclosure UI": "DEFERRED_NOT_IMPLEMENTED",
+    "C1-C6 User-visible Acceptance": "NOT RUN / NOT IMPLEMENTED",
+    "P0-7 Operator Observability Sink": "NOT_ACCEPTED_NOT_WIRED",
+    "P1": "LOCKED / NOT ENTERED"
+  },
+  "phase_b_p0_declared_complete": false,
+  "milestone_wording": "P0 CORE RUNTIME: PASS",
+  "defect_repaired": {
+    "class": "producer/wiring truth defect: the healthy path never reported the dense evidence leg",
+    "route_abstraction_limitation": "The route loop cannot separate the two evidence legs: one hybrid route call covers the dense leg AND the lexical leg. It therefore cannot produce either fact, and inferring one from the other (or from the result) would fabricate health state.",
+    "fact_sources_added_at_the_real_boundaries": {
+      "dense": "rag/nlp/search.py::Dealer.get_vector - the single point where the query-embedding request is issued",
+      "lexical": "rag/nlp/search.py::Dealer.search - the store round trip that carries the lexical expression"
+    },
+    "route_layer_changed_to_stop_fabricating": "health_bridge._bump no longer pops the evidence legs and no longer re-declares one of them `success`; it keeps route counters and attributes a route failure to a leg only when no deeper boundary already owns that leg.",
+    "not_done_deliberately": [
+      "UNKNOWN was not made neutral",
+      "an unresolved dense leg was not auto-promoted to success",
+      "validate() was not relaxed",
+      "degraded + null reason was not allowed",
+      "KNOWN_LEGS was not modified to hide dense",
+      "skipped and not_triggered were not mixed",
+      "dense success was never guessed from chunk counts or route names",
+      "no retrieval parameter, routing, fusion, exception semantics, embedding model, index, prompt, reranker or answer-policy change"
+    ]
+  },
+  "pre_deployment_gates": {
+    "existing_unit_tests": {
+      "verdict": "PASS",
+      "relevant_subset": "255 passed (test/unit_test/rag/retrieval, rag/test_search_*, rag/nlp/test_search_rerank, rag/advanced_rag/test_hybrid_search_multi_route)",
+      "full_suite": "5965 passed, 33 skipped, 41 failed, 22 collection errors",
+      "full_suite_failures_pre_existing": true,
+      "full_suite_failure_evidence": "git status shows no production code modified in the repo working tree this window (only deploy/ build inputs and tools/scripts/p0_option_a_candidate.py). The failures are Windows GBK UnicodeDecodeError, sqlite3 unraisable-warning ExceptionGroups, a missing ZHIPU_AI_API_KEY, and collection errors for ragflow_sdk / tools package / api.apps import roots - none of which touch the retrieval, health or search code."
+    },
+    "p0a_host_fault_injection": {
+      "verdict": "PASS",
+      "injections": 6,
+      "passed": 6,
+      "external_quota_consumed": 0
+    },
+    "p0c_host_injection_suite": {
+      "verdict": "PASS",
+      "positive_passed": 5,
+      "positive_failed": 0,
+      "negative_control": true,
+      "external_quota_consumed": 0
+    },
+    "semantic_diff_gate": {
+      "verdict": "PASS",
+      "scopes": {
+        "pipeline.py": "reporter-only vs deployed baseline: PASS",
+        "multi_route.py": "reporter-only vs deployed baseline: PASS",
+        "search.py": "reporter-only: every pre-existing function body byte-identical after removing reporter statements and unwrapping the single report-then-re-raise handler; all signatures unchanged; only 3 allowlisted helpers added: PASS",
+        "health_bridge.py": "authorised attribution change; contract module (health.py) and producer API (health_producers.py) byte-identical to the approved candidate, so `full` was not reached by weakening the contract: PASS"
+      }
+    },
+    "runtime_symbol_binding_gate": {
+      "verdict": "PASS",
+      "regression_enforced": true,
+      "old_unbound_fixture": {
+        "verdict": "FAIL",
+        "reporters_bound": false,
+        "reproduced_incident": {
+          "type": "NameError",
+          "message": "name 'report_route_failure' is not defined",
+          "raised_from": null
+        }
+      },
+      "repaired_candidate": {
+        "verdict": "PASS",
+        "checks_passed": true
+      }
+    },
+    "healthy_path_contract_gate": {
+      "verdict": "PASS",
+      "provenance": "real candidate pipeline -> multi_route -> store-layer producers; embedding + doc store doubled",
+      "healthy_path_leg_status": {
+        "dense": "success",
+        "lexical": "success",
+        "rerank": "not_triggered",
+        "followup": "not_triggered",
+        "decomposition": "success"
+      },
+      "healthy_path_dto": {
+        "overall": "full",
+        "evidence_completeness": "partial",
+        "degradation_reason": null
+      },
+      "healthy_path_contract_violations": [],
+      "healthy_path_legacy_keys": [
+        "chunks",
+        "doc_aggs",
+        "retrieval_health",
+        "total"
+      ],
+      "negative_regression_dto": {
+        "overall": "degraded",
+        "evidence_completeness": "partial",
+        "degradation_reason": null
+      },
+      "negative_regression_verdict": "FAIL (required)",
+      "negative_regression_meaning": "when the dense producer does not report a leg it should have reported, the gate FAILS and does not self-heal the missing leg into success"
+    },
+    "generator_anchor_regression": {
+      "verdict": "PASS",
+      "checks": {
+        "exactly_one_match_succeeds": true,
+        "zero_matches_hard_fails": true,
+        "more_than_expected_hard_fails": true,
+        "stale_anchor_hard_fails_now": true,
+        "incident_mechanism_demonstrated": true,
+        "no_bare_replace_in_builders": true,
+        "all_reporter_symbols_bound": true,
+        "generator_output_matches_approved_build_inputs": true
+      },
+      "stale_anchor_now_hard_fails": true,
+      "incident_mechanism_demonstrated": true,
+      "generator_output_matches_build_inputs": true
+    },
+    "image_level_runtime_smoke": {
+      "verdict": "PASS",
+      "image": "my-wenruorag:p0b-leg-6543f5a3",
+      "module_source": "the actual built image, imported as rag.retrieval.multi_route (file: /ragflow/rag/retrieval/multi_route.py)",
+      "binding_smoke": "PASS",
+      "healthy_producer_path_dto_smoke": "PASS",
+      "healthy_producer_path_dto": {
+        "overall": "full",
+        "evidence_completeness": "partial",
+        "degradation_reason": null
+      }
+    },
+    "all_pre_deployment_gates_passed": true
+  },
+  "rebuild": {
+    "new_immutable_tag": "my-wenruorag:p0b-leg-6543f5a3",
+    "new_image_id": "sha256:8694a5b943dc821e00c76c9e0ae1a99b3bdec1302497c23490c20187c401f785",
+    "short_id": "8694a5b943dc",
+    "build_context": "deploy/p0_build (base pinned by digest to the rollback image)",
+    "overwritten_tags": [],
+    "tag_inventory": {
+      "my-wenruorag:latest": "c50436820cb9 (untouched)",
+      "my-wenruorag:rollback-pre-p0-20260927": "c50436820cb9 (untouched)",
+      "my-wenruorag:p0b-891572a71": "99d0ee210004 (first failed candidate, untouched)",
+      "my-wenruorag:p0b-fix-b72e9540": "be80f1b49b45 (second candidate, untouched)",
+      "my-wenruorag:p0b-leg-6543f5a3": "8694a5b943dc (new, deployed)"
+    },
+    "in_image_bytes_verified_against_build_inputs": {
+      "multi_route.py": "b72e95406e25...",
+      "pipeline.py": "c9174c52926d...",
+      "health_bridge.py": "baad7915bed0...",
+      "search.py": "2de4965540a2..."
+    }
+  },
+  "live_reacceptance": {
+    "credential_rotation_repeated": false,
+    "pre_deploy_premises_verified": {
+      "production_image": "c50436820cb9 (my-wenruorag:rollback-pre-p0-20260927)",
+      "credential_fingerprint_sha256_12": "062bcd934443",
+      "model": "gemini-embedding-001",
+      "kb_binding": "f79e37e5ab7611f18ecb3887d563fb04, 5 KBs, unchanged"
+    },
+    "step_3_recreate": {
+      "method": "docker compose -f docker/docker-compose.yml -f deploy/p0_baseline/p0b3_leg_image_override.yml up -d --force-recreate --no-deps wenruo-rag-cpu",
+      "tracked_compose_file_modified": false,
+      "latest_used": false
+    },
+    "step_4_identity_guard": {
+      "running_image_id": "sha256:8694a5b943dc821e00c76c9e0ae1a99b3bdec1302497c23490c20187c401f785",
+      "image_id_matches_candidate": true,
+      "tag_pinned": true,
+      "ports_preserved": true,
+      "mounts_preserved": true,
+      "network_preserved": true,
+      "restart_policy_preserved": true,
+      "command_preserved": true,
+      "ulimits_preserved": true,
+      "environment_zero_diff": true,
+      "verdict": "PASS"
+    },
+    "step_5_live_healthy_negative_control": {
+      "path": "LIVE deployed pipeline, real KB Cable_Tech_Docs, real credential KEY_2, real store, no test doubles",
+      "leg_status": {
+        "dense": "success",
+        "lexical": "success",
+        "rerank": "not_triggered",
+        "followup": "not_triggered",
+        "decomposition": "success"
+      },
+      "retrieval_health_dto": {
+        "overall": "full",
+        "evidence_completeness": "partial",
+        "degradation_reason": null
+      },
+      "overall_from_session": "full",
+      "contract_violations": [],
+      "result_keys": [
+        "chunks",
+        "doc_aggs",
+        "retrieval_health",
+        "total"
+      ],
+      "embedding_model": "gemini-embedding-001",
+      "credential_fingerprint_sha256_12": "062bcd934443",
+      "checks": {
+        "no_exception_raised": true,
+        "usable_evidence_returned": true,
+        "retrieval_health_present": true,
+        "all_required_legs_explicitly_resolved": true,
+        "dense_leg_succeeded": true,
+        "lexical_leg_succeeded": true,
+        "overall_is_full": true,
+        "overall_full_matches_session": true,
+        "degradation_reason_is_null": true,
+        "zero_contract_violations": true,
+        "original_keys_preserved": true,
+        "no_policy_keys_in_dto": true,
+        "answer_policy_enforcement_disabled": true,
+        "credential_is_key2": true,
+        "model_is_expected": true
+      },
+      "verdict": "PASS",
+      "observed_as_required": {
+        "dense_success": true,
+        "lexical_success": true,
+        "all_known_legs_resolved": true,
+        "overall_full": true,
+        "degradation_reason_null": true,
+        "zero_contract_violations": true
+      }
+    },
+    "step_6_frozen_injections": {
+      "verdict": "PASS",
+      "modules_loaded_from": "/ragflow (the running image)",
+      "positive_injections": {
+        "run": 5,
+        "passed": 5,
+        "failed": 0,
+        "rows": [
+          {
+            "id": "SYNTHETIC_429_DENSE",
+            "injection": {
+              "dense_fails": true
+            },
+            "overall": "degraded",
+            "degradation_reason": "EMBEDDING_QUOTA_EXHAUSTED",
+            "leg_status": {
+              "decomposition": "success",
+              "dense": "failed",
+              "lexical": "success",
+              "rerank": "not_triggered",
+              "followup": "not_triggered"
+            },
+            "evidence_completeness": "partial",
+            "policy": {
+              "narrative": "answer_with_disclosure",
+              "constraint_bearing": "refuse_insufficient"
+            },
+            "checks": {
+              "overall_correct": true,
+              "reason_correct": true,
+              "dense_status_correct": true,
+              "policy_correct": true,
+              "notices_present_where_required": true,
+              "no_contract_violation": true,
+              "dto_additive_only": true,
+              "event_emitted": true,
+              "no_unrestricted_answer": true,
+              "evidence_never_self_certified_full": true,
+              "skipped_never_mixed_with_not_triggered": true,
+              "every_known_leg_resolved": true,
+              "partial_keeps_legacy_payload": true,
+              "no_silent_degradation": true,
+              "overall_monotonic_vs_full": true
+            },
+            "passed": true
+          },
+          {
+            "id": "SYNTHETIC_PLANNER_FAILURE",
+            "injection": {
+              "plan_fails": true
+            },
+            "overall": "degraded",
+            "degradation_reason": "PLAN_VALIDATION_FAILED",
+            "leg_status": {
+              "decomposition": "failed",
+              "dense": "success",
+              "lexical": "success",
+              "rerank": "not_triggered",
+              "followup": "not_triggered"
+            },
+            "evidence_completeness": "partial",
+            "policy": {
+              "narrative": "answer_with_disclosure",
+              "constraint_bearing": "refuse_insufficient"
+            },
+            "checks": {
+              "overall_correct": true,
+              "reason_correct": true,
+              "dense_status_correct": true,
+              "policy_correct": true,
+              "notices_present_where_required": true,
+              "no_contract_violation": true,
+              "dto_additive_only": true,
+              "event_emitted": true,
+              "no_unrestricted_answer": true,
+              "evidence_never_self_certified_full": true,
+              "skipped_never_mixed_with_not_triggered": true,
+              "every_known_leg_resolved": true,
+              "partial_keeps_legacy_payload": true,
+              "no_silent_degradation": true,
+              "overall_monotonic_vs_full": true
+            },
+            "passed": true
+          },
+          {
+            "id": "SYNTHETIC_EMPTY_PLAN",
+            "injection": {
+              "plan_empty": true
+            },
+            "overall": "degraded",
+            "degradation_reason": "PLAN_EMPTY",
+            "leg_status": {
+              "decomposition": "failed",
+              "dense": "success",
+              "lexical": "success",
+              "rerank": "not_triggered",
+              "followup": "not_triggered"
+            },
+            "evidence_completeness": "partial",
+            "policy": {
+              "narrative": "answer_with_disclosure",
+              "constraint_bearing": "refuse_insufficient"
+            },
+            "checks": {
+              "overall_correct": true,
+              "reason_correct": true,
+              "dense_status_correct": true,
+              "policy_correct": true,
+              "notices_present_where_required": true,
+              "no_contract_violation": true,
+              "dto_additive_only": true,
+              "event_emitted": true,
+              "no_unrestricted_answer": true,
+              "evidence_never_self_certified_full": true,
+              "skipped_never_mixed_with_not_triggered": true,
+              "every_known_leg_resolved": true,
+              "partial_keeps_legacy_payload": true,
+              "no_silent_degradation": true,
+              "overall_monotonic_vs_full": true
+            },
+            "passed": true
+          },
+          {
+            "id": "SYNTHETIC_LEXICAL_FAILURE",
+            "injection": {
+              "lexical_fails": true
+            },
+            "overall": "degraded",
+            "degradation_reason": "STORE_UNAVAILABLE",
+            "leg_status": {
+              "decomposition": "success",
+              "dense": "success",
+              "lexical": "failed",
+              "rerank": "not_triggered",
+              "followup": "not_triggered"
+            },
+            "evidence_completeness": "partial",
+            "policy": {
+              "narrative": "answer_with_disclosure",
+              "constraint_bearing": "refuse_insufficient"
+            },
+            "checks": {
+              "overall_correct": true,
+              "reason_correct": true,
+              "dense_status_correct": true,
+              "policy_correct": true,
+              "notices_present_where_required": true,
+              "no_contract_violation": true,
+              "dto_additive_only": true,
+              "event_emitted": true,
+              "no_unrestricted_answer": true,
+              "evidence_never_self_certified_full": true,
+              "skipped_never_mixed_with_not_triggered": true,
+              "every_known_leg_resolved": true,
+              "partial_keeps_legacy_payload": true,
+              "no_silent_degradation": true,
+              "overall_monotonic_vs_full": true
+            },
+            "passed": true
+          },
+          {
+            "id": "POLICY_SKIP_CIRCUIT_BREAKER",
+            "injection": {
+              "breaker_open": true
+            },
+            "overall": "degraded",
+            "degradation_reason": "CIRCUIT_BREAKER_OPEN",
+            "leg_status": {
+              "decomposition": "success",
+              "dense": "skipped",
+              "lexical": "success",
+              "rerank": "not_triggered",
+              "followup": "not_triggered"
+            },
+            "evidence_completeness": "partial",
+            "policy": {
+              "narrative": "answer_with_disclosure",
+              "constraint_bearing": "refuse_insufficient"
+            },
+            "checks": {
+              "overall_correct": true,
+              "reason_correct": true,
+              "dense_status_correct": true,
+              "policy_correct": true,
+              "notices_present_where_required": true,
+              "no_contract_violation": true,
+              "dto_additive_only": true,
+              "event_emitted": true,
+              "no_unrestricted_answer": true,
+              "evidence_never_self_certified_full": true,
+              "skipped_never_mixed_with_not_triggered": true,
+              "every_known_leg_resolved": true,
+              "partial_keeps_legacy_payload": true,
+              "no_silent_degradation": true,
+              "overall_monotonic_vs_full": true
+            },
+            "passed": true
+          }
+        ],
+        "failures": []
+      },
+      "negative_control": {
+        "id": "NEGATIVE_CONTROL_HEALTHY_RETRIEVAL",
+        "overall": "full",
+        "leg_status": {
+          "decomposition": "success",
+          "dense": "success",
+          "lexical": "success",
+          "rerank": "not_triggered",
+          "followup": "not_triggered"
+        },
+        "evidence_completeness_without_validator": "partial",
+        "evidence_completeness_with_validator": "full",
+        "action_without_validator": "refuse_insufficient",
+        "action_with_validator": "answer",
+        "checks": {
+          "overall_is_full": true,
+          "no_unresolved_leg": true,
+          "no_contract_violation": true,
+          "no_degradation_reason": true,
+          "retrieval_layer_evidence_conservatively_partial": true,
+          "conservative_floor_is_visible_in_policy": true,
+          "validator_upgrades_to_full_and_answers": true,
+          "validator_upgrade_needs_no_notice": true,
+          "upgrade_is_attributable": true,
+          "event_emitted": true
+        },
+        "passed": true,
+        "provenance": "deployed modules, runtime chain with test doubles at every service boundary; zero external quota"
+      },
+      "leg_attribution": {
+        "cases": {
+          "dense_and_lexical_executed": {
+            "legs": {
+              "dense": "success",
+              "lexical": "success"
+            },
+            "overall": "degraded"
+          },
+          "dense_quota_failure_at_boundary": {
+            "dense_status": "failed",
+            "dense_reason": "EMBEDDING_QUOTA_EXHAUSTED",
+            "degradation_reason": "EMBEDDING_QUOTA_EXHAUSTED",
+            "contract_violations": []
+          },
+          "dense_timeout_attributed_to_embedding": {
+            "dense_reason": "EMBEDDING_TIMEOUT"
+          },
+          "not_triggered_cannot_override_an_execution_fact": {
+            "dense_status": "success"
+          },
+          "partial_dense_failure_is_degraded_with_reason": {
+            "dense_status": "degraded",
+            "degradation_reason": "EMBEDDING_QUOTA_EXHAUSTED",
+            "contract_violations": []
+          },
+          "legitimately_unused_legs_explicit": {
+            "legs": {
+              "dense": "not_triggered",
+              "lexical": "not_triggered"
+            }
+          }
+        },
+        "checks": {
+          "dense_executed_is_success": true,
+          "lexical_executed_is_success": true,
+          "quota_maps_to_embedding_quota_exhausted": true,
+          "quota_failure_has_no_silent_degradation": true,
+          "timeout_maps_to_embedding_timeout": true,
+          "not_triggered_cannot_override_execution": true,
+          "partial_failure_is_degraded_with_reason": true,
+          "unused_legs_explicitly_not_triggered": true
+        },
+        "passed": true
+      },
+      "answer_policy_enforced": false,
+      "silent_degradation_observed": 0,
+      "external_quota_consumed": 0
+    },
+    "step_7_decision": {
+      "outcome": "PASS 鈥?candidate retained",
+      "rollback_required": false,
+      "final_image_tag": "my-wenruorag:p0b-leg-6543f5a3",
+      "final_image_id": "sha256:8694a5b943dc821e00c76c9e0ae1a99b3bdec1302497c23490c20187c401f785",
+      "container_running": true,
+      "container_restarts": 0
+    }
+  },
+  "acceptance_interpretation": {
+    "core_runtime_achieved": true,
+    "basis": [
+      "live healthy hybrid retrieval: dense=success, lexical=success, all KNOWN_LEGS resolved, overall=full, degradation_reason=null, zero contract violations",
+      "all five frozen injections pass against the deployed modules with the frozen expectations",
+      "frozen negative control passes",
+      "zero silent degradation across injections",
+      "answer-policy enforcement remains DISABLED",
+      "no rollback needed"
+    ],
+    "explicitly_not_claimed": [
+      "Phase B P0 complete",
+      "P0-6 user disclosure UI",
+      "C1-C6 user-visible acceptance",
+      "P0-7 operator observability sink",
+      "P1 entry"
+    ],
+    "residual_honesty_notes": [
+      "evidence_completeness remains `partial` by design: the retrieval layer may not self-certify `full`; only an explicit authority validator may upgrade it, which is P1 scope and stays off",
+      "the lexical leg's success/not_triggered facts are produced at its boundary, while a lexical *failure* is attributed at the route level from the store exception; dense failures are now attributed at the embedding boundary with leg-accurate reasons (quota vs timeout)",
+      "the pre-existing settings <-> redis_conn import-order fragility in this codebase is untouched (the store layer is imported after settings init, as deployed)"
+    ]
+  },
+  "touched": [
+    "deploy/p0_build/health_bridge.py (route reporting no longer fabricates or erases evidence legs; boundary leg reporters added)",
+    "new file deploy/p0_build/search.py (evidence-leg fact sources at the embedding request and the store round trip)",
+    "deploy/p0_build/Dockerfile (adds the store layer)",
+    "tools/scripts/p0_option_a_candidate.py (every anchor asserts its match count; post-transformation binding proof)",
+    "new gates: deploy/p0_gates/{generator_anchor_gate,healthy_path_contract_gate,semantic_diff_suite,step6_frozen_injections,binding_gate}.py",
+    "new fixture: deploy/p0_gates/fixtures/multi_route.UNBOUND-reporter-regression.py",
+    "new override: deploy/p0_baseline/p0b3_leg_image_override.yml",
+    "new image my-wenruorag:p0b-leg-6543f5a3 = 8694a5b943dc (now deployed)",
+    "wenruo-rag-cpu container (recreated once, onto the candidate)"
+  ],
+  "untouched": [
+    "cost: KEY_2 unchanged, no rotation, KEY_1 not restored",
+    "health contract semantics (health.py, health_producers.py, validate(), KNOWN_LEGS, NEUTRAL)",
+    "docker/docker-compose.yml",
+    "knowledgebase.embd_id and all 5 KB bindings",
+    "model config rows",
+    "retrieval parameters, routing, fusion, prompts, reranker, embedding model",
+    "index and mapping (no re-embedding)",
+    "answer-policy enforcement (remains DISABLED)",
+    "mysql, elasticsearch, redis, minio containers",
+    "the two earlier candidate images (retained)"
+  ],
+  "final_production_state": {
+    "image_tag": "my-wenruorag:p0b-leg-6543f5a3",
+    "image_id": "sha256:8694a5b943dc821e00c76c9e0ae1a99b3bdec1302497c23490c20187c401f785",
+    "running": true,
+    "restarts": 0,
+    "credential": "KEY_2 062bcd934443",
+    "model": "gemini-embedding-001",
+    "kb_bindings": 5,
+    "retrieval_serving_with_honest_health_signal": true
+  }
+}

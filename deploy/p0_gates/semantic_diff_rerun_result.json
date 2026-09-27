@@ -1,5 +1,5 @@
 {
-  "gate": "P0 Option-A Semantic-Diff Gate",
+  "gate": "P0-B wiring repair — semantic-diff re-run + delta proof",
   "baseline": {
     "pipeline.py": {
       "lines": 329,
@@ -10,18 +10,25 @@
       "sha256": "6b5484a4245bb7474f3c86e58d367ffd99caab54fcd74f360f55d5973b1ca1d7"
     }
   },
-  "candidate": {
-    "pipeline.py": {
-      "lines": 341
-    },
+  "previously_approved_candidate": {
     "multi_route.py": {
-      "lines": 342
+      "lines": 340,
+      "sha256": "9af6fc5e70b9e0c66e2df611c0451827ef8c4cc8921abce9ba6aa471db159264"
     }
   },
-  "diff_hunks": 7,
-  "gates": [
+  "repaired_candidate": {
+    "pipeline.py": {
+      "lines": 341,
+      "sha256": "c9174c52926de66bceb4b033d9c5dd24b928284da820d964072f7dcd46effae7"
+    },
+    "multi_route.py": {
+      "lines": 342,
+      "sha256": "b72e95406e252fbdfc3c5007ef2685b58a5aaa58197fa747c9e1405b7809e028"
+    }
+  },
+  "semantic_diff_gate_rerun": [
     {
-      "scope": "pipeline.py",
+      "scope": "pipeline.py (vs deployed baseline)",
       "checks": {
         "function_set_unchanged": true,
         "all_signatures_unchanged": true,
@@ -47,7 +54,7 @@
       "bind_then_return_proofs": {}
     },
     {
-      "scope": "multi_route.py",
+      "scope": "multi_route.py (vs deployed baseline)",
       "checks": {
         "function_set_unchanged": true,
         "all_signatures_unchanged": true,
@@ -74,51 +81,34 @@
       }
     }
   ],
-  "symbol_binding_proofs": [
-    {
-      "label": "pipeline.py",
-      "reporter_symbols_called": [
-        "attach_retrieval_health",
-        "begin_retrieval_health",
-        "mark_empty_window",
-        "mark_no_question"
-      ],
-      "reporter_symbols_bound": [
-        "attach_retrieval_health",
-        "begin_retrieval_health",
-        "mark_empty_window",
-        "mark_no_question"
-      ],
-      "unbound_reporter_symbols": [],
-      "reporter_symbols_imported_from_bridge": [
-        "attach_retrieval_health",
-        "begin_retrieval_health",
-        "mark_empty_window",
-        "mark_no_question",
-        "report_route_failure",
-        "report_route_success"
-      ],
-      "called_but_not_imported_from_bridge": [],
-      "passed": true
+  "delta_proof": {
+    "scope": "delta_vs_previously_approved_candidate",
+    "checks": {
+      "function_set_unchanged": true,
+      "every_function_body_byte_identical_in_ast": true,
+      "no_module_level_node_removed": true,
+      "exactly_one_module_level_node_added": true,
+      "added_node_is_the_reporter_import": true,
+      "added_import_binds_exactly_the_two_reporters": true,
+      "reporter_call_sites_identical": true,
+      "no_answer_policy_symbols_introduced": true,
+      "textually_added_lines_are_only_the_import": true,
+      "no_lines_removed_textually": true
     },
-    {
-      "label": "multi_route.py",
-      "reporter_symbols_called": [
-        "report_route_failure",
-        "report_route_success"
-      ],
-      "reporter_symbols_bound": [
-        "report_route_failure",
-        "report_route_success"
-      ],
-      "unbound_reporter_symbols": [],
-      "reporter_symbols_imported_from_bridge": [
-        "report_route_failure",
-        "report_route_success"
-      ],
-      "called_but_not_imported_from_bridge": [],
-      "passed": true
-    }
-  ],
+    "passed": true,
+    "added_imports": [
+      {
+        "module": "rag.retrieval.health_bridge",
+        "names": [
+          "report_route_failure",
+          "report_route_success"
+        ],
+        "level": 0
+      }
+    ],
+    "module_level_nodes_added": 1,
+    "module_level_nodes_removed": 0,
+    "diff": "--- multi_route.py (previously approved candidate)\n+++ multi_route.py (wiring-repaired candidate)\n@@ -42,2 +42,4 @@\n from typing import Any, Sequence\n+\n+from rag.retrieval.health_bridge import report_route_failure, report_route_success\n \n"
+  },
   "verdict": "PASS"
 }

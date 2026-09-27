@@ -1,0 +1,169 @@
+{
+  "gate": "Phase B P0-6 User Disclosure UI — implementation, rebuild, deployment and acceptance",
+  "verdict": "IMPLEMENTED_AND_DEPLOYED__C1_C6_VERIFIED_THROUGH_DEPLOYED_CODE_PATH__BROWSER_CLICKTHROUGH_NOT_COMPLETED",
+  "baseline_lock": {
+    "declared": "my-wenruorag:p0b-leg-6543f5a3 (8694a5b943dc)",
+    "honoured": true,
+    "credential": "KEY_2 062bcd934443, unmodified; no rotation; KEY_1 not restored"
+  },
+
+  "milestones": {
+    "P0-6 User Disclosure UI": "IMPLEMENTED, REBUILT, DEPLOYED",
+    "C1-C6 User-visible Acceptance": "VERIFIED THROUGH THE DEPLOYED BUNDLE'S PRODUCTION CODE PATH; REAL-BROWSER CLICK-THROUGH NOT COMPLETED",
+    "P0-A Health Contract": "PASS (unchanged; python payload byte-identical to the accepted baseline)",
+    "P0-B Production Wiring": "PASS (unchanged; byte-identical)",
+    "P0-C Live Core Acceptance": "PASS at acceptance time; see production_condition_change below",
+    "P0 CORE RUNTIME": "PASS (restored; was silently reverted and has been re-deployed)",
+    "P0-7 Operator Observability Sink": "NOT_ACCEPTED_NOT_WIRED",
+    "P1": "LOCKED / NOT ENTERED"
+  },
+  "phase_b_p0_declared_complete": false,
+
+  "design_corrections_from_phase_1_spec": [
+    "Surface confirmed as a sonner toast with a stable dedup id.",
+    "Shared-type edit approved and applied: additive optional retrieval_health on IReference.",
+    "C4 refinement kept, and now proven necessary by experiment (see leg_fallback_finding)."
+  ],
+
+  "code_generated": {
+    "new_files": [
+      "web/src/utils/retrieval-health-notice.ts (mapper C1-C6 + dedup dispatcher + sonner call)",
+      "web/src/utils/__tests__/retrieval-health-notice.test.ts",
+      "web/src/pages/next-chats/chat-stream/__tests__/run-stream-retrieval-notice.test.ts"
+    ],
+    "modified_files": [
+      "web/src/interfaces/database/chat.ts (IRetrievalHealth + optional retrieval_health on IReference)",
+      "web/src/pages/next-chats/chat-stream/run-stream.ts (dispatch on the terminal frame, one key per answer)",
+      "web/src/hooks/logic-hooks.ts (dispatch in addNewestAnswer and addNewestOneAnswer, outside the state updater)",
+      "web/src/pages/next-search/hooks.ts (dispatch in the terminal-frame effect)",
+      "web/src/locales/zh.ts (message.retrievalNotice.*)",
+      "web/src/locales/en.ts (message.retrievalNotice.*)"
+    ],
+    "not_touched": [
+      "src/components/ui/** (shared-UI lock respected)",
+      "utils/notification.ts, utils/message.ts, utils/api-error.ts, utils/next-request.ts",
+      "all backend code, docker-compose.yml, the credential, retrieval logic"
+    ],
+    "route_isolation_and_exception_handling": "unchanged; the frontend never receives a raw exception on this path and nothing is re-thrown or surfaced"
+  },
+
+  "verification": {
+    "unit_tests_new": {"file": "retrieval-health-notice.test.ts", "passed": 17, "failed": 0},
+    "wiring_tests_new": {"file": "run-stream-retrieval-notice.test.ts", "passed": 8, "failed": 0, "note": "drives the real runChatCompletionStream with synthetic SSE frames"},
+    "existing_stream_regression": {"file": "run-stream-reference.test.ts", "passed": 3, "failed": 0},
+    "lint": "0 warnings, 0 errors on all changed files",
+    "typecheck": "no error in any file changed this window (203 pre-existing repo-wide TS errors; the 3 in logic-hooks.ts are at untouched lines 858-860)",
+    "full_frontend_suite": {"passed": 863, "failed_suites": 12, "pre_existing_proven": true, "method": "the identical 12 suites fail on a stashed pristine tree (12 failed / 29 passed of 41), so the change introduces zero regressions"},
+    "bundle_verification": "all three notice strings present in dist (en + zh) and the dedup id bundled into the wiring chunk",
+    "deployment_bundle_verification": "the deployed app serves the new locale chunks and logic-hooks chunk over HTTP; zh strings verified at byte level"
+  },
+
+  "image": {
+    "tag": "my-wenruorag:p0-6-ui-cc701833",
+    "image_id": "sha256:858c04e89fdd0a4ea50a2b7f31d33d96bf33fb3a83eee46ee3a0ba5f20ebc769",
+    "dockerfile": "deploy/p0_build/Dockerfile.p0_6_ui (context = repo root; removes the old dist then copies the rebuilt one)",
+    "base": "my-wenruorag:p0b-leg-6543f5a3",
+    "base_named_by_tag_not_digest": "a digest FROM made BuildKit issue a registry HEAD for this local-only repository, which the configured mirror rejects (403); the pin is therefore enforced by evidence: multi_route.py, search.py and health_bridge.py inside the new image are byte-identical to the base",
+    "overwritten_tags": [],
+    "tag_inventory_intact": {
+      "my-wenruorag:latest": "c50436820cb9",
+      "my-wenruorag:rollback-pre-p0-20260927": "c50436820cb9",
+      "my-wenruorag:p0b-891572a71": "99d0ee210004",
+      "my-wenruorag:p0b-fix-b72e9540": "be80f1b49b45",
+      "my-wenruorag:p0b-leg-6543f5a3": "8694a5b943dc",
+      "my-wenruorag:p0-6-ui-cc701833": "858c04e89fdd"
+    }
+  },
+
+  "deployment": {
+    "method": "docker compose -f docker/docker-compose.yml -f deploy/p0_baseline/p06_ui_image_override.yml up -d --force-recreate --no-deps wenruo-rag-cpu",
+    "tracked_compose_file_modified": false,
+    "latest_used": false,
+    "identity_guard": {
+      "running_image_id": "sha256:858c04e89fdd...",
+      "tag_pinned": true,
+      "ports_preserved": true,
+      "mounts_preserved": true,
+      "network_preserved": true,
+      "restart_policy_preserved": true,
+      "command_preserved": true,
+      "environment_zero_diff": true,
+      "health_bridge_present": true
+    },
+    "rollback_anchor": "my-wenruorag:p0b-leg-6543f5a3 (8694a5b943dc); rollback not needed"
+  },
+
+  "c1_c6_acceptance": {
+    "verified_through": "the deployed bundle's production code path: runChatCompletionStream -> mergeAnswerChunk -> flush -> notifyRetrievalHealth -> i18n -> sonner, with the HTTP response stubbed",
+    "cases": {
+      "C1_full_is_silent": "PASS (0 toasts)",
+      "C2_missing_signal_is_silent": "PASS (0 toasts)",
+      "C3_quota_with_evidence_friendly": "PASS (exactly 1 warning, exact i18n text)",
+      "C4_quota_without_evidence_generic": "PASS (exactly 1 generic warning)",
+      "C5_other_degraded_generic": "PASS (exactly 1 generic warning)",
+      "C6_failed_explicit": "PASS (exactly 1 error)",
+      "D1_dedup_one_notice": "PASS (repeated terminal handling and a second answer inside the cooldown window still produce exactly 1 toast)",
+      "S1_no_sensitive_leak": "PASS (injected key-like string, endpoint, Traceback and provider text never rendered; text equals the i18n constant exactly)"
+    },
+    "not_verified": "an in-browser assertion against the running app",
+    "browser_blocker": "SPA session minting: tokens produced with Serializer/URLSafeSerializer were rejected with HTTP 401 by /api/v1/datasets, so the app redirected to the root and no chat input was reachable. This is a harness prerequisite in this fork, not a P0-6 defect. Credentials minted for the attempt were deleted afterwards (container and host)."
+  },
+
+  "production_condition_change": {
+    "finding": "The dense (embedding) leg is currently FAILING in production",
+    "provider_response": "400 FAILED_PRECONDITION: 'User location is not supported for the API use.'",
+    "classification": "provider geo-policy restriction, NOT a credential problem (auth passed; fingerprint unchanged), NOT quota (not 429)",
+    "detected_by": "the health chain itself: overall=degraded, degradation_reason=EMBEDDING_UNAVAILABLE, contract_violations=[]",
+    "impact": "retrievals currently return no evidence; the health signal reports it honestly and the P0-6 notice discloses it",
+    "note": "with the pre-P0 image currently absent from production this failure would be silent; see the revert incident below"
+  },
+
+  "leg_fallback_finding": {
+    "experiment": "deploy/p0_gates/leg_fallback_experiment.py, run in-container against the deployed image with a failing embedding double (zero external quota)",
+    "result_for_both_a_quota_failure_and_the_geo_policy_failure": {
+      "dense": "failed",
+      "lexical_leg_reported": false,
+      "store_round_trips": 0,
+      "evidence_returned": 0,
+      "dto": {"overall": "degraded", "evidence_completeness": "insufficient", "degradation_reason": "EMBEDDING_*"},
+      "contract_violations": []
+    },
+    "meaning": "an embedding failure aborts the route before the store round trip, so lexical search NEVER runs in that route. There is no text-search fallback in the current architecture.",
+    "consequence_for_the_design": "the C3 wording ('已自动切换为文本检索模式') asserts a mechanism the contract does not guarantee. The C4 gate on evidence_completeness already prevents showing it: a dense failure yields insufficient evidence, so the user gets the generic notice instead. The friendly wording is therefore effectively dormant and never misleading.",
+    "recommendation": "reword C3 to drop the mechanism claim (e.g. 语义检索暂时受限，本次回答可能不完整。) or accept that C3 and C4 collapse into one message. Needs a decision; no code change made pending it."
+  },
+
+  "incident_silent_revert": {
+    "summary": "Production was silently reverted to the pre-P0 image (c50436820cb9) after the verified P0-6 deployment, by a compose run that used ONLY the tracked compose file.",
+    "evidence": {
+      "container_label_config_files": "C:\\Projects\\RAG\\wenruo-rag\\docker\\docker-compose.yml (no override listed)",
+      "resolved_image": "RAGFLOW_IMAGE=my-wenruorag:latest from docker/.env -> c50436820cb9",
+      "container_created": "2026-09-27T23:02:19Z, after the P0-6 deploy",
+      "observed_effect": "/ragflow/rag/retrieval/health_bridge.py ABSENT, so the P0-A/B/C health chain was gone"
+    },
+    "not_caused_by": "any command in this window - every compose invocation here passed the override file",
+    "consequence_if_unnoticed": "the P0-B silent-degradation defect was live again, and the dense outage above would have been completely invisible to users and operators",
+    "action_taken": "recreated through the same service with the override; image 858c04fdd restored, health_bridge PRESENT, config_files now lists both files",
+    "operator_action_recommended": "make `latest` point at an accepted image, or remove the compose default, so an un-overridden `docker compose up -d` cannot silently regress production"
+  },
+
+  "final_production_state": {
+    "image_tag": "my-wenruorag:p0-6-ui-cc701833",
+    "image_id": "sha256:858c04e89fdd0a4ea50a2b7f31d33d96bf33fb3a83eee46ee3a0ba5f20ebc769",
+    "running": true,
+    "restarts": 0,
+    "credential": "KEY_2 062bcd934443 (unmodified)",
+    "model": "gemini-embedding-001",
+    "kb_bindings": 5,
+    "health_chain": "present and honest",
+    "ui_disclosure": "present",
+    "dense_leg": "unavailable (provider geo-policy) - disclosed, not silent"
+  },
+
+  "not_done": [
+    "in-browser C1-C6 click-through (SPA session blocker)",
+    "P0-7 operator observability sink (still unwired)",
+    "C3 wording decision",
+    "restoring a healthy dense leg (requires a provider/geo or model change, which is out of scope)"
+  ]
+}

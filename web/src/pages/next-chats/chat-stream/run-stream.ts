@@ -14,6 +14,10 @@ import {
 import { AnswerFlushIntervalMs } from './constants';
 import { useChatStreamStore } from './store';
 import { mergeAnswerChunk } from './utils';
+import { notifyRetrievalHealth } from '@/utils/retrieval-health-notice';
+
+/** Distinguishes one answer from the next, so the per-answer disclosure guard is exact. */
+let streamRunSeq = 0;
 
 export type RunChatCompletionStreamParams = {
   conversationId: string;
@@ -43,6 +47,10 @@ export async function runChatCompletionStream({
   if (!beginStream(conversationId, controller)) {
     return { ok: false, aborted: false };
   }
+
+  // One identity per answer: the terminal frame carries the retrieval health, and
+  // an answer must disclose its state at most once.
+  const answerKey = `${conversationId}#${(streamRunSeq += 1)}`;
 
   // Kept local rather than read back from the store: it must stay immune to
   // concurrent mutations of the message list, and mergeAnswerChunk's
@@ -106,6 +114,13 @@ export async function runChatCompletionStream({
         // placeholder is replaced without waiting out an interval.
         if (chunk.final || Date.now() - lastFlushAt >= AnswerFlushIntervalMs) {
           flushAnswer();
+        }
+
+        // The terminal frame is the one that carries the pool, and with it the
+        // retrieval health. Disclosure happens here, once per answer, and only
+        // for a live answer - replayed history never reaches this loop.
+        if (chunk.final) {
+          notifyRetrievalHealth(merged.reference, answerKey);
         }
       }
     } catch (error) {

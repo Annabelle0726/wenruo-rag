@@ -35,6 +35,7 @@ import chatService from '@/services/next-chat-service';
 import searchService from '@/services/search-service';
 import api from '@/utils/api';
 import { modelServiceErrorOf } from '@/utils/model-service-error';
+import { notifyRetrievalHealth } from '@/utils/retrieval-health-notice';
 import { useMutation } from '@tanstack/react-query';
 import { has, isEmpty, isEqual, trim } from 'lodash';
 import {
@@ -471,6 +472,10 @@ export const useSendQuestion = (
 
   useEffect(() => {
     if (isEmpty(answer)) return;
+    // The stream's terminal frame carries the pool, and therefore the retrieval
+    // health; the deltas carry neither. Disclosure is driven from here only, so a
+    // replayed answer never re-notifies.
+    notifyRetrievalHealth(answer.reference);
     // The stream's terminal frame carries the reference and an empty answer, so
     // replacing the state with it would wipe the summary the page just
     // streamed: the citations would survive and the text would not.

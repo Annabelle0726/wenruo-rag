@@ -1,0 +1,11 @@
+# Phase B P0-B deployment override — pins the verified candidate image.
+#
+# Purpose: recreate the wenruo-rag-cpu service onto the immutable candidate tag
+# WITHOUT editing the tracked docker/docker-compose.yml and WITHOUT ever resolving
+# the mutable `latest` tag.
+#
+# This file intentionally sets exactly one field: `image`.
+# Applied as:  docker compose -f docker/docker-compose.yml -f <this file> up -d --force-recreate --no-deps wenruo-rag-cpu
+services:
+  wenruo-rag-cpu:
+    image: my-wenruorag:p0b-891572a71

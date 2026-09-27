@@ -1,0 +1,88 @@
+{
+  "gate": "GENERATOR_ANCHOR_GATE",
+  "generator": "tools\\scripts\\p0_option_a_candidate.py",
+  "exact_one_match": {
+    "succeeded": true
+  },
+  "zero_matches": {
+    "label": "probe",
+    "raised": "SystemExit",
+    "message": "ANCHOR FAILURE [gate-probe-zero]: expected exactly 1 match(es), found 0",
+    "hard_failed": true
+  },
+  "more_than_expected": {
+    "label": "probe",
+    "raised": "SystemExit",
+    "message": "ANCHOR FAILURE [gate-probe-over]: expected exactly 0 match(es), found 1",
+    "hard_failed": true
+  },
+  "stale_rerank_anchor": {
+    "label": "probe",
+    "raised": "SystemExit",
+    "message": "ANCHOR FAILURE [stale-rerank-anchor]: expected exactly 1 match(es), found 0",
+    "hard_failed": true
+  },
+  "stale_anchor_present_in_baseline_count": 0,
+  "incident_mechanism_demonstrated": true,
+  "bare_replace_calls_in_builders": [],
+  "symbol_binding_proofs": [
+    {
+      "label": "pipeline.py",
+      "reporter_symbols_called": [
+        "attach_retrieval_health",
+        "begin_retrieval_health",
+        "mark_empty_window",
+        "mark_no_question"
+      ],
+      "reporter_symbols_bound": [
+        "attach_retrieval_health",
+        "begin_retrieval_health",
+        "mark_empty_window",
+        "mark_no_question"
+      ],
+      "unbound_reporter_symbols": [],
+      "reporter_symbols_imported_from_bridge": [
+        "attach_retrieval_health",
+        "begin_retrieval_health",
+        "mark_empty_window",
+        "mark_no_question",
+        "report_route_failure",
+        "report_route_success"
+      ],
+      "called_but_not_imported_from_bridge": [],
+      "passed": true
+    },
+    {
+      "label": "multi_route.py",
+      "reporter_symbols_called": [
+        "report_route_failure",
+        "report_route_success"
+      ],
+      "reporter_symbols_bound": [
+        "report_route_failure",
+        "report_route_success"
+      ],
+      "unbound_reporter_symbols": [],
+      "reporter_symbols_imported_from_bridge": [
+        "report_route_failure",
+        "report_route_success"
+      ],
+      "called_but_not_imported_from_bridge": [],
+      "passed": true
+    }
+  ],
+  "output_matches_build_input_multi_route.py": true,
+  "output_matches_build_input_pipeline.py": true,
+  "checks": {
+    "exactly_one_match_succeeds": true,
+    "zero_matches_hard_fails": true,
+    "more_than_expected_hard_fails": true,
+    "stale_anchor_hard_fails_now": true,
+    "incident_mechanism_demonstrated": true,
+    "no_bare_replace_in_builders": true,
+    "all_reporter_symbols_bound": true,
+    "generator_output_matches_approved_build_inputs": true
+  },
+  "passed": true,
+  "verdict": "PASS"
+}

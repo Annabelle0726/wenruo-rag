@@ -1,0 +1,13 @@
+# P0-6 User Disclosure UI deployment override.
+#
+# Pins the UI image built from the accepted P0-B leg-attribution base
+# (my-wenruorag:p0b-leg-6543f5a3) plus the rebuilt web bundle that adds the
+# retrieval-health user disclosure (C1-C6).
+#
+# The tracked docker/docker-compose.yml is not modified, and the mutable
+# `latest` tag is never used.
+#
+# Applied as:  docker compose -f docker/docker-compose.yml -f <this file> up -d --force-recreate --no-deps wenruo-rag-cpu
+services:
+  wenruo-rag-cpu:
+    image: my-wenruorag:p0-6-ui-cc701833

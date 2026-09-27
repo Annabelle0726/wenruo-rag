@@ -2668,6 +2668,12 @@ export default {
         'The vector service is out of quota (429). Try again later or use another API key.',
       embeddingRateLimited:
         'The vector service is getting too many requests (429). Try again shortly.',
+      retrievalNotice: {
+        degraded:
+          'Semantic search is temporarily degraded; this answer may be incomplete.',
+        failed:
+          'Retrieval failed, so no knowledge base content was used and this answer may be inaccurate.',
+      },
     },
     fileManager: {
       uploadFolderTitle: 'Upload folder',

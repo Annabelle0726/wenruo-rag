@@ -1,0 +1,340 @@
+{
+  "gate": "Phase B P0-B wiring repair + re-acceptance window",
+  "verdict": "FAIL_CORE_DEPLOYMENT_ROLLED_BACK",
+  "reached_stable_terminal_state": true,
+  "rollback_performed": true,
+  "credential_rotation_repeated": false,
+
+  "new_acceptance_requirement": {
+    "name": "RUNTIME_SYMBOL_BINDING_GATE",
+    "status": "PASS",
+    "note": "The previously missing gate now exists, is wired to a regression fixture, and passes on the repaired candidate while failing on the candidate that caused the incident."
+  },
+
+  "milestones": {
+    "P0-A Health Contract": "PASS (unchanged; host fault-injection regression 6/6)",
+    "P0-B Production Wiring": "FAIL (symbol binding repaired and gate-verified, but the healthy-path leg wiring is still incomplete: the dense leg is never reported on a successful route, so the healthy path emits a contract-violating health DTO)",
+    "P0-C Live Core Acceptance": "FAIL (live negative control failed on the dense-leg contract violation; injections correctly suppressed)",
+    "P0 CORE RUNTIME": "NOT ESTABLISHED / FAIL",
+    "P0-6 User Disclosure UI": "DEFERRED_NOT_IMPLEMENTED",
+    "C1-C6 User-visible Acceptance": "NOT RUN / NOT IMPLEMENTED",
+    "P0-7 Operator Observability Sink": "NOT_ACCEPTED_NOT_WIRED",
+    "P1": "LOCKED / NOT ENTERED"
+  },
+  "correct_wording_on_success": "P0 CORE RUNTIME: PASS",
+  "correct_wording_used": false,
+  "phase_b_p0_declared_complete": false,
+
+  "repair": {
+    "scope_authorised": "multi_route.py reporter symbol binding/import only",
+    "change_made": "added `from rag.retrieval.health_bridge import report_route_failure, report_route_success` to deploy/p0_build/multi_route.py",
+    "lines_added": 1,
+    "lines_removed": 0,
+    "files_changed": ["deploy/p0_build/multi_route.py"],
+    "archived_fixed_candidate": "deploy/p0_baseline/multi_route.p0-candidate-fixed.py",
+    "out_of_scope_changes_made": "none (no retrieval refactor, no exception-boundary change, no _guard control-flow change, no RouteResult change, no parameter change, no prompt/reranker/embedding change, no answer-policy change, no index/mapping change)"
+  },
+
+  "pre_deployment_gates": {
+    "semantic_diff_gate_rerun": {
+      "status": "PASS",
+      "scopes": ["pipeline.py vs deployed baseline", "multi_route.py vs deployed baseline"],
+      "checks": {
+        "function_set_unchanged": true,
+        "all_signatures_unchanged": true,
+        "except_types_unchanged": true,
+        "try_block_count_unchanged": true,
+        "preserved_call_sites_unchanged": true,
+        "return_count_unchanged": true,
+        "returns_only_wrapped_not_altered": true,
+        "only_reporter_calls_introduced": true,
+        "no_answer_policy_enforcement_symbols": true,
+        "no_module_level_statement_removed": true,
+        "module_level_additions_are_import_only": true,
+        "module_level_sequence_preserved": true
+      }
+    },
+    "delta_proof_vs_previously_approved_candidate": {
+      "status": "PASS",
+      "checks": {
+        "function_set_unchanged": true,
+        "every_function_body_byte_identical_in_ast": true,
+        "no_module_level_node_removed": true,
+        "exactly_one_module_level_node_added": true,
+        "added_node_is_the_reporter_import": true,
+        "added_import_binds_exactly_the_two_reporters": true,
+        "reporter_call_sites_identical": true,
+        "no_answer_policy_symbols_introduced": true,
+        "textually_added_lines_are_only_the_import": true,
+        "no_lines_removed_textually": true
+      },
+      "diff": "@@ -42,2 +42,4 @@\n from typing import Any, Sequence\n+\n+from rag.retrieval.health_bridge import report_route_failure, report_route_success",
+      "meaning": "Apart from the reporter symbol binding/import, the previously approved candidate semantics are provably unchanged: every function body is AST-identical, no node was removed, exactly one module-level node was added and it is the reporter import."
+    },
+    "runtime_symbol_binding_gate": {
+      "status": "PASS",
+      "regression_case_enforced": true,
+      "regression_result": {
+        "old_candidate_multi_route.p0-candidate.py": {
+          "verdict": "FAIL",
+          "import_succeeded": true,
+          "report_route_success_bound": false,
+          "report_route_failure_bound": false,
+          "reproduced_incident": "NameError: name 'report_route_failure' is not defined",
+          "exit_code": 1
+        },
+        "fixed_candidate_multi_route.py": {
+          "verdict": "PASS",
+          "import_succeeded": true,
+          "report_route_success_bound": true,
+          "report_route_success_callable": true,
+          "report_route_failure_bound": true,
+          "report_route_failure_callable": true,
+          "reporters_bound_to_approved_implementation": true,
+          "reporter_success_path_executed": true,
+          "reporter_failure_path_executed": true,
+          "failure_reporter_did_not_escape_guard_handler": true,
+          "no_nameerror": true,
+          "no_importerror": true,
+          "observed_success_path_session_legs": {"lexical": "success"},
+          "observed_failure_path_session_legs": {"dense": "degraded"},
+          "exit_code": 0
+        }
+      },
+      "environment": "candidate runtime environment (container from the candidate base image), networking disabled (--network none) so zero external quota was structurally guaranteed",
+      "embedding_store_doubles": true
+    },
+    "image_level_runtime_smoke_gate": {
+      "status": "PASS",
+      "executed_in": "docker run --rm --network none, entrypoint overridden, against the actual built image",
+      "module_loaded": "rag.retrieval.multi_route",
+      "module_file_inside_image": "/ragflow/rag/retrieval/multi_route.py",
+      "real_module_import": true,
+      "reporter_execution_paths_executed": 2,
+      "import_error": null,
+      "verdict_detail": "PASS"
+    },
+    "p0a_host_fault_injection_regression": {
+      "status": "PASS",
+      "injections": 6,
+      "passed": 6,
+      "failed": 0,
+      "silent_degradation_observed": 0,
+      "external_quota_consumed": 0
+    },
+    "p0c_host_fault_injection_regression": {
+      "status": "PASS",
+      "positive_injections": 5,
+      "passed": 5,
+      "failed": 0,
+      "negative_control_in_harness": "PASS",
+      "silent_degradation_observed": 0,
+      "external_quota_consumed": 0
+    },
+    "all_pre_deployment_gates_passed": true
+  },
+
+  "rebuild": {
+    "new_immutable_tag": "my-wenruorag:p0b-fix-b72e9540",
+    "new_image_id": "sha256:be80f1b49b459029c6bdf48702f3b0549538cfc7ef8fae6de5080120c7e8e82b",
+    "short_id": "be80f1b49b45",
+    "build_context": "deploy/p0_build (base pinned by digest to the rollback image)",
+    "overwritten_tags": [],
+    "tag_inventory_check": {
+      "my-wenruorag:latest": "c50436820cb9 (untouched)",
+      "my-wenruorag:rollback-pre-p0-20260927": "c50436820cb9 (untouched)",
+      "my-wenruorag:p0b-891572a71": "99d0ee210004 (failed candidate, retained untouched for the regression fixture)",
+      "my-wenruorag:p0b-fix-b72e9540": "be80f1b49b45 (new)"
+    },
+    "in_image_file_hashes_verified_byte_identical_to_build_inputs": {
+      "multi_route.py": "b72e95406e25...",
+      "pipeline.py": "c9174c52926d...",
+      "health.py": "ff04f8f6f07a...",
+      "health_producers.py": "391d0ced5b8e...",
+      "health_bridge.py": "e759211dd50c..."
+    }
+  },
+
+  "live_reacceptance": {
+    "pre_deploy_premises_verified": {
+      "production_image": "c50436820cb9 (my-wenruorag:rollback-pre-p0-20260927)",
+      "credential_fingerprint_sha256_12": "062bcd934443",
+      "model": "gemini-embedding-001",
+      "kb_binding": "f79e37e5ab7611f18ecb3887d563fb04, 5 KBs, unchanged"
+    },
+    "step_3_recreate": {
+      "method": "docker compose -f docker/docker-compose.yml -f deploy/p0_baseline/p0b2_fix_image_override.yml up -d --force-recreate --no-deps wenruo-rag-cpu",
+      "tracked_compose_file_modified": false,
+      "latest_used": false,
+      "executed": true
+    },
+    "step_4_runtime_identity_guard": {
+      "running_image_id": "sha256:be80f1b49b459029c6bdf48702f3b0549538cfc7ef8fae6de5080120c7e8e82b",
+      "image_id_is_exactly_be80f1b49b45": true,
+      "tag_pinned": true,
+      "ports_preserved": true,
+      "mounts_preserved": true,
+      "network_preserved": true,
+      "restart_policy_preserved": true,
+      "command_preserved": true,
+      "ulimits_preserved": true,
+      "environment_zero_diff": true,
+      "passed": true
+    },
+    "step_5_live_healthy_negative_control": {
+      "path": "LIVE deployed pipeline, real KB Cable_Tech_Docs, real credential KEY_2, no test doubles",
+      "exception_raised": false,
+      "nameerror_eliminated": true,
+      "retrieval_health_present": true,
+      "usable_evidence_returned": true,
+      "original_keys_preserved": true,
+      "credential_is_key2": true,
+      "model_is_expected": true,
+      "answer_policy_enforcement_disabled": true,
+      "observed_leg_status": {
+        "decomposition": "success",
+        "lexical": "success",
+        "rerank": "not_triggered",
+        "followup": "not_triggered"
+      },
+      "missing_legs": ["dense"],
+      "retrieval_health_dto": {
+        "overall": "degraded",
+        "evidence_completeness": "partial",
+        "degradation_reason": null
+      },
+      "contract_violations": ["SILENT_DEGRADATION: status is not full but no reason code is present"],
+      "checks": {
+        "no_exception_raised": true,
+        "usable_evidence_returned": true,
+        "retrieval_health_present": true,
+        "all_required_legs_explicitly_resolved": false,
+        "dense_leg_succeeded": false,
+        "lexical_leg_succeeded": true,
+        "overall_is_full": false,
+        "overall_full_matches_session": false,
+        "degradation_reason_is_null": true,
+        "zero_contract_violations": false,
+        "original_keys_preserved": true,
+        "no_policy_keys_in_dto": true,
+        "answer_policy_enforcement_disabled": true,
+        "credential_is_key2": true,
+        "model_is_expected": true
+      },
+      "passed": false,
+      "verdict": "FAIL"
+    },
+    "step_6_frozen_injections": {
+      "executed": false,
+      "reason": "Sequence rule: the five frozen injections run only after the live negative control passes. It failed, so the rollback branch was taken.",
+      "not_run": ["SYNTHETIC_429_DENSE", "SYNTHETIC_PLANNER_FAILURE", "SYNTHETIC_EMPTY_PLAN", "SYNTHETIC_LEXICAL_FAILURE", "POLICY_SKIP_CIRCUIT_BREAKER"]
+    },
+    "step_7_rollback": {
+      "trigger": "live negative control FAIL",
+      "running_image_tag": "my-wenruorag:rollback-pre-p0-20260927",
+      "running_image_id": "sha256:c50436820cb99f0244b29d2443c9de184b97896c82c060ac8bd58ef04aa190b0",
+      "image_id_is_c50436820cb9": true,
+      "in_place_fix_attempted": false,
+      "runtime_identity_preserved": true,
+      "production_functionality_verified": {
+        "path": "LIVE retrieve_multi_route on the rolled-back image with the retained KEY_2",
+        "exception": null,
+        "chunk_count": 7,
+        "doc_agg_count": 2,
+        "total": 7,
+        "verdict": "PRODUCTION_RESTORED"
+      }
+    }
+  },
+
+  "defect_1_repaired": {
+    "class": "missing import / unbound reporter name at the call site",
+    "file": "rag/retrieval/multi_route.py",
+    "status": "REPAIRED_AND_GATE_VERIFIED",
+    "origin_of_the_incident": {
+      "generator": "tools/scripts/p0_option_a_candidate.py::build_multi_route_candidate",
+      "mechanism": "the import injection was anchored on the literal `from rag.retrieval.rerank import`, which does not exist anywhere in multi_route.py; str.replace() returned the source unchanged with no error, and the third .replace() call in that chain had no count assertion at all",
+      "why_the_original_gate_passed": "the semantic gate compared call sites and checked that module-level additions were imports only; it never checked that an introduced symbol was actually bound in the module calling it",
+      "gate_now_in_place": "RUNTIME_SYMBOL_BINDING_GATE (imports the deployed module in the candidate runtime environment and executes both reporter paths)"
+    }
+  },
+
+  "defect_2_found_not_repaired": {
+    "class": "incomplete leg wiring on the healthy path (silent degradation, still open)",
+    "file": "rag/retrieval/health_bridge.py",
+    "function": "_bump",
+    "deployed_hash": "e759211dd50c80c444c89e2849e1ba505976b4558d942554161fbdf5ad4f9072",
+    "defect": "on a successful hybrid route only ONE evidence leg is marked successful, and the chosen name is 'lexical'; the 'dense' leg is popped and never re-reported, so it stays UNKNOWN",
+    "code": "if counters[\"succeeded\"]: leg = \"lexical\" if \"lexical\" not in counters[\"failed\"] else \"dense\"; session.leg_succeeded(leg, routes_attempted=counters[\"succeeded\"], routes_succeeded=counters[\"succeeded\"])",
+    "contract_consequence": {
+      "KNOWN_LEGS": ["decomposition", "lexical", "dense", "rerank", "followup"],
+      "NEUTRAL": ["not_triggered"],
+      "reasoning": "an unreported leg is UNKNOWN, UNKNOWN is not neutral, so the leg stays active; with an active leg that is not success the aggregator can never return 'full'",
+      "observed_output": {"overall": "degraded", "degradation_reason": null},
+      "contract_verdict": "validate() reports SILENT_DEGRADATION: status is not full but no reason code is present"
+    },
+    "impact": "every healthy production retrieval emits a contract-violating health DTO. The health signal is therefore unusable and the very silent-degradation defect P0-B exists to close remains open on the healthy path.",
+    "independent_corroboration": "the binding gate's success path (test doubles, no provider call) reported session legs {'lexical': 'success'} with 'dense' absent - the same shape as the live run",
+    "why_it_was_invisible_before": "the NameError aborted every retrieval before the health DTO was built, so this second defect could not surface until defect 1 was repaired",
+    "not_repaired_because": "the fix changes how legs are reported, i.e. reporter/health-wiring semantics, which this window's authorisation explicitly excluded (scope limited to symbol binding/import)",
+    "recommended_fix_for_next_window": "report BOTH evidence legs on a successful hybrid route, or explicitly report the leg that did not run, so a healthy hybrid route yields dense=success and lexical=success",
+    "recommended_gate_for_next_window": "extend the acceptance gate so a HEALTHY live retrieval must produce zero contract violations and overall=full; the unit/injection suite cannot see this because its fixtures report each leg by hand"
+  },
+
+  "credential_isolation": {
+    "key2_modified_again": false,
+    "key1_restored": false,
+    "installed_credential_final_fingerprint_sha256_12": "062bcd934443",
+    "evidence_implicating_credential": false,
+    "note": "The live negative control reached the retrieval layer and returned usable evidence with KEY_2 (dense leg executed against the real provider), and the rolled-back image served a real retrieval with KEY_2. The failure is wiring, not credential."
+  },
+
+  "external_cost": {
+    "live_negative_control_provider_calls": "1 embedding call (plus the deployment's own decomposition path)",
+    "production_restoration_check_provider_calls": "1 embedding call",
+    "gate_provider_calls": 0,
+    "gates_prove_zero_quota": "binding gate and image smoke gate ran with --network none and test doubles",
+    "synthetic_429_manufactured_with_real_quota": false
+  },
+
+  "touched": [
+    "deploy/p0_build/multi_route.py (authorised one-line binding repair)",
+    "deploy/p0_baseline/multi_route.p0-candidate-fixed.py (archive of the repaired candidate)",
+    "new file deploy/p0_gates/binding_gate.py (RUNTIME_SYMBOL_BINDING_GATE)",
+    "new file deploy/p0_gates/semantic_diff_rerun.py",
+    "new file deploy/p0_gates/semantic_diff_rerun_result.json",
+    "new file deploy/p0_baseline/p0b2_fix_image_override.yml",
+    "new image my-wenruorag:p0b-fix-b72e9540 = be80f1b49b45 (retained, not deployed)",
+    "wenruo-rag-cpu container (recreated twice: to the repaired candidate, then back to rollback)"
+  ],
+  "untouched": [
+    "production credential (KEY_2 unchanged, no rotation this window)",
+    "docker/docker-compose.yml",
+    "knowledgebase.embd_id and all 5 KB bindings",
+    "model config rows",
+    "retrieval logic, parameters and control flow",
+    "exception boundary and _guard control flow",
+    "RouteResult",
+    "prompts, reranker, embedding model, index and mapping",
+    "answer-policy enforcement (remains DISABLED)",
+    "health contract semantics (defect 2 recorded, not modified)",
+    "mysql, elasticsearch, redis, minio containers"
+  ],
+
+  "final_production_state": {
+    "image_tag": "my-wenruorag:rollback-pre-p0-20260927",
+    "image_id": "sha256:c50436820cb99f0244b29d2443c9de184b97896c82c060ac8bd58ef04aa190b0",
+    "running": true,
+    "restarts": 0,
+    "retrieval_serving": true,
+    "credential": "KEY_2 062bcd934443",
+    "model": "gemini-embedding-001"
+  },
+
+  "next_window_requirements": [
+    "authorise the health_bridge._bump leg-reporting fix (dense + lexical both reported on a successful hybrid route)",
+    "add a HEALTHY-PATH contract gate: a live retrieval must yield overall=full, degradation_reason=null, every KNOWN_LEG explicitly resolved and zero validate() violations",
+    "harden tools/scripts/p0_option_a_candidate.py: make every .replace() anchor assert its match count, so a stale anchor fails the build instead of silently producing a broken candidate",
+    "re-run the pre-deployment gate set (semantic diff, delta, binding, image smoke, P0-A/P0-C regressions), then Steps 3-7 with the negative control first"
+  ]
+}

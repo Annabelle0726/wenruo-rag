@@ -2264,6 +2264,10 @@ export default {
       embeddingQuotaExhausted:
         '向量检索服务配额已用尽（429），请稍后重试或更换 API Key。',
       embeddingRateLimited: '向量检索服务请求过于频繁（429），请稍后重试。',
+      retrievalNotice: {
+        degraded: '语义检索暂时受限，本次回答可能不完整。',
+        failed: '检索失败，未能取得知识库内容，本次回答可能不准确。',
+      },
     },
     fileManager: {
       uploadFolderTitle: '上传文件夹',
