@@ -37,7 +37,8 @@ from typing import Sequence
 
 from rag.retrieval.chunk_profile import document_id, document_key, document_name, is_prose_chunk, resolve_core_documents
 from rag.retrieval.chunk_profile import comparison_sides, is_comparative_question
-from rag.retrieval.decomposition import MAX_SUB_QUERIES, clause_route, comparative_routes, decompose_question, looks_composite, seeks_clause
+from rag.retrieval.chunk_profile import designation_parts, document_designations, document_family, generic_part_documents, generic_sibling_designation, name_family, standard_designations
+from rag.retrieval.decomposition import MAX_SUB_QUERIES, clause_route, comparative_routes, decompose_question, looks_composite, mentions_requirement, seeks_clause
 from rag.retrieval.multi_route import (
     DEFAULT_ROUTES_TOP_K,
     DEFAULT_VECTOR_SIMILARITY_WEIGHT,
@@ -187,6 +188,122 @@ def core_document_followup(chunks, question: str, preferred_routes: Sequence[str
     return scope, ", ".join(names) or ", ".join(scope), queries
 
 
+#: How many routes the cross-part fallback may run. One is usually enough - the
+#: sibling is named by its designation, and that designation appears in every chunk
+#: of it - so a second is only room for the question itself.
+MAX_CROSS_PART_ROUTES = 2
+
+#: The generic part of a multi-part standard, as the corpus names it. A document that
+#: says this in its name IS the normative baseline of its standard.
+GENERIC_PART_CUE = "通用技术规范"
+
+#: A part that answers a project rather than stating a rule: its tables are templates
+#: a bidder fills in, so a requirement question must not be answered from it alone.
+SPECIALIZED_PART_CUE = "专用技术规范"
+
+
+def cross_part_fallback(chunks, question: str, preferred_routes: Sequence[str] = ()) -> tuple[list[str] | None, str, list[str]] | None:
+    """``(doc_ids or None, scope_name, queries)`` for the GENERIC part of the standard.
+
+    The reported trap: a question about a mandatory requirement - the corpus's own
+    example is 内衬层厚度 ≥1.5mm - was answered from 《第2部分：专用技术规范》, whose
+    表1/表2 are bidder fill-in templates: the cells are empty, the requirement is not
+    there, and the answer layer refuses. The requirement lives in 《第1部分：通用技术
+    规范》, which is a DIFFERENT document of the SAME standard (``Q/GDW 73286.1``
+    beside ``Q/GDW 73286.2``), and no route ever asked for it, because the question
+    names a parameter and not a standard.
+
+    The designation is what makes the sibling findable: the ingest writes
+    ``[标准号: Q/GDW 73286.1-2026 | 文档: …第1部分：通用技术规范…]`` into that part's
+    chunks, so a route naming ``Q/GDW 73286.1-2026 通用技术规范`` matches them by
+    full text as well as by vector.
+
+    Fires only when all three hold, so an ordinary turn pays nothing:
+
+    * the question asks for a REQUIREMENT or a rule (a value question is answered by
+      the specialized part's parameter tables, which is what they are for);
+    * the pool holds the SPECIALIZED part of a multi-part standard;
+    * the GENERIC part of that same standard contributed no PROSE to the pool - if it
+      did, its clauses are already in the window and there is nothing to fall back to.
+
+    Returns ``doc_ids`` when the generic part is in the pool (a scoped pass is then
+    cheap and exact), and ``None`` when it is not, because then only a text route can
+    reach it at all.
+    """
+    if not (mentions_requirement(question) or seeks_clause(question)):
+        return None
+
+    specialized: dict[str, str] = {}
+    specialized_names: dict[str, str] = {}
+    for chunk in chunks or []:
+        name = document_name(chunk)
+        if SPECIALIZED_PART_CUE not in name:
+            continue
+        family = document_family(chunk)
+        if not family:
+            continue
+        # Both parts of the 220kV standard are 专用 (its 第2部分 is the single-core part
+        # and its 第3部分 the three-core one), so the family - not the part number - is
+        # what identifies the standard the pool is answering from.
+        specialized_names.setdefault(family, name)
+        for designation in document_designations(chunk):
+            parsed = designation_parts(designation)
+            if parsed and (parsed[1] is None or parsed[1] >= 2):
+                specialized.setdefault(family, designation)
+        specialized.setdefault(family, "")
+    if not specialized:
+        return None
+
+    generics = generic_part_documents(chunks)
+    generic_prose: dict[str, int] = {}
+    for chunk in chunks or []:
+        if not is_prose_chunk(chunk):
+            continue
+        family = document_family(chunk)
+        if family:
+            generic_prose[family] = generic_prose.get(family, 0) + 1
+
+    for family, designation in sorted(specialized.items()):
+        if family in generics and generic_prose.get(family):
+            continue  # the baseline part is already answering
+        scope: list[str] | None = None
+        if family in generics:
+            key, name = generics[family]
+            doc_id = next((document_id(chunk) for chunk in chunks if document_key(chunk) == key and document_id(chunk)), "")
+            if doc_id:
+                scope = [doc_id]
+        # The route names the sibling twice over, because a standard's parts are
+        # archived with and without their numbers: by designation when the corpus
+        # carries one, and by the name the parts share when it does not.
+        anchors = [f"{name_family(specialized_names.get(family, ''))} 第1部分 {GENERIC_PART_CUE}"]
+        sibling = generic_sibling_designation(designation) if designation else None
+        if sibling:
+            anchors.insert(0, f"{sibling} {GENERIC_PART_CUE}")
+        sibling = sibling or f"{name_family(specialized_names.get(family, ''))} 第1部分 {GENERIC_PART_CUE}"
+        scope_name = f"{sibling} ({GENERIC_PART_CUE})"
+        if scope:
+            scope_name = generics[family][1]
+        queries: list[str] = []
+        for anchor in anchors:
+            for query in [f"{anchor} {question}", anchor]:
+                text = " ".join(str(query or "").split())
+                if text and text not in queries:
+                    queries.append(text)
+                if len(queries) >= MAX_CROSS_PART_ROUTES:
+                    break
+            if len(queries) >= MAX_CROSS_PART_ROUTES:
+                break
+        _LOG.info(
+            "[Multi-route] the pool answers from the specialized part %s and its generic part has no prose in the window; falling back to %s (%d route(s), %s)",
+            designation or specialized_names.get(family, family),
+            scope_name,
+            len(queries),
+            "document-scoped" if scope else "unscoped",
+        )
+        return scope, scope_name, queries
+    return None
+
+
 async def retrieve_multi_route(
     *,
     retriever,
@@ -325,5 +442,34 @@ async def retrieve_multi_route(
         )
         _LOG.info("[Multi-route] document-scoped follow-up on %s added %d passage(s) (%d -> %d in the pool)", scope_name, len(merged["chunks"]) - before, before, len(merged["chunks"]))
 
+    # Third chance: a requirement question that only found the SPECIALIZED part of a
+    # standard is answered from template tables it cannot fill. The normative baseline
+    # is the GENERIC part of the same standard, which the designation names.
+    generic_fallback: dict | None = None
+    fallback = cross_part_fallback(merged["chunks"], question, preferred_routes=[*sub_queries, *side_routes, *([targeted] if targeted else [])])
+    if fallback:
+        scope, scope_name, queries = fallback
+        scoped = await _retrieve(queries, scope)
+        before = len(merged["chunks"])
+        merged = merge_route_hits(
+            [RouteResult(query=query, chunks=[dict(chunk, generic_fallback=True) for chunk in scoped["chunks"]], doc_aggs=scoped["doc_aggs"]) for query in queries],
+            existing=merged,
+        )
+        added = len(merged["chunks"]) - before
+        _LOG.info("[Multi-route] cross-part fallback on %s added %d passage(s) (%d -> %d in the pool)", scope_name, added, before, len(merged["chunks"]))
+        if added:
+            labels = sorted(standard_designations(scope_name))
+            generic_fallback = {
+                "scope": scope_name,
+                "designation": labels[0] if labels else scope_name,
+                "documents": [document_name(chunk) for chunk in merged["chunks"] if chunk.get("generic_fallback")][:3],
+            }
+
     chunks = await rerank_chunks(rerank_mdl, merged["chunks"], question, final_top_n)
-    return {"total": merged.get("total", len(chunks)), "chunks": chunks, "doc_aggs": merged.get("doc_aggs", [])}
+    infos = {"total": merged.get("total", len(chunks)), "chunks": chunks, "doc_aggs": merged.get("doc_aggs", [])}
+    if generic_fallback:
+        # The answer layer has to SAY that a mandatory figure came from the general
+        # part of the standard rather than from the specialized one it was asked
+        # about, or the citation reads as a contradiction of the question.
+        infos["generic_fallback"] = generic_fallback
+    return infos

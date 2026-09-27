@@ -333,3 +333,45 @@ def test_the_document_head_skips_chunks_without_a_body():
 def test_the_document_head_of_nothing_is_empty():
     assert am.document_text([], limit=100) == ""
     assert am.document_text(None, limit=100) == ""
+
+
+# ---------------------------------------------------------------------------
+# The core count (the category a standard's parts are split by)
+# ---------------------------------------------------------------------------
+
+
+def test_the_core_count_comes_off_the_file_name():
+    """国网 splits one standard by core count, so the FIELD has to say which part it is.
+
+    《Q/GDW 73286.2 第2部分：220kV单芯…》 and 《…73286.3 第3部分：220kV三芯…》 are the same
+    standard, two documents, one parameter question - and until this field existed the
+    only way to filter between them was the file name.
+    """
+    single = am.extract_by_regex("220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf", "")
+    three = am.extract_by_regex("220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf", "")
+
+    assert single["core_type"] == "单芯"
+    assert three["core_type"] == "三芯"
+
+
+def test_the_core_count_is_read_from_a_construction_when_no_word_says_it():
+    """A规格书 lists ``3×400`` rows and never writes 三芯: the construction is the count."""
+    fields = am.extract_by_regex("低烟无卤阻燃电力电缆规格书.pdf", "表1 电缆结构参数表 WDZC-YJY-0.6/1kV\n规格 mm2\n3×400\n3×500\n3×630\n")
+
+    assert fields["core_type"] == "三芯"
+    assert am.extract_by_regex("低烟无卤阻燃电力电缆规格书.pdf", "规格 mm2\n1×800\n1×1000\n")["core_type"] == "单芯"
+
+
+def test_a_document_that_says_nothing_about_its_cores_gets_no_field():
+    fields = am.extract_by_regex("20_架空绝缘导线抽检工作规范.pdf", "本规范规定了抽检工作的流程与判定规则。")
+
+    assert "core_type" not in fields
+
+
+def test_a_model_answer_may_fill_the_core_count():
+    assert am.parse_llm_fields({"core_type": "三芯", "standard_no": "Q/GDW 73286.3"}) == {"core_type": "三芯", "standard_no": "Q/GDW 73286.3"}
+
+
+def test_the_core_count_is_part_of_the_asked_fields_and_of_the_prompt():
+    assert "core_type" in am.METADATA_FIELDS
+    assert "core_type" in am._METADATA_SYSTEM_PROMPT

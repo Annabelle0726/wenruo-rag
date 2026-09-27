@@ -64,7 +64,7 @@ from rag.nlp.doc_context import detect_standard_id
 _LOG = logging.getLogger(__name__)
 
 #: The fields this module produces, in the order the LLM is asked for them.
-METADATA_FIELDS = ("standard_no", "voltage_level", "cable_type", "doc_type", "year")
+METADATA_FIELDS = ("standard_no", "voltage_level", "core_type", "cable_type", "doc_type", "year")
 
 #: The two fields that identify a cable document. The LLM fallback fires when the
 #: fast path finds fewer than :data:`MIN_CORE_FIELDS` of them: a document carrying
@@ -103,15 +103,32 @@ _VOLTAGE_RE = re.compile(r"(?:\d+(?:\.\d+)?\s*[/_]\s*)?\d+(?:\.\d+)?\s*" + _VOLT
 #: Document types as the corpus names them.
 DOC_TYPE_KEYWORDS = ("通用技术规范", "专用技术规范", "采购范本", "技术条件", "数据手册")
 
+#: The CORE COUNT a cable document is about, which is the one category that tells a
+#: standard's parts apart: 国网 splits a multi-core-count standard by part -
+#: 《Q/GDW 73286.2 第2部分：220kV单芯…》 and 《…73286.3 第3部分：220kV三芯…》 - so
+#: "哪个部分" and "几芯" are the same question, and a corpus answers a 三芯 question
+#: from the 三芯 part only when it can be told which part that is.
+#:
+#: A count written as a construction ("1×800mm²" is one core, "3×400mm²" is three)
+#: is read as the same thing, because a table's section column writes it that way
+#: while the cover and the file name write 单芯/三芯.
+CORE_TYPE_KEYWORDS = ("单芯", "双芯", "两芯", "三芯", "四芯", "五芯")
+
+_CORE_COUNT_WORDS = {"单芯": 1, "双芯": 2, "两芯": 2, "三芯": 3, "四芯": 4, "五芯": 5}
+
+#: ``3×400``, ``1x800``, ``3 × 25`` - the construction spelling of a core count.
+_CORE_CONSTRUCTION_RE = re.compile(r"(?<!\d)([1-5])\s*[×xX*]\s*\d")
+
 _YEAR_RE = re.compile(r"(?:19|20)\d{2}")
 
 #: The LLM is asked for a bare JSON object with exactly these keys.
 _METADATA_SYSTEM_PROMPT = (
     "你是线缆行业文档的元数据抽取器。只输出一个 JSON 对象，不要解释、不要 Markdown 代码块、不要多余文字。\n"
-    '输出格式固定为：{"standard_no": "", "voltage_level": "", "cable_type": "", "doc_type": "", "year": ""}\n'
+    '输出格式固定为：{"standard_no": "", "voltage_level": "", "core_type": "", "cable_type": "", "doc_type": "", "year": ""}\n'
     "抽取规则：\n"
     "- standard_no：文档所依据的标准编号，例如 Q/GDW 13237-2017、GB/T 12706.1-2020；没有就填空字符串。\n"
     "- voltage_level：电压等级，保留完整写法，例如 0.6/1kV、450/750V；没有就填空字符串。\n"
+    "- core_type：芯数，只能从 单芯 / 双芯 / 三芯 / 四芯 / 五芯 中选一个（单芯电缆写 1×…，三芯写 3×…）；无法判断就填空字符串。\n"
     "- cable_type：线缆类别，例如 架空绝缘导线、电力电缆、控制电缆、布电线；没有就填空字符串。\n"
     "- doc_type：文档类型，只能从 通用技术规范 / 专用技术规范 / 采购范本 / 技术条件 / 数据手册 中选一个；都不是就填空字符串。\n"
     "- year：文档或标准的年份，四位数字；没有就填空字符串。\n"
@@ -204,19 +221,40 @@ def _doc_type(scan: str) -> str:
     return ""
 
 
+def _core_type(scan: str) -> str:
+    """The core count the document is about, as 单芯 / 三芯 / ….
+
+    The keyword spelling wins over the construction spelling: a document whose cover
+    says 三芯 is the three-core part even though its parameter tables are full of
+    ``3×400`` rows, and one that only ever writes ``1×800`` is the single-core part.
+    """
+    for keyword in CORE_TYPE_KEYWORDS:
+        if keyword in scan:
+            return keyword
+    match = _CORE_CONSTRUCTION_RE.search(scan)
+    if not match:
+        return ""
+    count = int(match.group(1))
+    for word, value in _CORE_COUNT_WORDS.items():
+        if value == count:
+            return word
+    return ""
+
+
 def _year(scan: str) -> str:
     match = _YEAR_RE.search(scan)
     return match.group(0) if match else ""
 
 
 def extract_by_regex(filename: str, text: str, *, scan_chars: int = REGEX_SCAN_CHARS) -> dict[str, str]:
-    """The zero-token pass: four fields off the file name and the document head."""
+    """The zero-token pass: five fields off the file name and the document head."""
     scan = _scan_text(filename, text, scan_chars)
     if not scan:
         return {}
     fields = {
         "standard_no": _standard_no(scan, filename),
         "voltage_level": _voltage_level(scan),
+        "core_type": _core_type(scan),
         "doc_type": _doc_type(scan),
         "year": _year(scan),
     }
@@ -362,6 +400,7 @@ def document_text(chunks: Sequence[dict], limit: int = LLM_SCAN_CHARS) -> str:
 
 __all__ = [
     "CORE_FIELDS",
+    "CORE_TYPE_KEYWORDS",
     "DOC_TYPE_KEYWORDS",
     "LLM_SCAN_CHARS",
     "LLM_TIMEOUT_SECONDS",

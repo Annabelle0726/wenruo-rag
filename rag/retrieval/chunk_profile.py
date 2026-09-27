@@ -310,6 +310,157 @@ def standard_designations(text: str) -> set[str]:
     return found
 
 
+#: The context prefix the ingest writes into every chunk it can identify
+#: (``[标准号: Q/GDW 73286.1-2026 | 文档: … | 章节: …]``). It is the only place a
+#: multi-part standard's PART designation reaches the text - the file name carries
+#: the tier ("第1部分：通用技术规范") but often no number at all - so the pipeline
+#: reads it back out of the passage when it has to name the sibling part.
+_CONTEXT_DESIGNATION_RE = re.compile(r"标准号:\s*([^|\]]+)", re.UNICODE)
+
+#: The part a multi-part designation names: ``Q/GDW 73286.2-2026`` -> 2. A designation
+#: without one is a single document, and has no sibling to fall back to.
+_DESIGNATION_PART_RE = re.compile(r"^(?P<prefix>[A-Z]+)\s*(?P<base>\d+(?:\.\d+)*?)(?:\.(?P<part>\d+))?(?:-(?P<year>\d{4}))?$")
+
+
+def designation_parts(designation: str) -> tuple[str, int | None, str] | None:
+    """``(family, part, year)`` for a normalized designation, or ``None``.
+
+    ``Q/GDW73286.2-2026`` -> ``("Q/GDW73286", 2, "2026")``. The family is what two
+    parts of one standard share, so it is the key that lets a passage from Part 2
+    point at Part 1.
+    """
+    text = re.sub(r"\s+", "", str(designation or "")).upper()
+    match = _DESIGNATION_PART_RE.match(text)
+    if not match:
+        return None
+    prefix = match.group("prefix")
+    base = match.group("base")
+    part = int(match.group("part")) if match.group("part") else None
+    year = match.group("year") or ""
+    # A qualifier slash is dropped by the normalizer, so "Q/GDW" arrives as "QGDW":
+    # the family keeps that spelling, because matching is done against the same
+    # normalized form on both sides.
+    return prefix + base, part, year
+
+
+def generic_sibling_designation(designation: str) -> str | None:
+    """The GENERIC part of the same standard: ``Q/GDW73286.2-2026`` -> ``Q/GDW73286.1-2026``.
+
+    A multi-part standard is split so that one part states the rules and the others
+    state what a project must respond with: 《第1部分：通用技术规范》 carries the
+    mandatory baseline (``内衬层厚度 ≥1.5mm``, ``出厂交流耐压 2.5U0/30min``) while
+    《第2部分：专用技术规范》 is a bidder fill-in template whose table cells are
+    empty. A question about a requirement therefore has to be able to reach Part 1
+    from a pool that only found Part 2, and the designation is what names it.
+    """
+    parsed = designation_parts(designation)
+    if not parsed:
+        return None
+    family, part, year = parsed
+    if part is None or part < 2:
+        return None
+    return f"{family}.1-{year}" if year else f"{family}.1"
+
+
+def context_designation(chunk: dict) -> str:
+    """The ``[标准号: …]`` the ingest wrote into this passage, normalized, or "".
+
+    The prefix carries the year and the part (``Q/GDW 73286.1-2026``) while
+    :func:`standard_designations` deliberately matches the year-less form, so the raw
+    value is normalized here instead - the part is what this reader is after, and the
+    year is worth keeping for the sibling it derives.
+    """
+    match = _CONTEXT_DESIGNATION_RE.search(_content(chunk))
+    if not match:
+        return ""
+    text = re.sub(r"[\s/]+", "", match.group(1)).upper()
+    return text if designation_parts(text) else ""
+
+
+def document_designations(chunk: dict) -> set[str]:
+    """Every designation that identifies this passage's DOCUMENT.
+
+    Two sources, both of them the document speaking about itself: its file name and
+    the context prefix inside its text. They disagree for real documents - the Part 3
+    file of the 220kV standard carries the tier in its name and no number, and nine of
+    the live corpus's seventeen documents carry no prefix at all - which is why both
+    are read rather than one.
+    """
+    found = set(standard_designations(document_name(chunk)))
+    context = context_designation(chunk)
+    if context:
+        found.add(context)
+    return found
+
+
+#: The part marker a multi-part file name carries: 《…采购标准+第2部分：…》. What comes
+#: BEFORE it is the family - the text every part of that standard shares - which is the
+#: only thing that groups the parts of a standard whose file names carry no designation
+#: at all (measured on the live corpus: the 220kV 第3部分 document has no standard
+#: number in its name and NO ``[标准号: …]`` prefix on any of its 51 chunks).
+_PART_MARKER_RE = re.compile(r"第\s*([0-9一二三四五六七八九十]{1,3})\s*部分")
+
+
+def name_family(name: str) -> str:
+    """The text a multi-part standard's parts share, or "" for a single-part name.
+
+    ``220kV海底电力电缆系统采购标准+第2部分：220kV单芯…`` -> ``220kV海底电力电缆系统采购标准``.
+    """
+    text = _normalized_name(name)
+    match = _PART_MARKER_RE.search(text)
+    if not match:
+        return ""
+    family = text[: match.start()].strip(" +-_+＋、,，：:")
+    return family if len(family) >= 4 else ""
+
+
+def document_family(chunk: dict) -> str:
+    """The family key of a passage's document: its designation's, else its name's.
+
+    A designation is the precise answer (``QGDW73286`` groups ``.1``/``.2``/``.3``), and
+    the name is the fallback that still groups a standard whose parts were archived
+    without numbers.
+    """
+    for designation in sorted(document_designations(chunk)):
+        parsed = designation_parts(designation)
+        if parsed:
+            return parsed[0]
+    return name_family(document_name(chunk))
+
+
+def generic_part_documents(chunks: Sequence[dict]) -> dict[str, tuple[str, str]]:
+    """``family -> (document key, name)`` for the GENERIC part of each standard in the pool.
+
+    A document counts as the generic part when its name says 通用技术规范, or when its
+    designation is a ``.1`` of a multi-part standard. This is the lookup the cross-part
+    fallback needs in order to scope a pass to Part 1 when Part 1 is already in the pool.
+    """
+    found: dict[str, tuple[str, str]] = {}
+    for chunk in chunks or []:
+        name = _normalized_name(document_name(chunk))
+        key = document_key(chunk)
+        if not key:
+            continue
+        families = set()
+        for designation in document_designations(chunk):
+            parsed = designation_parts(designation)
+            if parsed and parsed[1] == 1:
+                families.add(parsed[0])
+        if "通用技术规范" in name:
+            for designation in document_designations(chunk):
+                parsed = designation_parts(designation)
+                if parsed:
+                    families.add(parsed[0])
+            # A generic part whose parts were archived without any designation is
+            # grouped by the name it shares with its siblings.
+            named = name_family(name)
+            if named:
+                families.add(named)
+        for family in families:
+            found.setdefault(family, (key, document_name(chunk)))
+    return found
+
+
 def core_document_score(chunk_or_name) -> int:
     """How strongly a document presents itself as the corpus's standard.
 
