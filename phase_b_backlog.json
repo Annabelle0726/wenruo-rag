@@ -20,24 +20,44 @@
       "priority": "P0",
       "title": "Retrieval health contract (versioned, additive)",
       "deliverable": "retrieval_health schema with schema_version, overall in full/degraded/failed, per-leg status (decomposition, dense, lexical, rerank, followup), enumerated reason codes, evidence completeness, alerts",
-      "rules": ["monotonic worst-of aggregation", "unknown leg status is never full", "disclosure mandatory, serving optional", "no extra queries, retries or index operations"],
-      "acceptance": ["health present on every retrieval", "existing consumers unaffected", "schema reviewed and versioned"],
-      "traceability": ["SILENT_RETRIEVAL_DEGRADATION characterization"]
+      "rules": [
+        "monotonic worst-of aggregation",
+        "unknown leg status is never full",
+        "disclosure mandatory, serving optional",
+        "no extra queries, retries or index operations"
+      ],
+      "acceptance": [
+        "health present on every retrieval",
+        "existing consumers unaffected",
+        "schema reviewed and versioned"
+      ],
+      "traceability": [
+        "SILENT_RETRIEVAL_DEGRADATION characterization"
+      ]
     },
     {
       "id": "P0-2",
       "priority": "P0",
       "title": "Producer and aggregation points",
       "deliverable": "per-route outcome captured where routes are isolated and at the recall-floor rescue; aggregated in the retrieval entry point beside chunks, doc_aggs and total",
-      "depends_on": ["P0-1", "P1-1 for plan identity and validation outcome"],
-      "acceptance": ["aggregate reflects worst leg", "no new write path"]
+      "depends_on": [
+        "P0-1",
+        "P1-1 for plan identity and validation outcome"
+      ],
+      "acceptance": [
+        "aggregate reflects worst leg",
+        "no new write path"
+      ]
     },
     {
       "id": "P0-3",
       "priority": "P0",
       "title": "Propagation to trace, metrics and synthesis",
       "deliverable": "one structured event per retrieval; counters per leg and reason; trace attributes; health passed to the answer layer as a constraint",
-      "acceptance": ["dense-leg failure alarms without waiting for a customer", "single request explainable end to end"]
+      "acceptance": [
+        "dense-leg failure alarms without waiting for a customer",
+        "single request explainable end to end"
+      ]
     },
     {
       "id": "P0-4",
@@ -45,23 +65,39 @@
       "title": "Answer-layer policy under degraded evidence",
       "deliverable": "two-tier policy: narrative questions answer with disclosure; numeric-constraint questions refuse or mark unverified; failed retrieval never produces an answer",
       "invariant": "an answer may never assert hybrid-evidence confidence when a leg has failed",
-      "depends_on": ["D1", "D3"],
-      "acceptance": ["disclosure assertions pass on injected failures"]
+      "depends_on": [
+        "D1",
+        "D3"
+      ],
+      "acceptance": [
+        "disclosure assertions pass on injected failures"
+      ]
     },
     {
       "id": "P0-5",
       "priority": "P0",
       "title": "Fault-injection verification harness",
       "deliverable": "test doubles at the embedding boundary injecting quota error, timeout, partial route failure and total failure",
-      "acceptance": ["status and reason codes correct per injection", "overall monotonic", "answer layer discloses", "zero real external quota consumed"]
+      "acceptance": [
+        "status and reason codes correct per injection",
+        "overall monotonic",
+        "answer layer discloses",
+        "zero real external quota consumed"
+      ]
     },
     {
       "id": "P1-1",
       "priority": "P1",
       "title": "RetrievalPlan schema",
       "deliverable": "plan_version, intent enum, source provenance, normalised question, ordered sub_queries with targets, constraints, validation result, determinism block",
-      "rules": ["fail-closed on structure", "rejected plan replaced by deterministic pass-through plan and reported as PLAN_VALIDATION_FAILED"],
-      "acceptance": ["schema reviewed", "plan identity usable as cache and health key"]
+      "rules": [
+        "fail-closed on structure",
+        "rejected plan replaced by deterministic pass-through plan and reported as PLAN_VALIDATION_FAILED"
+      ],
+      "acceptance": [
+        "schema reviewed",
+        "plan identity usable as cache and health key"
+      ]
     },
     {
       "id": "P1-2",
@@ -69,29 +105,43 @@
       "title": "Determinism contract for the planner",
       "deliverable": "pin sampling where supported (temperature 0, explicit seed), canonical dedupe and stable first-mention order, schema validation, then cache validated plans keyed on plan_version + normalised question + model id",
       "reframe": "the cache's documented role becomes performance optimisation; reproducibility becomes a proven property instead of a cache-lifetime accident",
-      "acceptance": ["cache hit and miss provably identical in plan, routes and window", "non-pinned provenance recorded honestly"]
+      "acceptance": [
+        "cache hit and miss provably identical in plan, routes and window",
+        "non-pinned provenance recorded honestly"
+      ]
     },
     {
       "id": "P1-3",
       "priority": "P1",
       "title": "Plan cardinality floor",
       "deliverable": "empty or rejected plan degrades to the deterministic pass-through plan",
-      "acceptance": ["zero sub-queries is never a terminal state"]
+      "acceptance": [
+        "zero sub-queries is never a terminal state"
+      ]
     },
     {
       "id": "P1-4",
       "priority": "P1",
       "title": "Two-stage gate with corpus-independent features",
       "deliverable": "stage 1 deterministic structural check outputting not_composite/composite/uncertain; stage 2 optional model confirmation for uncertain only, under the P1-2 determinism contract",
-      "forbidden": ["domain vocabulary", "corpus-specific strings", "document-part names"],
-      "acceptance": ["identical behaviour on a transformer datasheet and a software specification"]
+      "forbidden": [
+        "domain vocabulary",
+        "corpus-specific strings",
+        "document-part names"
+      ],
+      "acceptance": [
+        "identical behaviour on a transformer datasheet and a software specification"
+      ]
     },
     {
       "id": "P1-5",
       "priority": "P1",
       "title": "Gate test suite (offline, de-identified)",
       "deliverable": "synthetic queries in six structure classes (single_fact, numeric_constraint, comparison, multi_hop, ambiguous, procedural) with expected labels; offline tier runs in CI without model or embedding; second tier measures plan quality",
-      "acceptance": ["single_fact false-positive rate ~0", "comparison/multi_hop false-negative rate low"]
+      "acceptance": [
+        "single_fact false-positive rate ~0",
+        "comparison/multi_hop false-negative rate low"
+      ]
     },
     {
       "id": "P1-6",
@@ -99,7 +149,9 @@
       "title": "Route-set stability reporting",
       "deliverable": "per retrieval: route set, which pool-dependent branches fired (recall-floor rescue, core-document follow-up)",
       "rationale": "makes amplification visible instead of inferable",
-      "depends_on": ["P0-2"]
+      "depends_on": [
+        "P0-2"
+      ]
     },
     {
       "id": "P2-1",
@@ -107,48 +159,277 @@
       "title": "Deterministic tie-breaker at all three ordering sites",
       "deliverable": "fixed secondary key (stable chunk/document id, ascending) at the cross-route merge, the rank-adjusted selection sort and the store-side sort; application-imposed order after fusion because an approximate kNN clause offers no tie-break parameter",
       "status_change": "LATENT TIE-BREAK RISK - NOT OBSERVED AS A FAILURE",
-      "rules": ["no fuzzy epsilon tie bands", "any tolerance must be a single documented constant applied identically"],
-      "acceptance": ["total order proven", "Phase A neutrality check itemised"]
+      "rules": [
+        "no fuzzy epsilon tie bands",
+        "any tolerance must be a single documented constant applied identically"
+      ],
+      "acceptance": [
+        "total order proven",
+        "Phase A neutrality check itemised"
+      ]
     },
     {
       "id": "P2-2",
       "priority": "P2",
       "title": "Tie-breaker verification",
       "deliverable": "equal-score fixtures across documents and shards; shuffled-input property tests; neutrality check on the frozen corpus",
-      "acceptance": ["no observable change except where ties existed, each change itemised with cause"]
+      "acceptance": [
+        "no observable change except where ties existed, each change itemised with cause"
+      ]
+    },
+    {
+      "id": "P0-6",
+      "priority": "P0",
+      "title": "Retrieval-level user disclosure (exactly-one notice)",
+      "deliverable": "one user-facing degradation notice per retrieval, driven by the attached retrieval_health block",
+      "status": "DEFERRED_NOT_IMPLEMENTED",
+      "spec_revision": "R3.2 target behaviour, R3.3 acceptance contract",
+      "acceptance_rules": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6"
+      ],
+      "forbidden": [
+        "re-raising the dense exception to trigger a UI error",
+        "returning a synthetic non-2xx status for a partial retrieval",
+        "setting an error code for a partial retrieval",
+        "emitting more than one notice per retrieval"
+      ]
+    },
+    {
+      "id": "P0-7",
+      "priority": "P0",
+      "title": "Operator observability sink (structured log line plus metrics and trace)",
+      "deliverable": "ship the structured health event the candidate already builds to a log line and to a metrics/trace sink",
+      "status": "NOT_ACCEPTED_NOT_WIRED",
+      "spec_revision": "R3.3 separate acceptance tracks",
+      "acceptance_rules": [
+        "separate track from user disclosure",
+        "dense-leg failure observable without a customer report"
+      ],
+      "note": "the candidate builds the event in process only; nothing writes it to a sink yet"
     }
   ],
   "decisions_requested": [
-    {"id": "D1", "decision": "answer-layer behaviour under degraded evidence", "recommendation": "two-tier per P0-4"},
-    {"id": "D2", "decision": "determinism enforcement for the planner", "recommendation": "pin sampling where supported plus canonicalise and validate, recording provenance"},
-    {"id": "D3", "decision": "degraded-serving posture when the dense leg is unavailable", "recommendation": "serve with disclosure for narrative, refuse values"},
-    {"id": "D4", "decision": "API surface for health", "recommendation": "additive response field plus trace"},
-    {"id": "D5", "decision": "holdout corpus selection and ingestion", "recommendation": "approve OPGW/ADSS, transformer and software spec, read-only, Phase A artifacts untouched"},
-    {"id": "D6", "decision": "fault-injection mechanism", "recommendation": "test doubles at the embedding boundary, never spend real quota on failure tests"},
-    {"id": "D7", "decision": "quota availability control", "recommendation": "per-day budget guard and circuit breaker first; a fallback embedding model changes retrieval semantics and needs its own review"}
+    {
+      "id": "D1",
+      "decision": "answer-layer behaviour under degraded evidence",
+      "recommendation": "two-tier per P0-4"
+    },
+    {
+      "id": "D2",
+      "decision": "determinism enforcement for the planner",
+      "recommendation": "pin sampling where supported plus canonicalise and validate, recording provenance"
+    },
+    {
+      "id": "D3",
+      "decision": "degraded-serving posture when the dense leg is unavailable",
+      "recommendation": "serve with disclosure for narrative, refuse values"
+    },
+    {
+      "id": "D4",
+      "decision": "API surface for health",
+      "recommendation": "additive response field plus trace"
+    },
+    {
+      "id": "D5",
+      "decision": "holdout corpus selection and ingestion",
+      "recommendation": "approve OPGW/ADSS, transformer and software spec, read-only, Phase A artifacts untouched"
+    },
+    {
+      "id": "D6",
+      "decision": "fault-injection mechanism",
+      "recommendation": "test doubles at the embedding boundary, never spend real quota on failure tests"
+    },
+    {
+      "id": "D7",
+      "decision": "quota availability control",
+      "recommendation": "per-day budget guard and circuit breaker first; a fallback embedding model changes retrieval semantics and needs its own review"
+    }
   ],
   "holdout_acceptance": {
     "setup": "four families (existing cable corpus, OPGW/ADSS, transformer, software specification), ingested with no change to rewriting rules or retrieval code; Phase A artifacts, canary chunks and pinned configuration untouched",
     "gates": [
-      {"id": "G1", "gate": "determinism per family", "threshold": "exact window match on all repeated pinned runs", "failure_meaning": "not reproducible on unseen content"},
-      {"id": "G2", "gate": "health coverage", "threshold": "100% correct reason codes and monotonic overall", "failure_meaning": "silent degradation"},
-      {"id": "G3", "gate": "disclosure integrity", "threshold": "100%", "failure_meaning": "product-level false confidence"},
-      {"id": "G4", "gate": "gate precision on single-fact", "threshold": "false-positive rate ~0", "failure_meaning": "unnecessary model randomness at the entrance"},
-      {"id": "G5", "gate": "gate recall on comparison/multi-hop", "threshold": "low false-negative rate", "failure_meaning": "lost recall on composite questions"},
-      {"id": "G6", "gate": "family isolation", "threshold": "0 cross-family hits in windows", "failure_meaning": "cross-family contamination"},
-      {"id": "G7", "gate": "no silent emptiness", "threshold": "empty or near-empty window never reports full", "failure_meaning": "the Phase A failure left unfixed"},
-      {"id": "G8", "gate": "Phase A neutrality", "threshold": "no unexplained diffs", "failure_meaning": "hardening changed judged behaviour"}
+      {
+        "id": "G1",
+        "gate": "determinism per family",
+        "threshold": "exact window match on all repeated pinned runs",
+        "failure_meaning": "not reproducible on unseen content"
+      },
+      {
+        "id": "G2",
+        "gate": "health coverage",
+        "threshold": "100% correct reason codes and monotonic overall",
+        "failure_meaning": "silent degradation"
+      },
+      {
+        "id": "G3",
+        "gate": "disclosure integrity",
+        "threshold": "100%",
+        "failure_meaning": "product-level false confidence"
+      },
+      {
+        "id": "G4",
+        "gate": "gate precision on single-fact",
+        "threshold": "false-positive rate ~0",
+        "failure_meaning": "unnecessary model randomness at the entrance"
+      },
+      {
+        "id": "G5",
+        "gate": "gate recall on comparison/multi-hop",
+        "threshold": "low false-negative rate",
+        "failure_meaning": "lost recall on composite questions"
+      },
+      {
+        "id": "G6",
+        "gate": "family isolation",
+        "threshold": "0 cross-family hits in windows",
+        "failure_meaning": "cross-family contamination"
+      },
+      {
+        "id": "G7",
+        "gate": "no silent emptiness",
+        "threshold": "empty or near-empty window never reports full",
+        "failure_meaning": "the Phase A failure left unfixed"
+      },
+      {
+        "id": "G8",
+        "gate": "Phase A neutrality",
+        "threshold": "no unexplained diffs",
+        "failure_meaning": "hardening changed judged behaviour"
+      }
     ],
     "quota_discipline": "determinism and gate suites run offline; holdout validation runs inside a budget guard, and an unavailable quota is reported as BLOCKED_BY_QUOTA rather than replaced by a degraded substitute"
   },
   "sequencing": [
-    {"order": 1, "items": ["P0-1", "P0-2"]},
-    {"order": 2, "items": ["P0-5"]},
-    {"order": 3, "items": ["P0-3", "P0-4"]},
-    {"order": 4, "items": ["P1-1", "P1-2", "P1-3"]},
-    {"order": 5, "items": ["P1-4", "P1-5"]},
-    {"order": 6, "items": ["P1-6"]},
-    {"order": 7, "items": ["P2-1", "P2-2"]},
-    {"order": 8, "items": ["holdout validation"]}
+    {
+      "order": 1,
+      "items": [
+        "P0-1",
+        "P0-2"
+      ]
+    },
+    {
+      "order": 2,
+      "items": [
+        "P0-5"
+      ]
+    },
+    {
+      "order": 3,
+      "items": [
+        "P0-3",
+        "P0-4"
+      ]
+    },
+    {
+      "order": 4,
+      "items": [
+        "P1-1",
+        "P1-2",
+        "P1-3"
+      ]
+    },
+    {
+      "order": 5,
+      "items": [
+        "P1-4",
+        "P1-5"
+      ]
+    },
+    {
+      "order": 6,
+      "items": [
+        "P1-6"
+      ]
+    },
+    {
+      "order": 7,
+      "items": [
+        "P2-1",
+        "P2-2"
+      ]
+    },
+    {
+      "order": 8,
+      "items": [
+        "holdout validation"
+      ]
+    }
+  ],
+  "authoritative_spec": "phase_b_architecture_plan.md (Revision 3 is binding); this file is a 1:1 mirror",
+  "spec_revision_mirrored": "R3 - P0 target behaviour and frozen acceptance contract C1-C7",
+  "status_grounding": {
+    "health_dto_and_contract": "IMPLEMENTED",
+    "production_wiring": "CANDIDATE_IMAGE_PREPARED_NOT_DEPLOYED (my-wenruorag:p0b-891572a71 = 99d0ee210004)",
+    "operator_observability_sink": "NOT_ACCEPTED_NOT_WIRED",
+    "user_disclosure_ui": "DEFERRED_NOT_IMPLEMENTED",
+    "live_p0c_acceptance": "BLOCKED_BY_GEMINI_404_MODEL_CREDENTIAL_ISSUE"
+  },
+  "p0_target_behavior": {
+    "keep_route_isolation": "a dead dense leg must still let the lexical leg return evidence",
+    "pass_health_through": "retrieval_health is collected at the execution points, aggregated once and attached additively",
+    "exactly_one_notice": "granularity is one retrieval, never one route and never one leg; one attached health block yields at most one notice",
+    "answer_policy_enforcement": "DISABLED (unchanged)",
+    "forbidden_rollback": [
+      "re-raising the dense exception to trigger a UI error",
+      "returning a synthetic non-2xx status for a partial retrieval",
+      "setting an error code for a partial retrieval",
+      "emitting more than one notice per retrieval"
+    ]
+  },
+  "p0_acceptance_contract": [
+    {
+      "id": "C1",
+      "condition": "overall = full",
+      "required_outcome": "no degradation notice at all: no toast, no banner, no inline note, no badge",
+      "backlog_item": "P0-6",
+      "evidence_required": "healthy-path run: notice count 0"
+    },
+    {
+      "id": "C2",
+      "condition": "overall = degraded and degradation_reason = EMBEDDING_QUOTA_EXHAUSTED",
+      "required_outcome": "exactly one friendly semantic-retrieval-limited notice for that retrieval",
+      "backlog_item": "P0-6",
+      "evidence_required": "injected quota failure: notice count 1, text in the semantic-limited class"
+    },
+    {
+      "id": "C3",
+      "condition": "overall = degraded and degradation_reason = EMBEDDING_UNAVAILABLE",
+      "required_outcome": "exactly one generic retrieval-degraded notice for that retrieval",
+      "backlog_item": "P0-6",
+      "evidence_required": "injected unavailable failure: notice count 1, text in the generic class"
+    },
+    {
+      "id": "C4",
+      "condition": "degraded with any other reason, or failed with no usable evidence",
+      "required_outcome": "exactly one generic retrieval-degraded notice in both states. The two underlying states must stay distinguishable: degraded means retrieval succeeded while running on partial evidence, failed means retrieval produced no usable evidence at all. Both obey the exactly-one disclosure rule, and neither may be collapsed into the other.",
+      "backlog_item": "P0-6",
+      "evidence_required": "degraded-other injection and failed injection: one generic notice each, and the underlying states remain distinguishable"
+    },
+    {
+      "id": "C5",
+      "condition": "N routes or N legs failed on one retrieval",
+      "required_outcome": "still exactly one notice; multiplicity is a hard failure, not a cosmetic issue",
+      "backlog_item": "P0-6",
+      "evidence_required": "injection failing all dense routes at once: notice count 1 (deduplication proof)"
+    },
+    {
+      "id": "C6",
+      "condition": "notice rendering, any degraded state",
+      "required_outcome": "no API key or key fragment, no provider JSON error body, no endpoint or API version string, no stack trace, no infrastructure detail",
+      "backlog_item": "P0-6",
+      "evidence_required": "rendered-text assertion against key material, provider JSON, endpoint/version strings and stack text"
+    },
+    {
+      "id": "C7",
+      "condition": "evidence_state = partial",
+      "required_outcome": "answer-policy enforcement stays DISABLED: partial evidence alone must not produce a refusal and must not change the baseline answer flow",
+      "backlog_item": "P0-4",
+      "evidence_required": "assertion that a partial evidence state alone produces no refusal and no answer-flow change"
+    }
   ]
 }

@@ -575,3 +575,19 @@ Historical basis from the forensic audit: the old path raised hard failures and 
 Scope and blockers: front-end implementation deferred, key probe and model-id question paused as an independent Blocker, no production mutation, no DB change, no restart, no P1 entry. The acceptance boundary is frozen and further changes require a new revision.
 
 Paths: phase_b_architecture_plan.md, AGENTS.md
+
+## Milestone - Rev 3 mirrored into phase_b_backlog.json (traceability housekeeping, documentation only)
+
+phase B backlog: 1:1 mirror of Rev 3 target behaviour and frozen acceptance contract
+
+Mirror only, no new requirement and no P0 scope change: phase_b_architecture_plan.md remains the authoritative spec and the backlog now carries spec_revision_mirrored R3, the target behaviour block, the C1 to C7 contract with its required evidence, status grounding, and two new items P0-6 retrieval-level user disclosure and P0-7 operator observability sink.
+
+C4 refined as instructed: degraded means retrieval succeeded while running on partial evidence, failed means retrieval produced no usable evidence at all; the two underlying states must stay distinguishable and must never be collapsed, while both obey the exactly-one disclosure rule.
+
+Status grounding recorded: health DTO and contract IMPLEMENTED, production wiring candidate image prepared but not deployed as my-wenruorag p0b-891572a71, operator observability sink NOT ACCEPTED NOT WIRED, user disclosure UI DEFERRED NOT IMPLEMENTED, live P0-C acceptance BLOCKED by the Gemini 404 model and credential issue.
+
+Consistency check: all seven contract rules map onto existing backlog items, P0-6 covers C1 to C6 and P0-4 covers C7, every rule carries its required evidence, and no item is unmapped.
+
+Freeze honoured: documentation only, no front-end UI, no key probe, no model id change, no container recreate or deployment, no P1 entry.
+
+Paths: phase_b_backlog.json, tools/scripts/mirror_rev3_to_backlog.py, AGENTS.md
