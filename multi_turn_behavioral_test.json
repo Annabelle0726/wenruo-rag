@@ -1,0 +1,1267 @@
+{
+ "tier": "RETRIEVAL (deployed retrieve_multi_route) + LLM SYNTHESIS (tenant chat model) WITHOUT assistant configuration",
+ "tier_caveats": [
+  "no assistant prompt/prologue/refine_multiturn -> app-level effective query NOT OBSERVABLE",
+  "keyword augmentation OFF (assistant setting)",
+  "multi-turn history maintained by the harness"
+ ],
+ "configuration": {
+  "similarity_threshold": 0.2,
+  "vector_similarity_weight": 0.6,
+  "routes_top_k": 12,
+  "final_top_n": 8,
+  "knn_top_k": 1024,
+  "max_sub_queries": 4,
+  "allow_dense_fallback": true
+ },
+ "kb_id": "9463d93eb97511f1938f2592e9bc6fe4",
+ "owner_tenant": "a9e28731ab7011f19b833887d563fb04",
+ "embedding_model_id": "f79e37e5ab7611f18ecb3887d563fb04",
+ "sessions": {
+  "session_A": {
+   "target_parts": [
+    "第2部分",
+    "第1部分"
+   ],
+   "turns": [
+    {
+     "user_query": "Q/GDW 73286.2-2026 是什么标准？",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "646ab90775aa14a5",
+      "43e96b415797394b",
+      "3fb0a03b92cc70d7",
+      "455737939ddb4a47",
+      "7de0deabdfbdccdc",
+      "0b4e3c1a73c1e334",
+      "af100b79a9e9734d",
+      "9ac2797e006f5b84"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用"
+     ],
+     "retrieved_sections": [
+      "3 与其他标准/文件的关系",
+      "NOT_OBSERVABLE",
+      "4 标准技术参数表",
+      "NOT_OBSERVABLE",
+      "3 与其他标准/文件的关系",
+      "4.1.5",
+      "4 标准技术参数表",
+      "4 标准技术参数表"
+     ],
+     "retrieved_parts": [
+      "第2部分",
+      "第2部分",
+      "第2部分",
+      "第2部分",
+      "第2部分",
+      "第1部分",
+      "第2部分",
+      "第2部分"
+     ],
+     "final_context_chars": 3649,
+     "effective_query": "Q/GDW 73286.2-2026 是什么标准？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 1
+    },
+    {
+     "user_query": "这个标准适用于什么类型的电缆？",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "f6bf347f95c33598",
+      "7402cf6c99cbd67e",
+      "af100b79a9e9734d",
+      "a2aa88912e75ca47",
+      "6940892bba5934b6",
+      "545e7b340cc0f7c2",
+      "2491aa2ce5eacd8d",
+      "d17f1d620732e24d"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用"
+     ],
+     "retrieved_sections": [
+      "NOT_OBSERVABLE",
+      "NOT_OBSERVABLE",
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "4 标准技术参数表"
+     ],
+     "retrieved_parts": [
+      "第1部分",
+      "第3部分",
+      "第2部分",
+      "第3部分",
+      "第2部分",
+      "第2部分",
+      "第3部分",
+      "第3部分"
+     ],
+     "final_context_chars": 6268,
+     "effective_query": "这个标准适用于什么类型的电缆？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 2
+    },
+    {
+     "user_query": "那 220kV 单芯海底电缆的主要结构有哪些？",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "b5aaf72bcd33d44a",
+      "3fb0a03b92cc70d7",
+      "d1d75672f2dbc333",
+      "bac8e77cef90c8cf",
+      "43e96b415797394b",
+      "83d1e77c201be56a",
+      "ab96130b7a5d5c8f",
+      "e518c08d493651a2"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用"
+     ],
+     "retrieved_sections": [
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "5 技术要求",
+      "NOT_OBSERVABLE",
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "4 标准技术参数表"
+     ],
+     "retrieved_parts": [
+      "第2部分",
+      "第2部分",
+      "第3部分",
+      "第1部分",
+      "第2部分",
+      "第2部分",
+      "第2部分",
+      "第2部分"
+     ],
+     "final_context_chars": 8306,
+     "effective_query": "那 220kV 单芯海底电缆的主要结构有哪些？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 3
+    },
+    {
+     "user_query": "导体、内衬层和铠装层分别有什么技术要求？",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "bac8e77cef90c8cf",
+      "ff249ff52cf67152",
+      "a0bd8a6bde77b17e",
+      "af74d2eeaaf2c4a4",
+      "663de80696a67296",
+      "844f7e6b59d9764e",
+      "a14eb97907268118",
+      "5ab5e9b5f2bf95e9"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+     ],
+     "retrieved_sections": [
+      "5 技术要求",
+      "5.1.7",
+      "3 与其他标准/文件的关系",
+      "5 技术要求",
+      "6.5.2 局部放电试验",
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "5.3 光纤主要技术要求和指标"
+     ],
+     "retrieved_parts": [
+      "第1部分",
+      "第1部分",
+      "第3部分",
+      "第1部分",
+      "第1部分",
+      "第3部分",
+      "第2部分",
+      "第1部分"
+     ],
+     "final_context_chars": 6866,
+     "effective_query": "导体、内衬层和铠装层分别有什么技术要求？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 4
+    },
+    {
+     "user_query": "这些要求都是这个专用技术规范自己规定的吗？",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "f224470a51f32350",
+      "a18b9160c4084d5f",
+      "48f12a5a8ce5eb6c",
+      "8b1911d054c3a036",
+      "c3a92b28cfd524d3",
+      "cc73de0f16418d16",
+      "090dfb645da31bf7",
+      "d5f07f5d24ec3cc7"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用"
+     ],
+     "retrieved_sections": [
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "NOT_OBSERVABLE",
+      "3 与其他标准/文件的关系",
+      "6 条文说明",
+      "5 组件材料配置表",
+      "4 标准技术参数表",
+      "3 与其他标准/文件的关系"
+     ],
+     "retrieved_parts": [
+      "第2部分",
+      "第3部分",
+      "第1部分",
+      "第1部分",
+      "第1部分",
+      "第2部分",
+      "第3部分",
+      "第2部分"
+     ],
+     "final_context_chars": 5154,
+     "effective_query": "这些要求都是这个专用技术规范自己规定的吗？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 5
+    },
+    {
+     "user_query": "如果不是，把通用技术规范里的要求也一起告诉我，并说明来源。",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "8b1911d054c3a036",
+      "f224470a51f32350",
+      "a18b9160c4084d5f",
+      "c3a92b28cfd524d3",
+      "d5f07f5d24ec3cc7",
+      "ff6344911eb4df75",
+      "4859566265b332b6",
+      "48f12a5a8ce5eb6c"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+     ],
+     "retrieved_sections": [
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "6 条文说明",
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "8.2.13",
+      "NOT_OBSERVABLE"
+     ],
+     "retrieved_parts": [
+      "第1部分",
+      "第2部分",
+      "第3部分",
+      "第1部分",
+      "第2部分",
+      "第3部分",
+      "第1部分",
+      "第1部分"
+     ],
+     "final_context_chars": 5345,
+     "effective_query": "如果不是，把通用技术规范里的要求也一起告诉我，并说明来源。   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 6
+    }
+   ]
+  },
+  "session_B": {
+   "target_parts": [
+    "第3部分",
+    "第1部分"
+   ],
+   "turns": [
+    {
+     "user_query": "220kV 三芯海底电缆一般有哪些主要结构？",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "d1d75672f2dbc333",
+      "b5aaf72bcd33d44a",
+      "3fb0a03b92cc70d7",
+      "5f81fce4a4628ebf",
+      "f96c7773551514ae",
+      "bac8e77cef90c8cf",
+      "43e96b415797394b",
+      "cc4443ca2f4783ac"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+     ],
+     "retrieved_sections": [
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "5 技术要求",
+      "NOT_OBSERVABLE",
+      "5.1.7"
+     ],
+     "retrieved_parts": [
+      "第3部分",
+      "第2部分",
+      "第2部分",
+      "第3部分",
+      "第3部分",
+      "第1部分",
+      "第2部分",
+      "第1部分"
+     ],
+     "final_context_chars": 7350,
+     "effective_query": "220kV 三芯海底电缆一般有哪些主要结构？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 1
+    },
+    {
+     "user_query": "铠装层有什么要求？",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "a0bd8a6bde77b17e",
+      "c7347587e61a3532",
+      "bc2a6dfa54206eab",
+      "ff249ff52cf67152",
+      "bac8e77cef90c8cf",
+      "cc4443ca2f4783ac",
+      "663de80696a67296",
+      "844f7e6b59d9764e"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用"
+     ],
+     "retrieved_sections": [
+      "3 与其他标准/文件的关系",
+      "NOT_OBSERVABLE",
+      "5.1.7",
+      "5.1.7",
+      "5 技术要求",
+      "5.1.7",
+      "6.5.2 局部放电试验",
+      "4 标准技术参数表"
+     ],
+     "retrieved_parts": [
+      "第3部分",
+      "第3部分",
+      "第1部分",
+      "第1部分",
+      "第1部分",
+      "第1部分",
+      "第1部分",
+      "第3部分"
+     ],
+     "final_context_chars": 5394,
+     "effective_query": "铠装层有什么要求？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 2
+    },
+    {
+     "user_query": "内衬层厚度呢？",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "844f7e6b59d9764e",
+      "a14eb97907268118",
+      "ff249ff52cf67152",
+      "acc2f7b2530f0d90",
+      "a2aa88912e75ca47",
+      "bac8e77cef90c8cf",
+      "255c187f4e228542",
+      "bc2a6dfa54206eab"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+     ],
+     "retrieved_sections": [
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "5.1.7",
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "5 技术要求",
+      "4 标准技术参数表",
+      "5.1.7"
+     ],
+     "retrieved_parts": [
+      "第3部分",
+      "第2部分",
+      "第1部分",
+      "第3部分",
+      "第3部分",
+      "第1部分",
+      "第2部分",
+      "第1部分"
+     ],
+     "final_context_chars": 7704,
+     "effective_query": "内衬层厚度呢？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 3
+    },
+    {
+     "user_query": "这个数值是在哪份规范里规定的？",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "8b1911d054c3a036",
+      "f224470a51f32350",
+      "a18b9160c4084d5f",
+      "48f12a5a8ce5eb6c",
+      "c3a92b28cfd524d3",
+      "4859566265b332b6",
+      "ea4a0fbc49651bc5",
+      "0b4e3c1a73c1e334"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+     ],
+     "retrieved_sections": [
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "NOT_OBSERVABLE",
+      "6 条文说明",
+      "8.2.13",
+      "NOT_OBSERVABLE",
+      "4.1.5"
+     ],
+     "retrieved_parts": [
+      "第1部分",
+      "第2部分",
+      "第3部分",
+      "第1部分",
+      "第1部分",
+      "第1部分",
+      "第1部分",
+      "第1部分"
+     ],
+     "final_context_chars": 5823,
+     "effective_query": "这个数值是在哪份规范里规定的？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 4
+    },
+    {
+     "user_query": "三芯专用规范里面没有吗？",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "a18b9160c4084d5f",
+      "ff6344911eb4df75",
+      "d79d92725b46b084",
+      "f224470a51f32350",
+      "d5f07f5d24ec3cc7",
+      "c3a92b28cfd524d3",
+      "d8277d37a03a2b0a",
+      "ed78116f271cd2a9"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用"
+     ],
+     "retrieved_sections": [
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "4 标准技术参数表",
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "6 条文说明",
+      "5 组件材料配置表",
+      "NOT_OBSERVABLE"
+     ],
+     "retrieved_parts": [
+      "第3部分",
+      "第3部分",
+      "第3部分",
+      "第2部分",
+      "第2部分",
+      "第1部分",
+      "第2部分",
+      "第3部分"
+     ],
+     "final_context_chars": 5131,
+     "effective_query": "三芯专用规范里面没有吗？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 5
+    },
+    {
+     "user_query": "那你把专用规范和通用规范的要求区分开告诉我。",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "f224470a51f32350",
+      "a18b9160c4084d5f",
+      "c3a92b28cfd524d3",
+      "d5f07f5d24ec3cc7",
+      "ff6344911eb4df75",
+      "48f12a5a8ce5eb6c",
+      "d8277d37a03a2b0a",
+      "d79d92725b46b084"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用"
+     ],
+     "retrieved_sections": [
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "6 条文说明",
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "NOT_OBSERVABLE",
+      "5 组件材料配置表",
+      "4 标准技术参数表"
+     ],
+     "retrieved_parts": [
+      "第2部分",
+      "第3部分",
+      "第1部分",
+      "第2部分",
+      "第3部分",
+      "第1部分",
+      "第2部分",
+      "第3部分"
+     ],
+     "final_context_chars": 5758,
+     "effective_query": "那你把专用规范和通用规范的要求区分开告诉我。   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 6
+    }
+   ]
+  },
+  "session_C": {
+   "target_parts": [
+    "第2部分",
+    "第3部分",
+    "第1部分"
+   ],
+   "turns": [
+    {
+     "user_query": "220kV 单芯和三芯海底电缆的技术要求有什么区别？",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "bac8e77cef90c8cf",
+      "43e96b415797394b",
+      "3fb0a03b92cc70d7",
+      "8065ad3f4096ca30",
+      "a0bd8a6bde77b17e",
+      "ff6344911eb4df75",
+      "a3e9d12dd321aec1",
+      "9b0947b801d49c2d"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用"
+     ],
+     "retrieved_sections": [
+      "5 技术要求",
+      "NOT_OBSERVABLE",
+      "4 标准技术参数表",
+      "NOT_OBSERVABLE",
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "4 标准技术参数表",
+      "4 标准技术参数表"
+     ],
+     "retrieved_parts": [
+      "第1部分",
+      "第2部分",
+      "第2部分",
+      "第3部分",
+      "第3部分",
+      "第3部分",
+      "第2部分",
+      "第2部分"
+     ],
+     "final_context_chars": 4830,
+     "effective_query": "220kV 单芯和三芯海底电缆的技术要求有什么区别？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 1
+    },
+    {
+     "user_query": "先只比较结构方面。",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "6e574ac15bab9329",
+      "07f34402b3cdd4d9",
+      "3c3118930a4f6e39",
+      "5d52c3f6cbe9e4c5",
+      "91b65c311693d243",
+      "d19a079b425d93b4",
+      "877394408084e1be",
+      "3746a7eb6438f7fd"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用"
+     ],
+     "retrieved_sections": [
+      "8.2.13",
+      "4 标准技术参数表",
+      "5 组件材料配置表",
+      "6.6.12 局部放电试验",
+      "5.3 光纤主要技术要求和指标",
+      "3 术语和定义",
+      "4 标准技术参数表",
+      "4 标准技术参数表"
+     ],
+     "retrieved_parts": [
+      "第1部分",
+      "第3部分",
+      "第2部分",
+      "第1部分",
+      "第1部分",
+      "第1部分",
+      "第3部分",
+      "第3部分"
+     ],
+     "final_context_chars": 4959,
+     "effective_query": "先只比较结构方面。   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 2
+    },
+    {
+     "user_query": "哪些要求是它们共同的？",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "c3a92b28cfd524d3",
+      "ff6344911eb4df75",
+      "d5f07f5d24ec3cc7",
+      "63e02a0f356894e8",
+      "090dfb645da31bf7",
+      "cc73de0f16418d16",
+      "8b1911d054c3a036",
+      "f224470a51f32350"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用"
+     ],
+     "retrieved_sections": [
+      "6 条文说明",
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "4.5.3",
+      "4 标准技术参数表",
+      "5 组件材料配置表",
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系"
+     ],
+     "retrieved_parts": [
+      "第1部分",
+      "第3部分",
+      "第2部分",
+      "第1部分",
+      "第3部分",
+      "第2部分",
+      "第1部分",
+      "第2部分"
+     ],
+     "final_context_chars": 4997,
+     "effective_query": "哪些要求是它们共同的？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 3
+    },
+    {
+     "user_query": "哪些是单芯或三芯专用规范单独规定的？",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "f224470a51f32350",
+      "48f12a5a8ce5eb6c",
+      "c3a92b28cfd524d3",
+      "a18b9160c4084d5f",
+      "d5f07f5d24ec3cc7",
+      "ff6344911eb4df75",
+      "c7347587e61a3532",
+      "d8277d37a03a2b0a"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用"
+     ],
+     "retrieved_sections": [
+      "3 与其他标准/文件的关系",
+      "NOT_OBSERVABLE",
+      "6 条文说明",
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "NOT_OBSERVABLE",
+      "5 组件材料配置表"
+     ],
+     "retrieved_parts": [
+      "第2部分",
+      "第1部分",
+      "第1部分",
+      "第3部分",
+      "第2部分",
+      "第3部分",
+      "第3部分",
+      "第2部分"
+     ],
+     "final_context_chars": 5485,
+     "effective_query": "哪些是单芯或三芯专用规范单独规定的？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 4
+    },
+    {
+     "user_query": "不要把投标人填写的空白参数表当成已经规定的参数。",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "d19a079b425d93b4",
+      "9fa9e164a3e3ca7a",
+      "07f34402b3cdd4d9",
+      "6e574ac15bab9329",
+      "834c0774c8fad3e2",
+      "3fb0a03b92cc70d7",
+      "d79d92725b46b084",
+      "0b4e3c1a73c1e334"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+     ],
+     "retrieved_sections": [
+      "3 术语和定义",
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "8.2.13",
+      "4.3.3.6",
+      "4 标准技术参数表",
+      "4 标准技术参数表",
+      "4.1.5"
+     ],
+     "retrieved_parts": [
+      "第1部分",
+      "第3部分",
+      "第3部分",
+      "第1部分",
+      "第1部分",
+      "第2部分",
+      "第3部分",
+      "第1部分"
+     ],
+     "final_context_chars": 5050,
+     "effective_query": "不要把投标人填写的空白参数表当成已经规定的参数。   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 5
+    },
+    {
+     "user_query": "重新总结一次，并标明每条来自通用规范、单芯专用规范还是三芯专用规范。",
+     "context_turns": 0,
+     "retrieved_chunk_ids": [
+      "ff6344911eb4df75",
+      "a18b9160c4084d5f",
+      "d5f07f5d24ec3cc7",
+      "f224470a51f32350",
+      "d79d92725b46b084",
+      "d8277d37a03a2b0a",
+      "ecaeb84e531f4871",
+      "809afdd0e1b83482"
+     ],
+     "retrieved_documents": [
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+      "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用"
+     ],
+     "retrieved_sections": [
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系",
+      "4 标准技术参数表",
+      "5 组件材料配置表",
+      "3 与其他标准/文件的关系",
+      "3 与其他标准/文件的关系"
+     ],
+     "retrieved_parts": [
+      "第3部分",
+      "第3部分",
+      "第2部分",
+      "第2部分",
+      "第3部分",
+      "第2部分",
+      "第3部分",
+      "第2部分"
+     ],
+     "final_context_chars": 5949,
+     "effective_query": "重新总结一次，并标明每条来自通用规范、单芯专用规范还是三芯专用规范。   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+     "model_answer": "NOT_OBSERVABLE",
+     "labels": {
+      "document_selection": "PASS",
+      "answer_groundedness": "UNCERTAIN",
+      "cross_document_behavior": "NOT_NEEDED",
+      "conversation_continuity": "UNCERTAIN",
+      "refusal": "NONE",
+      "hallucination_suspicion": "NO",
+      "fabricated_numbers": "NOT_OBSERVABLE",
+      "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+     },
+     "round": 6
+    }
+   ]
+  }
+ },
+ "control": [
+  {
+   "user_query": "220kV 单芯海底电缆的导体、内衬层、铠装层技术要求是什么？",
+   "context_turns": 0,
+   "retrieved_chunk_ids": [
+    "bac8e77cef90c8cf",
+    "ff249ff52cf67152",
+    "af74d2eeaaf2c4a4",
+    "109c57a8471be6fa",
+    "bc2a6dfa54206eab",
+    "cc4443ca2f4783ac",
+    "a6989cb86469df8a",
+    "a14eb97907268118"
+   ],
+   "retrieved_documents": [
+    "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+    "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用"
+   ],
+   "retrieved_sections": [
+    "5 技术要求",
+    "5.1.7",
+    "5 技术要求",
+    "5.2.3 修理接头",
+    "5.1.7",
+    "5.1.7",
+    "4 标准技术参数表",
+    "4 标准技术参数表"
+   ],
+   "retrieved_parts": [
+    "第1部分",
+    "第1部分",
+    "第1部分",
+    "第1部分",
+    "第1部分",
+    "第1部分",
+    "第2部分",
+    "第2部分"
+   ],
+   "final_context_chars": 6009,
+   "effective_query": "220kV 单芯海底电缆的导体、内衬层、铠装层技术要求是什么？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+   "model_answer": "NOT_OBSERVABLE",
+   "labels": {
+    "document_selection": "PASS",
+    "answer_groundedness": "UNCERTAIN",
+    "cross_document_behavior": "NOT_NEEDED",
+    "conversation_continuity": "UNCERTAIN",
+    "refusal": "NONE",
+    "hallucination_suspicion": "NO",
+    "fabricated_numbers": "NOT_OBSERVABLE",
+    "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+   },
+   "round": 1
+  },
+  {
+   "user_query": "220kV 三芯海底电缆的内衬层厚度要求是什么？",
+   "context_turns": 0,
+   "retrieved_chunk_ids": [
+    "ff249ff52cf67152",
+    "bac8e77cef90c8cf",
+    "bc2a6dfa54206eab",
+    "cc4443ca2f4783ac",
+    "af74d2eeaaf2c4a4",
+    "109c57a8471be6fa",
+    "c7347587e61a3532",
+    "a0bd8a6bde77b17e"
+   ],
+   "retrieved_documents": [
+    "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+    "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用"
+   ],
+   "retrieved_sections": [
+    "5.1.7",
+    "5 技术要求",
+    "5.1.7",
+    "5.1.7",
+    "5 技术要求",
+    "5.2.3 修理接头",
+    "NOT_OBSERVABLE",
+    "3 与其他标准/文件的关系"
+   ],
+   "retrieved_parts": [
+    "第1部分",
+    "第1部分",
+    "第1部分",
+    "第1部分",
+    "第1部分",
+    "第1部分",
+    "第3部分",
+    "第3部分"
+   ],
+   "final_context_chars": 4698,
+   "effective_query": "220kV 三芯海底电缆的内衬层厚度要求是什么？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+   "model_answer": "NOT_OBSERVABLE",
+   "labels": {
+    "document_selection": "PASS",
+    "answer_groundedness": "UNCERTAIN",
+    "cross_document_behavior": "NOT_NEEDED",
+    "conversation_continuity": "UNCERTAIN",
+    "refusal": "NONE",
+    "hallucination_suspicion": "NO",
+    "fabricated_numbers": "NOT_OBSERVABLE",
+    "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+   },
+   "round": 1
+  },
+  {
+   "user_query": "Q/GDW 73286 的通用规范与单芯/三芯专用规范分别规定什么？",
+   "context_turns": 0,
+   "retrieved_chunk_ids": [
+    "48f12a5a8ce5eb6c",
+    "c3a92b28cfd524d3",
+    "d5f07f5d24ec3cc7",
+    "ff6344911eb4df75",
+    "43e96b415797394b",
+    "8065ad3f4096ca30",
+    "646ab90775aa14a5",
+    "a0bd8a6bde77b17e"
+   ],
+   "retrieved_documents": [
+    "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+    "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+    "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+    "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用",
+    "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用",
+    "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用"
+   ],
+   "retrieved_sections": [
+    "NOT_OBSERVABLE",
+    "6 条文说明",
+    "3 与其他标准/文件的关系",
+    "3 与其他标准/文件的关系",
+    "NOT_OBSERVABLE",
+    "NOT_OBSERVABLE",
+    "3 与其他标准/文件的关系",
+    "3 与其他标准/文件的关系"
+   ],
+   "retrieved_parts": [
+    "第1部分",
+    "第1部分",
+    "第2部分",
+    "第3部分",
+    "第2部分",
+    "第3部分",
+    "第2部分",
+    "第3部分"
+   ],
+   "final_context_chars": 5279,
+   "effective_query": "Q/GDW 73286 的通用规范与单芯/三芯专用规范分别规定什么？   [NOT_OBSERVABLE at app level; harness passes the raw question]",
+   "model_answer": "NOT_OBSERVABLE",
+   "labels": {
+    "document_selection": "PASS",
+    "answer_groundedness": "UNCERTAIN",
+    "cross_document_behavior": "NOT_NEEDED",
+    "conversation_continuity": "UNCERTAIN",
+    "refusal": "NONE",
+    "hallucination_suspicion": "NO",
+    "fabricated_numbers": "NOT_OBSERVABLE",
+    "_provenance": "EXPLORATORY_JUDGMENT (deterministic heuristic; not a Gold Set)"
+   },
+   "round": 1
+  }
+ ]
+}
