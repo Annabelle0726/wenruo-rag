@@ -221,3 +221,17 @@ evaluator `tools/scripts/controlled_synthesis_evaluate.py`.
 Not determined and deliberately untouched: A/C root cause stays `NOT DETERMINED`; the generalisation
 risk table stays empty. No retrieval parameter, prompt, reranker, embedding or KB index was changed,
 and no ES/MySQL/MinIO write occurred.
+
+## Milestone - P0 retrieval reproducibility (FIRST_DIVERGENCE_STAGE)
+
+retrieval reproducibility: fixed-configuration runs are exactly reproducible
+
+240 runs (12 queries x 10 runs x 2 harness series) under the frozen parameters: every query returned an identical Top-8 window 10/10 in both series, Exact Match Rate 10/10 and Jaccard@K 1.0. The 10/21 divergence reported last round was NOT randomness: series B (chat_mdl=None, which is what the earlier behavioural harness effectively used) reproduces the old window 10/10, while series A with LLM decomposition active matches it 0/10.
+
+Query decomposition is the first and only configuration-sensitive stage. It calls an LLM with no temperature, top_p or seed, is gated by looks_composite(), returns an empty list when chat_mdl is None with no fallback, and is memoized in Redis for 24 hours, which is what currently masks its sampling randomness.
+routes_top_k=20 provenance: hardcoded NUMERIC_TOP_K=20 in query_router.py, raised into effect by max() in pipeline.py. Not a config leak, and the parameter was left untouched as instructed.
+
+New product-level finding: the dense leg calls a remote Gemini embedding API (gemini-embedding-1.0) on a free tier capped at 1000 requests per day. When the cap was reached the dense route failed with 429, was logged only as a warning, and the window was built from the remaining routes. Probe v1 recorded zero such failures so the stability result stands; probe v2 was partially degraded and every affected row is labelled.
+
+No fix, no parameter change, no index write. The first host evaluator script was clobbered by a tooling error during this round; its committed outputs stand and the stage evaluator is the surviving script.
+Paths: retrieval_reproducibility.md, retrieval_reproducibility.json, retrieval_stage_detail.md, retrieval_stage_raw.txt, retrieval_code_findings.md, tools/scripts/retrieval_reproducibility_probe.py, tools/scripts/retrieval_reproducibility_stage_probe.py, tools/scripts/retrieval_reproducibility_stage_evaluate.py, AGENTS.md
