@@ -296,3 +296,100 @@ segment state - and never from the scoring path itself, whose fusion arithmetic,
 pure functions of their inputs.
 
 No fix, no parameter change, and no index write was made in this addendum either.
+
+### Addendum 2 (same round): decomposition, routing and ordering chain
+
+## 13. Second forensics addendum: decomposition, routing and the ordering chain in detail
+
+Facts from the decomposition-path forensic pass (same round, read-only). One of them **refines the
+interpretation** in section 8; the rest add mechanism. None of them changes the headline.
+
+### 13.1 The LLM decomposition call, precisely
+
+- The single LLM call is `gen_json(rendered, "Output:\n", chat_mdl)`, and `gen_conf` keeps its `{}` default,
+  so the request body carries no `temperature`, `top_p`, `seed`, `max_tokens` or `stream` — provider defaults
+  apply. `_clean_conf` only filters keys; `_apply_model_family_policies` only removes sampling keys for some
+  families and never injects a temperature or seed.
+- The cache key is `xxh64(llm_name + system_prompt + user_prompt + gen_conf)` with a **24 h** TTL, which is why
+  the live log shows byte-identical sub-query lists 26 minutes apart. This is the only stabiliser.
+- `parse_sub_queries` truncates to `max_sub_queries`, so two cache-miss answers can differ in **cardinality** as
+  well as content. `max_sub_queries == 1` still calls the LLM; only `<= 0` disables it.
+
+### 13.2 REFINEMENT: `chat_mdl = None` does not reduce the pipeline to a single route
+
+Two **LLM-free** routes fire regardless of the chat model: the comparative side routes
+(`comparative_routes`, documented "No LLM call") and the normative-prose clause route (`clause_route`). The
+route list is `[question] + sub_queries + side_routes + [targeted]`.
+
+So the series A versus series B difference in section 8 is attributable specifically to the
+**LLM-generated sub-queries**, not to the entire route set. Series B still had side routes and still returned
+12-20 candidate pools; it simply lacked the model-written sub-queries. This does not change the conclusion
+(the divergence is a configuration difference, not randomness) but it makes the attribution precise, and it
+means a cold-cache comparison is the only way to observe raw LLM sampling variation.
+
+### 13.3 `routes_top_k` provenance, completed
+
+- `NUMERIC_TOP_K = 20`, `REVISION_TOP_K = 12`, `CONCEPTUAL_TOP_K = 10` (`query_router.py:69-73`), matched in rule
+  order numeric -> revision -> conceptual. The numeric rule fires on unit/number/model/table shapes such as
+  `220 kV` or `800 mm2`, which is why the business-critical queries in this round ran at 20 and the others at 12.
+- `dialog_service.py` does **not** pass `routes_top_k`, so the log reads `(configured 0.5 / 12)` — `0.5` is
+  `dialog.vector_similarity_weight`, `12` is the signature default. The pipeline then applies
+  `routes_top_k = max(decision.routes_top_k, resolve_final_top_n(final_top_n))` (`pipeline.py:236-242`).
+- Ruled out with evidence: signature default, config file, environment variable, and decomposition (it has no
+  such field). The warning fires whenever the routed value leaves the recommended `(10, 15)` band, so for a
+  numeric-shaped question it fires on every single request — by design, not as a symptom.
+
+### 13.4 Pool-dependent branching is the amplification mechanism
+
+Two branches are decided by the pool rather than by the question, and both are deterministic in themselves:
+
+1. Every route makes a first call at `similarity_threshold` and, if that returns nothing, a **second call at
+   `RECALL_FLOOR = 0.2`** (`multi_route.py:247/256`), which changes the ES `similarity` filter.
+2. `core_document_followup` triggers a **second whole retrieval pass over up to 3 extra routes** when the first
+   pool lacks core prose (`MIN_CORE_PROSE_PASSAGES = 4`, `MAX_CORE_DOCUMENT_ROUTES = 3`,
+   `pipeline.py:56/63/317-326`), then re-merges.
+
+Because both are functions of the pool, a small upstream change can change the route set, which then changes
+every downstream tie. This is the concrete route by which modest perturbations become whole-window
+differences, and it is consistent with the live `0 prose / 12 table` versus `11 prose / 1 table` observation.
+
+### 13.5 The ordering value is not the raw cosine
+
+`rank_score = base * penalty * boost` (`rerank.py:310-321`), with `base = rerank_score or similarity`,
+`HOLLOW_TABLE_PENALTY = 0.6`, `VALUE_LIST_PENALTY = 0.8`, `core_document_boost = 1.15`,
+`VALUE_PAIRING_BOOST = 1.3`. Every factor is a constant and the product is deterministic **for a fixed pool** —
+but each factor depends on pool composition (table versus prose mix, whether a table pairs the question
+figures, which document is core). Pool-dependent, not random.
+
+`select_context` never re-sorts: it returns `[chunk for chunk in ordered if chunk_key(chunk) in chosen_keys]`
+(`rerank.py:563`) after claiming slots in a fixed priority order — one slot per route, one per compared
+document, a prose floor, then score fill — with `math.ceil`-derived quotas. Deterministic given the pool, and
+the output order is the pool order.
+
+### 13.6 Sizing and the hard guard
+
+`rerank_candidates_count = max(configured or 64, top_k)` (`multi_route.py:294-295`), so the ES candidate fetch
+scales with the routed `top_k`; and `page * page_size > rerank_candidates_count` (`search.py:745`) turns a
+mismatch into a **hard failure** rather than a degraded result — the failure mode observed earlier in this
+workstream when the parameter was passed explicitly as `None`.
+
+### 13.7 Hash-order risk closed
+
+`PYTHONHASHSEED` is not pinned, but no hash-order-dependent construct reaches the candidate order: every `set`
+use on this chain is membership-only or truthiness-only (`resolve_compared_documents` and
+`resolve_core_documents` return sets, but consumers wrap them in `frozenset`, test membership, or iterate a
+list built from the already-ordered pool); there is no `list(set(...))` or `sorted(set(...))` in the retrieval
+package; dict iteration is insertion order derived from lists; the only hashing is a content-addressed
+`hashlib.sha1` used for table-family keys.
+
+### 13.8 Complete ordering inventory
+
+The package has exactly three ordering sites on the candidate path — `multi_route.py:195` (cross-route merge),
+`rerank.py:321` (`rank_score`) and `search.py:848` (stable `argsort` inside the store). Display-only sorts and
+the `sorted(policy.question_values)` canonicalisation do not affect candidate order. **None of the three has a
+tie-breaker**; ties fall through to insertion order, which decomposes into route order (preserved by
+`asyncio.gather`) times per-route store order.
+
+Effect on the conclusions: unchanged headline. A changed input can enter at the LLM sub-queries (on a cache
+miss) and at two pool-dependent branches; once the inputs and the pool are fixed, every ordering step is a pure
+function. No fix, no parameter change, no index write.
