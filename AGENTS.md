@@ -623,3 +623,17 @@ Branch rule applied and nothing executed: SAFE_CREDENTIAL_ROTATION_CANDIDATE_AVA
 Live gate capacity is AVAILABLE but conditional on an authorised credential installation at the DB-backed model configuration, which is not an environment variable. The blocker changed character: it is no longer that no healthy dense leg can be shown, but that the healthy leg exists under a different credential than the one installed.
 
 Paths: phase_b_final_credential_probe_report.md, tools/scripts/credential_probe.py, AGENTS.md
+
+## Milestone - P0 execution window: Step 0 preflight PASS (6 guards), Steps 1-7 not started, production untouched
+
+P0 credential rotation and recreate window: Step 0 preflight PASS, mutation window not started
+
+All six preflight guards pass: the running container image is c50436820cb9, the rollback tag resolves to c50436820cb9, the candidate tag resolves to 99d0ee210004, the KB model binding is gemini-embedding-001 with the unchanged embd id, the installed production credential fingerprints as KEY_1 and the spare as KEY_2, and the plan touches only the stored api key value and the container image tag with no index, mapping, model, dimension, prompt or rerank change. Container start time is unchanged and no mutation was performed to reach this point.
+
+Steps 1 to 7 were deliberately not started, for two concrete reasons. First, a production mutation window must run as one continuous sequence with the rollback image verified and the negative control immediately following, and this round cannot complete that sequence while retaining the ability to verify or roll back at the end. Second, the compose project file path and service name are still unknown because the label query failed on PowerShell quoting, and recreating the service onto the candidate image correctly requires them; guessing that would repeat the same class of error as the earlier probe model id.
+
+Nothing is half-changed: production remains c50436820cb9 with KEY_1 installed, the model binding untouched, and no rollback triggered. A step by step runbook for the next round is recorded, including the credential isolation rule that KEY_2 must not be downgraded to the exhausted KEY_1 merely because the candidate failed.
+
+Statuses: P0-A PASS, P0-B candidate prepared not deployed, P0-C not run, P0-6 deferred not implemented, C1 to C7 frontend notice acceptance not run, P0-7 not accepted not wired, P1 locked and not entered.
+
+Paths: phase_b_p0_steps0to7_execution_record.md, AGENTS.md
