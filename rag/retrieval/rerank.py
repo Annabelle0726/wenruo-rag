@@ -1,6 +1,6 @@
 #
 #  Copyright 2026 The InfiniFlow Authors. All Rights Reserved.
-#  Modifications Copyright 2026 绾跨紗宸ヤ笟鏅烘悳骞冲彴. All Rights Reserved.
+#  Modifications Copyright 2026 线缆工业智搜平台. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ question's routes recall different chapters, and those chapters do not score
 equally against the whole question: measured on the cable corpus with a
 five-parameter question, twelve near-identical parameter tables of the dimension
 the question leads with scored 0.596-0.603 and filled all twelve slots, while the
-``6.2.3 浜ゆ祦鐢靛帇璇曢獙`` clause the corpus does hold sat at 0.577 and was dropped -
+``6.2.3 交流电压试验`` clause the corpus does hold sat at 0.577 and was dropped -
 the same "the window is filled by one topic" failure the routes exist to undo,
 one stage later. One slot per route is therefore reserved before the remaining
 slots take the highest scoring passages left.
@@ -49,7 +49,7 @@ The fourth decision is about passage TYPE, and it is the one four live smoke
 tests turned up. A 涓撶敤鎶€鏈鑼?s bidder fill-in tables repeat every parameter
 name and unit a question uses, so they out-score the normative prose of the
 閫氱敤鎶€鏈鑼?and take the whole window; the answer layer then reports "鍙湁琛ㄦ牸锛?
-娌℃湁姝ｆ枃瑙勫畾" for a question whose clause IS in the corpus. When the question asks
+没有正文规定" for a question whose clause IS in the corpus. When the question asks
 for a rule (``seeks_clause``), the cut therefore reserves a PROSE floor, caps how
 much of the window tables may take, and orders the pool with a small table
 penalty (:class:`DiversityPolicy`). Nothing here can invent a prose passage that
@@ -65,6 +65,7 @@ from typing import Any, Sequence
 
 from common.misc_utils import thread_pool_exec
 from rag.retrieval.chunk_profile import (
+    carries_value,
     document_breakdown,
     document_key,
     document_name,
@@ -72,12 +73,17 @@ from rag.retrieval.chunk_profile import (
     is_hollow_table,
     is_prose_chunk,
     is_table_chunk,
+    paired_values,
     resolve_compared_documents,
     resolve_core_documents,
     summarize,
     table_family_key,
 )
-from rag.retrieval.decomposition import mentions_requirement, seeks_clause
+from rag.retrieval.decomposition import (
+    mentions_requirement,
+    question_values,
+    seeks_clause,
+)
 from rag.retrieval.multi_route import chunk_key
 
 _LOG = logging.getLogger(__name__)
@@ -104,7 +110,7 @@ TABLE_PENALTY = 0.85
 #: document repeat 800/1200 with blank value cells (``<td>800 </td><td></td>``, 20-64%
 #: empty). The question names those numbers, so it matches the EMPTY grids harder than
 #: the table that answers it, and the answer model then reports "800 鍜?1200 瀵瑰簲鐨勬暟鍊?
-#: 骞舵湭鍑虹幇" while holding a passage whose 800 row is blank. An unfilled grid is the
+#: 并未出现" while holding a passage whose 800 row is blank. An unfilled grid is the
 #: recogniser's failure, not evidence, so it is ordered below every comparable passage -
 #: never dropped, because a corpus whose tables are all sparse still needs them.
 HOLLOW_TABLE_PENALTY = 0.6
@@ -144,6 +150,25 @@ MAX_TABLE_FAMILY_PARTS = 4
 MAX_AUXILIARY_DOCUMENT_SHARE = 0.4
 #: Ordering nudge for a passage from the standard the question is about.
 CORE_DOCUMENT_BOOST = 1.15
+#: Ordering boost for a passage that PAIRS one of the question's own figures with a result.
+#:
+#: Measured on the live 220kV index (Part 2 = 40 table passages, 18 of them carrying
+#: ``800``/``1200``): exactly ONE passage holds the metal-sheath values
+#: (``3.9 对应 1×800mm2``, ``4.1 对应 1×1200mm2``, cells 100% filled), while fourteen
+#: others merely list the section series (``400 500 630 800 1000 1200 …``) and score
+#: HIGHER, because the fused score's text leg is a query-recall ratio and a parameter
+#: table repeats the question's numbers harder than the table that answers it. A name
+#: for a value is not the value: this is what makes the pairing passage win, and
+#: :data:`VALUE_LIST_PENALTY` is the other half of the same measurement.
+VALUE_PAIRING_BOOST = 1.3
+#: Ordering nudge down for a TABLE that names the question's figures and pairs none.
+#:
+#: Applied to tables only: a prose clause may legitimately name a section without
+#: writing its value ("1×800mm² 电缆的金属套厚度应符合表6"), and demoting the clause that
+#: states the rule would undo the prose floor. A table with no result beside the
+#: question's own figures is the structure recogniser's listing, not evidence.
+VALUE_LIST_PENALTY = 0.8
+
 #: Share of the window ONE document may take when the question COMPARES documents.
 #:
 #: Measured: "鈥﹀崟鑺笌涓夎姱瑕佹眰鏄惁涓€鑷达紵" over 銆奞/GDW 73286.2 绗?閮ㄥ垎(鍗曡姱)銆?and
@@ -166,7 +191,7 @@ class DiversityPolicy:
     full policy: a window reserved for prose is the only way it gets answered,
     since a fill-in table cannot state a rule. A question that merely mentions a
     requirement or a test gets the ordering nudge alone - a parameter table IS
-    the right source for 缁濈紭鐢甸樆璇曢獙鐨勬暟鍊兼槸澶氬皯, so its window is not reserved for
+    the right source for 绝缘电阻试验的数值是多少, so its window is not reserved for
     prose.
 
     On the document axis the policy applies ONLY when the corpus advertises a
@@ -183,6 +208,11 @@ class DiversityPolicy:
     sides and the pool holds the documents those sides point at, no single document
     may take more than :data:`MAX_COMPARED_DOCUMENT_SHARE` of it and each of those
     documents is reserved a slot (see :func:`select_context`).
+
+    One more axis is carried here rather than recomputed per passage: the literal
+    figures the question names (:func:`question_values`), which the ordering uses to
+    tell a passage that PAIRS a section with a result from one that only repeats the
+    section series. See :data:`VALUE_PAIRING_BOOST`.
     """
 
     min_prose: int = 0
@@ -193,6 +223,10 @@ class DiversityPolicy:
     core_documents: frozenset[str] = frozenset()
     max_document_share: float = 1.0
     compared_documents: frozenset[str] = frozenset()
+    #: The question's own literal figures, once the pool has voted on which of them
+    #: can discriminate. Empty for a question that names none (or names only figures
+    #: the whole pool carries), which leaves the ordering exactly as it was.
+    question_values: frozenset[str] = frozenset()
 
     @classmethod
     def for_question(cls, question: str, chunks: Sequence[dict] = ()) -> "DiversityPolicy":
@@ -207,6 +241,7 @@ class DiversityPolicy:
             # plain behaviour rather than capping the only document there is.
             "max_document_share": MAX_COMPARED_DOCUMENT_SHARE if len(compared) >= 2 else 1.0,
             "compared_documents": compared if len(compared) >= 2 else frozenset(),
+            "question_values": frozenset(question_values(question, chunks)),
         }
         if seeks_clause(question):
             return cls(
@@ -260,14 +295,28 @@ def apply_rank_adjustments(chunks: Sequence[dict], policy: DiversityPolicy) -> l
     comparable prose clause (``table_penalty``), a passage of the standard the question
     is about above one from an auxiliary file (``core_document_boost``), and a table
     whose cells are mostly EMPTY below a filled one (``HOLLOW_TABLE_PENALTY``) - the
-    last is what stops a blank 鎴潰 grid from out-ranking the table that fills it.
+    last is what stops a blank grid from out-ranking the table that fills it.
+
+    A fourth nudge applies only when the question names literal figures the pool can
+    still use (``policy.question_values``): a passage that PAIRS one of them with a
+    result beside it is raised (:data:`VALUE_PAIRING_BOOST`), and a TABLE that names
+    them and pairs none is lowered (:data:`VALUE_LIST_PENALTY`). It is the signal the
+    fused score cannot carry - its text leg rewards a parameter table for repeating the
+    question's own numbers - and it is measured: on the live 220kV index the answering
+    table sits below fourteen tables that only list the section series.
     """
+    values = tuple(sorted(policy.question_values))
     for chunk in chunks:
         base = _score(chunk, key="rerank_score") or _score(chunk)
         penalty = policy.table_penalty if is_table_chunk(chunk) else 1.0
         if is_table_chunk(chunk) and is_hollow_table(chunk):
             penalty *= HOLLOW_TABLE_PENALTY
         boost = policy.core_document_boost if policy.is_core_document(chunk) else 1.0
+        if values:
+            if paired_values(chunk, values):
+                boost *= VALUE_PAIRING_BOOST
+            elif is_table_chunk(chunk) and carries_value(chunk, values):
+                penalty *= VALUE_LIST_PENALTY
         chunk["rank_score"] = base * penalty * boost
     return sorted(chunks, key=lambda chunk: _score(chunk, key="rank_score"), reverse=True)
 
@@ -325,9 +374,9 @@ def select_context(ordered: Sequence[dict], top_n: int, policy: DiversityPolicy 
        ``policy.max_auxiliary_document_share`` of it from ONE auxiliary
        document (or ``policy.max_document_share`` from any one document, when the
        question compares sources), and never more than
-       :data:`MAX_TABLE_PER_DOCUMENT_SHARE` of it in TABLES from one document, so a
-       document whose long tables were split into row-batches cannot fill the window
-       with near-duplicates of itself and crowd out the one table that answers.
+       :data:`MAX_HOLLOW_TABLE_PER_DOCUMENT_SHARE` of it in EMPTY-GRID tables from one
+       document, so a document whose long tables were split into row-batches cannot fill
+       the window the window with near-duplicates of itself and crowd out the one table that answers.
 
     Both caps are quotas, not preferences: a slot a cap withholds is not handed
     to the passage the cap excluded just because nothing else is left, so a
@@ -454,10 +503,24 @@ def select_context(ordered: Sequence[dict], top_n: int, policy: DiversityPolicy 
     # the wrong side's passage (both sides' tables match the same parameters), so
     # the document itself is reserved for: without this the comparison is answered
     # from whichever document the score fill happens to prefer.
+    #
+    # The reserved slot goes to the side's BEST passage that PAIRS one of the question's
+    # own figures with a result, when it has one, because that is what the comparison is
+    # asked to read: a side whose window is filled with parameter tables that merely list
+    # the section series is represented on paper and not in fact. Measured on the live
+    # 220kV index - 40 table passages in Part 2, 18 of them naming 800/1200, ONE of them
+    # holding the metal-sheath values - the first-by-score passage of each side is such a
+    # listing, so "the document is present" was not enough. No extra slot is spent: this
+    # changes WHICH passage the reservation takes, never how many are reserved.
     if policy.compared_documents:
+        values = tuple(sorted(policy.question_values))
         for key in [document_key(chunk) for chunk in ordered if policy.is_compared_document(chunk)]:
-            for chunk in ordered:
-                if document_key(chunk) == key and take(chunk):
+            candidates = [chunk for chunk in ordered if document_key(chunk) == key]
+            if values:
+                pairing = [chunk for chunk in candidates if paired_values(chunk, values)]
+                candidates = pairing or candidates
+            for chunk in candidates:
+                if take(chunk):
                     break
 
     # 1c. a table's own parts are claimed together by ``take_batch`` below: a long table
@@ -550,7 +613,38 @@ def _select(ordered: Sequence[dict], top_n: int, *, policy: DiversityPolicy, rea
             math.ceil(top_n * policy.max_auxiliary_document_share),
             top_n,
         )
+    _warn_when_a_value_passage_was_cut(ordered, selected, policy)
     return selected
+
+
+def _warn_when_a_value_passage_was_cut(ordered: Sequence[dict], selected: Sequence[dict], policy: DiversityPolicy) -> None:
+    """Name the document whose value-bearing passage the cut left out.
+
+    The one passage that pairs the question's own figures with results is the passage
+    the answer is read from, and it can sit below the cut while a dozen tables that only
+    repeat those figures fill the window - measured on the live 220kV index. When that
+    happens the transcript has to say WHICH side lost it, or the next smoke test reads
+    as a bad answer with no cause attached.
+    """
+    values = tuple(sorted(policy.question_values))
+    if not values:
+        return
+    kept = {chunk_key(chunk) for chunk in selected}
+    missing: list[str] = []
+    for chunk in ordered:
+        if chunk_key(chunk) in kept or not paired_values(chunk, values):
+            continue
+        name = document_name(chunk) or document_key(chunk) or "-"
+        if name not in missing:
+            missing.append(name)
+    if not missing:
+        return
+    _LOG.warning(
+        "[Rerank] the cut dropped result-bearing passage(s) for %s, in %s; the question names %s and the window is filled by passages that only repeat them",
+        ", ".join(missing),
+        document_breakdown(selected),
+        ", ".join(values),
+    )
 
 
 def _warn_when_the_pool_cannot_satisfy_the_floor(pool: Sequence[dict], policy: DiversityPolicy) -> None:

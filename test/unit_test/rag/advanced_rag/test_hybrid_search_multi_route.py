@@ -175,7 +175,12 @@ async def test_top_n_still_caps_what_the_search_returns(store, decomposition_nod
     res = await search_tools.hybrid_search(_Tools(similarity_threshold=0.55), query=_QUESTION, top_n=2)
 
     assert len(res["chunks"]) == 2
-    assert set(store.page_sizes) == {2}, "the caller's window is the window each route gets"
+    # `top_n` is the TOOL's answer size, not the recall window: the query router owns the
+    # window (it widens it for a question shape that leans on exact tokens - this one does,
+    # to 20), and every route is given the same one. A widened window only means the cut
+    # had more to choose from; it may never change what the caller asked to receive.
+    assert len(set(store.page_sizes)) == 1, "every route gets the same window"
+    assert min(store.page_sizes) >= 2, "the window can never be narrower than the answer"
 
 
 async def test_the_caller_threshold_and_compile_filter_reach_every_route(store, decomposition_node):

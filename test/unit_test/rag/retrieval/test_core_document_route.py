@@ -142,10 +142,16 @@ async def test_the_follow_up_searches_the_standard_scoped_to_its_doc_id(decompos
     await _run(store)
 
     scoped = _scoped_calls(store)
+    unscoped = [call for call in store.calls if not call["doc_ids"]]
     assert scoped, "the standard was out-numbered, so it must be searched directly"
     assert {call["doc_ids"][0] for call in scoped} == {_STANDARD_DOC}
     assert [call["question"] for call in scoped] == _SUB_QUERIES, "the atomic dimensions come first"
-    assert all(call["page_size"] == 12 for call in scoped), "the deep pass uses the same per-route window"
+    # The same per-route window the first pass used. The claim is "the deep pass does not
+    # narrow it", not a number: the query router widens the window for a question shape
+    # that leans on exact tokens (this one does), so the caller's own window is the only
+    # value the follow-up has to agree with.
+    assert unscoped
+    assert {call["page_size"] for call in scoped} == {call["page_size"] for call in unscoped}, "the deep pass uses the same per-route window"
 
 
 async def test_the_follow_up_is_capped_and_logged(decomposition_node, caplog):

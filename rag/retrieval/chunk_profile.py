@@ -132,6 +132,89 @@ def is_prose_chunk(chunk: dict) -> bool:
     return not is_table_chunk(chunk) and not is_image_chunk(chunk)
 
 
+#: A figure as a passage writes it: ``800``, ``3.9``, ``0.95``.
+_NUMBER_RE = re.compile(r"\d+(?:\.\d+)?")
+
+#: A dotted figure that is a COORDINATE, not a measurement: ``Q/GDW 73286.2``,
+#: ``GB/T 19666``, ``表6.2``, ``第5.3.3条``. Only the token in front of it can tell the
+#: two apart - ``73286.2`` and ``3.9`` are the same shape.
+_REFERENCE_NUMBER_RE = re.compile(
+    r"(?:Q\s*/?\s*GDW|GB\s*/?\s*T|GB|DL\s*/?\s*T|JB\s*/?\s*T|NB\s*/?\s*T|YD\s*/?\s*T|IEC|ISO|第|表|图|附录)\s*\d+(?:[.\-/]\d+)+",
+    re.IGNORECASE,
+)
+
+#: How close a result figure has to sit to a section designation to count as its VALUE.
+#:
+#: Measured on the Part 2 document of the 220kV report: the table that answers the
+#: metal-sheath thickness question writes `3.9` five characters from `1x800mm2`,
+#: while the parameter tables that merely LIST the section series put their only decimal
+#: (`99.9` - the conductor's purity) more than forty characters from any of them. 20
+#: keeps the pairing this corpus actually writes and rejects that coincidence.
+VALUE_RESULT_WINDOW = 20
+
+
+def _values_text(chunk: dict) -> str:
+    """The passage as flat text, for matching figures written either way."""
+    return _plain(_content(chunk))
+
+
+def number_tokens(chunk: dict) -> set[str]:
+    """Every figure the passage carries, as written (``800``, ``3.9``, ``0.95``)."""
+    return set(_NUMBER_RE.findall(_values_text(chunk)))
+
+
+def result_figures(chunk: dict) -> set[str]:
+    """The figures that read as a MEASUREMENT rather than as a coordinate.
+
+    Only a decimal can be a measurement in a cable standard, and a decimal that is part
+    of a standard designation, a table number or a clause number is a coordinate. This is
+    what tells a table that PAIRS a section with a thickness from a parameter table that
+    only lists the section series - the distinction the cut needs, since both carry the
+    question's own numbers.
+    """
+    text = _values_text(chunk)
+    coordinates: set[str] = set()
+    for match in _REFERENCE_NUMBER_RE.finditer(text):
+        coordinates.update(_NUMBER_RE.findall(match.group(0)))
+    return {token for token in _NUMBER_RE.findall(text) if "." in token and token not in coordinates}
+
+
+def paired_values(chunk: dict, values: Sequence[str]) -> set[str]:
+    """The question's own figures this passage pairs with a RESULT beside them.
+
+    The question names sections (``800 mm虏``, ``1200 mm虏``); the passage it needs is
+    the one that puts a thickness next to each of them. A passage that merely repeats
+    the numbers - a connector table listing ``400 500 630 800 1000 1200 ...`` - carries
+    the question's figures and answers nothing, and the fused score cannot tell the two
+    apart because the text leg rewards the repetition.
+    """
+    text = _values_text(chunk)
+    if not text:
+        return set()
+    results = result_figures(chunk)
+    if not results:
+        return set()
+    paired: set[str] = set()
+    for value in values or ():
+        wanted = str(value)
+        if not wanted:
+            continue
+        for match in re.finditer(rf"(?<!\d){re.escape(wanted)}(?!\d)", text):
+            window = text[max(0, match.start() - VALUE_RESULT_WINDOW) : match.end() + VALUE_RESULT_WINDOW]
+            if any(token in results for token in _NUMBER_RE.findall(window)):
+                paired.add(wanted)
+                break
+    return paired
+
+
+def carries_value(chunk: dict, values: Sequence[str]) -> bool:
+    """Whether the passage names any of the question's own figures at all."""
+    if not values:
+        return False
+    text = _values_text(chunk)
+    return any(re.search(rf"(?<!\d){re.escape(str(value))}(?!\d)", text) for value in values if value)
+
+
 def table_family_key(chunk: dict) -> str | None:
     """Identify the TABLE a passage is a part of, or ``None`` when it is not a part.
 

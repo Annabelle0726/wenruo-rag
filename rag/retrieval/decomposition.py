@@ -49,7 +49,7 @@ from typing import Sequence
 
 from rag.prompts.generator import PROMPT_JINJA_ENV, gen_json
 from rag.prompts.template import load_prompt
-from rag.retrieval.chunk_profile import comparison_sides
+from rag.retrieval.chunk_profile import carries_value, comparison_sides
 
 _LOG = logging.getLogger(__name__)
 
@@ -142,6 +142,71 @@ def strip_section_references(text: str) -> str:
     stripped = _LEADING_SECTION_NUMBER_RE.sub("", stripped)
     stripped = _WHITESPACE_RE.sub(" ", stripped).strip(" 　的,，、;；:：")
     return stripped if len(stripped) >= 2 else original.strip()
+
+
+#: A figure in a question: ``800``, ``1200``, ``3.9``, ``0.6``.
+_QUESTION_NUMBER_RE = re.compile(r"\d+(?:[.．]\d+)?")
+
+#: How many of a question's own figures the cut will target. Two to four is what a
+#: comparative parameter question names, and every extra one is a pass over the pool.
+MAX_QUESTION_VALUES = 6
+
+#: A figure is only worth matching when the pool does NOT already carry it everywhere.
+#:
+#: ``220kV`` is named by most passages of a 220kV corpus, so matching on it would move
+#: every candidate by the same factor - noise dressed as a signal. Measured on the live
+#: 220kV index: ``800`` and ``1200`` appear in 18 of the Part 2 document's 40 table
+#: passages (45%), which discriminates; ``220`` appears in nearly all of them.
+MAX_VALUE_POOL_SHARE = 0.8
+
+
+def question_values(question: str, chunks: Sequence[dict] = ()) -> list[str]:
+    """The literal figures a question asks about, in the order it names them.
+
+    ``"针对 800 mm² 与 1200 mm² 的单芯与三芯电缆"`` -> ``["800", "1200"]``. These are the
+    one class of term a passage can be checked against without a model: the answer
+    either writes the figure the question named or it does not.
+
+    Structural coordinates are dropped first (``第5章``, ``6.2.2``, ``附录A``, and the
+    table/figure labels that go with them), because a chapter number is not a value to
+    match on. What remains has to be at least two digits or carry a decimal part, which
+    keeps ``800``/``1200``/``3.9``/``0.6`` and drops the ``1`` of ``1×800`` and a bare
+    "第 2 部分" style index that survived the strip.
+
+    With a pool, a figure the pool already carries nearly everywhere is dropped as
+    well: it cannot separate the passage that answers from the ones that do not. A
+    question whose every figure is that common returns NO values, which turns the
+    value-aware ordering off rather than adding a uniform nudge to every candidate.
+    """
+    text = _WHITESPACE_RE.sub(" ", strip_section_references(str(question or ""))).strip()
+    if not text:
+        return []
+
+    found: list[str] = []
+    for match in _QUESTION_NUMBER_RE.finditer(text):
+        token = match.group(0).replace("．", ".")
+        digits = token.replace(".", "")
+        if len(digits) < 2 and "." not in token:
+            continue
+        if token not in found:
+            found.append(token)
+    if not found:
+        return []
+
+    pool = list(chunks or ())
+    if pool:
+        discriminating = [value for value in found if _pool_share(value, pool) <= MAX_VALUE_POOL_SHARE]
+        # Every figure is common to the pool: there is nothing to target.
+        found = discriminating
+    return found[:MAX_QUESTION_VALUES]
+
+
+def _pool_share(value: str, pool: Sequence[dict]) -> float:
+    """The share of the pool's passages that carry ``value``."""
+    if not pool:
+        return 0.0
+    hits = sum(1 for chunk in pool if carries_value(chunk, (value,)))
+    return hits / len(pool)
 
 
 def looks_composite(question: str) -> bool:
