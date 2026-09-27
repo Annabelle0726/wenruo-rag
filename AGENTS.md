@@ -525,3 +525,19 @@ Nothing was deployed: the verified candidate image 99d0ee210004 remains undeploy
 Unblock path: confirm the key from inside a container that reaches the API, rotate the credential at its real injection point, then recreate from the verified image and run the negative control before the synthetic injections.
 
 Paths: phase_b_p0c_credential_rotation_blocked.md, AGENTS.md
+
+## Milestone - Key probe (404 model-not-found) + quota-notice chain audit (read-only)
+
+phase B: key probe, deployed call shape and quota-notice chain audit (read-only)
+
+Call shape confirmed from the deployed source: search.py line 105 calls emb_mdl.encode_queries with a plain string, and GeminiEmbed.encode_queries takes a string, builds EmbedContentConfig with TaskType RETRIEVAL_DOCUMENT and returns a tuple of vector and token count. The previous probe failure was my own list-versus-string mistake, raised before any network call, not a credential or quota signal.
+
+Probe: exactly two provider requests, one per key, through the deployed client. Both key one and key two returned HTTP 404 NOT_FOUND with the provider message that models/gemini-embedding-1.0 is not found for API version v1beta or is not supported for embedContent. Authentication passed, because an invalid key yields 401 or 403, and no quota answer was received, because quota rejection is a structured 429. Both keys are therefore NOT_DETERMINED, dimension and norm are unmeasured so compatibility is NOT_APPLICABLE, and quota independence is NOT VERIFIED rather than guessed. Per the red line I stopped instead of probing alternative model ids or calling ListModels.
+
+Production implication: the same model id is what this deployment requests, so the live failure mode may have moved from 429 quota to 404 model-not-found. The candidate maps that to EMBEDDING_UNAVAILABLE rather than EMBEDDING_QUOTA_EXHAUSTED, which is correct, but it would block the healthy-path negative control for a reason unrelated to quota.
+
+Chain audit. Operator observability: today a route failure is an unstructured warning with no reason code, while the candidate adds the additive retrieval_health DTO with overall, evidence_completeness and degradation_reason, but the event it builds is only appended in process, so log and metrics and trace transparency is NOT WIRED and an operator sees no change yet. No consumer of retrieval_health or degradation_reason exists anywhere in the backend. Assistant disclosure: NOT IMPLEMENTED by design, no code path reads the health block so answers contain no refusal or degradation notice, which is the required decoupling. Frontend: USER_VISIBLE_QUOTA_NOTICE NOT IMPLEMENTED, since a search of web source for degradation_reason, retrieval_health and evidence_completeness found no matches and consumers read only reference chunks and doc aggs, so degraded retrieval is invisible to the user both before and after this candidate.
+
+No production mutation of any kind.
+
+Paths: phase_b_key_probe_and_quota_notice_audit.md, tools/scripts/credential_probe.py, AGENTS.md
