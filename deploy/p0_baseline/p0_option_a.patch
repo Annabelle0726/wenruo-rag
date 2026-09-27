@@ -1,0 +1,69 @@
+--- rag/retrieval/pipeline.py (deployed baseline)
++++ rag/retrieval/pipeline.py (p0 candidate)
+@@ -186,6 +186,15 @@
+     )
+     return scope, ", ".join(names) or ", ".join(scope), queries
+ 
++
++from rag.retrieval.health_bridge import (
++    attach_retrieval_health,
++    begin_retrieval_health,
++    mark_empty_window,
++    mark_no_question,
++    report_route_failure,
++    report_route_success,
++)
+ 
+ async def retrieve_multi_route(
+     *,
+@@ -224,8 +233,10 @@
+       sets 12 for a measured reason - see ``api/db/cable_defaults.py``).
+     """
+     question = " ".join(str(question or "").split())
++    begin_retrieval_health()
+     if not question:
+-        return empty_kbinfos()
++        mark_no_question()
++        return attach_retrieval_health(empty_kbinfos())
+ 
+     # Adaptive routing (module D): the query SHAPE decides the two legs' balance
+     # and the recall window, in memory, for this request only. Nothing is written
+@@ -308,7 +319,8 @@
+ 
+     merged = await _retrieve(routes, doc_ids)
+     if not merged.get("chunks"):
+-        return empty_kbinfos()
++        mark_empty_window()
++        return attach_retrieval_health(empty_kbinfos())
+ 
+     # Second chance for the standard: the cut can rebalance what was recalled, but
+     # it cannot bring back a clause no route retrieved. When an auxiliary document
+@@ -326,4 +338,4 @@
+         _LOG.info("[Multi-route] document-scoped follow-up on %s added %d passage(s) (%d -> %d in the pool)", scope_name, len(merged["chunks"]) - before, before, len(merged["chunks"]))
+ 
+     chunks = await rerank_chunks(rerank_mdl, merged["chunks"], question, final_top_n)
+-    return {"total": merged.get("total", len(chunks)), "chunks": chunks, "doc_aggs": merged.get("doc_aggs", [])}
++    return attach_retrieval_health({"total": merged.get("total", len(chunks)), "chunks": chunks, "doc_aggs": merged.get("doc_aggs", [])})
+--- rag/retrieval/multi_route.py (deployed baseline)
++++ rag/retrieval/multi_route.py (p0 candidate)
+@@ -304,7 +304,7 @@
+ 
+     async def _guard(query: str) -> RouteResult:
+         try:
+-            return await _retrieve_route(
++            result = await _retrieve_route(
+                 retriever,
+                 query,
+                 embd_mdl=embd_mdl,
+@@ -320,8 +320,11 @@
+                 must_not=must_not,
+                 allow_dense_fallback=allow_dense_fallback,
+             )
++            report_route_success()
++            return result
+         except Exception as exc:  # noqa: BLE001 - one dead route must not sink the others
+             _LOG.warning("[Multi-route] route %r failed: %s", query[:80], exc)
++            report_route_failure(exc)
+             return RouteResult(query=query, failed=True)
+ 
+     hits = await asyncio.gather(*[_guard(query) for query in routes])

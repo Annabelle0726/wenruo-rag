@@ -1,0 +1,76 @@
+{
+  "gate": "P0 Option-A Semantic-Diff Gate",
+  "baseline": {
+    "pipeline.py": {
+      "lines": 329,
+      "sha256": "12541e7e6f2d7bbbacd3840e0754d6ebb52aeae75a38f1f04e3952505503f31c"
+    },
+    "multi_route.py": {
+      "lines": 337,
+      "sha256": "6b5484a4245bb7474f3c86e58d367ffd99caab54fcd74f360f55d5973b1ca1d7"
+    }
+  },
+  "candidate": {
+    "pipeline.py": {
+      "lines": 341
+    },
+    "multi_route.py": {
+      "lines": 340
+    }
+  },
+  "diff_hunks": 6,
+  "gates": [
+    {
+      "scope": "pipeline.py",
+      "checks": {
+        "function_set_unchanged": true,
+        "all_signatures_unchanged": true,
+        "except_types_unchanged": true,
+        "try_block_count_unchanged": true,
+        "preserved_call_sites_unchanged": true,
+        "return_count_unchanged": true,
+        "returns_only_wrapped_not_altered": true,
+        "only_reporter_calls_introduced": true,
+        "no_module_level_statement_removed": true,
+        "module_level_additions_are_import_only": true,
+        "module_level_sequence_preserved": true
+      },
+      "passed": true,
+      "introduced_calls": [
+        "attach_retrieval_health",
+        "begin_retrieval_health",
+        "mark_empty_window",
+        "mark_no_question"
+      ],
+      "added_module_level_nodes": 1,
+      "bind_then_return_proofs": {}
+    },
+    {
+      "scope": "multi_route.py",
+      "checks": {
+        "function_set_unchanged": true,
+        "all_signatures_unchanged": true,
+        "except_types_unchanged": true,
+        "try_block_count_unchanged": true,
+        "preserved_call_sites_unchanged": true,
+        "return_count_unchanged": true,
+        "returns_only_wrapped_not_altered": true,
+        "only_reporter_calls_introduced": true,
+        "no_module_level_statement_removed": true,
+        "module_level_additions_are_import_only": true,
+        "module_level_sequence_preserved": true
+      },
+      "passed": true,
+      "introduced_calls": [
+        "report_route_failure",
+        "report_route_success"
+      ],
+      "added_module_level_nodes": 0,
+      "bind_then_return_proofs": {
+        "multi_route_retrieve:result": "assignment value identical to the baseline return; temporary used exactly twice (assignment + return)",
+        "_guard:result": "assignment value identical to the baseline return; temporary used exactly twice (assignment + return)"
+      }
+    }
+  ],
+  "verdict": "PASS"
+}

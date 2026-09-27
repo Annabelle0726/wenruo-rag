@@ -477,3 +477,21 @@ Item 4: only one image exists, my-wenruorag:latest with id c50436820cb9, and it 
 No retrieval behaviour changed, no code modified, no container file patched, no service restarted, no image tagged or rebuilt.
 
 Paths: phase_b_p0_deployment_readiness.md, AGENTS.md
+
+## Milestone - Phase B P0 Option A: rollback tag verified + Semantic-Diff Gate PASS (build not authorized)
+
+phase B P0 Option A: rollback tag, deployed baseline extraction, Semantic-Diff Gate
+
+Rollback tag executed and verified: my-wenruorag:rollback-pre-p0-20260927 resolves to sha256:c50436820cb99f0244b29d2443c9de184b97896c82c060ac8bd58ef04aa190b0, which is the exact required digest and equals the running container image. latest is unchanged and the container was neither restarted nor recreated.
+
+Option A baseline: the deployed 329-line pipeline.py was extracted read-only with docker exec cat, sha256 F3A1AF567F7F3DBC84C77AA4E91A2540449083B28D69E251E9403E273386C6BB. multi_route.py needs no extraction because the in-tree file matches the deployed one line for line. Nothing from HEAD is adopted: cross_part_fallback and the hoisted _retrieve stay out of the deployment.
+
+Candidate: pipeline.py 329 to 341 lines, multi_route.py 337 to 340 lines, 6 hunks, plus a new reporter-only bridge. HealthSession.route_execution is not used anywhere in the candidate, so the RouteResult contract cannot be shadowed. In the guard, reporting sits beside the existing success and except branches and the success path returns the identical object it bound from the unchanged call.
+
+Semantic-Diff Gate PASS on both files over eleven checks including identical AST dumps of every retrieval call site and every RouteResult construction, identical except types and try-block counts, identical function signatures, only the six reporter entry points introduced, returns either wrapped in exactly one attach call or proven bind-then-return, and module-level changes limited to an import. The gate initially failed twice on its own defects, whole-body module comparison and an unrecognised declared rewrite plus a prefix bug; the gate was corrected, not the candidate.
+
+Honest limits: the import lands before the entry function rather than in the top import block though a relocation is gate-neutral; return analysis is subtree-wide and therefore conservative; an empty question maps to PLAN_EMPTY and an empty window to a selection leg with THRESHOLD_EMPTY so nothing usable can ever be reported as a clean run; evidence stays capped at partial until the P1 authority validator exists, which means constraint-bearing questions will refuse under the deployed policy until then.
+
+Nothing built, nothing recreated, live acceptance BLOCKED_BY_QUOTA and no substitute PASS claimed.
+
+Paths: phase_b_p0_option_a_semantic_diff.md, deploy/p0_baseline/pipeline.py, deploy/p0_baseline/pipeline.p0-candidate.py, deploy/p0_baseline/multi_route.p0-candidate.py, deploy/p0_baseline/p0_option_a.patch, deploy/p0_baseline/p0_option_a_semantic_diff_result.json, rag/retrieval/health_bridge.py, tools/scripts/p0_option_a_candidate.py, AGENTS.md
