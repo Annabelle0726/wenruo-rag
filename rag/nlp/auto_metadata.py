@@ -98,7 +98,12 @@ _STANDARD_NO_RE = re.compile(r"(Q/GDW|GB/T|GB|DL/T|IEC)\s*\d+(?:\.\d+)?(?:\s*-\s
 #: CJK in this corpus ("450/750V及以下") and ``\b`` does not fire between "V" and a
 #: CJK character.
 _VOLTAGE_UNIT = r"(?:kV|KV|kv|V)(?![0-9A-Za-z])"
-_VOLTAGE_RE = re.compile(r"(?:\d+(?:\.\d+)?\s*[/_]\s*)?\d+(?:\.\d+)?\s*" + _VOLTAGE_UNIT + r"(?:\s*[～~\-—]\s*\d+(?:\.\d+)?\s*" + _VOLTAGE_UNIT + r")?")
+#: The separator of a compound rating, in every spelling the corpus uses: "/" in text,
+#: "_" in a file name (a slash cannot appear in one), and the FULLWIDTH "／" - the
+#: 450／750V document is named with it, and missing it reported "750V" as the level,
+#: which is half the rating and wrong for both display and matching.
+_VOLTAGE_SEP = r"[/_／]"
+_VOLTAGE_RE = re.compile(r"(?:\d+(?:\.\d+)?\s*" + _VOLTAGE_SEP + r"\s*)?\d+(?:\.\d+)?\s*" + _VOLTAGE_UNIT + r"(?:\s*[～~\-—]\s*\d+(?:\.\d+)?\s*" + _VOLTAGE_UNIT + r")?")
 
 #: Document types as the corpus names them.
 DOC_TYPE_KEYWORDS = ("通用技术规范", "专用技术规范", "采购范本", "技术条件", "数据手册")
@@ -118,6 +123,11 @@ _CORE_COUNT_WORDS = {"单芯": 1, "双芯": 2, "两芯": 2, "三芯": 3, "四芯
 
 #: ``3×400``, ``1x800``, ``3 × 25`` - the construction spelling of a core count.
 _CORE_CONSTRUCTION_RE = re.compile(r"(?<!\d)([1-5])\s*[×xX*]\s*\d")
+
+#: How dominant one construction count has to be in a document's head before it is
+#: reported as the document's own: the general part of a standard lists ``1×…`` AND
+#: ``3×…`` sections, so a bare majority there is an artefact, not a fact.
+CORE_COUNT_MAJORITY = 0.8
 
 _YEAR_RE = re.compile(r"(?:19|20)\d{2}")
 
@@ -241,6 +251,37 @@ def _core_type(scan: str) -> str:
     return ""
 
 
+def core_type_of(filename: str, text: str, *, scan_chars: int = REGEX_SCAN_CHARS) -> str:
+    """The core count for a WHOLE document, name first.
+
+    Measured while previewing a backfill: the plain :func:`_core_type` scan read the
+    three-core part of the 220kV standard as 单芯, because the part's body contains
+    ``1×…`` rows somewhere and the keyword list is tried in a fixed order before the
+    file name is looked at separately. A file name that SAYS the count is the document
+    speaking about itself, so it is asked first; only when it says nothing does the
+    head get a vote, and then only a construction count that dominates the head
+    (:data:`CORE_COUNT_MAJORITY`) - the general part of a standard lists every section
+    of every core count, and giving it a count would be a wrong, filterable fact.
+    """
+    named = _core_type(_scan_text(filename, "", 0))
+    if named:
+        return named
+    counts: dict[int, int] = {}
+    for match in _CORE_CONSTRUCTION_RE.finditer(str(text or "")[: max(0, int(scan_chars or 0))]):
+        count = int(match.group(1))
+        counts[count] = counts.get(count, 0) + 1
+    if not counts:
+        return ""
+    total = sum(counts.values())
+    count, hits = max(counts.items(), key=lambda item: item[1])
+    if hits / total < CORE_COUNT_MAJORITY:
+        return ""
+    for word, value in _CORE_COUNT_WORDS.items():
+        if value == count:
+            return word
+    return ""
+
+
 def _year(scan: str) -> str:
     match = _YEAR_RE.search(scan)
     return match.group(0) if match else ""
@@ -254,7 +295,7 @@ def extract_by_regex(filename: str, text: str, *, scan_chars: int = REGEX_SCAN_C
     fields = {
         "standard_no": _standard_no(scan, filename),
         "voltage_level": _voltage_level(scan),
-        "core_type": _core_type(scan),
+        "core_type": core_type_of(filename, text, scan_chars=scan_chars),
         "doc_type": _doc_type(scan),
         "year": _year(scan),
     }

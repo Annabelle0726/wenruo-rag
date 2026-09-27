@@ -372,6 +372,41 @@ def test_a_model_answer_may_fill_the_core_count():
     assert am.parse_llm_fields({"core_type": "三芯", "standard_no": "Q/GDW 73286.3"}) == {"core_type": "三芯", "standard_no": "Q/GDW 73286.3"}
 
 
+def test_the_file_name_outranks_the_body_for_the_core_count():
+    """Measured while previewing a backfill: the 三芯 part of the 220kV standard was read
+    as 单芯, because its tables list ``1×…`` rows and the keyword list was tried in a
+    fixed order over name+head together."""
+    name = "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf"
+    head = "表1 电缆结构技术参数表\n标称截面 mm2\n1×400\n1×500\n1×630\n1×800\n"
+
+    assert am.core_type_of(name, head) == "三芯"
+    assert am.extract_by_regex(name, head)["core_type"] == "三芯"
+
+
+def test_a_generic_part_gets_no_core_count_when_the_head_mixes_both():
+    """《第1部分：通用技术规范》 lists every section of every core count: a count read
+    off that head would be a wrong, filterable fact, so none is reported."""
+    name = "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+    head = "表1 结构参数表\n1×400\n1×800\n3×400\n3×800\n1×1200\n3×1200\n"
+
+    assert am.core_type_of(name, head) == ""
+
+
+def test_a_head_that_is_almost_all_one_construction_still_reports_it():
+    name = "低烟无卤阻燃电力电缆规格书.pdf"
+    head = "规格 mm2\n3×400\n3×500\n3×630\n3×800\n3×1000\n1×400\n"
+
+    assert am.core_type_of(name, head) == "三芯"
+
+
+def test_a_fullwidth_slash_does_not_split_a_compound_rating():
+    """The 450／750V document is NAMED with a fullwidth slash; missing it reported 750V,
+    which is half the rating - wrong for display and wrong for a filter."""
+    fields = am.extract_by_regex("450／750V聚氯乙烯绝缘电缆采购标准+第2部分：专用技术规范.pdf", "")
+
+    assert fields["voltage_level"] == "450／750V"
+
+
 def test_the_core_count_is_part_of_the_asked_fields_and_of_the_prompt():
     assert "core_type" in am.METADATA_FIELDS
     assert "core_type" in am._METADATA_SYSTEM_PROMPT
