@@ -1,0 +1,169 @@
+{
+  "gate": "P0 fault-injection acceptance",
+  "external_quota_consumed": 0,
+  "injections": 6,
+  "passed": 6,
+  "failed": 0,
+  "silent_degradation_observed": 0,
+  "rows": [
+    {
+      "id": "DENSE_429_EVIDENCE_FULL",
+      "injection": "dense leg fails with the remote embedding quota exhausted, lexical recall fully sufficient",
+      "overall": "degraded",
+      "degradation_reason": "EMBEDDING_QUOTA_EXHAUSTED",
+      "degraded_legs": [
+        "dense"
+      ],
+      "evidence_completeness": "full",
+      "policy": {
+        "narrative": "answer_with_disclosure",
+        "constraint_bearing": "answer"
+      },
+      "contract_violations": [],
+      "checks": {
+        "overall_correct": true,
+        "reason_correct": true,
+        "policy_correct": true,
+        "no_contract_violation": true,
+        "no_silent_degradation": true,
+        "notices_present": true,
+        "additive_field_only": true,
+        "no_unrestricted_answer_after_failure": true
+      },
+      "passed": true
+    },
+    {
+      "id": "DENSE_429_EVIDENCE_PARTIAL",
+      "injection": "dense leg fails and the surviving evidence covers only part of the question",
+      "overall": "degraded",
+      "degradation_reason": "EMBEDDING_QUOTA_EXHAUSTED",
+      "degraded_legs": [
+        "dense"
+      ],
+      "evidence_completeness": "partial",
+      "policy": {
+        "narrative": "answer_with_disclosure",
+        "constraint_bearing": "refuse_insufficient"
+      },
+      "contract_violations": [],
+      "checks": {
+        "overall_correct": true,
+        "reason_correct": true,
+        "policy_correct": true,
+        "no_contract_violation": true,
+        "no_silent_degradation": true,
+        "notices_present": true,
+        "additive_field_only": true,
+        "no_unrestricted_answer_after_failure": true
+      },
+      "passed": true
+    },
+    {
+      "id": "PLANNER_VALIDATION_FAILED",
+      "injection": "planner output rejected by schema validation and replaced by the deterministic pass-through plan",
+      "overall": "degraded",
+      "degradation_reason": "PLAN_VALIDATION_FAILED",
+      "degraded_legs": [
+        "decomposition"
+      ],
+      "evidence_completeness": "partial",
+      "policy": {
+        "narrative": "answer_with_disclosure",
+        "constraint_bearing": "refuse_insufficient"
+      },
+      "contract_violations": [],
+      "checks": {
+        "overall_correct": true,
+        "reason_correct": true,
+        "policy_correct": true,
+        "no_contract_violation": true,
+        "no_silent_degradation": true,
+        "notices_present": true,
+        "additive_field_only": true,
+        "no_unrestricted_answer_after_failure": true
+      },
+      "passed": true
+    },
+    {
+      "id": "EMPTY_PLAN",
+      "injection": "planner returns no sub-queries; the pass-through plan is used but evidence is insufficient",
+      "overall": "degraded",
+      "degradation_reason": "PLAN_EMPTY",
+      "degraded_legs": [
+        "decomposition"
+      ],
+      "evidence_completeness": "insufficient",
+      "policy": {
+        "narrative": "refuse_insufficient",
+        "constraint_bearing": "refuse_insufficient"
+      },
+      "contract_violations": [],
+      "checks": {
+        "overall_correct": true,
+        "reason_correct": true,
+        "policy_correct": true,
+        "no_contract_violation": true,
+        "no_silent_degradation": true,
+        "notices_present": true,
+        "additive_field_only": true,
+        "no_unrestricted_answer_after_failure": true
+      },
+      "passed": true
+    },
+    {
+      "id": "LEXICAL_FAILED",
+      "injection": "lexical leg fails while the dense leg succeeds; evidence is partial",
+      "overall": "degraded",
+      "degradation_reason": "STORE_UNAVAILABLE",
+      "degraded_legs": [
+        "lexical"
+      ],
+      "evidence_completeness": "partial",
+      "policy": {
+        "narrative": "answer_with_disclosure",
+        "constraint_bearing": "refuse_insufficient"
+      },
+      "contract_violations": [],
+      "checks": {
+        "overall_correct": true,
+        "reason_correct": true,
+        "policy_correct": true,
+        "no_contract_violation": true,
+        "no_silent_degradation": true,
+        "notices_present": true,
+        "additive_field_only": true,
+        "no_unrestricted_answer_after_failure": true
+      },
+      "passed": true
+    },
+    {
+      "id": "TOTAL_FAILURE",
+      "injection": "both evidence legs fail",
+      "overall": "failed",
+      "degradation_reason": "STORE_UNAVAILABLE",
+      "degraded_legs": [
+        "lexical",
+        "dense"
+      ],
+      "evidence_completeness": "insufficient",
+      "policy": {
+        "narrative": "refuse_failed",
+        "constraint_bearing": "refuse_failed"
+      },
+      "contract_violations": [],
+      "checks": {
+        "overall_correct": true,
+        "reason_correct": true,
+        "policy_correct": true,
+        "no_contract_violation": true,
+        "no_silent_degradation": true,
+        "notices_present": true,
+        "additive_field_only": true,
+        "no_unrestricted_answer_after_failure": true
+      },
+      "passed": true
+    }
+  ],
+  "failures": [],
+  "verdict": "PASS"
+}

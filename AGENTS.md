@@ -425,3 +425,21 @@ Includes a traceability matrix from every Phase A finding to its Phase B item, s
 No code, no diffs, no parameter change. Phase A remains frozen.
 
 Paths: phase_b_architecture_plan.md, phase_b_backlog.json, AGENTS.md
+
+## Milestone - Phase B P0 implemented: retrieval health contract + fault-injection gate
+
+phase B P0: retrieval health contract implementation with fault-injection gate
+
+Contract module, dependency-free: two strictly separate layers per R2.5, execution_health with per-leg status success/degraded/failed/skipped/not_triggered/unknown plus enumerated reason codes and route counts, and evidence_state with completeness full/partial/insufficient plus support level and authority. Aggregation is monotonic worst-of: neutral legs are excluded, an unreported leg counts as unknown and therefore denies full, all evidence legs failed yields failed, and insufficient evidence can never report full, which is gate G7 expressed in code.
+
+Answer policy per R2.1: the criterion is evidence sufficiency for the claim type rather than leg status. Failed refuses every factual answer, insufficient refuses for both question risks, partial answers with mandatory disclosure for narrative and refuses for constraint-bearing, and full completeness with a failed dense leg still permits a constraint-bearing answer because the evidence itself was proven sufficient.
+
+Interop: attach_health is additive and preserves chunks, doc_aggs and total byte for byte, and api_view exposes exactly overall, evidence_completeness and degradation_reason. JSON round trip and unknown reason codes stay visible rather than being dropped.
+
+P0 gate: fault injection with zero external quota across six injected states, dense 429 with full and with partial evidence, planner validation failure, empty plan, lexical failure and total failure, asserting correct status, reason code, policy action, no contract violation, no silent degradation and no unrestricted answer after a failure.
+
+Unit tests cover aggregation, neutrality, unreported and unknown legs, the silent-degradation invariant, insufficient-evidence-never-full, the full answer-policy matrix, additivity and JSON round trip.
+
+Deployment note: the running container executes its own revision with no bind mount, so this lands in the repository and its gates run on the host; deploying it into the container needs a rebuild and separate authorization, and Phase A artifacts stay frozen.
+
+Paths: rag/retrieval/health.py, test/unit_test/rag/retrieval/test_retrieval_health.py, tools/scripts/p0_fault_injection.py, p0_fault_injection_result.json, phase_b_architecture_plan.md, AGENTS.md

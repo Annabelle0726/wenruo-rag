@@ -281,3 +281,115 @@ rather than a degraded substitute — the same discipline this characterization 
 **Standing constraints for every item:** no retrieval-parameter tuning, no prompt/reranker/embedding changes, no KB
 index writes, no modification of the frozen Phase A artifacts, and no change that cannot be explained by a named
 finding in the traceability matrix.
+
+---
+
+# Revision 2 — approved decisions (binding, supersedes conflicting text above)
+
+Revision 2 was approved by the project owner. Where earlier text disagrees with this section, **this section wins**.
+
+## R2.1 D1 / D3 — answer policy graded by question risk
+
+| Question class | Evidence state | Required behaviour |
+| --- | --- | --- |
+| Narrative / explanation | degraded | answer allowed, **disclosure mandatory** |
+| Constraint-bearing / numeric / standard-compliance | a key evidence leg failed and completeness cannot be proven | **definitive conclusion forbidden**; must return evidence-incomplete / cannot-verify |
+| any | failed | **refuse every factual answer** |
+
+The decision criterion is **not** "did the dense leg fail" but "**is evidence completeness sufficient for this
+question's claim type**". This is why the contract must expose the two layers of R2.5 separately: a degraded
+execution layer can still carry fully sufficient evidence (for example a standard-identifier lookup whose evidence
+came entirely from the lexical leg), and in that case a constraint question may be answered.
+
+## R2.2 D2 — planner variance control contract
+
+Adopt **sampling pinning (`temperature=0`, explicit `seed`) + canonical order + schema validation + deterministic
+fallback** jointly.
+
+Positioning is explicit: **pinning is a variance-reduction aid and must never be treated as a correctness guarantee.**
+The system contract is carried by schema validation, canonical ordering, deduplication and the deterministic
+pass-through fallback, all of which hold even when a provider ignores or lacks the seed parameter.
+
+## R2.3 D4 — API exposure of retrieval health
+
+`chunks`, `doc_aggs` and `total` stay byte-compatible. An **additive** `retrieval_health` field is introduced.
+
+Internal Python callers receive a structured health object; the API layer stably exposes `overall`,
+`evidence_completeness` and a publishable `degradation_reason`. **Burying the state in log traces only is
+forbidden.**
+
+## R2.4 D7 — quota circuit breaker and availability control
+
+Implement the **circuit breaker and budget guard first**.
+
+**A fallback embedding model must never be swapped in at query time to search an existing vector index** — that
+introduces vector-space semantic mismatch and uncontrolled noise. No fallback model may be introduced until an
+independent vector representation exists and vector compatibility has been verified.
+
+## R2.5 Architecture distinction — Retrieval Health is NOT Evidence Sufficiency
+
+```
+RetrievalHealth
+ ├─ execution_health (machine-determined)
+ │    ├─ lexical / dense / decomposition / followup / rerank
+ │    └─ status: success | degraded | failed
+ └─ evidence_state (semantic sufficiency)
+      ├─ completeness: full | partial | insufficient
+      └─ support_level / authority
+```
+
+The first layer is machine-determined execution health; the second layer is the semantic judgement of whether the
+evidence is sufficient to support an answer. They are reported separately and **both** feed the answer policy of
+R2.1. Collapsing them into one field is prohibited, because it would make a mere leg failure indistinguishable from
+genuine evidence insufficiency.
+
+## R2.6 Gate G6 revision
+
+**G6 — No Unjustified Cross-Family Contamination** (replaces the earlier absolute rule):
+
+- **Single-target query:** contamination by an unrelated document family is strictly forbidden.
+- **Comparison / cross-document query:** justified cross-family evidence retrieval is allowed **and required**.
+
+## R2.7 P0 implementation plan — Retrieval Health Contract
+
+**Deliverable 1: the contract module.** New dependency-free module `rag/retrieval/health.py`:
+
+- Enumerations: `LegStatus` (success / degraded / failed / skipped / not_triggered / unknown), `OverallStatus`
+  (full / degraded / failed), `ReasonCode` (enumerated failure reasons), `Completeness`
+  (full / partial / insufficient), `QuestionRisk` (narrative / constraint_bearing),
+  `AnswerAction` (answer / answer_with_disclosure / refuse_insufficient / refuse_failed).
+- Structures: `ExecutionHealth` (per-leg status, route counts attempted vs succeeded, reason),
+  `EvidenceState` (completeness, support level, authority, families), `RetrievalHealth` (execution + evidence +
+  alerts + versions).
+- Aggregation: **monotonic worst-of**, where skipped and not-triggered legs are neutral (they neither grant nor deny
+  `full`), any failed evidence leg caps the result below `full`, all evidence legs failed yields `failed`, and an
+  unknown or missing leg status is never `full`.
+- Invariants (violations are reportable, not silently tolerated): a non-`full` status must carry at least one reason
+  code; `insufficient` evidence must never report `full` (this is gate G7 in code form); a failed leg must carry a
+  reason.
+- Policy: `decide_answer_action(health, risk)` implementing R2.1 exactly, plus a generic disclosure notice with no
+  domain vocabulary.
+- Interop: `api_view()` exposing precisely `overall`, `evidence_completeness`, `degradation_reason`;
+  `attach_health(result, health)` adding the field while preserving every existing key; JSON round-trip.
+
+**Deliverable 2: producer wiring (deployment-gated).** Per-route outcome captured where routes are isolated and at
+the recall-floor rescue; aggregation in the retrieval entry point beside the existing keys; selection and follow-up
+legs reported; the decomposition leg fed by the plan validation outcome (P1).
+
+**Deliverable 3: propagation.** One structured event per retrieval, counters per leg and reason, trace attributes,
+and the health object passed to synthesis as an input constraint.
+
+**Deliverable 4: the P0 gate — fault injection with zero external quota.** Inject dense 429, planner validation
+failure, empty plan and lexical failure through test doubles; assert for each: correct status and reason code,
+monotonic `overall`, correct evidence state, and the policy action required by R2.1; assert that **no injected
+failure produces a silent degradation** (every non-`full` health carries at least one reason and never yields an
+unrestricted answer).
+
+**Deployment note.** The running container executes its own revision and shares no bind mount with this tree, so this
+code lands in the repository and its unit and fault-injection gates run on the host. Deploying it into the running
+container requires a rebuild and is a separate authorization; no container file is patched in place, and Phase A
+artifacts stay frozen.
+
+**Stage order (single-threaded, as instructed).** P0 contract → P0 fault-injection gate → P1 planner normalisation
+and schema contract → P1 gate precision with a corpus-independent synthetic suite → P2 deterministic tie-breaker →
+holdout final acceptance. No parallel workstreams, and tie-breaker work does not start early.
