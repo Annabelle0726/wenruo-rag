@@ -17,7 +17,7 @@ jest.mock('@/components/image', () => ({
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => (key === 'common.figure' ? '图' : key),
+    t: (key: string) => key,
   }),
 }));
 
@@ -59,9 +59,10 @@ describe('ReferenceImageList citation mapping', () => {
 
     const images = screen.getAllByTestId('doc-image');
     expect(images).toHaveLength(1);
-    // [ID:5] is the fifth chunk, i.e. index 4 of the pool.
+    // [ID:5] is the fifth chunk, i.e. index 4 of the pool. The badge repeats the
+    // marker verbatim so a reader can match it to the `[5]` in the answer.
     expect(images[0].dataset.id).toBe('kb-5');
-    expect(images[0].dataset.label).toBe('图 5');
+    expect(images[0].dataset.label).toBe('[5]');
   });
 
   it('maps the first citation to the first chunk', () => {
@@ -75,7 +76,7 @@ describe('ReferenceImageList citation mapping', () => {
     const images = screen.getAllByTestId('doc-image');
     expect(images).toHaveLength(1);
     expect(images[0].dataset.id).toBe('kb-1');
-    expect(images[0].dataset.label).toBe('图 1');
+    expect(images[0].dataset.label).toBe('[1]');
   });
 
   it('renders nothing for a marker outside the pool instead of a phantom figure', () => {
@@ -128,7 +129,7 @@ describe('ReferenceImageList citation mapping', () => {
     const images = screen.getAllByTestId('doc-image');
     expect(images).toHaveLength(1);
     expect(images[0].dataset.id).toBe('kb-5');
-    expect(images[0].dataset.label).toBe('图 5');
+    expect(images[0].dataset.label).toBe('[5]');
     expect(container.textContent).not.toContain('NaN');
   });
 });

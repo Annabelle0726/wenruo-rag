@@ -53,24 +53,39 @@ const getButtonVisibilityClass = (imageCount: number) => {
 
 function ImagePhotoView({ id, index }: ImageItem) {
   const src = useDocumentImageUrl(id);
-  const { t } = useTranslation();
 
-  return (
-    <PhotoView src={src}>
-      <Image
-        id={id}
-        className="h-40 w-full"
-        label={`[${index + 1}]`}
-      />
-    </PhotoView>
+  const thumbnail = (
+    <Image id={id} className="h-40 w-full" label={`[${index + 1}]`} />
   );
+
+  // Nothing may be registered with the viewer before its URL exists. A pending
+  // registration is not repaired in place: the viewer renders the very entries it
+  // holds, and an entry still carrying the empty string the resolver started with
+  // renders no <img> at all — a plain black screen behind a correct "3 / 5"
+  // counter and a working toolbar. Registering each figure only once its blob URL
+  // is in hand also keeps the registration order the carousel order, so slide `n`
+  // is the figure labelled `[n]`.
+  if (!src) {
+    return thumbnail;
+  }
+
+  return <PhotoView src={src}>{thumbnail}</PhotoView>;
 }
 
 function ImageCarousel({ images }: { images: ImageItem[] }) {
+  const { t } = useTranslation();
   const buttonVisibilityClass = getButtonVisibilityClass(images.length);
 
   return (
     <PhotoProvider
+      // The viewer paints its own black backdrop, and a slide whose image cannot
+      // be decoded (a revoked blob URL, a 404) renders nothing there — the same
+      // black screen as a working image that never painted. Say so instead.
+      brokenElement={
+        <span className="text-sm text-white/80">
+          {t('common.imageLoadFailed', 'Failed to load image')}
+        </span>
+      }
       // className="[&_.PhotoView-Slider__toolbarIcon]:hidden"
       toolbarRender={({ rotate, onRotate, scale, onScale }) => {
         return (
