@@ -637,3 +637,19 @@ Nothing is half-changed: production remains c50436820cb9 with KEY_1 installed, t
 Statuses: P0-A PASS, P0-B candidate prepared not deployed, P0-C not run, P0-6 deferred not implemented, C1 to C7 frontend notice acceptance not run, P0-7 not accepted not wired, P1 locked and not entered.
 
 Paths: phase_b_p0_steps0to7_execution_record.md, AGENTS.md
+
+## Milestone - Deployment target RESOLVED via read-only compose metadata discovery (no mutation)
+
+read-only deployment target discovery: compose metadata resolved, no mutation
+
+Measured from the running container metadata rather than inferred from host layout. Container name wenruo-rag-cpu, id 87f4c3f7508e, running image reference my-wenruorag latest with image id c50436820cb9 as required. Compose project wenruo-rag, service wenruo-rag-cpu, working dir the docker directory inside the repository, and config file the tracked docker compose yml.
+
+Two findings that matter for the recreate: the compose file is a tracked repository artifact so its drift is reviewable in git, and the compose image label resolves to a different digest than the running container, which is exactly why the recreate must pin the candidate tag explicitly instead of relying on the compose default.
+
+Runtime configuration recorded: 141 environment variables all from the compose service with no env file label, secrets reported as names only; three bind mounts covering logs, the service conf template and the entrypoint script, with application code not bind mounted, consistent with the earlier finding that the image is the only code delivery path; network wenruo-rag_ragflow with published ports 443, 80 and 9380 to 9384; restart policy unless-stopped; and no healthcheck configured, so readiness after recreate must be asserted by the live negative control rather than by container health.
+
+Targets verified: candidate tag resolves to 99d0ee210004 and rollback tag resolves to c50436820cb9, so DEPLOYMENT_TARGET is RESOLVED and the recreate can be expressed as a compose invocation with the image pinned, never a bare docker run.
+
+No Step 1 action, no credential change, no recreate, restart, build, patch, DB access or container mutation; running image and start time unchanged after the discovery.
+
+Paths: phase_b_deployment_target_discovery.md, AGENTS.md
