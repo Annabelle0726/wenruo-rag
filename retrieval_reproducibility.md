@@ -722,3 +722,62 @@ the deployed multi-route path reaches the store through its own route helpers.
 - No retrieval parameter, prompt, reranker, embedding, or index entry was modified in this round.
 
 No fix, no parameter change, and no index write was performed in this round.
+
+## 12. Late-arriving forensics addendum (same round, read-only)
+
+Additional facts from a second read-only forensic pass that landed after sections 1-11 were written. They
+do not change the measurement, but they add mechanism and refine several details.
+
+- **Live assistant configuration differs from the frozen harness configuration.** Canary logs show
+  `routes_top_k=20, threshold=0.55, vector_weight=0.25, rerank_candidates=30`, and a query-router line
+  reporting `vector_weight=0.25, routes_top_k=20 (configured 0.5 / 12)`. The frozen harness used
+  `threshold=0.2` and `vector_weight=0.6`, so absolute pool sizes here are not directly comparable with
+  live assistant traffic.
+- **The live path keeps 12 passages, not 8.** `rerank.py DEFAULT_FINAL_TOP_N = 8` is overridden by the cable
+  default `TOP_N = 12` (`api/db/cable_defaults.py:69`), matching the log line
+  `26 candidate(s) -> 12 passage(s) kept`. The frozen harness used `final_top_n=8`.
+- **ES candidate fetch size vs route cut.** The ES fetch is sized by `rerank_candidates_count`
+  (`search.py` default 64, cable default 30) while the per-route page cut is `routes_top_k` (12 default,
+  10 or 20 from the router) at `search.py:859-863`. The pool sizes recorded in section 10 (12 / 20 / 19 / 31)
+  are consistent with `routes_top_k`-derived cuts.
+- **Threshold-rescue branching is divergence-capable by construction.** The live log shows
+  `retrying at the 0.20 recall floor` 67 times: the 0.55-gated pass returned nothing and a second ES call
+  with `similarity=0.20` filled the route. That branch changes the ES similarity filter. It did not trigger
+  under the frozen 0.2 threshold used in this round.
+- **The lexical `query_string` is part of the kNN filter, not only a scoring clause.** The kNN `filter` is the
+  whole bool-query snapshot, and the helper meant to strip it (`_build_knn_filter_query`, `es_conn.py:75-97`)
+  is dead code whose call site is commented out (`es_conn.py:268`). Dense recall therefore depends on lexical
+  matching through an approximate filtered HNSW traversal.
+- **A second approximate kNN leg scores the candidates** (`_knn_scores`): `topn = len(sres.ids)` with no
+  `num_candidates`, so `k = len(ids)` and `num_candidates = 2k`. Small `num_candidates` is a second
+  approximation surface.
+- **`bool_query.boost` evaluates to 0.0** because the fusion weights are hardcoded `0.001,1`
+  (`search.py:331` -> `es_conn.py:236-244`), so the lexical clause inside the kNN request acts purely as a
+  pre-filter rather than as a score contribution.
+- **No pagerank or tag-feature writer exists in `rag/`, `api/`, or `common/`** (`adjust_chunk_pagerank_fea`
+  has no caller). Those fields still feed the fused score with weight 10 (`search.py:519-531`), so any
+  out-of-tree writer would be invisible to this review.
+- **Deployment inconsistency:** `conf/mapping.json` defines dense-vector dynamic templates only for 512 / 768 /
+  1024 / 1536 dimensions, yet the live field `q_3072_vec` exists with `dims: 3072`. The live mapping was
+  therefore not produced by that file.
+- **Embedding backend discrepancy:** the container environment advertises `TEI_MODEL=Qwen/Qwen3-Embedding-0.6B`,
+  while this round observed the query-embedding path failing against `gemini-embedding-1.0` with a free-tier
+  quota error. The observed failure is direct evidence; the environment variable describes a different service
+  and should not be read as the query-embedding provider.
+
+### Reconciliation with the measurement in sections 3-7
+
+The second pass also found cross-turn divergence in **live assistant traffic**: the same question with the same
+five routes produced merged pools of `26 / 25 / 25 / 27 / 27` passages drawn from 1-3 documents, and final
+windows of differing composition (`0 prose / 12 table` versus `11 prose / 1 table`). That traffic runs the
+0.55 threshold with threshold-rescue branching, the 12-passage cut, and whatever embedding-quota state applied
+at the time, whereas this round measured a fixed configuration.
+
+The two observations are consistent and together they localise the problem: **with the configuration pinned,
+the pipeline reproduced exactly in 240 runs (10/10 identical windows, Jaccard@K 1.0, bit-identical query
+embeddings).** The live divergence must therefore come from a changed *input* or *configuration* - the
+threshold-rescue branch, a dense route dropped by embedding-quota exhaustion, a changed query vector, or index
+segment state - and never from the scoring path itself, whose fusion arithmetic, stable sort and cut bounds are
+pure functions of their inputs.
+
+No fix, no parameter change, and no index write was made in this addendum either.
