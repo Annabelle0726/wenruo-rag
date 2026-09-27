@@ -133,19 +133,13 @@ def document_headers(chunks, metadata):
 
 
 def projected_body(chunk: dict, metadata: rp.CanonicalMetadata, section: str) -> tuple[str, str]:
-    """``(header, retrieval text)`` for ONE chunk, with its own section."""
-    per_chunk = rp.CanonicalMetadata(
-        document_id=metadata.document_id,
-        title=metadata.title,
-        document_type=metadata.document_type,
-        category=metadata.category,
-        document_standard_no=metadata.document_standard_no,
-        referenced_standard_nos=metadata.referenced_standard_nos,
-        attributes={**metadata.attributes, **({"section": section} if section else {})},
-        evidence=list(metadata.evidence),
-    )
-    header = rp.render_retrieval_header(per_chunk)
-    return header, rp.retrieval_text(str(chunk.get("content_with_weight") or ""), header)
+    """``(header, retrieval text)`` for ONE chunk, with its own section.
+
+    Delegates to the library's :func:`retrieval_projection.project_chunk` so that the
+    migration and the readiness checker are literally the same code: an executor with its
+    own projection and an auditor with a second one would produce two truths.
+    """
+    return rp.project_chunk(str(chunk.get("content_with_weight") or ""), metadata, section)
 
 
 def plan(args, auth):

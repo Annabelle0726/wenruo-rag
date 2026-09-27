@@ -418,6 +418,52 @@ def split_retrieval_header(text: str) -> tuple[str, str]:
     return match.group(0).rstrip(), body[match.end() :]
 
 
+def project_chunk(stored_body: str, metadata: CanonicalMetadata, section: str = "") -> tuple[str, str]:
+    """``(header, retrieval_text)`` for ONE passage - THE projection, and the only one.
+
+    Both the migration that writes and every checker that audits it call this: an executor
+    with its own algorithm and an auditor with a second one produce two truths, and the
+    audit then proves nothing about what was written. The section is per passage (see
+    :data:`SECTION_FIELD`), so it is an argument rather than part of the document metadata.
+    """
+    per_chunk = CanonicalMetadata(
+        document_id=metadata.document_id,
+        title=metadata.title,
+        document_type=metadata.document_type,
+        category=metadata.category,
+        document_standard_no=metadata.document_standard_no,
+        referenced_standard_nos=metadata.referenced_standard_nos,
+        attributes={**metadata.attributes, **({"section": section} if section else {})},
+        evidence=list(metadata.evidence),
+    )
+    header = render_retrieval_header(per_chunk)
+    return header, retrieval_text(stored_body, header)
+
+
+def token_fields(body: str, *, language: str = "Chinese") -> dict[str, str]:
+    """The lexical fields a stored body must carry - THE re-tokenization, and the only one.
+
+    A rewritten body's tokens are REBUILT from that body (header tokens + a fresh
+    tokenization of the raw part), never the old token string with a prefix glued on: the
+    stored tokens belonged to the text that was there before. The migration and every
+    checker call this, so the two cannot disagree about what the stored fields should be.
+    """
+    from rag.nlp import rag_tokenizer
+
+    header, raw = split_retrieval_header(body)
+    rag_tokenizer.tokenizer.set_language(language or "Chinese")
+    header_tokens = rag_tokenizer.tokenize(header + " ") if header else ""
+    body_tokens = rag_tokenizer.tokenize(raw)
+    fine_tokens = rag_tokenizer.fine_grained_tokenize(header_tokens) if header_tokens else ""
+    fields: dict[str, str] = {}
+    coarse = " ".join(part for part in (header_tokens, body_tokens) if part)
+    if coarse.strip():
+        fields["content_ltks"] = coarse
+    if fine_tokens.strip():
+        fields["content_sm_ltks"] = " ".join(part for part in (fine_tokens, rag_tokenizer.fine_grained_tokenize(body_tokens)) if part)
+    return fields
+
+
 def retrieval_text(raw_chunk: str, header: str) -> str:
     """``retrieval_header + raw_chunk`` - the text the retrieval legs index.
 
