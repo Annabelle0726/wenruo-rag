@@ -113,3 +113,46 @@ def test_a_document_with_no_hits_still_reports_what_was_searched():
     assert report["chunks"] == 2
     assert report["shapes"] == {"table-html": 1, "text": 1}
     assert "NOT FOUND" in audit_tool.render(report)
+
+
+# ---------------------------------------------------------------------------
+# Standing up the document store: the first version of this tool forgot this
+# ---------------------------------------------------------------------------
+
+
+def test_the_connector_is_initialized_when_settings_are_not(monkeypatch):
+    """`docStoreConn` is None until `init_settings()` runs - running the tool as a
+    plain script must do what the server does at startup, or every query raises
+    `'NoneType' object has no attribute 'search'`."""
+    from common import settings
+
+    calls = []
+    monkeypatch.setattr(settings, "docStoreConn", None)
+    monkeypatch.setattr(settings, "init_settings", lambda: (calls.append(True), setattr(settings, "docStoreConn", "connector"))[0])
+
+    assert audit_tool.doc_store_conn() == "connector"
+    assert calls == [True], "the initialization ran exactly once"
+
+
+def test_an_already_initialized_connector_is_used_as_is(monkeypatch):
+    from common import settings
+
+    monkeypatch.setattr(settings, "docStoreConn", "already-there")
+    monkeypatch.setattr(settings, "init_settings", lambda: pytest.fail("must not re-initialize"))
+
+    assert audit_tool.doc_store_conn() == "already-there"
+
+
+def test_a_misconfigured_engine_says_so_instead_of_raising_attribute_error(monkeypatch):
+    from common import settings
+
+    monkeypatch.setattr(settings, "docStoreConn", None)
+    monkeypatch.setattr(settings, "init_settings", lambda: None)
+
+    with pytest.raises(SystemExit) as exit_info:
+        audit_tool.doc_store_conn()
+
+    message = str(exit_info.value)
+    assert "docStoreConn None" in message
+    assert "DOC_ENGINE" in message
+    assert "service_conf.yaml" in message

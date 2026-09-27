@@ -230,6 +230,39 @@ def _rows_of(results: Any) -> list[dict]:
     return []
 
 
+def doc_store_conn():
+    """The configured document-store connector, initialized like any other entry point.
+
+    ``settings.docStoreConn`` is ``None`` until ``settings.init_settings()`` runs: the
+    API server (`api/apps/__init__.py`), the admin server and the task executor all call
+    it at startup, and a standalone script has to do the same - which is why the first
+    version of this tool failed with ``'NoneType' object has no attribute 'search'``.
+    It has to run BEFORE the api services are imported, because they take their database
+    configuration from what it loads.
+    """
+    from common import settings
+
+    if settings.docStoreConn is None:
+        settings.init_settings()
+    if settings.docStoreConn is None:
+        raise SystemExit(
+            "the document store is not configured: settings.init_settings() left docStoreConn None.\n"
+            f"  DOC_ENGINE={os.environ.get('DOC_ENGINE', '(unset)')}\n"
+            "  Check DOC_ENGINE and the matching section of conf/service_conf.yaml in this container."
+        )
+    return settings.docStoreConn
+
+
+def _document_count() -> int | str:
+    """How many documents this database holds; makes an empty lookup diagnosable."""
+    try:
+        from api.db.services.document_service import DocumentService
+
+        return DocumentService.model.select().count()
+    except Exception as exc:  # noqa: BLE001 - a diagnostic must not mask the real answer
+        return f"unreadable ({type(exc).__name__})"
+
+
 def _resolve_documents(doc_id: str | None, name: str | None) -> list[dict]:
     from api.db.db_models import Knowledgebase
     from api.db.services.document_service import DocumentService
@@ -261,12 +294,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     from common import settings
     from rag.nlp.search import index_name as index_name_of
 
+    # Settings first: it loads `conf/service_conf.yaml` (the doc store AND the database
+    # the document lookup uses), and the api services below read that configuration.
+    conn = doc_store_conn()
     documents = _resolve_documents(args.doc_id, args.name)
     if not documents:
-        print("no document matched; check --doc-id/--name")
+        total = _document_count()
+        print(f"no document matched --doc-id/--name; this database holds {total} document(s).")
         return 2
 
-    conn = settings.docStoreConn
     reports = []
     for document in documents:
         index = index_name_of(document["tenant_id"])
@@ -284,9 +320,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         reports.append(report)
 
     if args.json:
-        print(json.dumps(reports, ensure_ascii=False, indent=2, default=str))
+        print(json.dumps({"engine": settings.DOC_ENGINE, "reports": reports}, ensure_ascii=False, indent=2, default=str))
         return 0
 
+    print(f"doc engine: {settings.DOC_ENGINE}")
     for report in reports:
         print(f"=== {report['document']['name']} ({report['document']['id']}) ===")
         print(f"index: {report['document']['index']}")
