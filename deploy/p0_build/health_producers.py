@@ -21,8 +21,12 @@ The module is dependency-free apart from the contract itself.
 from __future__ import annotations
 
 import importlib.util
+import json
+import logging
 import pathlib
 import sys
+
+_LOG = logging.getLogger(__name__)
 
 _CONTRACT = pathlib.Path(__file__).resolve().parent / "health.py"
 if "rag_retrieval_health_contract" not in sys.modules:  # tolerate both package and file loading
@@ -211,7 +215,50 @@ class HealthSession:
             "contract_violations": health.validate(),
         }
         self.events.append(event)
+        self._log_operator_event(health)
         return event
+
+    #: P0-7 operator event: the complete set of fields that may reach the log sink.
+    OPERATOR_EVENT_FIELDS = (
+        "event",
+        "schema_version",
+        "overall",
+        "reason",
+        "evidence_completeness",
+        "legs",
+        "contract_valid",
+        "routes_attempted",
+        "routes_succeeded",
+    )
+
+    def _log_operator_event(self, health: RetrievalHealth) -> None:
+        """Write exactly ONE structured line per retrieval to the operator log.
+
+        The payload is built as an explicit literal, never by spreading a session or a report object,
+        so no exception text, provider body, query text, chunk content or credential can reach the log
+        even if such a field is ever added downstream. `legs` carries member names and status enums
+        only, which is why it is safe to include.
+
+        Exactly-once is structural: the first emission wins and any later `build()`/`emit_event()` on
+        the same session is a no-op for the sink.
+        """
+        if self.__dict__.get("_operator_event_logged"):
+            return
+        self.__dict__["_operator_event_logged"] = True
+
+        counters = self.__dict__.get("_route_counters") or {}
+        payload = {
+            "event": "retrieval_health",
+            "schema_version": health.schema_version,
+            "overall": health.overall.value,
+            "reason": health.degradation_reason(),
+            "evidence_completeness": health.evidence.completeness.value,
+            "legs": {name: leg.status.value for name, leg in self.legs.items()},
+            "contract_valid": health.validate() == [],
+            "routes_attempted": int(counters.get("attempted", 0) or 0),
+            "routes_succeeded": int(counters.get("succeeded", 0) or 0),
+        }
+        _LOG.info("[RetrievalHealth] %s", json.dumps(payload, ensure_ascii=False, sort_keys=True))
 
     def build_with_validation(self, validator) -> RetrievalHealth:
         """Aggregate and, only via an explicit validator, allow the evidence to be upgraded.

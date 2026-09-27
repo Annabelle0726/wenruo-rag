@@ -1,0 +1,11 @@
+# P0-7 Operator Observability — derived image (log-first structured event).
+#
+# Base pinned to the accepted corrected-UI image so this layer adds ONLY the producer change:
+# a single structured operator log line per retrieval, emitted from HealthSession.emit_event.
+#
+# No taxonomy change: ReasonCode and the DTO are untouched.
+#
+# Build:
+#   docker build -f deploy/p0_build/Dockerfile.p0_7 -t <tag> deploy/p0_build
+FROM my-wenruorag:p0-6-ui-copy-984e7036
+COPY health_producers.py /ragflow/rag/retrieval/health_producers.py
