@@ -131,3 +131,64 @@ def test_the_raw_body_is_never_touched_by_a_pass():
     for row, original in zip(migrated, DOCUMENT):
         _header, raw = rp.split_retrieval_header(row["content_with_weight"])
         assert raw == original
+
+
+# ---------------------------------------------------------------------------
+# The checker's state semantics and its structural validator
+# ---------------------------------------------------------------------------
+
+
+def _checker():
+    import importlib.util
+    import pathlib
+
+    path = pathlib.Path(__file__).resolve().parents[4] / "tools" / "scripts" / "phase_a_readiness_check.py"
+    spec = importlib.util.spec_from_file_location("phase_a_readiness_check", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.mark.parametrize(
+    ("changed", "census", "violations", "expected"),
+    [
+        (0, {"same_section": 0, "non_null_to_null": 0}, [], ("CONVERGED", 0)),
+        (60, {"same_section": 0, "non_null_to_null": 0}, [], ("READY_TO_MIGRATE", 0)),
+        (60, {"same_section": 58, "non_null_to_null": 0}, [], ("NOT_READY", 2)),
+        (60, {"same_section": 0, "non_null_to_null": 4}, [], ("NOT_READY", 2)),
+        (0, {"same_section": 0, "non_null_to_null": 0}, ["unparseable=3"], ("ERROR", 3)),
+    ],
+)
+def test_the_checker_reports_the_state_it_is_actually_in(changed, census, violations, expected):
+    """A converged corpus must NOT report a failure, and a phase number must not be hardcoded."""
+    assert _checker().migration_verdict(changed, census, violations) == expected
+
+
+def test_the_header_validator_judges_structure_not_spelling():
+    checker = _checker()
+    good = {"stored": rp.project_chunk("正文", _metadata(), "5.3.3 绝缘标称厚度")[1]}
+    no_header = {"stored": "正文"}
+    stacked = {"stored": "[标准号: Q/GDW 73286.2-2026 | 文档: x] " + good["stored"]}
+    placeholder = {"stored": rp.project_chunk("正文", _metadata(), "")[1].replace("芯数: 单芯", "芯数: -")}
+
+    clean = checker.validate_headers([good, no_header])
+    assert clean["unparseable"] == 1, "a body with no header is unparseable, and nothing else is wrong"
+    assert clean["not_round_trip"] == 0
+
+    assert checker.validate_headers([stacked])["double_header"] == 1
+    assert checker.validate_headers([placeholder])["placeholder"] == 1
+
+
+def test_a_trailing_space_can_no_longer_produce_a_false_malformed_count():
+    """The defect this validator replaced: `header.endswith('] ')`.
+
+    `split_retrieval_header` returns the header WITHOUT the separator space it matched, so a
+    check written against that spelling rejected every well-formed body in the corpus. The
+    validator now judges what the parser produced.
+    """
+    checker = _checker()
+    projected = rp.project_chunk("正文", _metadata(), "5.3.3 绝缘标称厚度")[1]
+    header, _raw = rp.split_retrieval_header(projected)
+
+    assert header.endswith("]") and not header.endswith("] "), "the parser strips the separator"
+    assert not any(checker.validate_headers([{"stored": projected}]).values())

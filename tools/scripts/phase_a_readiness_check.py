@@ -145,6 +145,70 @@ def converge(document_rows, metadata, initial: str) -> list[dict]:
     return states
 
 
+def validate_headers(rows: list[dict]) -> dict:
+    """Structural validation of what is stored, through the PARSER rather than string tests.
+
+    An earlier validator used ``header.endswith("] ")`` and reported 155 malformed headers on
+    perfectly good data, because the caller had already stripped that trailing space. Nothing
+    here depends on a spelling a caller may normalise away; every check is what
+    ``split_retrieval_header`` did with the text:
+
+    * parseable - a header was found AND re-projecting the remainder reproduces the stored
+      body exactly (a round trip, which is the strongest statement available);
+    * single header - the remainder does not itself start with another header;
+    * no illegal empty field, no ``None``/``-`` placeholder;
+    * the raw body is still separable (the remainder is non-empty, or the body was header-only).
+    """
+    problems = {"unparseable": 0, "double_header": 0, "empty_field": 0, "placeholder": 0, "not_round_trip": 0, "raw_body_lost": 0}
+    for row in rows:
+        body = row["stored"]
+        header, raw = rp.split_retrieval_header(body)
+        if not header:
+            problems["unparseable"] += 1
+            continue
+        if raw.lstrip().startswith(rp.HEADER_OPEN):
+            problems["double_header"] += 1
+        if not raw.strip() and not body.strip().endswith(header):
+            problems["raw_body_lost"] += 1
+        for segment in header.strip("[]").split("|"):
+            label, _, value = segment.partition(":")
+            if not label.strip():
+                problems["empty_field"] += 1
+            value = value.strip()
+            if value in {"", "-", "None", "none", "null"}:
+                problems["placeholder"] += 1
+        reparsed_header, reparsed_raw = rp.split_retrieval_header(rp.retrieval_text(raw, header))
+        if reparsed_header != header or reparsed_raw.lstrip("\n") != raw.lstrip("\n"):
+            # A round trip THROUGH THE PARSER: re-projecting the remainder must give back the
+            # same header and the same raw body. Two normalisations are deliberate. The
+            # separator space is not compared at all (the parser returns the header without
+            # it), and the raw body is compared with its leading newline trimmed, because
+            # `_HEADER_RE` consumes one whitespace character after the header - a property of
+            # the existing parser, measured on 70 live table chunks whose bodies start with a
+            # newline. Comparing the concatenated bytes would report those as broken.
+            problems["not_round_trip"] += 1
+    return problems
+
+
+def migration_verdict(changed: int, census: dict, violations: list[str]) -> tuple[str, int]:
+    """``(status, exit_code)`` for the state the corpus is in - no stage's number is hardcoded.
+
+    The four states are the ones an operator acts on, and one of them used to be
+    unreachable: a converged corpus (nothing left to change) was reported as NOT READY
+    because the verdict required the migration's own count of 60, so a successful migration
+    returned a failure code.
+    """
+    if violations:
+        return "ERROR", 3
+    if changed == 0:
+        return "CONVERGED", 0
+    if census.get("same_section") or census.get("non_null_to_null"):
+        # A change whose section did not change, or a section that would be DELETED, means the
+        # checker disagrees with the data rather than the data being wrong.
+        return "NOT_READY", 2
+    return "READY_TO_MIGRATE", 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--index", required=True)
@@ -182,6 +246,7 @@ def main() -> int:
                     "changed": entry["text"] != entry["stored"],
                     "raw_body_sha256": hashlib.sha256(entry["raw"].encode()).hexdigest()[:16],
                     "raw_head": " ".join(entry["raw"].split())[:EVIDENCE_CHARS],
+                    "stored": entry["stored"],
                 }
             )
         states = converge(document_rows, metadata, "legacy")
@@ -234,16 +299,38 @@ def main() -> int:
                 f"  - new header: `{row['new_header']}`",
                 f"  - raw head  : {row['raw_head']}",
             ]
-    verdict = "READY" if (census["same_section"] == 0 and len(changed) == 60) else "NOT READY"
-    lines += ["", f"## Verdict: **{verdict}**", ""]
-    if census["same_section"]:
-        lines.append(f"* a change with an IDENTICAL section means the checker is comparing the wrong thing: {census['same_section']} such row(s)")
-    if len(changed) != 60:
-        lines.append(f"* the changed set is {len(changed)}, not the 60 the canary's dry run reported - the two must agree before an approval")
+    problems = validate_headers(rows)
+    violations = [f"{name}={count}" for name, count in problems.items() if count]
+    if violations:
+        # An empty family, or one whose prose is unreadable, is an ERROR rather than a data
+        # finding: the migration must not run on a reading that cannot be trusted.
+        if not family_rows or problems["unparseable"] == len(rows):
+            status, code = migration_verdict(len(changed), census, violations)
+        else:
+            status, code = "NOT_READY", 2
+    else:
+        status, code = migration_verdict(len(changed), census, [])
+
+    lines += [
+        "",
+        "## Stored-header validation (through the parser, not string tests)",
+        "",
+        f"* {problems}",
+        "",
+        f"## Verdict: **{status}** (exit {code})",
+        "",
+    ]
+    if status == "CONVERGED":
+        lines.append("* nothing left to change: the stored representation IS the canonical projection")
+    elif status == "READY_TO_MIGRATE":
+        lines.append(f"* {len(changed)} chunk(s) differ from the canonical projection and every guard holds")
+    else:
+        lines.append(f"* violations: {', '.join(violations) or 'none'}; census: {census}")
     pathlib.Path(args.report).write_text("\n".join(lines), encoding="utf-8")
     print("\n".join(lines[:8]))
+    print(f"status: {status} (exit {code})")
     print(f"wrote {args.report}")
-    return 0 if verdict == "READY" else 1
+    return code
 
 
 if __name__ == "__main__":

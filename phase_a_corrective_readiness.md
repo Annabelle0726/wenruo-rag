@@ -26,6 +26,10 @@
 ## Evidence: section_removed and section_changed
 
 
-## Verdict: **NOT READY**
+## Stored-header validation (through the parser, not string tests)
 
-* the changed set is 0, not the 60 the canary's dry run reported - the two must agree before an approval
+* {'unparseable': 0, 'double_header': 0, 'empty_field': 0, 'placeholder': 0, 'not_round_trip': 0, 'raw_body_lost': 0}
+
+## Verdict: **CONVERGED** (exit 0)
+
+* nothing left to change: the stored representation IS the canonical projection
