@@ -665,7 +665,7 @@ def _load_session_module(monkeypatch):
     conversation_service_mod.async_completion = lambda *_args, **_kwargs: None
     # `chat_api` imports all three at module scope, so the stub has to provide
     # them or the module under test cannot be loaded.
-    conversation_service_mod.apply_session_dataset_binding = lambda *_args, **_kwargs: None
+    conversation_service_mod.scope_dialog_datasets = lambda *_args, **_kwargs: None
     conversation_service_mod.structure_answer = lambda *_args, **_kwargs: {}
     monkeypatch.setitem(sys.modules, "api.db.services.conversation_service", conversation_service_mod)
 
@@ -2366,7 +2366,7 @@ def _load_chat_api_module(monkeypatch):
     )
     conv_svc_mod.structure_answer = lambda *_a, **_k: {}
     # Imported at module scope by `chat_api`: see the sibling stub above.
-    conv_svc_mod.apply_session_dataset_binding = lambda *_a, **_k: None
+    conv_svc_mod.scope_dialog_datasets = lambda *_a, **_k: None
     monkeypatch.setitem(sys.modules, "api.db.services.conversation_service", conv_svc_mod)
 
     dialog_svc_mod = ModuleType("api.db.services.dialog_service")

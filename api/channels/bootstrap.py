@@ -186,7 +186,7 @@ def _make_chat_handler(ch):
     from api.db.services.api_service import API4ConversationService
     from api.db.services.canvas_service import completion as agent_completion
     from api.db.services.chat_channel_service import ChatChannelService
-    from api.db.services.conversation_service import ConversationService, apply_session_dataset_binding, structure_answer
+    from api.db.services.conversation_service import ConversationService, scope_dialog_datasets, structure_answer
     from api.db.services.dialog_service import DialogService, async_chat
     from common.misc_utils import get_uuid
 
@@ -289,9 +289,9 @@ def _make_chat_handler(ch):
 
         answer_text = ""
         try:
-            # A channel session may carry its own dataset binding (the session
-            # API can set one); without it the assistant's datasets stand.
-            apply_session_dataset_binding(dia, conv)
+            # The channel's conversation answers from the assistant's datasets,
+            # like every other conversation in the chat.
+            scope_dialog_datasets(dia)
             chat_kwargs = {"quote": False}
             if "{knowledge}" in (dia.prompt_config or {}).get("system", ""):
                 chat_kwargs["knowledge"] = ""

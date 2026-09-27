@@ -2,7 +2,6 @@ import { NextMessageInputOnPressEnterParameter } from '@/components/message-inpu
 import { EmptyConversationId } from '@/constants/chat';
 import { IConversation, IReference } from '@/interfaces/database/chat';
 import storage from '@/utils/authorization-util';
-import { isEqual } from 'lodash';
 
 /**
  * Regenerate is triggered from the transcript, which has no access to the input
@@ -25,29 +24,6 @@ export function resolveResendOptions(
 export const isConversationIdExist = (conversationId: string) => {
   return conversationId !== EmptyConversationId && conversationId !== '';
 };
-
-/**
- * The `dataset_ids` a conversation should carry for the selection the dataset
- * drawer confirmed.
- *
- * A session stores an array when it has a binding of its own and `null` when it
- * inherits the assistant's set. Confirming the set the drawer opened with is
- * therefore not a binding but the absence of one: it is stored as `null`, so the
- * conversation keeps following the assistant — including edits made to the
- * assistant afterwards. Anything else is an explicit binding, empty included
- * (a conversation that retrieves from nothing is a decision, not an omission).
- */
-export function resolveDatasetBinding(
-  selectedDatasetIds: string[],
-  assistantDatasetIds: string[],
-): string[] | null {
-  const isSameSelection = isEqual(
-    [...selectedDatasetIds].sort(),
-    [...assistantDatasetIds].sort(),
-  );
-
-  return isSameSelection ? null : [...selectedDatasetIds];
-}
 
 export const getDocumentIdsFromConversionReference = (data: IConversation) => {
   const documentIds = data.reference.reduce(

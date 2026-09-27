@@ -101,47 +101,14 @@ export default function Chat() {
   const { addTemporaryConversation } = useTemporaryConversation();
 
   /**
-   * Datasets the assistant itself answers from — the set a conversation inherits
-   * while it has no binding of its own.
+   * The datasets the CHAT is bound to. They are the retrieval scope of every
+   * conversation under it: a conversation has no set of its own, so this is what
+   * the settings drawer edits, what its notice is about, what the header tags
+   * name, and what a turn answers from.
    */
-  const assistantDatasetIds = useMemo(
+  const chatDatasetIds = useMemo(
     () => currentDialog?.dataset_ids ?? [],
     [currentDialog?.dataset_ids],
-  );
-
-  /**
-   * The open conversation's own binding, or `null` when it has none: either it
-   * is a placeholder with no server row yet, or the server stores `null`, which
-   * is exactly what "inherits the assistant's set" looks like on the wire.
-   *
-   * The list row is read first because it is what the rebind request
-   * invalidates; the fetched conversation covers the row being filtered out of
-   * the list by the rail's search box.
-   */
-  const sessionDatasetIds = useMemo(() => {
-    const sessionRow = dialogList.find((x) => x.id === conversationId);
-    if (sessionRow) {
-      return sessionRow.dataset_ids ?? null;
-    }
-
-    return currentConversation.id === conversationId
-      ? (currentConversation.dataset_ids ?? null)
-      : null;
-  }, [
-    dialogList,
-    conversationId,
-    currentConversation.id,
-    currentConversation.dataset_ids,
-  ]);
-
-  /**
-   * What the settings drawer opens pre-checked on, and what the header tags
-   * name: the conversation's binding when it has one, the assistant's set
-   * otherwise.
-   */
-  const effectiveDatasetIds = useMemo(
-    () => sessionDatasetIds ?? assistantDatasetIds,
-    [sessionDatasetIds, assistantDatasetIds],
   );
 
   /**
@@ -150,20 +117,18 @@ export default function Chat() {
    * the app shell, so the dataset request (and the router behind it) must not be
    * reachable from it.
    */
-  const { data: effectiveDatasets } =
-    useFetchDatasetsByIds(effectiveDatasetIds);
+  const { data: chatDatasets } = useFetchDatasetsByIds(chatDatasetIds);
 
   const datasetTags = useMemo(
-    () => resolveDatasetTags(effectiveDatasetIds, effectiveDatasets),
-    [effectiveDatasetIds, effectiveDatasets],
+    () => resolveDatasetTags(chatDatasetIds, chatDatasets),
+    [chatDatasetIds, chatDatasets],
   );
 
   /**
    * The rail's "+": a conversation the browser only holds a placeholder for.
-   * Its datasets — a binding of its own, or the assistant's set it inherits —
-   * are decided by the first save in the settings drawer, which also creates
-   * the session; the rule below decides whether the drawer has to be raised for
-   * that first.
+   * It answers from the chat's datasets like every other conversation — which is
+   * why it needs no dataset of its own, and why nothing has to be chosen before
+   * the first question unless the chat itself has none.
    */
   const handleStartNewConversation = useCallback(() => {
     addTemporaryConversation();
@@ -307,11 +272,11 @@ export default function Chat() {
   }, [conversationId]);
 
   /**
-   * The one rule behind the drawer raising itself: a conversation with nothing
-   * to retrieve from opens the settings drawer, marked by the notice inside it,
-   * so the selection is guided before the first question. A conversation that
-   * has datasets — its own binding, or the assistant's set it inherits — is left
-   * alone and simply answers from them.
+   * The one rule behind the drawer raising itself: a CHAT with no datasets opens
+   * the settings drawer on its first conversation, marked by the notice inside
+   * it, so the selection is guided before the first question. That is the only
+   * case there is — a chat bound to datasets is never prompted about, because
+   * every conversation under it answers from them already.
    *
    * It fires once per conversation (the set above), which is what also stops it
    * from looping and from reopening the panel over the user's own close: by the
@@ -319,12 +284,12 @@ export default function Chat() {
    * reads it derives the set from — the assistant record, the session list, and
    * a session's own fetch — so a set still in flight is never read as empty, and
    * for a list with rows in it to be resolved: the rail is about to open the
-   * first conversation, which may well have datasets of its own.
+   * first conversation.
    */
   useEffect(() => {
     if (!conversationId && dialogList.length > 0) return;
     if (!chatId || sessionsLoading || chatLoading || isLoadingMessages) return;
-    if (effectiveDatasetIds.length > 0) return;
+    if (chatDatasetIds.length > 0) return;
     if (autoRaisedSettingsFor.current.has(conversationId)) return;
 
     autoRaisedSettingsFor.current.add(conversationId);
@@ -335,7 +300,7 @@ export default function Chat() {
     chatLoading,
     isLoadingMessages,
     dialogList.length,
-    effectiveDatasetIds.length,
+    chatDatasetIds.length,
     conversationId,
     showSettings,
   ]);
@@ -504,19 +469,16 @@ export default function Chat() {
             </div>
           </div>
 
-          {/* The one dataset UI, and the one drawer a conversation's datasets
-              are read and changed in: its field edits the session binding, and
-              it is what the page raises for a conversation with nothing
-              selected. */}
+          {/* The one dataset UI, and the one drawer a chat's datasets are read
+              and changed in: its field edits the chat, and it is what the page
+              raises for a chat that has no datasets at all. */}
           <ChatSettings
             visible={settingsVisible}
             onVisibleChange={(nextVisible) =>
               nextVisible ? showSettings() : hideSettings()
             }
             onOpenMultiModel={handleOpenMultiModel}
-            sessionId={conversationId}
-            effectiveDatasetIds={effectiveDatasetIds}
-            assistantDatasetIds={assistantDatasetIds}
+            datasetIds={chatDatasetIds}
           ></ChatSettings>
         </article>
       </section>

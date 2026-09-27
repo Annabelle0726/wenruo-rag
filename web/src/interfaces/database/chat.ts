@@ -108,12 +108,6 @@ export interface IConversation {
   messages: Message[];
   reference: IReference[];
   name: string;
-  /**
-   * Datasets this conversation retrieves from, or `null` when it inherits the
-   * assistant's own set. The two cases are distinct: `null` follows later edits
-   * to the assistant, an array (including an empty one) is a binding of its own.
-   */
-  dataset_ids?: string[] | null;
   update_date: string;
   update_time: number;
   /** Pinned sessions lead the list, whatever the activity order says. */

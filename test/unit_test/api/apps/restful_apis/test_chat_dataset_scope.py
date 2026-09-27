@@ -14,26 +14,26 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-"""The datasets a conversation session retrieves from (api/apps/restful_apis/chat_api.py).
+"""The datasets an application answers from (api/apps/restful_apis/chat_api.py).
 
-The binding is per session ("绑定到该会话上下文中"), not per assistant: the same
-assistant can be asked in one session against one set of datasets and in another
-against a different set. `conversation.kb_ids` stores it, and the three answers
-it can hold are genuinely different:
+The CHAT owns the retrieval scope, and the conversation only inherits it: every
+conversation under a chat answers from the datasets that chat is bound to. The
+per-session binding that used to exist ("绑定到该会话上下文中") is retired, because
+a conversation pointing at a set of its own is how one application's documents
+end up in another's answers - and because "the chat is bound, why am I still
+being asked to pick datasets?" is what a per-conversation scope produces.
 
-* NULL -- the session has no binding of its own and inherits the assistant's
-  datasets. That is what opening the drawer and confirming without a change
-  must give.
-* `[]` -- the user deliberately bound no dataset. This must NOT degrade into
-  "inherit", so the column is nullable and is never defaulted to `[]`.
-* a list -- the session's own set.
+These tests pin the contract:
 
-These tests pin the contract of the session routes: create persists and echoes
-the binding, patch rebinds, `null` clears back to inherit, an omitted field
-changes nothing, reading publishes `dataset_ids` (`null` when inheriting,
-mirroring `_build_chat_response`), and an id the caller may not read is refused
-by the same gate -- same code, 102 -- the assistant's own `dataset_ids` passes,
-so a session can never be used to retrieve past the read permission.
+* a session request that says anything about datasets is REFUSED rather than
+  silently ignored, so a caller that expects a per-session scope is told the
+  truth instead of being answered from a different set than it asked for;
+* a refused request persists nothing;
+* the read shape of a session carries no dataset field at all, while the CHAT's
+  own `dataset_ids` (the one the web UI counts to decide whether to prompt) is
+  published unchanged, `[]` and all;
+* a turn retrieves from the assistant's datasets, and a legacy
+  `conversation.kb_ids` cannot widen or blank that scope.
 """
 
 from copy import deepcopy
@@ -105,8 +105,6 @@ class _FakeConversationService:
         if session_id not in self.rows:
             return 0
         self.updated.append(dict(fields))
-        # `kb_ids: None` IS the column's inherit value, so it must be stored as
-        # NULL rather than dropped from the row.
         for key, value in fields.items():
             if key not in {"update_time", "update_date"}:
                 self.rows[session_id][key] = value
@@ -152,6 +150,11 @@ class _FakeKnowledgebaseService:
         if kb_id not in self.readable:
             return []
         return [SimpleNamespace(id=kb_id, name=f"dataset {kb_id}", chunk_num=3)]
+
+    def get_by_id(self, kb_id):
+        if kb_id not in self.readable:
+            return False, None
+        return True, SimpleNamespace(id=kb_id, name=f"dataset {kb_id}", status="1")
 
 
 @pytest.fixture(autouse=True)
@@ -208,145 +211,98 @@ def _rows(sessions, **fields):
 
 @pytest.mark.p1
 @pytest.mark.asyncio
-async def test_create_session_persists_the_datasets_it_was_given(sessions, monkeypatch):
-    _set_request(monkeypatch, {"name": "report", "dataset_ids": ["kb-a", "kb-b"]})
-
-    res = await chat_api.create_session.__wrapped__(CHAT_ID)
-
-    assert res["code"] == 0, res
-    assert sessions.conversations.saved[0]["kb_ids"] == ["kb-a", "kb-b"]
-    assert res["data"]["dataset_ids"] == ["kb-a", "kb-b"]
-    # `kb_ids` is the stored column name; the API publishes `dataset_ids`.
-    assert "kb_ids" not in res["data"]
-
-
-@pytest.mark.p1
-@pytest.mark.asyncio
-async def test_create_session_without_dataset_ids_inherits_the_assistant(sessions, monkeypatch):
+async def test_create_session_stores_no_dataset_column(sessions, monkeypatch):
     _set_request(monkeypatch, {"name": "report"})
 
     res = await chat_api.create_session.__wrapped__(CHAT_ID)
 
     assert res["code"] == 0, res
-    # Nothing is written: NULL is the inherit value, so an absent field must not
-    # freeze a copy of the assistant's datasets into the session.
+    # A conversation has no dataset set of its own: it answers from its chat's,
+    # so nothing about datasets is written on the row.
     assert "kb_ids" not in sessions.conversations.saved[0]
-    assert res["data"]["dataset_ids"] is None
+    assert "dataset_ids" not in res["data"]
+    assert "kb_ids" not in res["data"]
 
 
 @pytest.mark.p1
 @pytest.mark.asyncio
-async def test_create_session_can_bind_no_dataset_at_all(sessions, monkeypatch):
-    _set_request(monkeypatch, {"name": "report", "dataset_ids": []})
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"name": "report", "dataset_ids": ["kb-a", "kb-b"]},
+        {"name": "report", "dataset_ids": []},
+        {"name": "report", "dataset_ids": None},
+        {"name": "report", "kb_ids": ["kb-a"]},
+    ],
+)
+async def test_create_session_refuses_a_dataset_field(sessions, monkeypatch, payload):
+    _set_request(monkeypatch, payload)
 
     res = await chat_api.create_session.__wrapped__(CHAT_ID)
 
-    assert res["code"] == 0, res
-    # `[]` is a binding, not the absence of one: it must survive as an empty
-    # list so the turn retrieves from nothing instead of the assistant's set.
-    assert sessions.conversations.saved[0]["kb_ids"] == []
-    assert res["data"]["dataset_ids"] == []
-
-
-@pytest.mark.p1
-@pytest.mark.asyncio
-async def test_create_session_rejects_a_dataset_the_caller_may_not_read(sessions, monkeypatch):
-    _set_request(monkeypatch, {"name": "report", "dataset_ids": ["kb-a", "kb-foreign"]})
-
-    res = await chat_api.create_session.__wrapped__(CHAT_ID)
-
+    # Refused rather than ignored: a caller that asked for a per-session scope
+    # must not be answered from a different set without being told.
     assert res["code"] == 102, res
-    assert res["message"] == "You don't own the dataset kb-foreign"
+    assert res["message"] == "`dataset_ids` is not supported here: a conversation answers from its chat's datasets."
     assert sessions.conversations.saved == []
 
 
 @pytest.mark.p1
 @pytest.mark.asyncio
-async def test_create_session_rejects_dataset_ids_that_are_not_a_list(sessions, monkeypatch):
-    _set_request(monkeypatch, {"name": "report", "dataset_ids": "kb-a"})
-
-    res = await chat_api.create_session.__wrapped__(CHAT_ID)
-
-    assert res["code"] == 102, res
-    assert res["message"] == "`dataset_ids` should be a list."
-    assert sessions.conversations.saved == []
-
-
-@pytest.mark.p1
-@pytest.mark.asyncio
-async def test_patch_session_rebinds_it(sessions, monkeypatch):
+async def test_patch_session_refuses_a_dataset_field(sessions, monkeypatch):
     _own_session(monkeypatch)
-    _rows(sessions, kb_ids=None)
+    _rows(sessions, kb_ids=["kb-legacy"])
     _set_request(monkeypatch, {"dataset_ids": ["kb-b"]})
 
     res = await chat_api.update_session.__wrapped__(CHAT_ID, SESSION_ID)
 
-    assert res["code"] == 0, res
-    assert sessions.conversations.updated[-1]["kb_ids"] == ["kb-b"]
-    assert res["data"]["dataset_ids"] == ["kb-b"]
-
-
-@pytest.mark.p1
-@pytest.mark.asyncio
-async def test_patch_session_clears_the_binding_back_to_inherit(sessions, monkeypatch):
-    _own_session(monkeypatch)
-    _rows(sessions, kb_ids=["kb-a"])
-    _set_request(monkeypatch, {"dataset_ids": None})
-
-    res = await chat_api.update_session.__wrapped__(CHAT_ID, SESSION_ID)
-
-    assert res["code"] == 0, res
-    assert sessions.conversations.updated[-1]["kb_ids"] is None
-    assert res["data"]["dataset_ids"] is None
-
-
-@pytest.mark.p1
-@pytest.mark.asyncio
-async def test_patch_session_without_dataset_ids_leaves_the_binding_alone(sessions, monkeypatch):
-    _own_session(monkeypatch)
-    _rows(sessions, kb_ids=["kb-a"])
-    _set_request(monkeypatch, {"name": "renamed"})
-
-    res = await chat_api.update_session.__wrapped__(CHAT_ID, SESSION_ID)
-
-    assert res["code"] == 0, res
-    assert "kb_ids" not in sessions.conversations.updated[-1]
-    assert res["data"]["dataset_ids"] == ["kb-a"]
-    assert res["data"]["name"] == "renamed"
-
-
-@pytest.mark.p1
-@pytest.mark.asyncio
-async def test_patch_session_rejects_a_dataset_the_caller_may_not_read(sessions, monkeypatch):
-    _own_session(monkeypatch)
-    _rows(sessions, kb_ids=["kb-a"])
-    _set_request(monkeypatch, {"dataset_ids": ["kb-foreign"]})
-
-    res = await chat_api.update_session.__wrapped__(CHAT_ID, SESSION_ID)
-
     assert res["code"] == 102, res
-    assert res["message"] == "You don't own the dataset kb-foreign"
     assert sessions.conversations.updated == []
+    # The legacy column keeps its stored value: it is inert, not rewritten.
+    assert sessions.conversations.rows[SESSION_ID]["kb_ids"] == ["kb-legacy"]
 
 
 @pytest.mark.p1
-def test_reading_a_session_publishes_dataset_ids():
-    """`dataset_ids` is the read shape, and `null` is the inherit answer."""
-    inheriting = chat_api._build_session_response({"id": SESSION_ID, "dialog_id": CHAT_ID, "kb_ids": None})
-    bound = chat_api._build_session_response({"id": SESSION_ID, "dialog_id": CHAT_ID, "kb_ids": ["kb-a"]})
-    bound_to_none = chat_api._build_session_response({"id": SESSION_ID, "dialog_id": CHAT_ID, "kb_ids": []})
-    legacy_row = chat_api._build_session_response({"id": SESSION_ID, "dialog_id": CHAT_ID})
+@pytest.mark.asyncio
+async def test_patch_session_still_updates_the_fields_it_owns(sessions, monkeypatch):
+    _own_session(monkeypatch)
+    _rows(sessions, kb_ids=["kb-legacy"])
+    _set_request(monkeypatch, {"name": "renamed", "is_pinned": True})
 
-    assert inheriting["dataset_ids"] is None
-    assert bound["dataset_ids"] == ["kb-a"]
-    # A session bound to no dataset is not the same answer as one that inherits.
-    assert bound_to_none["dataset_ids"] == []
-    # A row read before the column existed inherits too.
-    assert legacy_row["dataset_ids"] is None
-    for payload in (inheriting, bound, bound_to_none, legacy_row):
+    res = await chat_api.update_session.__wrapped__(CHAT_ID, SESSION_ID)
+
+    assert res["code"] == 0, res
+    assert sessions.conversations.updated[-1]["name"] == "renamed"
+    assert "kb_ids" not in sessions.conversations.updated[-1]
+    assert res["data"]["name"] == "renamed"
+    assert "dataset_ids" not in res["data"]
+
+
+@pytest.mark.p1
+def test_reading_a_session_publishes_no_dataset_field():
+    """A session has no dataset answer to publish, whatever its row holds."""
+    for row in ({"kb_ids": None}, {"kb_ids": ["kb-a"]}, {"kb_ids": []}, {}):
+        payload = chat_api._build_session_response({"id": SESSION_ID, "dialog_id": CHAT_ID, **row})
+
+        assert "dataset_ids" not in payload
         assert "kb_ids" not in payload
         assert payload["chat_id"] == CHAT_ID
         assert payload["messages"] == []
+
+
+@pytest.mark.p1
+def test_reading_a_chat_publishes_the_datasets_it_is_bound_to(sessions):
+    """The chat's own set is the scope, and the UI reads it to know whether to prompt."""
+    bound = chat_api._build_chat_response({"id": CHAT_ID, "kb_ids": ["kb-a", "kb-b"]})
+    unbound = chat_api._build_chat_response({"id": CHAT_ID, "kb_ids": []})
+
+    assert bound["dataset_ids"] == ["kb-a", "kb-b"]
+    assert bound["kb_names"] == ["dataset kb-a", "dataset kb-b"]
+    # `[]` is the "nothing to answer from" answer, and it is what the drawer's
+    # notice is allowed to be about.
+    assert unbound["dataset_ids"] == []
+    for payload in (bound, unbound):
+        assert "kb_ids" not in payload
 
 
 class _CapturingRagAgent:
@@ -421,19 +377,7 @@ async def _complete(monkeypatch):
 
 @pytest.mark.p1
 @pytest.mark.asyncio
-async def test_completion_retrieves_from_the_sessions_own_datasets(completion, monkeypatch):
-    completion.install(["kb-session"])
-
-    res = await _complete(monkeypatch)
-
-    assert res["code"] == 0, res
-    # The session's binding REPLACES the assistant's -- never a union with it.
-    assert completion.rag_agent.retrieved == [["kb-session"]]
-
-
-@pytest.mark.p1
-@pytest.mark.asyncio
-async def test_completion_without_a_session_binding_uses_the_assistants_datasets(completion, monkeypatch):
+async def test_completion_retrieves_from_the_chats_datasets(completion, monkeypatch):
     completion.install(None)
 
     res = await _complete(monkeypatch)
@@ -444,11 +388,23 @@ async def test_completion_without_a_session_binding_uses_the_assistants_datasets
 
 @pytest.mark.p1
 @pytest.mark.asyncio
-async def test_completion_in_a_session_bound_to_no_dataset_retrieves_from_none(completion, monkeypatch):
+async def test_completion_ignores_a_legacy_session_binding(completion, monkeypatch):
+    completion.install(["kb-other-app"])
+
+    res = await _complete(monkeypatch)
+
+    assert res["code"] == 0, res
+    # The stored per-session set must not widen the scope to another app's files.
+    assert completion.rag_agent.retrieved == [ASSISTANT_DATASETS]
+
+
+@pytest.mark.p1
+@pytest.mark.asyncio
+async def test_completion_ignores_a_legacy_empty_session_binding(completion, monkeypatch):
     completion.install([])
 
     res = await _complete(monkeypatch)
 
     assert res["code"] == 0, res
-    # No fallback to the assistant's datasets.
-    assert completion.rag_agent.retrieved == [[]]
+    # And it must not blank the scope either.
+    assert completion.rag_agent.retrieved == [ASSISTANT_DATASETS]

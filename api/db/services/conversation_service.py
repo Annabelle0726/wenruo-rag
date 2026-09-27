@@ -32,36 +32,27 @@ from rag.prompts.generator import chunks_format
 logger = logging.getLogger(__name__)
 
 
-def _dedup(kb_ids):
-    return list(dict.fromkeys(kb_ids))
+def scope_dialog_datasets(dialog, extra_kb_ids=None):
+    """Point `dialog` at the datasets this turn must retrieve from.
 
-
-def apply_session_dataset_binding(dialog, conv, extra_kb_ids=None):
-    """Point `dialog` at the datasets this session's turn must retrieve from.
-
-    A session either carries its own binding or inherits the assistant's: the
-    session's `kb_ids` is NULL when it has none, and a list -- including the
-    empty one -- when it has one. An override REPLACES the assistant's set
-    rather than being unioned onto it, and a session bound to none retrieves
-    from none instead of falling back to the assistant.
+    The CHAT owns the scope. Every conversation under it answers from the
+    datasets the chat is bound to and from nothing else, so a conversation can
+    never pull another app's documents into this one - which is what a
+    conversation that had been given a set of its own used to do.
 
     `extra_kb_ids` are datasets a caller passed for this single request (the
-    bot/SDK paths): they keep their existing union semantics and are added to
-    whichever set is effective.
+    bot/SDK paths). They union onto the chat's set, because they scope ONE
+    request rather than configure the application.
 
     `dialog.kb_ids` is the only place the turn reads its datasets from, so
     mutating it here covers the whole retrieval path (`async_chat`, `rag_agent`
     and the tools they build).
     """
-    bound = getattr(conv, "kb_ids", None)
     extra = [kb_id for kb_id in (extra_kb_ids or []) if kb_id]
-    if bound is None:
-        if not extra:
-            # Inherit the assistant's set as it stands: nothing to do.
-            return
-        dialog.kb_ids = _dedup(list(dialog.kb_ids or []) + extra)
+    if not extra:
+        # The chat's own set, exactly as it stands: nothing to do.
         return
-    dialog.kb_ids = _dedup(list(bound) + extra)
+    dialog.kb_ids = list(dict.fromkeys(list(dialog.kb_ids or []) + extra))
 
 
 class ConversationService(CommonService):
@@ -346,7 +337,7 @@ async def async_completion(tenant_id, chat_id, question, name="New session", ses
     message_id = msg[-1].get("id")
     e, dia = DialogService.get_by_id(conv.dialog_id)
 
-    apply_session_dataset_binding(dia, conv, kwargs.get("kb_ids"))
+    scope_dialog_datasets(dia, kwargs.get("kb_ids"))
     if not conv.reference:
         conv.reference = []
     conv.message.append({"role": "assistant", "content": "", "id": message_id})

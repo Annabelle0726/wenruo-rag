@@ -31,6 +31,8 @@ from types import ModuleType, SimpleNamespace
 
 import pytest
 
+from common.constants import PipelineTaskType, TaskStatus
+
 
 class _PassthroughManager:
     def route(self, *_args, **_kwargs):
@@ -116,6 +118,10 @@ def _load_bot_api(monkeypatch, *, accessible, calls, kb_accessible=True, search_
         get_tenant_default_model_by_type=lambda *_a, **_k: None,
         get_model_config_from_provider_instance=lambda *_a, **_k: None,
         resolve_model_config=lambda *_a, **_k: None,
+        # `bot_api` resolves a rerank default for a retrieval that names no
+        # model, so a stub without this name fails the module's import rather
+        # than any assertion in it.
+        get_default_rerank_model_config=lambda *_a, **_k: None,
     )
     _stub(monkeypatch, "common.misc_utils", get_uuid=lambda: "uuid", thread_pool_exec=_passthrough_thread_pool_exec)
     _stub(
@@ -135,7 +141,18 @@ def _load_bot_api(monkeypatch, *, accessible, calls, kb_accessible=True, search_
     _stub(monkeypatch, "rag.prompts.template", load_prompt=lambda *_a, **_k: "")
     _stub(monkeypatch, "rag.prompts.generator", cross_languages=lambda *_a, **_k: None, keyword_extraction=lambda *_a, **_k: None)
     _stub(monkeypatch, "rag.utils.web_search_conn", has_web_search_provider=lambda *_a, **_k: False)
-    _stub(monkeypatch, "common.constants", RetCode=SimpleNamespace(), LLMType=SimpleNamespace(), StatusEnum=SimpleNamespace())
+    # The two enums the module chain reads by member (`PipelineTaskType.PARSE`)
+    # come from the REAL module: a `SimpleNamespace` cannot answer a member that
+    # the test does not name, and the failure then looks like a product bug.
+    _stub(
+        monkeypatch,
+        "common.constants",
+        RetCode=SimpleNamespace(),
+        LLMType=SimpleNamespace(),
+        StatusEnum=SimpleNamespace(),
+        PipelineTaskType=PipelineTaskType,
+        TaskStatus=TaskStatus,
+    )
     _stub(monkeypatch, "common", settings=SimpleNamespace())
     _stub(monkeypatch, "common.settings", retriever=SimpleNamespace(), kg_retriever=SimpleNamespace())
     _stub(monkeypatch, "api.utils.reference_metadata_utils", enrich_chunks_with_document_metadata=lambda *_a, **_k: None, resolve_reference_metadata_preferences=lambda *_a, **_k: None)

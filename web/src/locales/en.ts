@@ -1169,9 +1169,9 @@ export default {
         'The selected knowledge base is unavailable (deleted or has no chunks), please re-select',
       knowledgeBasesTip:
         'Select the datasets to associate with this chat assistant. An empty dataset will not appear in the dropdown list.',
-      sessionDatasets: 'Conversation datasets',
+      sessionDatasets: 'Chat datasets',
       datasetNotSelectedNotice:
-        'No dataset is selected yet. Choose the datasets this conversation answers from, otherwise a question has nothing to retrieve from.',
+        'No dataset is selected yet. Choose the datasets this chat answers from, otherwise its conversations have nothing to retrieve from.',
       system: 'System prompt',
       systemPlaceholder:
         'You are an intelligent assistant. Your primary function is to answer questions based strictly on the provided knowledge base.\n\n**Essential Rules:**\n  - Your answer must be derived **solely** from this dataset: {knowledge}.\n  - **When information is available**: Summarize the content to give a detailed answer.\n  - **When information is unavailable**: Your response must contain this exact sentence: "The answer you are looking for is not found in the knowledge base!"\n  - **Always consider** the entire conversation history.',

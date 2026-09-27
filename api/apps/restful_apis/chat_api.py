@@ -41,7 +41,7 @@ from api.db.joint_services.tenant_model_service import (
     resolve_model_id,
 )
 from api.db.services.chunk_feedback_service import ChunkFeedbackService
-from api.db.services.conversation_service import ConversationService, apply_session_dataset_binding, structure_answer
+from api.db.services.conversation_service import ConversationService, scope_dialog_datasets, structure_answer
 from api.db.services.dialog_service import DialogService, gen_mindmap, rag_agent
 from api.db.services.knowledgebase_service import KnowledgebaseService, validate_dataset_embedding_models
 from api.db.services.llm_service import LLMBundle
@@ -199,11 +199,11 @@ def _build_session_response(conv: dict) -> dict:
     conv = dict(conv)
     conv["chat_id"] = conv.pop("dialog_id", conv.get("chat_id"))
     conv["messages"] = conv.pop("message", conv.get("messages", []))
-    # `kb_ids` is the stored column; the API publishes `dataset_ids`. `None` is
-    # the "this session inherits the assistant's datasets" answer, `[]` the
-    # "bound to no dataset" one, so the two must not be collapsed -- hence the
-    # by-name read, which also covers a row read before the column existed.
-    conv["dataset_ids"] = conv.pop("kb_ids", None)
+    # A conversation has no dataset set of its own: it answers from its chat's
+    # datasets. The column that once carried one is not part of the read shape
+    # either -- publishing it would offer a caller a scope nothing honours.
+    conv.pop("kb_ids", None)
+    conv.pop("dataset_ids", None)
     return conv
 
 
@@ -493,38 +493,28 @@ async def _validate_bound_datasets(req, user_id):
     return None
 
 
-_NO_BINDING = object()
+#: Distinguishes "the request did not carry this field" from a payload of `None`.
+_MISSING = object()
 
 
-async def _session_dataset_binding(req, user_id):
-    """The dataset binding a session request asks for.
+def _reject_session_dataset_ids(req):
+    """Refuse `dataset_ids` on a conversation, loudly.
 
-    `dataset_ids` on a session is one of three answers, and they are different:
+    The chat owns the retrieval scope: a conversation answers from the datasets
+    its chat is bound to. A request that tries to give a conversation a set of
+    its OWN is an error rather than something to ignore, because ignoring it
+    would answer from the chat's datasets while the caller believed it had
+    scoped one conversation -- and the column such a request used to write is no
+    longer read by anything.
 
-    * absent -- `_NO_BINDING`: the session keeps inheriting the assistant's
-      datasets, because nothing is written and the column stays NULL. On patch
-      it also leaves an existing binding untouched.
-    * `null` -- `None`: the inherit answer itself. On patch it clears the
-      session's own binding, back to inheriting the assistant's (stored as
-      NULL); on create it is what an absent field already stores.
-    * a list, `[]` included -- the session's own set. `[]` means the session is
-      bound to no dataset at all, and must not fall back to the assistant's.
-
-    Ids pass `_validate_dataset_ids`, the same read gate the assistant's own
-    `dataset_ids` passes, so a caller cannot bind a dataset it may not read and
-    then retrieve from it through the session. Returns `(binding, error)`;
-    `binding` is `_NO_BINDING`, None, or a list of ids. `dataset_ids` is consumed
-    from `req` so a patch cannot forward it to the ORM as an unknown column.
+    Returns an error message, or None when the request says nothing about
+    datasets. Both names are consumed so neither reaches the ORM, where
+    `kb_ids` is still a (now inert) column of the row.
     """
-    if "dataset_ids" not in req:
-        return _NO_BINDING, None
-    dataset_ids = req.pop("dataset_ids")
-    if dataset_ids is None:
-        return None, None
-    validated = await _validate_dataset_ids(dataset_ids, user_id)
-    if isinstance(validated, str):
-        return _NO_BINDING, validated
-    return validated, None
+    asked = [name for name in ("dataset_ids", "kb_ids") if req.pop(name, _MISSING) is not _MISSING]
+    if not asked:
+        return None
+    return "`dataset_ids` is not supported here: a conversation answers from its chat's datasets."
 
 
 def _apply_prompt_defaults(req):
@@ -1002,15 +992,16 @@ async def bulk_delete_chats():
 async def create_session(chat_id):
     """Create a new conversation session for the given chat, owned by the authenticated user.
 
-    An optional `dataset_ids` binds the session to its own datasets. Left out
-    (or `null`), the session carries no binding and inherits the assistant's.
+    The conversation answers from the datasets its CHAT is bound to, which is
+    what every conversation under it inherits, so a session takes no dataset
+    field at all.
     """
     dia = await _accessible_chat(chat_id)
     if not dia:
         return _chat_denied()
     try:
         req = await get_request_json()
-        binding, error = await _session_dataset_binding(req, current_user.id)
+        error = _reject_session_dataset_ids(req)
         if error:
             return get_data_error_result(message=error)
         name = req.get("name", "New session")
@@ -1025,11 +1016,6 @@ async def create_session(chat_id):
             "user_id": current_user.id,
             "reference": [],
         }
-        # An absent `dataset_ids` writes nothing at all: NULL IS the inherit
-        # value, so storing a copy of the assistant's set here would freeze the
-        # session against the assistant's later edits.
-        if binding is not _NO_BINDING:
-            conv["kb_ids"] = binding
         ConversationService.save(**conv)
         ok, conv_obj = ConversationService.get_by_id(conv["id"])
         if not ok:
@@ -1091,16 +1077,18 @@ async def get_session(chat_id, session_id):
 @manager.route("/chats/<chat_id>/sessions/<session_id>", methods=["PATCH"])  # noqa: F821
 @login_required
 async def update_session(chat_id, session_id):
-    """Update a session. `dataset_ids` rebinds it: a list (including `[]`) is the
-    session's own set, `null` clears the binding so the session inherits the
-    assistant's datasets again, and leaving the field out changes nothing."""
+    """Update a session's name, pin state or message list.
+
+    Datasets are not part of it: a conversation answers from its chat's
+    datasets, so a request that tries to bind one here is refused.
+    """
     if not await _accessible_chat(chat_id):
         return _chat_denied()
     try:
         req = await get_request_json()
         if not ConversationService.query(id=session_id, dialog_id=chat_id):
             return get_data_error_result(message="Session not found!")
-        binding, error = await _session_dataset_binding(req, current_user.id)
+        error = _reject_session_dataset_ids(req)
         if error:
             return get_data_error_result(message=error)
         if "message" in req or "messages" in req:
@@ -1116,10 +1104,6 @@ async def update_session(chat_id, session_id):
         if is_pinned is not None and not isinstance(is_pinned, bool):
             return get_data_error_result(message="`is_pinned` must be a boolean")
         update_fields = {k: v for k, v in req.items() if k not in {"id", "dialog_id", "chat_id", "user_id"}}
-        # `_NO_BINDING` means the request did not mention the binding, so the
-        # column is left out of the update rather than rewritten.
-        if binding is not _NO_BINDING:
-            update_fields["kb_ids"] = binding
         if not ConversationService.update_by_id(session_id, update_fields):
             return get_data_error_result(message="Session not found!")
         ok, conv = ConversationService.get_by_id(session_id)
@@ -1583,10 +1567,9 @@ async def session_completion(chat_id_in_arg=""):
         req.pop("question", None)
 
         if conv is not None:
-            # The turn retrieves from the session's own binding when it has one,
-            # and from the assistant's datasets when it does not; a per-request
-            # `kb_ids` still unions onto whichever set is effective.
-            apply_session_dataset_binding(dia, conv, req.get("kb_ids"))
+            # Every conversation answers from the CHAT's datasets, and a
+            # per-request `kb_ids` unions onto that one request's scope.
+            scope_dialog_datasets(dia, req.get("kb_ids"))
             if not conv.reference:
                 conv.reference = []
             conv.reference = [r for r in conv.reference if r]

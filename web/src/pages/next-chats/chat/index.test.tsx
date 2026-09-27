@@ -15,9 +15,6 @@ const MockDatasets = [
   { id: 'kb-3', name: '试验报告库' },
 ];
 
-/** The name the drawer's save sends for the conversation it creates. */
-const NewConversationName = 'New conversation';
-
 const mockCreateSession = jest.fn();
 const mockUpdateSession = jest.fn();
 const mockUpdateChat = jest.fn();
@@ -28,10 +25,9 @@ const mockSetSearchString = jest.fn();
 let mockSessionList: Array<{
   id: string;
   name: string;
-  dataset_ids: string[] | null;
 }> = [];
 
-/** The assistant record: the set a conversation with no binding inherits. */
+/** The assistant record: the datasets the chat is bound to. */
 let mockAssistant: Record<string, any> = {};
 
 /**
@@ -345,8 +341,8 @@ beforeEach(() => {
   mockFetchSessionManually.mockResolvedValue({ id: 'server-1', messages: [] });
 });
 
-describe('a conversation with nothing to retrieve from', () => {
-  it('raises the settings drawer, prompting for the datasets a session needs', () => {
+describe('a chat with nothing to retrieve from', () => {
+  it('raises the settings drawer, prompting for the datasets a chat needs', () => {
     renderChatPage('/chat/assistant-1');
 
     expect(settingsDrawer()).toBeInTheDocument();
@@ -373,16 +369,15 @@ describe('a conversation with nothing to retrieve from', () => {
     expect(screen.queryByTestId('chat-settings-no-dataset')).toBeNull();
   });
 
-  it('leaves a conversation with its own binding alone, and names it in the header', async () => {
+  it('leaves a bound chat alone, and names its datasets in the header', async () => {
     mockAssistant = buildAssistant(['kb-1']);
-    mockSessionList = [
-      { id: 'server-1', name: '国标查询', dataset_ids: ['kb-1', 'kb-2'] },
-    ];
+    mockSessionList = [{ id: 'server-1', name: '国标查询' }];
 
     renderChatPage('/chat/assistant-1?conversationId=server-1');
     await waitForOpenSession();
 
-    // Its own datasets are what it answers from, so nothing has to be asked.
+    // Every conversation under this chat answers from its datasets, so there is
+    // nothing to ask the user about — not here and not in the drawer either.
     expect(settingsDrawer()).toBeNull();
 
     fireEvent.click(screen.getByTestId('rail-collapse'));
@@ -390,13 +385,12 @@ describe('a conversation with nothing to retrieve from', () => {
     const tags = await screen.findByTestId('chat-detail-dataset-tags');
 
     expect(tags).toHaveTextContent('国标知识库');
-    expect(tags).toHaveTextContent('电缆工艺库');
     expect(settingsDrawer()).toBeNull();
   });
 
-  it('leaves a conversation inheriting a non-empty assistant set alone', async () => {
+  it('leaves a conversation under a chat with datasets alone', async () => {
     mockAssistant = buildAssistant(['kb-1', 'kb-3']);
-    mockSessionList = [{ id: 'server-1', name: '国标查询', dataset_ids: null }];
+    mockSessionList = [{ id: 'server-1', name: '国标查询' }];
 
     renderChatPage('/chat/assistant-1?conversationId=server-1');
     await waitForOpenSession();
@@ -410,7 +404,7 @@ describe('a conversation with nothing to retrieve from', () => {
   });
 
   it('raises it once: a close is not argued with, and no session is written', async () => {
-    mockSessionList = [{ id: 'server-1', name: '国标查询', dataset_ids: null }];
+    mockSessionList = [{ id: 'server-1', name: '国标查询' }];
 
     renderChatPage('/chat/assistant-1?conversationId=server-1');
     await waitFor(() => expect(settingsDrawer()).toBeInTheDocument());
@@ -467,12 +461,10 @@ describe('a conversation with nothing to retrieve from', () => {
   });
 });
 
-describe("a conversation's datasets in the settings drawer", () => {
-  it('opens from a tag, pre-selected on the binding of the conversation', async () => {
-    mockAssistant = buildAssistant(['kb-1']);
-    mockSessionList = [
-      { id: 'server-1', name: '国标查询', dataset_ids: ['kb-1', 'kb-2'] },
-    ];
+describe("a chat's datasets in the settings drawer", () => {
+  it('opens from a tag, pre-selected on the datasets the chat is bound to', async () => {
+    mockAssistant = buildAssistant(['kb-1', 'kb-2']);
+    mockSessionList = [{ id: 'server-1', name: '国标查询' }];
 
     renderChatPage('/chat/assistant-1?conversationId=server-1');
     await waitForOpenSession();
@@ -482,9 +474,10 @@ describe("a conversation's datasets in the settings drawer", () => {
     expect(settingsDrawer()).toBeNull();
     fireEvent.click(screen.getByText('电缆工艺库'));
 
-    // The same panel the gear opens, opened on the conversation's own binding
-    // rather than on the assistant's set.
+    // The same panel the gear opens, opened on the chat's own set: the header
+    // tag that was clicked names one of them.
     expect(settingsDrawer()).toBeInTheDocument();
+    // A chat that HAS datasets is never told it has selected none.
     expect(screen.queryByTestId('chat-settings-no-dataset')).toBeNull();
     expect(
       screen.getByTestId('chat-settings-section-retrieval'),
@@ -495,12 +488,9 @@ describe("a conversation's datasets in the settings drawer", () => {
     expect(selectedDatasetIds()).toBe('kb-1,kb-2');
   });
 
-  it('writes the conversation binding when the selection changes', async () => {
+  it("writes the chat's datasets when the selection changes", async () => {
     mockAssistant = buildAssistant(['kb-1']);
-    mockSessionList = [
-      { id: 'server-1', name: '国标查询', dataset_ids: ['kb-1'] },
-    ];
-    mockUpdateSession.mockResolvedValue({ code: 0 });
+    mockSessionList = [{ id: 'server-1', name: '国标查询' }];
 
     renderChatPage('/chat/assistant-1?conversationId=server-1');
     await waitForOpenSession();
@@ -513,18 +503,22 @@ describe("a conversation's datasets in the settings drawer", () => {
     fireEvent.click(screen.getByTestId('pick-kb-3'));
     submitSettings();
 
-    await waitFor(() => expect(mockUpdateSession).toHaveBeenCalledTimes(1));
-    expect(mockUpdateSession).toHaveBeenCalledWith({
-      chatId: 'assistant-1',
-      sessionId: 'server-1',
-      params: { dataset_ids: ['kb-1', 'kb-3'] },
-    });
+    await waitFor(() => expect(mockUpdateChat).toHaveBeenCalledTimes(1));
+    // The field is part of the chat's own settings: what it saves is the set
+    // every conversation under this chat answers from.
+    expect(mockUpdateChat.mock.calls[0][0].params.dataset_ids).toEqual([
+      'kb-1',
+      'kb-3',
+    ]);
+    // And nothing is bound to the conversation: it has no dataset set of its own
+    // to be mixed up.
+    expect(mockUpdateSession).not.toHaveBeenCalled();
+    expect(mockCreateSession).not.toHaveBeenCalled();
   });
 
-  it('stores no binding when the selection is confirmed unchanged', async () => {
-    mockAssistant = buildAssistant(['kb-1']);
-    mockSessionList = [{ id: 'server-1', name: '国标查询', dataset_ids: null }];
-    mockUpdateSession.mockResolvedValue({ code: 0 });
+  it('saves the set the panel opened on, without a session binding', async () => {
+    mockAssistant = buildAssistant(['kb-1', 'kb-2']);
+    mockSessionList = [{ id: 'server-1', name: '国标查询' }];
 
     renderChatPage('/chat/assistant-1?conversationId=server-1');
     await waitForOpenSession();
@@ -532,16 +526,18 @@ describe("a conversation's datasets in the settings drawer", () => {
     fireEvent.click(screen.getByTestId('rail-settings'));
     openDatasetFieldSection();
 
-    expect(selectedDatasetIds()).toBe('kb-1');
+    expect(selectedDatasetIds()).toBe('kb-1,kb-2');
     submitSettings();
 
-    await waitFor(() => expect(mockUpdateSession).toHaveBeenCalledTimes(1));
-    // Binding the set the panel opened on would freeze the conversation on
-    // today's assistant datasets; `null` keeps it following the assistant.
-    expect(mockUpdateSession.mock.calls[0][0].params.dataset_ids).toBeNull();
+    await waitFor(() => expect(mockUpdateChat).toHaveBeenCalledTimes(1));
+    expect(mockUpdateChat.mock.calls[0][0].params.dataset_ids).toEqual([
+      'kb-1',
+      'kb-2',
+    ]);
+    expect(mockUpdateSession).not.toHaveBeenCalled();
   });
 
-  it('creates the session with the picked datasets when it has no row yet', async () => {
+  it('saves the chosen datasets for a conversation the server does not know yet', async () => {
     mockCreateSession.mockResolvedValue({ code: 0, data: { id: 'server-9' } });
 
     renderChatPage(
@@ -552,24 +548,20 @@ describe("a conversation's datasets in the settings drawer", () => {
     fireEvent.click(screen.getByTestId('pick-kb-2'));
     submitSettings();
 
-    await waitFor(() => expect(mockCreateSession).toHaveBeenCalledTimes(1));
-    // A conversation that is only in the browser has no row to patch, so the
-    // save creates it with the binding on it: retrieval finds the datasets on
-    // the very first question.
-    expect(mockCreateSession).toHaveBeenCalledWith({
-      chatId: 'assistant-1',
-      name: NewConversationName,
-      datasetIds: ['kb-2'],
-    });
-    await waitFor(() =>
-      expect(screen.getByTestId('route-params')).toHaveTextContent('server-9|'),
+    await waitFor(() => expect(mockUpdateChat).toHaveBeenCalledTimes(1));
+    // The choice is the CHAT's, so a conversation that only exists in the
+    // browser needs no row of its own to answer from it — and the save does not
+    // create one behind the user.
+    expect(mockUpdateChat.mock.calls[0][0].params.dataset_ids).toEqual(['kb-2']);
+    expect(mockCreateSession).not.toHaveBeenCalled();
+    expect(screen.getByTestId('route-params')).toHaveTextContent(
+      'temp-placeholder|true',
     );
   });
 
-  it("still saves the assistant's own settings, with its dataset set left to itself", async () => {
+  it("saves the chat's other settings with the same request", async () => {
     mockAssistant = buildAssistant(['kb-1']);
-    mockSessionList = [{ id: 'server-1', name: '国标查询', dataset_ids: null }];
-    mockUpdateSession.mockResolvedValue({ code: 0 });
+    mockSessionList = [{ id: 'server-1', name: '国标查询' }];
 
     renderChatPage('/chat/assistant-1?conversationId=server-1');
     await waitForOpenSession();
@@ -581,12 +573,12 @@ describe("a conversation's datasets in the settings drawer", () => {
 
     await waitFor(() => expect(mockUpdateChat).toHaveBeenCalledTimes(1));
 
-    // The field edits the conversation, so the assistant keeps the set it was
-    // configured with — which is what a conversation with no binding inherits.
+    // One panel, one record: the datasets travel with the name and the prompt
+    // settings rather than in a second request of their own.
     const params = mockUpdateChat.mock.calls[0][0].params;
 
-    expect(params.dataset_ids).toEqual(['kb-1']);
+    expect(params.dataset_ids).toEqual(['kb-1', 'kb-2']);
     expect(params.name).toBe('电线助手');
-    expect(mockUpdateSession).toHaveBeenCalledTimes(1);
+    expect(mockUpdateSession).not.toHaveBeenCalled();
   });
 });
