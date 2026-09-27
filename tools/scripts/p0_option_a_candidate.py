@@ -104,6 +104,9 @@ def build_multi_route_candidate(source: str) -> str:
 
 
 REPORTER_CALLS = {"attach_retrieval_health", "begin_retrieval_health", "mark_empty_window", "mark_no_question", "report_route_failure", "report_route_success"}
+
+#: Answer policy stays out of this deployment (see health_bridge.ANSWER_POLICY_ENFORCEMENT).
+FORBIDDEN_POLICY_SYMBOLS = ("decide_answer_action", "required_notice", "AnswerAction", "refuse_insufficient", "refuse_failed")
 PRESERVED_CALLS = ("_retrieve_route", "multi_route_retrieve", "rerank_chunks", "merge_route_hits", "core_document_followup", "RouteResult", "empty_kbinfos")
 
 
@@ -211,6 +214,9 @@ def semantic_gate(baseline: str, candidate: str, label: str) -> dict:
             baseline_calls.add(node.func.id)
     introduced = new_calls - baseline_calls
     checks["only_reporter_calls_introduced"] = introduced <= REPORTER_CALLS
+    # Hard interception item: answer-policy enforcement must not exist in this deployment. A `partial`
+    # evidence state may be observed and exposed, never turned into a refusal.
+    checks["no_answer_policy_enforcement_symbols"] = not any(symbol in candidate for symbol in FORBIDDEN_POLICY_SYMBOLS)
 
     # Module-level comparison uses *headers* for functions (name + signature), because function
     # bodies legitimately contain the reporter calls; comparing whole dumps would report every

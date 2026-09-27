@@ -31,6 +31,7 @@
         "return_count_unchanged": true,
         "returns_only_wrapped_not_altered": true,
         "only_reporter_calls_introduced": true,
+        "no_answer_policy_enforcement_symbols": true,
         "no_module_level_statement_removed": true,
         "module_level_additions_are_import_only": true,
         "module_level_sequence_preserved": true
@@ -56,6 +57,7 @@
         "return_count_unchanged": true,
         "returns_only_wrapped_not_altered": true,
         "only_reporter_calls_introduced": true,
+        "no_answer_policy_enforcement_symbols": true,
         "no_module_level_statement_removed": true,
         "module_level_additions_are_import_only": true,
         "module_level_sequence_preserved": true

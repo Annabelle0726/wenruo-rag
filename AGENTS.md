@@ -495,3 +495,19 @@ Honest limits: the import lands before the entry function rather than in the top
 Nothing built, nothing recreated, live acceptance BLOCKED_BY_QUOTA and no substitute PASS claimed.
 
 Paths: phase_b_p0_option_a_semantic_diff.md, deploy/p0_baseline/pipeline.py, deploy/p0_baseline/pipeline.p0-candidate.py, deploy/p0_baseline/multi_route.p0-candidate.py, deploy/p0_baseline/p0_option_a.patch, deploy/p0_baseline/p0_option_a_semantic_diff_result.json, rag/retrieval/health_bridge.py, tools/scripts/p0_option_a_candidate.py, AGENTS.md
+
+## Milestone - Phase B P0-B candidate image built (recreate not authorized; live gate BLOCKED_BY_QUOTA)
+
+phase B P0-B: answer-policy decoupling, candidate image build, image-level semantic gate
+
+Pre-build interception implemented as a gate rather than a promise: the bridge declares ANSWER_POLICY_ENFORCEMENT disabled with answer_policy_enforced always False, and the candidate builder now fails the build if any answer-policy symbol appears in the candidate sources. Both files pass, so health is collected, aggregated and exposed while the baseline answer flow stays untouched and a partial evidence state cannot become a refusal. PLAN_EMPTY and THRESHOLD_EMPTY reasons are kept and the import anchor was not moved.
+
+Build: derived image from the base pinned by digest sha256 c50436820cb99f0244b29d2443c9de184b97896c82c060ac8bd58ef04aa190b0, tagged my-wenruorag:p0b-891572a71 id 99d0ee210004. latest and the rollback tag remain c50436820cb9, and the production container was neither restarted nor recreated. The derivation follows the existing phase-Dockerfile pattern, whose own header notes it is a verification artifact and that release still requires a normal compose build.
+
+Image-level gate on a temporary removed container: pipeline.py 341 lines and multi_route.py 340 lines inside the image; cross_part_fallback occurs zero times anywhere in the retrieval package including bytecode; no module-level _retrieve exists, only the nested deployed form; the anchors are exactly the approved ones, two begin and four attach in pipeline plus one success and one failure reporter in multi_route. Untouched files decomposition, rerank, query_router and chunk_profile are hash-identical to the production container, and the production pipeline hash equals the extracted baseline, confirming the extraction was faithful.
+
+Client compatibility: web consumers use dot access on reference chunks and doc_aggs, and no strict response schema exists; the single additionalProperties false is a python-component editor setting. Recorded caveats: one other endpoint returns reference as an array, and external consumers cannot be verified from here, so closed-schema validation remains a release-time obligation.
+
+Not done and not claimed: production recreate is not authorized and not executed, and live P0-C acceptance is BLOCKED_BY_QUOTA with no substitute PASS.
+
+Paths: phase_b_p0b_build_and_image_gate.md, rag/retrieval/health_bridge.py, tools/scripts/p0_option_a_candidate.py, deploy/p0_build, AGENTS.md
