@@ -42,6 +42,7 @@ from api.db.services.document_service import DocumentService
 from api.db.services.task_service import TaskService
 from rag.nlp import search, DEFAULT_DELIMITER
 from rag.nlp.doc_context import apply_document_context
+from rag.svr.auto_metadata_service import tag_document_metadata
 from rag.svr.task_executor_refactor.constants import GRAPH_RAPTOR_FAKE_DOC_ID
 from rag.svr.task_executor_refactor.task_context import TaskContext
 from rag.utils.base64_image import image2id
@@ -192,6 +193,31 @@ class ChunkService:
         # standard number is part of content_ltks, of the vector, of the chunk id
         # and of the text handed back to the model.
         apply_document_context(cks, ctx.name, language=ctx.language)
+
+        # Auto metadata tagging: the standard number, voltage level, cable type and
+        # document type a cable document declares are IN the document (cover page,
+        # running header, file name), but nothing put them into the document's
+        # metadata - so the file list showed "0 fields", and an assistant whose
+        # metadata matching is on had no key to match. A zero-token regex pass over
+        # the name and the document head runs first; ONE chat call is spent only when
+        # that could not identify the document (see `rag/nlp/auto_metadata.py`).
+        #
+        # It runs HERE - after `apply_document_context` bound the standard number into
+        # the chunks (so the metadata FIELD and the `[标准号: …]` prefix every chunk
+        # carries cannot disagree) and before the embedding stage and the chunk write,
+        # which are the irreversible ones. It is the SAME call the original executor
+        # makes (`rag/svr/task_executor.py::_auto_tag_document`), through the shared
+        # `rag.svr.auto_metadata_service`, because `TE_RUN_MODE=0` - the default -
+        # runs this path and only this path. Never raises.
+        await tag_document_metadata(
+            doc_id=ctx.doc_id,
+            name=ctx.name,
+            chunks=cks,
+            tenant_id=ctx.tenant_id,
+            llm_id=ctx.llm_id,
+            language=ctx.language,
+            write_interceptor=ctx.write_interceptor,
+        )
 
         # Record raw chunks
         self._task_context.recording_context.record("raw_chunks", cks)

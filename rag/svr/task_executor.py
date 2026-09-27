@@ -357,35 +357,28 @@ async def _auto_tag_document(task, cks, language):
     parser's (outline, table aggregations) must not be overwritten by an automatic
     pass.
 
+    Everything but this wiring - the chat model the one optional call is made with,
+    the merge, and the REPORTING of a write the store rejected - lives in
+    :mod:`rag.svr.auto_metadata_service`, which the refactored executor calls too:
+    the two paths must not be able to drift, because ``TE_RUN_MODE=0`` (the default)
+    runs only the refactored one.
+
     Returns the fields that were written, or ``{}`` when there were none.
     """
-    from rag.nlp.auto_metadata import LLM_SCAN_CHARS, auto_tag, document_text
+    from rag.svr.auto_metadata_service import tag_document_metadata
 
-    text = document_text(cks, limit=LLM_SCAN_CHARS)
-    llm = None
-    if task.get("llm_id"):
-        try:
-            chat_model_config = resolve_model_config(task["tenant_id"], LLMType.CHAT, task["llm_id"])
-            llm = LLMBundle(task["tenant_id"], chat_model_config, lang=language)
-        except Exception:
-            logging.warning("auto metadata tagging: no chat model for tenant %s; the regex pass runs alone", task.get("tenant_id"), exc_info=True)
+    def _record(written):
+        get_recording_context().save_func_return_value("DocMetadataService.update_document_metadata", written)
 
-    result = await auto_tag(task["name"], text, llm=llm)
-    if not result.fields:
-        logging.info("auto metadata tagging found nothing for %s (source=%s)", task["name"], result.source)
-        return {}
-
-    existing = DocMetadataService.get_document_metadata(task["doc_id"]) or {}
-    merged = update_metadata_to(dict(result.fields), existing)
-    ret = DocMetadataService.update_document_metadata(task["doc_id"], merged)
-    get_recording_context().save_func_return_value("DocMetadataService.update_document_metadata", ret)
-    logging.info(
-        "auto metadata tagging (%s) for %s: %s",
-        result.source,
-        task["name"],
-        ", ".join(f"{key}={value}" for key, value in result.fields.items()),
+    return await tag_document_metadata(
+        doc_id=task["doc_id"],
+        name=task["name"],
+        chunks=cks,
+        tenant_id=task["tenant_id"],
+        llm_id=task.get("llm_id"),
+        language=language,
+        on_write_result=_record,
     )
-    return result.fields
 
 
 async def build_chunks(task, progress_callback, on_chunking_start=None):
