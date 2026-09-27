@@ -393,3 +393,19 @@ tie-breaker**; ties fall through to insertion order, which decomposes into route
 Effect on the conclusions: unchanged headline. A changed input can enter at the LLM sub-queries (on a cache
 miss) and at two pool-dependent branches; once the inputs and the pool are fixed, every ordering step is a pure
 function. No fix, no parameter change, no index write.
+
+## Milestone - Failure-mode characterization (Task A-F)
+
+characterization: cold-cache decomposition and dense-route silent degradation
+
+Task A: with the cache bypassed in process (production Redis never read, written or flushed) the same question yields different route sets on repeat, while chat-model call counts prove the cache was bypassed rather than hit. The retrieval replay half is BLOCKED_BY_EMBEDDING_QUOTA because the remote quota is exhausted, so no window-level materiality claim is made. Verdict on the cache: it is de facto performing reproducibility stabilisation.
+
+Task B: the degradation chain ends in a normal result object with no health field, warning-only logging and a window built from surviving routes; classification SILENT_RETRIEVAL_DEGRADATION, with the HTTP layer NOT VERIFIED because no API call was issued.
+
+Task C: family availability and authoritative-evidence availability reported separately, the latter NOT REVIEWED. Task D: tie-breaker downgraded to LATENT TIE-BREAK RISK - NOT OBSERVED AS A FAILURE. Tasks E and F: failure mode matrix and corpus-independent generalization risk table added.
+
+Correction: the instrumentation-v2 stage capture is retracted. Every one of its 120 runs returned an empty window and 8 to 10 of 10 runs per query raised TypeError classmethod not callable from this round own wrapper, absorbed by route-failure isolation. Sections 10, 12 and 13 numbers are withdrawn; the stability result rests on probe v1 with 240 clean runs. A correction notice is appended to retrieval_reproducibility.md as section 14.
+
+No fix, no parameter change, no index write, no Redis mutation.
+
+Paths: failure_mode_characterization.md, failure_mode_characterization.json, tools/scripts/failure_mode_characterization.py, tools/scripts/decomposition_cold_cache_probe.py, decomposition_cold_raw.txt, retrieval_reproducibility.md, AGENTS.md

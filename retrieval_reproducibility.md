@@ -876,3 +876,13 @@ tie-breaker**; ties fall through to insertion order, which decomposes into route
 Effect on the conclusions: unchanged headline. A changed input can enter at the LLM sub-queries (on a cache
 miss) and at two pool-dependent branches; once the inputs and the pool are fixed, every ordering step is a pure
 function. No fix, no parameter change, no index write.
+
+## 14. CORRECTION: instrumentation v2 is retracted
+
+Every one of the 120 runs of the instrumentation-v2 stage capture returned an **empty** final window, and
+8 to 10 of 10 runs per query raised `TypeError: 'classmethod' object is not callable` from this round's own
+wrapper, which the pipeline route-failure isolation absorbed. Sections 10, 12 and 13 drew pool sizes, cutoff
+deltas and per-route identities from that run; **those specific numbers are withdrawn as evidence**. The
+stability result in sections 3-7 rests on probe v1 (240 runs, zero errors, zero quota failures) and is
+unaffected. The 429 lines in the stage-probe stderr are real, but the empty windows cannot be attributed to
+the quota because the instrumentation broke retrieval in the same runs. See `failure_mode_characterization.md`.

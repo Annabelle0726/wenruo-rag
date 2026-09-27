@@ -1,0 +1,864 @@
+{
+  "purpose": "Failure-mode characterization: cold-cache decomposition sensitivity and dense-route degradation",
+  "headline": "Under pinned inputs and configuration, deployed retrieval is reproducible. The remaining reproducibility and availability risks are upstream LLM decomposition on cache miss and runtime dense-route degradation.",
+  "no_fix_declaration": "No retrieval parameter, prompt, reranker, embedding model, index, Redis key, or deployed file was modified in this round.",
+  "task_a": {
+    "isolation_method": "in-process cache bypass (get_llm_cache forced to miss, set_llm_cache no-op); production Redis never read, written, deleted or flushed",
+    "cache_functions_before_patch": {
+      "get_llm_cache": "function",
+      "set_llm_cache": "function"
+    },
+    "patched_modules": [
+      "rag.graphrag.utils"
+    ],
+    "chat_model_calls_total": 60,
+    "frozen_parameters": {
+      "similarity_threshold": 0.2,
+      "vector_similarity_weight": 0.6,
+      "routes_top_k": 12,
+      "final_top_n": 8,
+      "knn_top_k": 1024,
+      "max_sub_queries": 4,
+      "allow_dense_fallback": true
+    },
+    "queries": [
+      {
+        "id": "C_STD",
+        "kind": "COMPOSITE",
+        "raw_query": "Q/GDW 73286.2-2026 中 220kV 单芯海底电缆的内衬层厚度和铠装层要求分别是多少？",
+        "looks_composite": true,
+        "runs": 10,
+        "decomposition_calls_per_run": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "distinct_decomposition_count": 2,
+        "distinct_decompositions": [
+          [
+            "Q/GDW 73286.2-2026 中 220kV 单芯海底电缆的内衬层厚度要求是多少",
+            "Q/GDW 73286.2-2026 中 220kV 单芯海底电缆的铠装层要求是什么"
+          ],
+          [
+            "Q/GDW 73286.2-2026 中 220kV 单芯海底电缆的内衬层厚度是多少",
+            "Q/GDW 73286.2-2026 中 220kV 单芯海底电缆的铠装层要求是什么"
+          ]
+        ],
+        "pairwise_sub_query_jaccard_min": 0.3333,
+        "pairwise_route_set_jaccard_min": 0.5,
+        "sub_query_count_per_run": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "max_symmetric_difference_between_decompositions": 2,
+        "replay_windows_empty": true,
+        "replay_window_sizes": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "replay_status": "BLOCKED_BY_EMBEDDING_QUOTA"
+      },
+      {
+        "id": "C_COMPARE",
+        "kind": "COMPOSITE",
+        "raw_query": "220kV 单芯和三芯海底电缆的内衬层要求有什么区别？",
+        "looks_composite": true,
+        "runs": 10,
+        "decomposition_calls_per_run": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "distinct_decomposition_count": 4,
+        "distinct_decompositions": [
+          [
+            "220kV 单芯海底电缆的内衬层要求是什么",
+            "220kV 三芯海底电缆的内衬层要求是什么"
+          ],
+          [
+            "220kV海底电缆单芯与三芯的内衬层要求有什么区别",
+            "220kV单芯海底电缆的内衬层要求是什么",
+            "220kV三芯海底电缆的内衬层要求是什么"
+          ],
+          [
+            "220kV 单芯海底电缆的内衬层要求",
+            "220kV 三芯海底电缆的内衬层要求"
+          ],
+          [
+            "220kV 单芯海底电缆的内衬层要求是什么",
+            "220kV 三芯海底电缆的内衬层要求是什么",
+            "220kV 海底电缆单芯和三芯内衬层要求有什么区别"
+          ]
+        ],
+        "pairwise_sub_query_jaccard_min": 0.0,
+        "pairwise_route_set_jaccard_min": 0.375,
+        "sub_query_count_per_run": [
+          2,
+          3,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          3
+        ],
+        "max_symmetric_difference_between_decompositions": 5,
+        "replay_windows_empty": true,
+        "replay_window_sizes": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "replay_status": "BLOCKED_BY_EMBEDDING_QUOTA"
+      },
+      {
+        "id": "C_PARTS",
+        "kind": "COMPOSITE",
+        "raw_query": "导体、内衬层和铠装层分别有什么技术要求？",
+        "looks_composite": true,
+        "runs": 10,
+        "decomposition_calls_per_run": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "distinct_decomposition_count": 3,
+        "distinct_decompositions": [
+          [
+            "导体有什么技术要求？",
+            "内衬层有什么技术要求？",
+            "铠装层有什么技术要求？"
+          ],
+          [
+            "导体的技术要求是什么？",
+            "内衬层的技术要求是什么？",
+            "铠装层的技术要求是什么？"
+          ],
+          [
+            "导体的技术要求",
+            "内衬层的技术要求",
+            "铠装层的技术要求"
+          ]
+        ],
+        "pairwise_sub_query_jaccard_min": 0.0,
+        "pairwise_route_set_jaccard_min": 0.1429,
+        "sub_query_count_per_run": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "max_symmetric_difference_between_decompositions": 6,
+        "replay_windows_empty": true,
+        "replay_window_sizes": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "replay_status": "BLOCKED_BY_EMBEDDING_QUOTA"
+      },
+      {
+        "id": "C_MULTI",
+        "kind": "COMPOSITE",
+        "raw_query": "单芯电缆与三芯电缆在金属套厚度和铠装层结构上有什么不同，各自依据哪份规范？",
+        "looks_composite": true,
+        "runs": 10,
+        "decomposition_calls_per_run": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "distinct_decomposition_count": 3,
+        "distinct_decompositions": [
+          [
+            "单芯电缆的金属套厚度要求是什么",
+            "三芯电缆的金属套厚度要求是什么",
+            "单芯电缆的铠装层结构要求是什么",
+            "三芯电缆的铠装层结构要求是什么"
+          ],
+          [
+            "单芯电缆的金属套厚度依据哪份规范",
+            "三芯电缆的金属套厚度依据哪份规范",
+            "单芯电缆的铠装层结构依据哪份规范",
+            "三芯电缆的铠装层结构依据哪份规范"
+          ],
+          [
+            "单芯电缆金属套厚度依据哪份规范",
+            "三芯电缆金属套厚度依据哪份规范",
+            "单芯电缆铠装层结构依据哪份规范",
+            "三芯电缆铠装层结构依据哪份规范"
+          ]
+        ],
+        "pairwise_sub_query_jaccard_min": 0.0,
+        "pairwise_route_set_jaccard_min": 0.2727,
+        "sub_query_count_per_run": [
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "max_symmetric_difference_between_decompositions": 8,
+        "replay_windows_empty": true,
+        "replay_window_sizes": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "replay_status": "BLOCKED_BY_EMBEDDING_QUOTA"
+      },
+      {
+        "id": "N_STD",
+        "kind": "NON_COMPOSITE_CONTROL",
+        "raw_query": "Q/GDW 73286.2-2026 是什么标准？",
+        "looks_composite": true,
+        "runs": 10,
+        "decomposition_calls_per_run": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "distinct_decomposition_count": 3,
+        "distinct_decompositions": [
+          [
+            "Q/GDW 73286.2-2026 是什么标准"
+          ],
+          [
+            "Q/GDW 73286.2-2026 是什么标准",
+            "Q/GDW 73286.2-2026 标准的内容范围是什么"
+          ],
+          []
+        ],
+        "pairwise_sub_query_jaccard_min": 0.0,
+        "pairwise_route_set_jaccard_min": 0.5,
+        "sub_query_count_per_run": [
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ],
+        "max_symmetric_difference_between_decompositions": 2,
+        "replay_windows_empty": true,
+        "replay_window_sizes": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "replay_status": "BLOCKED_BY_EMBEDDING_QUOTA"
+      },
+      {
+        "id": "N_ARMOUR",
+        "kind": "NON_COMPOSITE_CONTROL",
+        "raw_query": "220kV 三芯海底电缆的铠装层要求是什么？",
+        "looks_composite": true,
+        "runs": 10,
+        "decomposition_calls_per_run": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "distinct_decomposition_count": 5,
+        "distinct_decompositions": [
+          [],
+          [
+            "220kV 三芯海底电缆的铠装层要求是什么"
+          ],
+          [
+            "220kV 三芯海底电缆的铠装层材料要求是什么？",
+            "220kV 三芯海底电缆的铠装层结构要求是什么？"
+          ],
+          [
+            "220kV 三芯海底电缆的铠装层材料要求",
+            "220kV 三芯海底电缆的铠装层结构要求"
+          ]
+        ],
+        "pairwise_sub_query_jaccard_min": 0.0,
+        "pairwise_route_set_jaccard_min": 0.2,
+        "sub_query_count_per_run": [
+          0,
+          1,
+          0,
+          1,
+          1,
+          2,
+          0,
+          2,
+          0,
+          1
+        ],
+        "max_symmetric_difference_between_decompositions": 4,
+        "replay_windows_empty": true,
+        "replay_window_sizes": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "replay_status": "BLOCKED_BY_EMBEDDING_QUOTA"
+      }
+    ],
+    "composite_queries": [
+      "C_STD",
+      "C_COMPARE",
+      "C_PARTS",
+      "C_MULTI"
+    ],
+    "control_queries": [
+      "N_STD",
+      "N_ARMOUR"
+    ],
+    "queries_with_variance": [
+      "C_STD",
+      "C_COMPARE",
+      "C_PARTS",
+      "C_MULTI",
+      "N_STD",
+      "N_ARMOUR"
+    ],
+    "verdict": "MATERIAL_DECOMPOSITION_VARIANCE_OBSERVED_AT_ROUTE_LEVEL_REPLAY_BLOCKED",
+    "stderr": {
+      "quota_error_lines": 460,
+      "route_failure_lines": 230,
+      "type_error_lines": 0
+    },
+    "redis_role_verdict": "REDIS_CACHE_IS_FACTUALLY_PERFORMING_REPRODUCIBILITY_STABILISATION: with the cache bypassed the same question yields different route sets on repeat, while the earlier warm-cache round produced byte-identical decompositions and 10/10 identical evidence windows over 240 runs."
+  },
+  "task_b": {
+    "chain": [
+      "embedding request failure (429 RESOURCE_EXHAUSTED from the remote embedding API)",
+      "route-level exception handling: the failing route is isolated and logged as a warning, the remaining routes continue",
+      "warning/error: warning only, in the retrieval module logger",
+      "remaining candidate pool: the window is built from the routes that survived",
+      "synthesis caller: receives the normal result object"
+    ],
+    "machine_readable_degradation_state": "NOT PRESENT",
+    "machine_readable_evidence": "the retrieval result exposes exactly ['[\"chunks\", \"doc_aggs\", \"total\"]'] and no degraded/health field; a 240-run probe in which nothing failed returned zero errors, and the quota-affected probes returned the same key set",
+    "caller_awareness": "NOT AWARE in the silent case; in the observed 429 trace the caller sometimes received a raised exception instead, so awareness is path-dependent rather than guaranteed",
+    "http_200_claim": "NOT VERIFIED THIS ROUND (no API call was issued; doing so would consume embedding quota, which is forbidden by the round rules)",
+    "trace_evidence": {
+      "stage_probe_429_route_failures": 139,
+      "stage_probe_429_quota_lines": 290,
+      "cold_probe_429_route_failures": 230,
+      "cold_probe_429_quota_lines": 460,
+      "quota_cap_evidence": "free-tier limit 1000 embed requests/day for gemini-embedding-1.0 as reported by the API error body"
+    },
+    "classification": "SILENT_RETRIEVAL_DEGRADATION",
+    "classification_scope": "supported for the retrieval layer (no degradation flag, warning-only logging, window built from surviving routes); the HTTP layer is NOT VERIFIED"
+  },
+  "task_c": {
+    "document_family_availability": "stable within a pinned configuration (v1: target family present in the window in 10/10 runs for every query that has a defined target family)",
+    "authoritative_evidence_availability": "NOT REVIEWED (no human annotation exists; the earlier human evidence template is still all PENDING, so no authoritative-evidence claim is made)",
+    "structural_record": [
+      {
+        "id": "S_A1",
+        "class": "CANDIDATE_STABLE",
+        "first_divergence_stage": "NONE_UP_TO_FINAL_SELECTION",
+        "exact_match_rate": "10/10",
+        "jaccard_at_k_mean": 1.0,
+        "classification": "STABLE",
+        "family_runs_with_target_family": 10
+      },
+      {
+        "id": "S_A3",
+        "class": "CANDIDATE_STABLE",
+        "first_divergence_stage": "NONE_UP_TO_FINAL_SELECTION",
+        "exact_match_rate": "10/10",
+        "jaccard_at_k_mean": 1.0,
+        "classification": "STABLE",
+        "family_runs_with_target_family": 10
+      },
+      {
+        "id": "S_B1",
+        "class": "CANDIDATE_STABLE",
+        "first_divergence_stage": "NONE_UP_TO_FINAL_SELECTION",
+        "exact_match_rate": "10/10",
+        "jaccard_at_k_mean": 1.0,
+        "classification": "STABLE",
+        "family_runs_with_target_family": 10
+      },
+      {
+        "id": "S_C3",
+        "class": "CANDIDATE_STABLE",
+        "first_divergence_stage": "NONE_UP_TO_FINAL_SELECTION",
+        "exact_match_rate": "10/10",
+        "jaccard_at_k_mean": 1.0,
+        "classification": "STABLE",
+        "family_runs_with_target_family": null
+      },
+      {
+        "id": "U_A2",
+        "class": "CANDIDATE_UNSTABLE",
+        "first_divergence_stage": "NONE_UP_TO_FINAL_SELECTION",
+        "exact_match_rate": "10/10",
+        "jaccard_at_k_mean": 1.0,
+        "classification": "STABLE",
+        "family_runs_with_target_family": 10
+      },
+      {
+        "id": "U_A4",
+        "class": "CANDIDATE_UNSTABLE",
+        "first_divergence_stage": "NONE_UP_TO_FINAL_SELECTION",
+        "exact_match_rate": "10/10",
+        "jaccard_at_k_mean": 1.0,
+        "classification": "STABLE",
+        "family_runs_with_target_family": 0
+      },
+      {
+        "id": "U_A5",
+        "class": "CANDIDATE_UNSTABLE",
+        "first_divergence_stage": "NONE_UP_TO_FINAL_SELECTION",
+        "exact_match_rate": "10/10",
+        "jaccard_at_k_mean": 1.0,
+        "classification": "STABLE",
+        "family_runs_with_target_family": null
+      },
+      {
+        "id": "U_B6",
+        "class": "CANDIDATE_UNSTABLE",
+        "first_divergence_stage": "NONE_UP_TO_FINAL_SELECTION",
+        "exact_match_rate": "10/10",
+        "jaccard_at_k_mean": 1.0,
+        "classification": "STABLE",
+        "family_runs_with_target_family": null
+      },
+      {
+        "id": "U_C1",
+        "class": "CANDIDATE_UNSTABLE",
+        "first_divergence_stage": "NONE_UP_TO_FINAL_SELECTION",
+        "exact_match_rate": "10/10",
+        "jaccard_at_k_mean": 1.0,
+        "classification": "STABLE",
+        "family_runs_with_target_family": null
+      },
+      {
+        "id": "K_STD",
+        "class": "CRITICAL_BUSINESS",
+        "first_divergence_stage": "NONE_UP_TO_FINAL_SELECTION",
+        "exact_match_rate": "10/10",
+        "jaccard_at_k_mean": 1.0,
+        "classification": "STABLE",
+        "family_runs_with_target_family": 10
+      },
+      {
+        "id": "K_3CORE",
+        "class": "CRITICAL_BUSINESS",
+        "first_divergence_stage": "NONE_UP_TO_FINAL_SELECTION",
+        "exact_match_rate": "10/10",
+        "jaccard_at_k_mean": 1.0,
+        "classification": "STABLE",
+        "family_runs_with_target_family": 10
+      },
+      {
+        "id": "K_LAYER",
+        "class": "CRITICAL_BUSINESS",
+        "first_divergence_stage": "NONE_UP_TO_FINAL_SELECTION",
+        "exact_match_rate": "10/10",
+        "jaccard_at_k_mean": 1.0,
+        "classification": "STABLE",
+        "family_runs_with_target_family": 10
+      }
+    ]
+  },
+  "task_d": {
+    "tie_breaker_status": "LATENT TIE-BREAK RISK - NOT OBSERVED AS A FAILURE",
+    "basis": "three candidate-ordering sites have no secondary sort key, but 240 pinned runs produced 10/10 identical windows and Jaccard@K 1.0, so no tie-induced window change was observed"
+  },
+  "task_e_failure_mode_matrix": [
+    {
+      "failure_mode": "LLM decomposition variance (cold cache)",
+      "status": "OBSERVED",
+      "evidence": "cold-cache probe: distinct route sets per query on repeat",
+      "impact": "route-set change; window impact BLOCKED_BY_EMBEDDING_QUOTA"
+    },
+    {
+      "failure_mode": "Embedding quota exhaustion (remote API 429)",
+      "status": "OBSERVED",
+      "evidence": "460 quota lines and 230 route-failure lines in the cold probe; 290/139 in the stage probe",
+      "impact": "dense route drops out, warning-only, no degradation flag"
+    },
+    {
+      "failure_mode": "ANN nondeterminism (same vector, same query)",
+      "status": "NO / controlled replay / NOT OBSERVED",
+      "evidence": "240 pinned runs with 10/10 identical windows; three identical GET kNN probes bit-identical",
+      "impact": "none observed"
+    },
+    {
+      "failure_mode": "Score tie instability (equal or near-equal score)",
+      "status": "LATENT RISK",
+      "evidence": "no secondary sort key at any of the three ordering sites; no tie-induced change observed in 240 runs",
+      "impact": "none observed"
+    },
+    {
+      "failure_mode": "Hash ordering (process hash seed)",
+      "status": "CLOSED / NO PATH",
+      "evidence": "no set-ordered or dict-ordered construct reaches candidate order; the only hashing is content-addressed",
+      "impact": "none"
+    }
+  ],
+  "task_f_generalization_risks": [
+    {
+      "risk": "external embedding dependency",
+      "mechanism": "query and document vectors come from a remote provider with a request quota; exhaustion removes an entire retrieval leg",
+      "corpus_independent": true,
+      "observed": "YES"
+    },
+    {
+      "risk": "decomposition sampling",
+      "mechanism": "the decomposition model call sets no temperature, top_p or seed, so a cache miss can return a different route set",
+      "corpus_independent": true,
+      "observed": "YES"
+    },
+    {
+      "risk": "cache-dependent reproducibility",
+      "mechanism": "reproducibility currently rests on a time-limited external cache rather than on deterministic generation",
+      "corpus_independent": true,
+      "observed": "YES"
+    },
+    {
+      "risk": "silent route degradation",
+      "mechanism": "a failed leg is logged as a warning and the result object carries no health field",
+      "corpus_independent": true,
+      "observed": "YES"
+    },
+    {
+      "risk": "score tie handling",
+      "mechanism": "ordering is score-only with no secondary key, so ties inherit insertion order",
+      "corpus_independent": true,
+      "observed": "NO (latent)"
+    },
+    {
+      "risk": "pool-dependent fallback amplification",
+      "mechanism": "recall-floor and follow-up branches are decided by pool composition, so a small upstream change can change the route set and then every downstream tie",
+      "corpus_independent": true,
+      "observed": "DERIVED"
+    }
+  ],
+  "correction_v2_instrumentation": {
+    "statement": "The instrumentation-v2 stage capture is retracted. Every one of its 120 runs returned an empty window, and 8 to 10 of 10 runs per query raised TypeError: 'classmethod' object is not callable from this round's own wrapper, which the pipeline route-failure isolation absorbed.",
+    "runs": [
+      {
+        "id": "S_A1",
+        "runs": 10,
+        "runs_raising": 10,
+        "window_lengths": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "S_A3",
+        "runs": 10,
+        "runs_raising": 10,
+        "window_lengths": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "S_B1",
+        "runs": 10,
+        "runs_raising": 10,
+        "window_lengths": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "S_C3",
+        "runs": 10,
+        "runs_raising": 10,
+        "window_lengths": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "U_A2",
+        "runs": 10,
+        "runs_raising": 10,
+        "window_lengths": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "U_A4",
+        "runs": 10,
+        "runs_raising": 10,
+        "window_lengths": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "U_A5",
+        "runs": 10,
+        "runs_raising": 10,
+        "window_lengths": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "U_B6",
+        "runs": 10,
+        "runs_raising": 8,
+        "window_lengths": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "U_C1",
+        "runs": 10,
+        "runs_raising": 0,
+        "window_lengths": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "K_STD",
+        "runs": 10,
+        "runs_raising": 0,
+        "window_lengths": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "K_3CORE",
+        "runs": 10,
+        "runs_raising": 0,
+        "window_lengths": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "K_LAYER",
+        "runs": 10,
+        "runs_raising": 0,
+        "window_lengths": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ],
+    "effect": "Sections 10, 12 and 13 of retrieval_reproducibility.md drew pool sizes, cutoff deltas and per-route identities from that run. Those specific numbers are withdrawn as evidence; the stability result rests on probe v1 (240 runs, zero errors, zero quota failures), which is unaffected.",
+    "quota_attribution": "The 429 lines in the stage-probe stderr are real, but the empty windows cannot be attributed to the quota because the instrumentation itself broke retrieval in the same runs."
+  },
+  "limitations": [
+    "Task A materiality is answered at the route-set level only; the evidence-window half is BLOCKED_BY_EMBEDDING_QUOTA because the embedding quota is exhausted for the day.",
+    "No API call was made, so HTTP-level behaviour of a degraded retrieval is NOT VERIFIED.",
+    "Authoritative-evidence availability is NOT REVIEWED: no human annotation exists.",
+    "The remote quota resets daily, so the blocked replay can be repeated without any parameter change once quota is available."
+  ]
+}
