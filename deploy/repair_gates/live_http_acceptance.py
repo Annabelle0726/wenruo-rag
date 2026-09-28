@@ -21,7 +21,7 @@ settings.init_settings()
 
 import aiohttp
 from common import settings as app_settings
-from api.db.db_models import User
+from api.db.db_models import Dialog, User
 
 BASE = os.environ.get("P12_BASE_URL", "http://127.0.0.1:9380")
 DIALOG_ID = os.environ.get("P12_DIALOG_ID", "")
@@ -33,10 +33,17 @@ LEAK_MARKERS = ("AQ.Ab8RN6", "AIza", "api_key", "Authorization", "Bearer ", "gen
 
 
 def mint_token():
-    """The application's own serializer, exactly as `User.get_id()` mints a session token."""
+    """The application's own serializer, minted for the ASSISTANT'S OWNER.
+
+    `User.select().first()` is not that user: this deployment has four users in different tenants, and
+    a token minted for the wrong tenant is rejected by the authorization layer even though the token
+    itself is valid. The owner is the dialog's tenant.
+    """
     from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 
-    user = User.select().first()
+    dialog_row = Dialog.get_or_none(Dialog.id == DIALOG_ID)
+    owner_id = getattr(dialog_row, "tenant_id", None) or getattr(dialog_row, "created_by", None)
+    user = User.get_or_none(User.id == owner_id) or User.select().first()
     serializer = Serializer(secret_key=app_settings.get_secret_key())
     return str(serializer.dumps(str(user.access_token))), user.email
 
@@ -44,8 +51,8 @@ def mint_token():
 async def main():
     token, email = mint_token()
     headers = {"Authorization": token, "Content-Type": "application/json"}
-    body = {"question": QUESTION, "stream": True}
-    url = f"{BASE}/api/v1/chats/{DIALOG_ID}/completions"
+    body = {"question": QUESTION, "stream": True, "chat_id": DIALOG_ID}
+    url = f"{BASE}/api/v1/chat/completions"
 
     answers = []
     raw_lines = []
@@ -68,13 +75,17 @@ async def main():
                 except Exception:  # noqa: BLE001
                     answers.append({"_unparsed": line[:200]})
 
-    payload = next((item for item in reversed(answers) if isinstance(item, dict) and item.get("data") is True), {})
+    # Each frame is `data:{"code": 0, "message": "", "data": {...}}`: the turn's payload is NESTED
+    # under an outer envelope, and the answer arrives as DELTAS whose terminal frame carries the full
+    # reference and `final: true`.
+    frames = [item.get("data") for item in answers if isinstance(item, dict) and isinstance(item.get("data"), dict)]
+    payload = next((frame for frame in reversed(frames) if frame.get("final")), {})
     if not payload:
-        payload = next((item for item in reversed(answers) if isinstance(item, dict) and item.get("reference")), {})
+        payload = next((frame for frame in reversed(frames) if frame.get("reference")), {})
+    answer_text = "".join(str(frame.get("answer") or "") for frame in frames)
     reference = payload.get("reference") or {}
     chunks = reference.get("chunks") or []
     health = reference.get("retrieval_health")
-    answer_text = "".join(str(item.get("answer") or "") for item in answers if isinstance(item, dict))
     serialized = json.dumps({"answer": answer_text, "reference": reference}, ensure_ascii=False)
     leaks = [marker for marker in LEAK_MARKERS if marker in serialized]
 

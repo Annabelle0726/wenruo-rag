@@ -1,0 +1,58 @@
+{
+ "purpose": "live HTTP acceptance through the deployed server process",
+ "base_url": "http://127.0.0.1:9380",
+ "http_status": 200,
+ "user_email": "huizhu@arizona.edu",
+ "stream_items": 38,
+ "answer_length": 670,
+ "answer_head": "根据目前查到的资料，我这边只能就 Q/GDW 73286.2—2026（220kV 单芯海底电力电缆系统专用技术规范）中表1的规定来回答，三芯部分（Q/GDW 73286.3—2026）的具体截面范围暂时没有查到相关资料，没法给您做对比。\n\n先说单芯这边的情况。按照 Q/GDW 73286.2—2026 表1 电缆结构",
+ "reference_keys": [
+  "chunks",
+  "doc_aggs",
+  "retrieval_health",
+  "total"
+ ],
+ "chunk_count": 12,
+ "retrieval_health": {
+  "overall": "degraded",
+  "evidence_completeness": "partial",
+  "degradation_reason": "EMBEDDING_UNAVAILABLE"
+ },
+ "retrieval_health_field_set": [
+  "degradation_reason",
+  "evidence_completeness",
+  "overall"
+ ],
+ "retrieval_health_occurrences": 1,
+ "leak_markers_found": [],
+ "raw_stream_head": [
+  "data:{\"code\": 0, \"message\": \"\", \"data\": {\"answer\": \"根据目前查到的资料，我这边只能\", \"reference\": {\"chunks\": []}, \"audio_binary\": null, \"final\": false, \"id\": \"024abb60bafd11f1b2d39d6bc5628cd8\", \"session_id\": \"024ba55cbafd11f1b2d39d6bc5628cd8\", \"chat_id\": \"29a6da60ba1f11f1be9555eabe501d5b\"}}",
+  "data:{\"code\": 0, \"message\": \"\", \"data\": {\"answer\": \"就 Q/GDW 73286.2—2026（220kV\", \"reference\": {\"chunks\": []}, \"audio_binary\": null, \"final\": false, \"id\": \"024abb60bafd11f1b2d39d6bc5628cd8\", \"session_id\": \"024ba55cbafd11f1b2d39d6bc5628cd8\", \"chat_id\": \"29a6da60ba1f11f1be9555eabe501d5b\"}}",
+  "data:{\"code\": 0, \"message\": \"\", \"data\": {\"answer\": \" 单芯海底电力电缆系统专用技术\", \"reference\": {\"chunks\": []}, \"audio_binary\": null, \"final\": false, \"id\": \"024abb60bafd11f1b2d39d6bc5628cd8\", \"session_id\": \"024ba55cbafd11f1b2d39d6bc5628cd8\", \"chat_id\": \"29a6da60ba1f11f1be9555eabe501d5b\"}}",
+  "data:{\"code\": 0, \"message\": \"\", \"data\": {\"answer\": \"规范）中表1的规定来回答，三\", \"reference\": {\"chunks\": []}, \"audio_binary\": null, \"final\": false, \"id\": \"024abb60bafd11f1b2d39d6bc5628cd8\", \"session_id\": \"024ba55cbafd11f1b2d39d6bc5628cd8\", \"chat_id\": \"29a6da60ba1f11f1be9555eabe501d5b\"}}",
+  "data:{\"code\": 0, \"message\": \"\", \"data\": {\"answer\": \"芯部分（Q/GDW 73286.3—2026\", \"reference\": {\"chunks\": []}, \"audio_binary\": null, \"final\": false, \"id\": \"024abb60bafd11f1b2d39d6bc5628cd8\", \"session_id\": \"024ba55cbafd11f1b2d39d6bc5628cd8\", \"chat_id\": \"29a6da60ba1f11f1be9555eabe501d5b\"}}",
+  "data:{\"code\": 0, \"message\": \"\", \"data\": {\"answer\": \"）的具体截面范围暂时没有查到\", \"reference\": {\"chunks\": []}, \"audio_binary\": null, \"final\": false, \"id\": \"024abb60bafd11f1b2d39d6bc5628cd8\", \"session_id\": \"024ba55cbafd11f1b2d39d6bc5628cd8\", \"chat_id\": \"29a6da60ba1f11f1be9555eabe501d5b\"}}",
+  "data:{\"code\": 0, \"message\": \"\", \"data\": {\"answer\": \"相关资料，没法给您做对比。\\n\\n先说单\", \"reference\": {\"chunks\": []}, \"audio_binary\": null, \"final\": false, \"id\": \"024abb60bafd11f1b2d39d6bc5628cd8\", \"session_id\": \"024ba55cbafd11f1b2d39d6bc5628cd8\", \"chat_id\": \"29a6da60ba1f11f1be9555eabe501d5b\"}}",
+  "data:{\"code\": 0, \"message\": \"\", \"data\": {\"answer\": \"芯这边的情况。按照 Q/GDW\", \"reference\": {\"chunks\": []}, \"audio_binary\": null, \"final\": false, \"id\": \"024abb60bafd11f1b2d39d6bc5628cd8\", \"session_id\": \"024ba55cbafd11f1b2d39d6bc5628cd8\", \"chat_id\": \"29a6da60ba1f11f1be9555eabe501d5b\"}}",
+  "data:{\"code\": 0, \"message\": \"\", \"data\": {\"answer\": \" 73286.2—2026 表1 电缆结构\", \"reference\": {\"chunks\": []}, \"audio_binary\": null, \"final\": false, \"id\": \"024abb60bafd11f1b2d39d6bc5628cd8\", \"session_id\": \"024ba55cbafd11f1b2d39d6bc5628cd8\", \"chat_id\": \"29a6da60ba1f11f1be9555eabe501d5b\"}}",
+  "data:{\"code\": 0, \"message\": \"\", \"data\": {\"answer\": \"技术参数表的规定，导体标称截面\", \"reference\": {\"chunks\": []}, \"audio_binary\": null, \"final\": false, \"id\": \"024abb60bafd11f1b2d39d6bc5628cd8\", \"session_id\": \"024ba55cbafd11f1b2d39d6bc5628cd8\", \"chat_id\": \"29a6da60ba1f11f1be9555eabe501d5b\"}}",
+  "data:{\"code\": 0, \"message\": \"\", \"data\": {\"answer\": \"一共覆盖了 **10 种规格**，从小到大\", \"reference\": {\"chunks\": []}, \"audio_binary\": null, \"final\": false, \"id\": \"024abb60bafd11f1b2d39d6bc5628cd8\", \"session_id\": \"024ba55cbafd11f1b2d39d6bc5628cd8\", \"chat_id\": \"29a6da60ba1f11f1be9555eabe501d5b\"}}",
+  "data:{\"code\": 0, \"message\": \"\", \"data\": {\"answer\": \"依次是：1×400、1×500、1×630\", \"reference\": {\"chunks\": []}, \"audio_binary\": null, \"final\": false, \"id\": \"024abb60bafd11f1b2d39d6bc5628cd8\", \"session_id\": \"024ba55cbafd11f1b2d39d6bc5628cd8\", \"chat_id\": \"29a6da60ba1f11f1be9555eabe501d5b\"}}"
+ ],
+ "parsed_item_keys": [
+  "code",
+  "data",
+  "message"
+ ],
+ "checks": {
+  "http_200": true,
+  "answer_returned": true,
+  "reference_carries_chunks": true,
+  "exactly_one_retrieval_health": true,
+  "health_overall_degraded": true,
+  "health_reason_present": true,
+  "user_dto_exposes_no_internals": true,
+  "no_sensitive_leak": true
+ },
+ "passed": true
+}

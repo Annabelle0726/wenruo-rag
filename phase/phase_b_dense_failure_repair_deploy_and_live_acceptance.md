@@ -136,17 +136,45 @@ from deltas (the terminal chunk's `answer` is empty by design); the user DTO del
 `legs` field, so asserting one was asserting a leak-free property backwards; and `content_with_weight`
 is the passage text a client is *supposed* to receive, and is only a leak marker in the P0-7 log.
 
-### HTTP leg — attempted, NOT executed
+### HTTP leg — EXECUTED, 8/8 PASS
 
-A real HTTP call was made to the running server (`POST /api/v1/chats/<id>/completions`). It returns
-`200` with `{"code":108,"data":false,"message":"no authorization"}`, raised by
-`api/db/services/connector_service.py:224`, i.e. the request is stopped by the connector
-authorization layer before the chat route runs. **This is not attributable to this repair:** neither
-`search.py` nor `multi_route.py` imports or references the connector layer (the only three matches
-for the word are comments), and every byte on that path is identical to the previously deployed
-image. The minted session token itself round-trips correctly against the application's own serializer
-and the DB1 secret. The HTTP leg is therefore reported as **NOT EXECUTED**, and the in-process
-acceptance above is not presented as a substitute for it.
+A real HTTP call through the running server process, `POST /api/v1/chat/completions` with a session
+token minted by the application's own serializer for the assistant's **owner** (tenant
+`a9e28731ab7011f19b833887d563fb04`): **200**, a **670-character** answer, **12** referenced chunks,
+exactly **one** `retrieval_health` in the payload with `overall=degraded` /
+`EMBEDDING_UNAVAILABLE`, a user DTO exposing only `{overall, evidence_completeness,
+degradation_reason}`, and no sensitive marker anywhere in the response.
+
+The definitive P0-7 evidence is now in the **server process's own log stream** (PID 1), one line per
+turn, captured here verbatim from `docker logs`:
+
+```json
+{"contract_valid": true, "event": "retrieval_health", "evidence_completeness": "partial",
+ "legs": {"decomposition": "success", "dense": "failed", "followup": "not_triggered",
+          "lexical": "success", "rerank": "not_triggered"},
+ "overall": "degraded", "reason": "EMBEDDING_UNAVAILABLE",
+ "routes_attempted": 8, "routes_succeeded": 8, "schema_version": "1.0"}
+```
+
+Nine fields, exactly one line for a turn that ran eight routes, `dense: failed` with `lexical:
+success` — the operator event and the user DTO agree, and neither carries anything sensitive.
+
+**Three earlier failures of this leg were probe defects, and it is worth recording exactly what each
+was**, because the first draft of this report wrongly reported the leg as unexecutable:
+
+1. `POST /v1/chat/completions` → 404: the path is `/api/v1/...`; `v1/...` alone is not mounted.
+2. `POST /api/v1/chats/<id>/completions` → `200` with `{"code":108,"data":false,"message":"no
+   authorization"}`. This route is **deprecated** and the connector authorization layer stops the
+   request before the chat handler runs. It is *not* attributable to this repair (neither repaired
+   file references the connector layer, and every byte on that path is identical to the previously
+   deployed image), but the currently supported route works.
+3. `/api/v1/chat/completions` with a token minted for `User.select().first()` → the same `108`: this
+   deployment has four users in different tenants, and a token for the wrong tenant is refused even
+   though the token itself is valid. Minting for the assistant's owner succeeded.
+
+The stream framing was a fourth probe defect: each frame is `data:{"code":0,"message":"","data":{…}}`,
+so the turn's payload is nested under an outer envelope and the answer arrives as deltas whose
+terminal frame carries the reference and `final: true`.
 
 ---
 
@@ -191,9 +219,9 @@ which is the control that shows the degraded path can carry a target through.
 | `QGDW_THREE_CORE_FINAL_STATUS` | **not** in the final 12 passages — a selection/cut outcome on an 8-route composite question, reported, not tuned for |
 | `QGDW_SINGLE_CORE_MAIN_WINDOW_STATUS` | rank **38** — outside the frozen 30 window (inside the live 64); window **not** widened |
 | `QGDW_SINGLE_CONTROL_STATUS` | rank **28**, inside the window, **survived** and returned first |
-| `HEALTH_DTO_HONEST` | **YES** — `degraded` / `EMBEDDING_UNAVAILABLE`, matching the observed execution; exactly one `retrieval_health` in the payload; DTO exposes `{overall, evidence_completeness, degradation_reason}` and no internals |
-| `P0_6_STATUS` | **PASS at the payload level** — exactly one notice trigger in the live response, `overall=degraded`; `web/dist` byte-identical (1002 files) to the accepted production frontend. A browser re-run was **not** executed in this window |
-| `P0_7_STATUS` | **PASS** — exactly one event per retrieval, exact nine-field set, legs and reason matching the user DTO, no leak markers. Observed in-process on the deployed image; **not** observed in the PID-1 log, because the probes ran in separate processes |
+| `HEALTH_DTO_HONEST` | **YES** — `degraded` / `EMBEDDING_UNAVAILABLE`, matching the observed execution; exactly one `retrieval_health` in the live HTTP payload; DTO exposes `{overall, evidence_completeness, degradation_reason}` and no internals |
+| `P0_6_STATUS` | **PASS** — the live HTTP response carries exactly one notice trigger with `overall=degraded`, and `web/dist` is byte-identical (1002 files) to the accepted production frontend, so the notice path is unchanged. A browser re-run was **not** executed in this window (that is P0-6's own acceptance) |
+| `P0_7_STATUS` | **PASS — live in the server process's own log**: exactly one `[RetrievalHealth]` line per turn, exact nine-field set, `routes_attempted 8 / routes_succeeded 8`, `legs.dense=failed` with `legs.lexical=success`, `overall`/`reason` matching the user DTO, no leak markers |
 | `HEALTHY_PATH_REGRESSION` | **NONE** — identical result dicts against the frozen pre-repair pipeline, byte-identical ES call trace, one provider call, identical health DTO (non-vacuity asserted) |
 | `RESOURCE_LEAK_STATUS` | **PASS** — 12 timeout cycles with no thread or budget leak; live: 0 restarts, no OOM, datastores untouched |
 | `DEGRADED_CONTROL_FLOW_VERDICT` | **PASS** |
