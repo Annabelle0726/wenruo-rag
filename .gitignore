@@ -284,6 +284,8 @@ migration/
 # Audit & benchmark runtime artifacts (local logs, raw traces, and evaluation output)
 scripts/audit/*.txt
 scripts/audit/*.json
+scripts/audit/*.out
+scripts/audit/*.md
 scripts/audit/*_err.txt
 scripts/audit/*_raw.txt
 scripts/audit/controlled_*
@@ -291,5 +293,7 @@ scripts/audit/retrieval_benchmark_*
 
 scripts/ac_audit/*.json
 scripts/ac_audit/*.out
+scripts/ac_audit/*.md
+scripts/ac_audit/*.txt
 scripts/ac_audit/*_raw.*
 scripts/ac_audit/*_err.*

@@ -13,7 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+import asyncio
+import contextvars
 import copy
+from concurrent.futures import ThreadPoolExecutor
 import json
 import logging
 import re
@@ -32,6 +35,55 @@ from common.tag_feature_utils import parse_tag_features
 from common import settings
 
 from common.misc_utils import thread_pool_exec
+
+# ------------------------------------------------------------------------------------------------
+# P0-B evidence-leg producers.
+#
+# This module owns TWO execution facts and nothing else:
+#   dense   -> produced by `Dealer.get_vector`, the single point where the query-embedding request is
+#              issued. It is the only place that knows whether the dense leg was attempted, returned
+#              a usable vector, or failed (and why).
+#   lexical -> produced beside the store round trip that carries the lexical expression.
+#
+# The route layer cannot produce either fact: one hybrid route call covers both legs at once, which is
+# why the bridge must not synthesise them. Reporting happens beside the existing statements and never
+# changes control flow: the one handler below reports and then re-raises the identical exception.
+#
+# The bridge is resolved lazily so this core module's import order is unchanged. Instrumentation must
+# never break retrieval, so a resolution failure is logged loudly and recorded for the acceptance gate
+# to detect, instead of raising into the retrieval path.
+# ------------------------------------------------------------------------------------------------
+_BRIDGE = None
+_BRIDGE_ERROR: str | None = None
+
+
+def _health_bridge():
+    global _BRIDGE, _BRIDGE_ERROR
+    if _BRIDGE is None and _BRIDGE_ERROR is None:
+        try:
+            from rag.retrieval import health_bridge as bridge
+
+            _BRIDGE = bridge
+        except Exception as exc:  # noqa: BLE001 - a reporter must never break retrieval
+            _BRIDGE_ERROR = f"{type(exc).__name__}: {exc}"
+            logging.error("[Health] producer bridge unavailable; retrieval continues uninstrumented: %s", _BRIDGE_ERROR)
+    return _BRIDGE
+
+
+def health_producer_error() -> str | None:
+    """Resolution error of the producer bridge, or None when it resolved. Read by acceptance gates."""
+    _health_bridge()
+    return _BRIDGE_ERROR
+
+
+def _report(kind: str, *args) -> None:
+    bridge = _health_bridge()
+    if bridge is None:
+        return
+    try:
+        getattr(bridge, kind)(*args)
+    except Exception as exc:  # noqa: BLE001 - a reporter must never break retrieval
+        logging.warning("[Health] producer %s failed (retrieval unaffected): %s", kind, exc)
 
 
 def build_fusion_expr(topn: int, vector_similarity_weight: float = 0.3) -> FusionExpr:
@@ -76,7 +128,63 @@ def is_kb_scoped_chunk(chunk: dict | None) -> bool:
     return bool(_chunk_scalar(chunk.get("compile_kwd")))
 
 
+# Dedicated embedding workers: a timed-out provider must not hold the event loop
+# in the shared helper's shutdown(wait=True), which is what turned a hung provider
+# call into a false-empty route instead of a degraded one.
+_EMBEDDING_EXECUTOR = ThreadPoolExecutor(max_workers=16, thread_name_prefix="retrieval-embedding")
+_EMBEDDING_SLOTS = threading.BoundedSemaphore(32)
+
+#: Markers of an authentication / authorisation / permission failure. Deliberately NOT including
+#: "400" or "failed_precondition": the provider location restriction that caused the incident is a
+#: 400 and must stay recoverable.
+_NON_RECOVERABLE_EMBEDDING_MARKERS = (
+    "401",
+    "403",
+    "unauthenticated",
+    "permission_denied",
+    "permission denied",
+    "api key not valid",
+    "api_key_invalid",
+    "invalid api key",
+    "invalid authentication",
+    "invalid credential",
+    "forbidden",
+)
+
+
+class EmbeddingCapacityError(TimeoutError):
+    """The retrieval-side concurrency budget for embeddings is exhausted.
+
+    Raised ONLY by the local admission check, never by a provider. It subclasses ``TimeoutError``
+    so the existing recoverability test still degrades the leg instead of failing the turn - a
+    request must not fail because the embedding pool is saturated - but the type is distinct so a
+    traceback, a test and an operator can tell local back-pressure apart from a provider timeout.
+    This is an internal control-flow type, not a contract value: no reason code, DTO field or
+    frozen health enum is added or changed.
+    """
+
+
+def _looks_like_credential_or_permission_failure(exc: BaseException) -> bool:
+    """Whether a provider failure means "this deployment may not embed at all".
+
+    The incident this repair exists for is a provider 400 ``FAILED_PRECONDITION`` on an unsupported
+    location: a condition to SURVIVE by degrading to lexical retrieval. A revoked key or a denied
+    permission is the opposite kind of condition - every later request fails the same way and the
+    tenant has lost a capability - so degrading would hide it behind "semantic search is
+    temporarily degraded" indefinitely.
+
+    There is no dedicated exception class for it in this tree (``EmbeddingError`` wraps 408/429 and
+    every non-``ModelException`` SDK failure alike), so the provider's own text is the only signal
+    available. The match is deliberately FAIL-CLOSED at the call site: an unrecognised failure is
+    NOT recoverable, and only the types and markers below are.
+    """
+    text = f"{type(exc).__name__}: {exc}".casefold()
+    return any(marker in text for marker in _NON_RECOVERABLE_EMBEDDING_MARKERS)
+
+
 class Dealer:
+    # Operational wait deadline, not a retrieval score/recall parameter.
+    _embedding_wait_seconds = 60.0
     # Short-lived cache of "doc_id exists in MySQL" used by _prune_deleted_chunks.
     # Every retrieval would otherwise hit MySQL per query (fan-out searches and the
     # ReAct native loop hammer the same doc_ids repeatedly), which exhausts the
@@ -100,15 +208,74 @@ class Dealer:
         aggregation: list | dict | None = None
         keywords: list[str] | None = None
         group_docs: list[list] | None = None
+        retrieval_mode: str = "HYBRID"
+
+
+    async def _query_embedding(self, emb_mdl, txt):
+        """Run the query-embedding call on a dedicated worker with a retrieval-side deadline.
+
+        The deadline is an OPERATIONAL wait boundary, not a retrieval parameter: it decides how
+        long the retrieval path waits before degrading to lexical, and nothing else. It does not
+        change the provider's own timeout, request shape, model or tokenisation, and it does not
+        change the shared thread-pool helper.
+
+        Admission is checked before submission, so the amount of queued work is bounded by
+        ``_EMBEDDING_SLOTS`` rather than by the executor's unbounded queue. Control signals are
+        never converted into a provider failure: ``asyncio.CancelledError`` is a ``BaseException``,
+        so it passes through ``wait_for`` and the callers' ``except Exception`` untouched.
+        """
+        if not _EMBEDDING_SLOTS.acquire(blocking=False):
+            raise EmbeddingCapacityError("embedding execution capacity exhausted")
+        try:
+            future = _EMBEDDING_EXECUTOR.submit(contextvars.copy_context().run, emb_mdl.encode_queries, txt)
+        except BaseException:
+            # A submission that never happened must not consume a slot.
+            _EMBEDDING_SLOTS.release()
+            raise
+        # The slot is released when the WORK settles, not when the await is abandoned, so a worker
+        # that outlives its deadline keeps holding its own budget instead of letting the pool
+        # admit unbounded work behind it.
+        future.add_done_callback(lambda _: _EMBEDDING_SLOTS.release())
+        # Only this awaiting coroutine can publish a vector or produce a health fact. A worker that
+        # finishes after the deadline settles its future, which the cancelled await no longer
+        # observes: its vector cannot re-enter this retrieval and cannot move Dense health.
+        return await asyncio.wait_for(asyncio.wrap_future(future), timeout=self._embedding_wait_seconds)
+
+    @staticmethod
+    def _recoverable_embedding_failure(exc):
+        """Whether a dense-leg failure may degrade to lexical retrieval, or must surface.
+
+        Recoverable: the leg failed for this request while the capability still exists - provider
+        quota/rate limiting (408/429), a timeout, a connection failure, and the 400
+        ``FAILED_PRECONDITION`` location restriction that caused the incident.
+
+        NOT recoverable: control signals, credential/permission failures, and everything
+        unrecognised. ``asyncio.CancelledError`` is a ``BaseException`` and never reaches here
+        through an ``except Exception``, but it is named explicitly so a future refactor that
+        widened a handler cannot quietly turn a user abort into a degraded answer.
+        """
+        from rag.llm.embedding_model import EmbeddingError
+
+        if isinstance(exc, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
+            return False
+        if _looks_like_credential_or_permission_failure(exc):
+            return False
+        return isinstance(exc, (EmbeddingError, TimeoutError, ConnectionError))
 
     async def get_vector(self, txt, emb_mdl, top_k=10, num_candidates=20, similarity=0.1):
-        qv, _ = await thread_pool_exec(emb_mdl.encode_queries, txt)
-        shape = np.array(qv).shape
-        if len(shape) > 1:
-            raise Exception(f"Dealer.get_vector returned array's shape {shape} doesn't match expectation(exact one dimension).")
-        embedding_data = [get_float(v) for v in qv]
-        vector_column_name = f"q_{len(embedding_data)}_vec"
-        return MatchDenseExpr(vector_column_name, embedding_data, "float", "cosine", top_k, {"similarity": similarity, "num_candidates": num_candidates})
+        try:
+            qv, _ = await self._query_embedding(emb_mdl, txt)
+            shape = np.array(qv).shape
+            if len(shape) > 1:
+                raise Exception(f"Dealer.get_vector returned array's shape {shape} doesn't match expectation(exact one dimension).")
+            embedding_data = [get_float(v) for v in qv]
+            vector_column_name = f"q_{len(embedding_data)}_vec"
+            match_dense = MatchDenseExpr(vector_column_name, embedding_data, "float", "cosine", top_k, {"similarity": similarity, "num_candidates": num_candidates})
+        except Exception as exc:  # noqa: BLE001 - report the dense fact at its own boundary, then re-raise it unchanged
+            _report("report_dense_failed", exc)
+            raise
+        _report("report_dense_executed")
+        return match_dense
 
     async def _existing_doc_ids(self, doc_ids: list[str]) -> set[str]:
         if not doc_ids:
@@ -164,6 +331,7 @@ class Dealer:
                 total=len(aligned_ids),
                 ids=aligned_ids,
                 query_vector=sres.query_vector,
+                retrieval_mode=sres.retrieval_mode,
                 field=fields,
                 highlight=highlight,
                 aggregation=sres.aggregation,
@@ -220,6 +388,7 @@ class Dealer:
             total=len(filtered_ids),
             ids=filtered_ids,
             query_vector=sres.query_vector,
+                retrieval_mode=sres.retrieval_mode,
             field=filtered_field,
             highlight=filtered_highlight,
             aggregation=sres.aggregation,
@@ -286,7 +455,11 @@ class Dealer:
 
         qst = req.get("question", "")
         q_vec = []
+        retrieval_mode = "HYBRID" if emb_mdl is not None else "LEXICAL_ONLY"
         if not qst:
+            # No question: no query was issued for either leg, so neither leg was required.
+            _report("report_dense_not_triggered")
+            _report("report_lexical_not_triggered")
             if req.get("sort"):
                 orderBy.asc("chunk_order_int")
                 orderBy.asc("page_num_int")
@@ -298,13 +471,35 @@ class Dealer:
         else:
             highlightFields = []
             matchText, keywords = self.qryr.question(qst, min_match=(0.3 if min_match else 0))
-            if emb_mdl is None:
+            dense_template = None
+            if emb_mdl is not None:
+                try:
+                    dense_template = await self.get_vector(qst, emb_mdl, top_k=knn_top_k, num_candidates=knn_num_candidates, similarity=req.get("similarity", 0.1))
+                except Exception as exc:
+                    if not self._recoverable_embedding_failure(exc):
+                        raise
+                    retrieval_mode = "LEXICAL_DEGRADED"
+                    q_vec = None
+            if retrieval_mode == "LEXICAL_DEGRADED" and not matchText:
+                _report("report_lexical_not_triggered")
+                return self.SearchResult(total=0, ids=[], query_vector=None, field={}, highlight={}, retrieval_mode=retrieval_mode)
+            if emb_mdl is None or retrieval_mode == "LEXICAL_DEGRADED":
+                # No embedding model was supplied: the dense leg was never required.
+                if emb_mdl is None:
+                    _report("report_dense_not_triggered")
                 matchExprs = [matchText] if matchText else []
-                res = await thread_pool_exec(self.dataStore.search, src, highlightFields, filters, matchExprs, orderBy, offset, limit, idx_names, kb_ids, rank_feature=rank_feature)
+                try:
+                    res = await thread_pool_exec(self.dataStore.search, src, highlightFields, filters, matchExprs, orderBy, offset, limit, idx_names, kb_ids, rank_feature=rank_feature)
+                except Exception as exc:
+                    if matchText:
+                        _report("report_lexical_failed", exc)
+                    raise
                 total = self.dataStore.get_total(res)
                 logging.debug("Dealer.search TOTAL: {}".format(total))
+                # The lexical leg is the round trip that carried it; without a lexical expression it
+                # was never required.
+                _report("report_lexical_executed" if matchText else "report_lexical_not_triggered")
             else:
-                dense_template = await self.get_vector(qst, emb_mdl, top_k=knn_top_k, num_candidates=knn_num_candidates, similarity=req.get("similarity", 0.1))
                 matchDense = copy.deepcopy(dense_template)
                 q_vec = matchDense.embedding_data
                 # ES path no longer fetches chunk vectors here. The clean
@@ -331,9 +526,17 @@ class Dealer:
                     fusionExpr = FusionExpr("weighted_sum", knn_top_k, {"weights": "0.001,1"})
                 matchExprs = [matchText, matchDense, fusionExpr] if matchText else [matchDense]
 
-                res = await thread_pool_exec(self.dataStore.search, src, highlightFields, filters, matchExprs, orderBy, offset, limit, idx_names, kb_ids, rank_feature=rank_feature)
+                try:
+                    res = await thread_pool_exec(self.dataStore.search, src, highlightFields, filters, matchExprs, orderBy, offset, limit, idx_names, kb_ids, rank_feature=rank_feature)
+                except Exception as exc:
+                    if matchText:
+                        _report("report_lexical_failed", exc)
+                    raise
                 total = self.dataStore.get_total(res)
                 logging.debug("Dealer.search TOTAL: {}".format(total))
+                # The lexical leg is the round trip that carried the lexical expression; without one it
+                # was never required. Both facts are read from what actually ran, never from the result.
+                _report("report_lexical_executed" if matchText else "report_lexical_not_triggered")
 
                 # If result is empty, try again with lower min_match or, for
                 # dense-only queries, a lower vector threshold.
@@ -413,7 +616,7 @@ class Dealer:
         keywords = list(kwds)
         highlightDic = self.dataStore.get_highlight(res, keywords, "content_with_weight") if highlight else {}
         aggs = self.dataStore.get_aggregation(res, "docnm_kwd")
-        return self.SearchResult(total=total, ids=ids, query_vector=q_vec, aggregation=aggs, highlight=highlightDic, field=self.dataStore.get_fields(res, src + ["_score"]), keywords=keywords)
+        return self.SearchResult(total=total, ids=ids, retrieval_mode=retrieval_mode, query_vector=q_vec, aggregation=aggs, highlight=highlightDic, field=self.dataStore.get_fields(res, src + ["_score"]), keywords=keywords)
 
     @staticmethod
     def trans2floats(txt):
@@ -461,9 +664,17 @@ class Dealer:
 
         ans_v, _ = embd_mdl.encode(pieces_)
         for i in range(len(chunk_v)):
-            if len(ans_v[0]) != len(chunk_v[i]):
+            # An ABSENT chunk vector is treated exactly like a mismatched one, because it is the
+            # same situation: there is no dense representation to attribute a citation against.
+            # Degraded retrieval (a failed dense leg) returns `vector: None` deliberately - the
+            # dense side is absent rather than fabricated - and `_hydrate_chunk_vectors` cannot
+            # restore it either, since it infers the dimension from a vector that is not there.
+            # Without this branch the loop raises `TypeError: object of type 'NoneType' has no
+            # len()` the moment the embedding provider recovers between retrieval and citation
+            # attribution, turning a degraded-but-answerable turn into a 500.
+            if not chunk_v[i] or len(ans_v[0]) != len(chunk_v[i]):
                 chunk_v[i] = [0.0] * len(ans_v[0])
-                logging.warning("The dimension of query and chunk do not match: {} vs. {}".format(len(ans_v[0]), len(chunk_v[i])))
+                logging.warning("The dimension of query and chunk do not match: {} vs. {}".format(len(ans_v[0]), len(chunk_v[i] or [])))
 
         assert len(ans_v[0]) == len(chunk_v[0]), "The dimension of query and chunk do not match: {} vs. {}".format(len(ans_v[0]), len(chunk_v[0]))
 
@@ -601,13 +812,7 @@ class Dealer:
             out[cid] = v
         return out
 
-    def rerank_with_knn(self, sres, query, knn_scores: dict[str, float], tkweight=0.3, vtweight=0.7, cfield="content_ltks", rank_feature: dict | None = None):
-        """
-        Merge ES-side KNN cosine similarity with locally computed term
-        similarity using the user-configured weights. Replaces the older
-        local-only rerank() for the ES path, which depended on shipping
-        chunk vectors back to the application.
-        """
+    def _lexical_scores(self, sres, query, cfield="content_ltks"):
         _, keywords = self.qryr.question(query)
 
         for i in sres.ids:
@@ -623,6 +828,16 @@ class Dealer:
             ins_tw.append(tks)
 
         tksim = np.array(self.qryr.token_similarity(keywords, ins_tw), dtype=np.float64)
+        return tksim
+
+    def rerank_with_knn(self, sres, query, knn_scores: dict[str, float], tkweight=0.3, vtweight=0.7, cfield="content_ltks", rank_feature: dict | None = None):
+        """
+        Merge ES-side KNN cosine similarity with locally computed term
+        similarity using the user-configured weights. Replaces the older
+        local-only rerank() for the ES path, which depended on shipping
+        chunk vectors back to the application.
+        """
+        tksim = self._lexical_scores(sres, query, cfield)
         vtsim = np.array([knn_scores.get(chunk_id, 0.0) for chunk_id in sres.ids], dtype=np.float64)
         rank_fea = self._rank_feature_scores(rank_feature, sres)
         sim = tkweight * tksim + vtweight * vtsim + rank_fea
@@ -661,7 +876,7 @@ class Dealer:
 
         return sim + rank_fea, tksim, vtsim
 
-    def rerank_by_model(self, rerank_mdl, sres, query, tkweight=0.3, vtweight=0.7, cfield="content_ltks", rank_feature: dict | None = None):
+    def _model_scores(self, rerank_mdl, sres, query, cfield="content_ltks", rank_feature: dict | None = None):
         _, keywords = self.qryr.question(query)
 
         for i in sres.ids:
@@ -700,6 +915,10 @@ class Dealer:
         ## For rank feature(tag_fea) scores.
         rank_fea = self._rank_feature_scores(rank_feature, sres)
 
+        return tksim, vtsim, rank_fea
+
+    def rerank_by_model(self, rerank_mdl, sres, query, tkweight=0.3, vtweight=0.7, cfield="content_ltks", rank_feature: dict | None = None):
+        tksim, vtsim, rank_fea = self._model_scores(rerank_mdl, sres, query, cfield, rank_feature)
         return tkweight * np.array(tksim) + vtweight * vtsim + rank_fea, tksim, vtsim
 
     def hybrid_similarity(self, ans_embd, ins_embd, ans, inst):
@@ -775,6 +994,9 @@ class Dealer:
         # Temporary retrieval-side guard: prune chunks whose parent document no
         # longer exists before reranking and returning results.
         sres = await self._prune_deleted_chunks(sres)
+        degraded = sres.retrieval_mode == "LEXICAL_DEGRADED"
+        if degraded:
+            ranks["retrieval_mode"] = sres.retrieval_mode
         if sres.total == 0:
             ranks["doc_aggs"] = []
             return ranks
@@ -790,7 +1012,14 @@ class Dealer:
             bool(rerank_mdl),
         )
 
-        if rerank_mdl and sres.total > 0:
+        if degraded:
+            tsim = self._lexical_scores(sres, question)
+            sim = tsim + self._rank_feature_scores(rank_feature, sres)
+            vsim = None
+            if rerank_mdl is not None:
+                _, model_scores, rank_scores = self._model_scores(rerank_mdl, sres, question, rank_feature=rank_feature)
+                sim = np.asarray(model_scores) + rank_scores
+        elif rerank_mdl and sres.total > 0:
             sim, tsim, vsim = self.rerank_by_model(
                 rerank_mdl,
                 sres,
@@ -850,7 +1079,7 @@ class Dealer:
         # When vector_similarity_weight is 0, similarity_threshold is not meaningful for term-only scores.
         post_threshold = 0.0 if vector_similarity_weight <= 0 else similarity_threshold
 
-        valid_idx = [int(i) for i in sorted_idx if sim_np[i] >= post_threshold]
+        valid_idx = [int(i) for i in sorted_idx if degraded or sim_np[i] >= post_threshold]
         filtered_count = len(valid_idx)
         ranks["total"] = int(filtered_count)
 
@@ -862,9 +1091,12 @@ class Dealer:
         end = begin + page_size
         page_idx = valid_idx[begin:end]
 
-        dim = len(sres.query_vector)
+        dim = len(sres.query_vector or [])
         vector_column = f"q_{dim}_vec"
         zero_vector = [0.0] * dim
+        # Stored separately so mixed-state selection never infers lexical score
+        # from a weighted hybrid score (or constructs a missing Dense score).
+        lexical_selection = np.asarray(tsim) + self._rank_feature_scores(rank_feature, sres)
 
         for i in page_idx:
             id = sres.ids[i]
@@ -889,13 +1121,23 @@ class Dealer:
                 "tag_kwd": chunk.get("tag_kwd", []),
                 "image_id": chunk.get("img_id", ""),
                 "similarity": float(sim_np[i]),
-                "vector_similarity": float(vsim[i]),
+                "vector_similarity": None if degraded else float(vsim[i]),
                 "term_similarity": float(tsim[i]),
-                "vector": chunk.get(vector_column, zero_vector),
+                "vector": None if degraded else chunk.get(vector_column, zero_vector),
                 "positions": position_int,
                 "doc_type_kwd": chunk.get("doc_type_kwd", ""),
                 "mom_id": chunk.get("mom_id", ""),
                 "row_id": chunk.get("row_id()"),
+            }
+            d["score_provenance"] = {
+                "mode": sres.retrieval_mode,
+                "score_kind": ("rerank" if rerank_mdl is not None else "lexical") if degraded else "hybrid",
+                "selection_score": float(sim_np[i]),
+                "lexical_selection_score": float(lexical_selection[i]),
+                "dense_score": None if degraded else float(vsim[i]),
+                "configured_threshold": similarity_threshold,
+                "effective_vector_weight": vector_similarity_weight,
+                "hybrid_admitted": not degraded,
             }
             if id in sres.highlight:
                 d["highlight"] = sres.highlight[id]

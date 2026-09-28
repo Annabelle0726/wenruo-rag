@@ -1,0 +1,835 @@
+{
+  "healthy_0.5": {
+    "semantic_delta": false,
+    "es_trace_equal": true,
+    "provider_calls": 1,
+    "ids": [
+      "d1d75672f2dbc333",
+      "663de80696a67296",
+      "0c919dcd5dbfb744",
+      "6e6bb92c7dcdcb20",
+      "f96c7773551514ae",
+      "4238f6f6e9af11af",
+      "a0ad87807e53b172",
+      "9fa9e164a3e3ca7a",
+      "3746a7eb6438f7fd",
+      "757d19a8a8b3e74e",
+      "bbcba3de371cf011",
+      "6351f8e50707cfcb",
+      "7402cf6c99cbd67e",
+      "4f291a3c82619d20",
+      "5103dd21747da445",
+      "d4d2304290d345b0",
+      "c7347587e61a3532",
+      "b878ee18e84b6356",
+      "95ecc488d036a6d5",
+      "6e574ac15bab9329"
+    ],
+    "chunks": 20,
+    "non_vacuous": true,
+    "additive_fields": [
+      "score_provenance"
+    ]
+  },
+  "healthy_0.25": {
+    "semantic_delta": false,
+    "es_trace_equal": true,
+    "provider_calls": 1,
+    "ids": [],
+    "chunks": 0,
+    "non_vacuous": false,
+    "additive_fields": [
+      "score_provenance"
+    ]
+  },
+  "healthy_non_vacuity": {
+    "weight": 0.5,
+    "chunks": 20,
+    "ids": [
+      "d1d75672f2dbc333",
+      "663de80696a67296",
+      "0c919dcd5dbfb744",
+      "6e6bb92c7dcdcb20",
+      "f96c7773551514ae",
+      "4238f6f6e9af11af",
+      "a0ad87807e53b172",
+      "9fa9e164a3e3ca7a",
+      "3746a7eb6438f7fd",
+      "757d19a8a8b3e74e",
+      "bbcba3de371cf011",
+      "6351f8e50707cfcb",
+      "7402cf6c99cbd67e",
+      "4f291a3c82619d20",
+      "5103dd21747da445",
+      "d4d2304290d345b0",
+      "c7347587e61a3532",
+      "b878ee18e84b6356",
+      "95ecc488d036a6d5",
+      "6e574ac15bab9329"
+    ]
+  },
+  "provider_failure": {
+    "lexical_executed": true,
+    "missing_dense_zero": false,
+    "dto": {
+      "overall": "degraded",
+      "evidence_completeness": "partial",
+      "degradation_reason": "EMBEDDING_UNAVAILABLE"
+    }
+  },
+  "blocking_timeout": {
+    "elapsed_seconds": 60.21800820700082,
+    "lexical_before_release": true,
+    "late_result_ignored": true,
+    "late_health_ignored": true,
+    "deadline_seconds": 60
+  },
+  "not_triggered": {
+    "ids": [
+      "b5aaf72bcd33d44a",
+      "ab96130b7a5d5c8f",
+      "a14eb97907268118",
+      "255c187f4e228542",
+      "1abf6295ae67beae",
+      "d8277d37a03a2b0a",
+      "af74d2eeaaf2c4a4",
+      "1cae0a6bd293e1ef",
+      "3970238838496efa",
+      "ea4a0fbc49651bc5",
+      "3fb0a03b92cc70d7",
+      "43e96b415797394b",
+      "d79d92725b46b084",
+      "423069af31359e65",
+      "9fa9e164a3e3ca7a",
+      "66f462a9de91e03c",
+      "809afdd0e1b83482",
+      "8065ad3f4096ca30",
+      "0b4e3c1a73c1e334",
+      "9b70d096657b9581"
+    ],
+    "dense": "not_triggered"
+  },
+  "genuine_empty": {
+    "chunks": 0,
+    "lexical_success": true,
+    "provider_calls": 1,
+    "dto": {
+      "overall": "degraded",
+      "evidence_completeness": "insufficient",
+      "degradation_reason": "EMBEDDING_UNAVAILABLE"
+    }
+  },
+  "all_evidence_failed": {
+    "chunks": 0,
+    "dto": {
+      "overall": "failed",
+      "evidence_completeness": "insufficient",
+      "degradation_reason": "EMBEDDING_UNAVAILABLE"
+    }
+  },
+  "mixed_route": {
+    "trace": {
+      "policy": "LEXICAL_COMMON_SCALE",
+      "before": [
+        {
+          "id": "d1d75672f2dbc333",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.618295499533076,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "663de80696a67296",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.6122517027848533,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "0c919dcd5dbfb744",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.6053032570400361,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "6e6bb92c7dcdcb20",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.6053032570400361,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "f96c7773551514ae",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.6053032570400361,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "4238f6f6e9af11af",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.601265309394097,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "a0ad87807e53b172",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.5918717733692305,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "9fa9e164a3e3ca7a",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.5918717733692305,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "3746a7eb6438f7fd",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.5903694422814891,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "757d19a8a8b3e74e",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.5891514664562797,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "bbcba3de371cf011",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.5886359503807429,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "6351f8e50707cfcb",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.5866038518370875,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "7402cf6c99cbd67e",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.5776007092992289,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "4f291a3c82619d20",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.5765221074429256,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "5103dd21747da445",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.5765221074429256,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "d4d2304290d345b0",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.5730902021506719,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "c7347587e61a3532",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.57288801290375,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "b878ee18e84b6356",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.5724841597969865,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "95ecc488d036a6d5",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.5702702303299422,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "6e574ac15bab9329",
+          "mode": "HYBRID",
+          "score_kind": "hybrid",
+          "score": 0.5605088351448343,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+          ]
+        },
+        {
+          "id": "ea4a0fbc49651bc5",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.3271408308881828,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "af74d2eeaaf2c4a4",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.3097429653405498,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "255c187f4e228542",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.30055526914551256,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "c7347587e61a3532",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.2979096256318854,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "8065ad3f4096ca30",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.29704730784013134,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "ab96130b7a5d5c8f",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.2924318316046567,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "bac8e77cef90c8cf",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.2912187658734472,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "423069af31359e65",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.29053951032418224,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "43e96b415797394b",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.28447967983459066,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "d4d2304290d345b0",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.28008010335950834,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "980ed72de1325b3d",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.27514016693445154,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "a14eb97907268118",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.27140227980325304,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "8daa8e50dcd8e921",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.2707017211707174,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "d1d75672f2dbc333",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.26827248907889417,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "646ab90775aa14a5",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.26772284249386963,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "9fa9e164a3e3ca7a",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.2677085960898307,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "7402cf6c99cbd67e",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.266592258322696,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "3fb0a03b92cc70d7",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.2614111657137837,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "d78ff5f0617e857f",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.26029482794664893,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        },
+        {
+          "id": "3746a7eb6438f7fd",
+          "mode": "LEXICAL_DEGRADED",
+          "score_kind": "lexical",
+          "score": 0.2579360571033672,
+          "routes": [
+            "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+          ]
+        }
+      ],
+      "after": [
+        {
+          "id": "ea4a0fbc49651bc5",
+          "score_kind": "lexical",
+          "score": 0.3271408308881828
+        },
+        {
+          "id": "af74d2eeaaf2c4a4",
+          "score_kind": "lexical",
+          "score": 0.3097429653405498
+        },
+        {
+          "id": "255c187f4e228542",
+          "score_kind": "lexical",
+          "score": 0.30055526914551256
+        },
+        {
+          "id": "c7347587e61a3532",
+          "score_kind": "lexical",
+          "score": 0.2979096256318854
+        },
+        {
+          "id": "8065ad3f4096ca30",
+          "score_kind": "lexical",
+          "score": 0.29704730784013134
+        },
+        {
+          "id": "ab96130b7a5d5c8f",
+          "score_kind": "lexical",
+          "score": 0.2924318316046567
+        },
+        {
+          "id": "bac8e77cef90c8cf",
+          "score_kind": "lexical",
+          "score": 0.2912187658734472
+        },
+        {
+          "id": "423069af31359e65",
+          "score_kind": "lexical",
+          "score": 0.29053951032418224
+        },
+        {
+          "id": "43e96b415797394b",
+          "score_kind": "lexical",
+          "score": 0.28447967983459066
+        },
+        {
+          "id": "d4d2304290d345b0",
+          "score_kind": "lexical",
+          "score": 0.28008010335950834
+        },
+        {
+          "id": "980ed72de1325b3d",
+          "score_kind": "lexical",
+          "score": 0.27514016693445154
+        },
+        {
+          "id": "a14eb97907268118",
+          "score_kind": "lexical",
+          "score": 0.27140227980325304
+        },
+        {
+          "id": "8daa8e50dcd8e921",
+          "score_kind": "lexical",
+          "score": 0.2707017211707174
+        },
+        {
+          "id": "d1d75672f2dbc333",
+          "score_kind": "lexical",
+          "score": 0.26827248907889417
+        },
+        {
+          "id": "646ab90775aa14a5",
+          "score_kind": "lexical",
+          "score": 0.26772284249386963
+        },
+        {
+          "id": "9fa9e164a3e3ca7a",
+          "score_kind": "lexical",
+          "score": 0.2677085960898307
+        },
+        {
+          "id": "7402cf6c99cbd67e",
+          "score_kind": "lexical",
+          "score": 0.266592258322696
+        },
+        {
+          "id": "3fb0a03b92cc70d7",
+          "score_kind": "lexical",
+          "score": 0.2614111657137837
+        },
+        {
+          "id": "d78ff5f0617e857f",
+          "score_kind": "lexical",
+          "score": 0.26029482794664893
+        },
+        {
+          "id": "3746a7eb6438f7fd",
+          "score_kind": "lexical",
+          "score": 0.2579360571033672
+        },
+        {
+          "id": "663de80696a67296",
+          "score_kind": "lexical",
+          "score": 0.22450340556970663
+        },
+        {
+          "id": "0c919dcd5dbfb744",
+          "score_kind": "lexical",
+          "score": 0.21060651408007205
+        },
+        {
+          "id": "6e6bb92c7dcdcb20",
+          "score_kind": "lexical",
+          "score": 0.21060651408007205
+        },
+        {
+          "id": "f96c7773551514ae",
+          "score_kind": "lexical",
+          "score": 0.21060651408007205
+        },
+        {
+          "id": "4238f6f6e9af11af",
+          "score_kind": "lexical",
+          "score": 0.20253061878819387
+        },
+        {
+          "id": "a0ad87807e53b172",
+          "score_kind": "lexical",
+          "score": 0.1837435467384609
+        },
+        {
+          "id": "757d19a8a8b3e74e",
+          "score_kind": "lexical",
+          "score": 0.17830293291255933
+        },
+        {
+          "id": "bbcba3de371cf011",
+          "score_kind": "lexical",
+          "score": 0.17727190076148575
+        },
+        {
+          "id": "6351f8e50707cfcb",
+          "score_kind": "lexical",
+          "score": 0.17320770367417498
+        },
+        {
+          "id": "4f291a3c82619d20",
+          "score_kind": "lexical",
+          "score": 0.1530442148858512
+        },
+        {
+          "id": "5103dd21747da445",
+          "score_kind": "lexical",
+          "score": 0.1530442148858512
+        },
+        {
+          "id": "b878ee18e84b6356",
+          "score_kind": "lexical",
+          "score": 0.14496831959397305
+        },
+        {
+          "id": "95ecc488d036a6d5",
+          "score_kind": "lexical",
+          "score": 0.14054046065988438
+        },
+        {
+          "id": "6e574ac15bab9329",
+          "score_kind": "lexical",
+          "score": 0.1210176702896686
+        }
+      ]
+    },
+    "provenance_preserved": true,
+    "no_window_expansion": true,
+    "no_composite_scores": true,
+    "deterministic": true,
+    "reranker_calls": 1
+  },
+  "partial_routes": {
+    "dto": {
+      "overall": "degraded",
+      "evidence_completeness": "partial",
+      "degradation_reason": "EMBEDDING_UNAVAILABLE"
+    },
+    "ids": [
+      "ea4a0fbc49651bc5",
+      "af74d2eeaaf2c4a4",
+      "255c187f4e228542",
+      "c7347587e61a3532",
+      "8065ad3f4096ca30",
+      "ab96130b7a5d5c8f",
+      "bac8e77cef90c8cf",
+      "423069af31359e65",
+      "43e96b415797394b",
+      "d4d2304290d345b0",
+      "980ed72de1325b3d",
+      "a14eb97907268118",
+      "8daa8e50dcd8e921",
+      "d1d75672f2dbc333",
+      "646ab90775aa14a5",
+      "9fa9e164a3e3ca7a",
+      "7402cf6c99cbd67e",
+      "3fb0a03b92cc70d7",
+      "d78ff5f0617e857f",
+      "3746a7eb6438f7fd",
+      "663de80696a67296",
+      "0c919dcd5dbfb744",
+      "6e6bb92c7dcdcb20",
+      "f96c7773551514ae",
+      "4238f6f6e9af11af",
+      "a0ad87807e53b172",
+      "757d19a8a8b3e74e",
+      "bbcba3de371cf011",
+      "6351f8e50707cfcb",
+      "4f291a3c82619d20",
+      "5103dd21747da445",
+      "b878ee18e84b6356",
+      "95ecc488d036a6d5",
+      "6e574ac15bab9329"
+    ]
+  },
+  "qgdw_frozen": [
+    {
+      "question_kind": "incident_three",
+      "target": "d1d75672f2dbc333",
+      "rank_in_copy": 30,
+      "rank_in_production": 28,
+      "frozen_window": 30,
+      "window_membership_reproduced": true,
+      "exact_rank_is_copy_dependent": true,
+      "lexical_request": {
+        "expressions": [
+          "MatchTextExpr"
+        ],
+        "limit": 30,
+        "ids": [
+          "ea4a0fbc49651bc5",
+          "8065ad3f4096ca30",
+          "9fa9e164a3e3ca7a",
+          "43e96b415797394b",
+          "3fb0a03b92cc70d7",
+          "48f12a5a8ce5eb6c",
+          "646ab90775aa14a5",
+          "c7347587e61a3532",
+          "d49e20e1ba5337fd",
+          "980ed72de1325b3d",
+          "af74d2eeaaf2c4a4",
+          "8daa8e50dcd8e921",
+          "255c187f4e228542",
+          "b9dfbc5a5c7a6f15",
+          "2f93d2671e6d7dfe",
+          "7402cf6c99cbd67e",
+          "a14eb97907268118",
+          "ab96130b7a5d5c8f",
+          "36a52e5e2479fde1",
+          "53fc79c470c7775d",
+          "3970238838496efa",
+          "bac8e77cef90c8cf",
+          "d78ff5f0617e857f",
+          "d4d2304290d345b0",
+          "423069af31359e65",
+          "ff6344911eb4df75",
+          "ed78116f271cd2a9",
+          "7185d77567afa2c7",
+          "3746a7eb6438f7fd",
+          "d1d75672f2dbc333"
+        ]
+      },
+      "selection_count": 20
+    },
+    {
+      "question_kind": "control_single",
+      "target": "b5aaf72bcd33d44a",
+      "rank_in_copy": 26,
+      "rank_in_production": 28,
+      "frozen_window": 30,
+      "window_membership_reproduced": true,
+      "exact_rank_is_copy_dependent": true,
+      "lexical_request": {
+        "expressions": [
+          "MatchTextExpr"
+        ],
+        "limit": 30,
+        "ids": [
+          "3fb0a03b92cc70d7",
+          "43e96b415797394b",
+          "646ab90775aa14a5",
+          "255c187f4e228542",
+          "a14eb97907268118",
+          "ab96130b7a5d5c8f",
+          "9fa9e164a3e3ca7a",
+          "8065ad3f4096ca30",
+          "66f462a9de91e03c",
+          "48f12a5a8ce5eb6c",
+          "1cae0a6bd293e1ef",
+          "1abf6295ae67beae",
+          "3970238838496efa",
+          "d8277d37a03a2b0a",
+          "d79d92725b46b084",
+          "ea4a0fbc49651bc5",
+          "0b4e3c1a73c1e334",
+          "9b70d096657b9581",
+          "af74d2eeaaf2c4a4",
+          "809afdd0e1b83482",
+          "82de4ff203d987f3",
+          "d49e20e1ba5337fd",
+          "67805b5f7879d2b9",
+          "d19a079b425d93b4",
+          "e56ec41ad1818b72",
+          "b5aaf72bcd33d44a",
+          "a48d972b1342695b",
+          "3c3118930a4f6e39",
+          "834c0774c8fad3e2",
+          "423069af31359e65"
+        ]
+      },
+      "selection_count": 20
+    }
+  ],
+  "structure_measured": {
+    "target": "d1d75672f2dbc333",
+    "rank_in_copy": null,
+    "rank_in_production": 27,
+    "frozen": false,
+    "asserted": false,
+    "selected_count": 20
+  },
+  "single_core_main_window": {
+    "rank_in_copy": 39,
+    "rank_in_production": 38,
+    "production_window": 30,
+    "status": "OUTSIDE"
+  },
+  "harness_fidelity": {
+    "live_docs": 486,
+    "deleted_docs": 0,
+    "segments": 3,
+    "note": "a re-indexed copy has deleted_docs=0; production has 42, so identical queries score differently"
+  }
+}

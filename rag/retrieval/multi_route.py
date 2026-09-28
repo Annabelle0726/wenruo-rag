@@ -88,6 +88,7 @@ class RouteResult:
     chunks: list[dict] = field(default_factory=list)
     doc_aggs: list[dict] = field(default_factory=list)
     failed: bool = False
+    retrieval_mode: str = "HYBRID"
 
 
 def resolve_routes_top_k(value: Any) -> int:
@@ -129,6 +130,51 @@ def _score(chunk: dict) -> float:
         return 0.0
 
 
+def _merge_degraded_routes(hits, existing):
+    """One text scale for a pool containing degraded routes; never splice scores.
+
+    Only already-admitted route chunks enter. Healthy admission is not rerun.
+    Every duplicate retains all source records, but the winning row is atomic.
+    The trace is returned as internal retrieval data, not as a P0 event field.
+    """
+    sources = []
+    before = []
+    if existing:
+        for chunk in existing.get("chunks", []):
+            sources.extend(chunk.get("selection_sources") or [dict(chunk)])
+    for hit in hits:
+        for chunk in hit.chunks:
+            row = dict(chunk)
+            row["retrieval_routes"] = [hit.query]
+            row["route_hits"] = 1
+            sources.append(row)
+    grouped = {}
+    aggs = {}
+    for row in sources:
+        provenance = row.get("score_provenance")
+        if provenance is None:
+            raise ValueError("Mixed retrieval requires explicit score provenance")
+        before.append({"id": chunk_key(row), "mode": provenance["mode"], "score_kind": provenance["score_kind"], "score": provenance["selection_score"], "routes": row.get("retrieval_routes", [])})
+        grouped.setdefault(chunk_key(row), []).append(row)
+    merged = []
+    for key, rows in grouped.items():
+        # Stable ties: route input order, then original ES order. Never task completion order.
+        winner = max(rows, key=lambda r: r["score_provenance"]["lexical_selection_score"])
+        record = dict(winner)
+        record["selection_sources"] = rows
+        record["similarity"] = winner["score_provenance"]["lexical_selection_score"]
+        record["selection_score_kind"] = "lexical"
+        record["retrieval_routes"] = list(dict.fromkeys(q for r in rows for q in r.get("retrieval_routes", [])))
+        record["route_hits"] = sum(r.get("route_hits", 1) for r in rows)
+        merged.append(record)
+    merged.sort(key=_score, reverse=True)
+    for chunk in merged:
+        doc_id = chunk.get("doc_id") or chunk.get("docnm_kwd") or ""
+        entry = aggs.setdefault(doc_id, {"doc_id": doc_id, "doc_name": chunk.get("docnm_kwd", ""), "count": 0})
+        entry["count"] += 1
+    return {"total": len(merged), "chunks": merged, "doc_aggs": list(aggs.values()), "retrieval_mode": "LEXICAL_DEGRADED", "selection_trace": {"policy": "LEXICAL_COMMON_SCALE", "before": before, "after": [{"id": chunk_key(c), "score_kind": "lexical", "score": c["similarity"]} for c in merged]}}
+
+
 def merge_route_hits(hits: Sequence[RouteResult], existing: dict | None = None) -> dict:
     """De-duplicate and merge the passages every route returned.
 
@@ -144,6 +190,12 @@ def merge_route_hits(hits: Sequence[RouteResult], existing: dict | None = None) 
     the new one when the same passage comes back, instead of having their
     ``retrieval_routes`` reset - the context cut's route coverage reads that list.
     """
+    if (existing or {}).get("retrieval_mode") == "LEXICAL_DEGRADED" or any(
+        hit.retrieval_mode == "LEXICAL_DEGRADED" or any(c.get("score_provenance", {}).get("mode") == "LEXICAL_DEGRADED" for c in hit.chunks)
+        for hit in hits
+    ):
+        return _merge_degraded_routes(hits, existing)
+
     merged: dict[str, dict] = {}
     doc_aggs: dict[str, dict] = {}
     if existing:
@@ -248,7 +300,7 @@ async def _retrieve_route(
 
     result = await _call(similarity_threshold)
     chunks = result.get("chunks") or []
-    if not chunks and float(similarity_threshold or 0.0) > RECALL_FLOOR:
+    if not chunks and result.get("retrieval_mode") != "LEXICAL_DEGRADED" and float(similarity_threshold or 0.0) > RECALL_FLOOR:
         _LOG.warning(
             "[Multi-route] route %r -> 0 chunk(s) at threshold=%s; retrying at the %.2f recall floor.",
             query[:80],
@@ -259,7 +311,7 @@ async def _retrieve_route(
         if rescued.get("chunks"):
             result = rescued
             chunks = result.get("chunks") or []
-    return RouteResult(query=query, chunks=list(chunks), doc_aggs=list(result.get("doc_aggs") or []))
+    return RouteResult(query=query, chunks=list(chunks), doc_aggs=list(result.get("doc_aggs") or []), retrieval_mode=result.get("retrieval_mode", "HYBRID"))
 
 
 async def multi_route_retrieve(
@@ -339,4 +391,6 @@ async def multi_route_retrieve(
         len(merged["doc_aggs"]),
         f"; failed routes: {failed}" if failed else "",
     )
+    if failed or merged.get("retrieval_mode") == "LEXICAL_DEGRADED":
+        merged["route_execution"] = [{"query": h.query, "failed": h.failed, "retrieval_mode": h.retrieval_mode} for h in hits]
     return merged
