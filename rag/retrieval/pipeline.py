@@ -36,15 +36,22 @@ import logging
 from typing import Sequence
 
 from rag.retrieval.chunk_profile import document_id, document_key, document_name, is_prose_chunk, resolve_core_documents
-from rag.retrieval.chunk_profile import comparison_sides, is_comparative_question
 from rag.retrieval.chunk_profile import designation_parts, document_designations, document_family, generic_part_documents, generic_sibling_designation, name_family, standard_designations
-from rag.retrieval.decomposition import MAX_SUB_QUERIES, clause_route, comparative_routes, decompose_question, looks_composite, mentions_requirement, seeks_clause
+from rag.retrieval.decomposition import MAX_SUB_QUERIES, looks_composite, mentions_requirement, seeks_clause
 from rag.retrieval.multi_route import (
     DEFAULT_ROUTES_TOP_K,
     DEFAULT_VECTOR_SIMILARITY_WEIGHT,
     RouteResult,
     merge_route_hits,
     multi_route_retrieve,
+)
+from rag.retrieval.planner import (
+    KIND_CLAUSE,
+    KIND_DIMENSION,
+    KIND_SIDE,
+    cache_scope,
+    compile_retrieval_plan,
+    resolve_plan_cache,
 )
 from rag.retrieval.health_bridge import (
     attach_retrieval_health,
@@ -388,30 +395,46 @@ async def retrieve_multi_route(
     else:
         _LOG.debug("[QueryRouter] no rule matched %r; keeping the configured retrieval settings", question[:80])
 
-    routes = [question]
-    sub_queries: list[str] = []
-    if looks_composite(question):
-        sub_queries = await decompose_question(chat_mdl, question, max_sub_queries)
-        routes.extend(sub_queries)
-    # A COMPARATIVE question also gets one route per side it names ("单芯" / "三芯",
-    # "第2部分" / "第3部分"). One shared query scores both documents' tables on the same
-    # words and the window fills with the higher-scoring one - measured as a comparison
-    # answered from a single part, with the other part never retrieved at all. A side
-    # route searches that side's own wording, and `select_context` reserves a slot per
-    # route, so both sides are in the window before the score fill.
-    sides = comparison_sides(question)
-    side_routes = comparative_routes(question, sides) if is_comparative_question(question) else []
-    if side_routes:
-        routes.extend(side_routes)
-        _LOG.info("[Multi-route] comparative question (sides=%s) -> %d side route(s): %s", sides, len(side_routes), side_routes)
-    # A rule-seeking question also gets a route at the normative PROSE tier. It is
-    # deterministic on purpose: it must fire on every clause question, including
-    # the ones the LLM decomposition failed on or never saw (single-dimension
-    # wording), because a bidder fill-in table can win the fused score against it.
-    targeted = clause_route(question)
-    if targeted:
-        routes.append(targeted)
-    _LOG.info("[Multi-route] question=%r -> %d route(s): %s", question[:80], len(routes), routes)
+    # P1-2 (module E): the executable route list is COMPILED from the input, not proposed by the
+    # model. The plan - its slot count, its slot identities, their canonical texts and their
+    # order - exists, hashed, before the model is asked anything, so no model behaviour can reach
+    # the topology: a timeout, a malformed payload, an empty list or a confident hallucination all
+    # land in `plan.provenance` and nowhere else. See `rag.retrieval.planner` for the authority
+    # model and the `plan_hash` contract (S1-S6).
+    plan = await compile_retrieval_plan(
+        question=question,
+        chat_mdl=chat_mdl,
+        max_sub_queries=max_sub_queries,
+        plan_cache=resolve_plan_cache(),
+        cache_scope=cache_scope(
+            tenant_ids,
+            kb_ids,
+            (
+                ("similarity_threshold", similarity_threshold),
+                ("vector_similarity_weight", vector_similarity_weight),
+                ("routes_top_k", routes_top_k),
+                ("final_top_n", final_top_n),
+                ("knn_top_k", knn_top_k),
+            ),
+        ),
+    )
+    routes = list(plan.texts)
+    # The three deterministic families, read back out of the plan in the order the plan put them,
+    # so the follow-up passes below keep the route preference they have always had. These are the
+    # same routes module A and the comparative/clause rules produce - what changed is who decides
+    # that they exist.
+    sub_queries = list(plan.of_kind(KIND_DIMENSION))
+    side_routes = list(plan.of_kind(KIND_SIDE))
+    targeted = next(iter(plan.of_kind(KIND_CLAUSE)), None)
+    _LOG.info(
+        "[Multi-route] question=%r -> %d compiled route(s) (plan_hash=%s, slots=%s, cache=%s): %s",
+        question[:80],
+        len(routes),
+        plan.plan_hash,
+        [route.slot_id for route in plan.routes],
+        plan.provenance.cache_state,
+        routes,
+    )
 
     async def _retrieve(queries, doc_scope):
         return await multi_route_retrieve(

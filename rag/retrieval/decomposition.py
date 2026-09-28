@@ -80,11 +80,42 @@ _LEADING_SECTION_NUMBER_RE = re.compile(r"^\s*\d+(?:\.\d+){1,4}\s*[、,，:：.�
 
 #: Conjunctions that put two information needs in one sentence. ``和`` needs the
 #: lookbehind because it also builds single words (饱和/柔和/温升和谐波...).
-_CONJUNCTION_RE = re.compile(r"[、；;]|(?<![饱柔混搅调缓总均附])和|与|及|以及|还有|同时|分别|各自|对比|比较|区别|不同|差异")
+#:
+#: The pattern is COMPOSED from the three slices below rather than written out as one
+#: literal, so the deterministic planner (module E) can reuse one slice without
+#: introducing a term of its own. The alternative ORDER is the order this constant has
+#: always had, so the composition matches exactly what the single literal matched - the
+#: slices are a partition of an existing vocabulary, not an extension of it.
+_ENUMERATING_PATTERN = r"[、；;]|(?<![饱柔混搅调缓总均附])和|与|及|以及|还有"
+_DISTRIBUTIVE_ADVERB_PATTERN = r"同时|分别|各自"
+_COMPARATIVE_VERB_PATTERN = r"对比|比较|区别|不同|差异"
+
+_CONJUNCTION_RE = re.compile(f"{_ENUMERATING_PATTERN}|{_DISTRIBUTIVE_ADVERB_PATTERN}|{_COMPARATIVE_VERB_PATTERN}")
+
+#: The ENUMERATING slice alone: a conjunction that puts two noun phrases side by side, so
+#: it enumerates either the dimensions a question asks about (导体、内衬层和铠装层) or the
+#: two sides of a comparison (单芯和三芯). Only this slice separates; the other two do not.
+ENUMERATING_CONJUNCTION_RE = re.compile(_ENUMERATING_PATTERN)
+
+#: The ADVERBIAL slice alone: 同时/分别/各自 sit *inside* a clause and say the clause is
+#: distributed over something already enumerated ("…和…分别有什么要求"). They terminate a
+#: dimension head, which is what lets the planner read 铠装层 out of
+#: "铠装层分别有什么技术要求" without a lexicon.
+DISTRIBUTIVE_ADVERB_RE = re.compile(_DISTRIBUTIVE_ADVERB_PATTERN)
 
 #: Interrogative markers. Two or more of them in one sentence is a second
 #: information need even without a conjunction ("厚度是多少 电阻又是多少").
 _INTERROGATIVE_RE = re.compile(r"多少|多大|是什么|有哪些|如何|怎样|要求|规定|标准|参数|数值|类型|区别|几")
+
+#: Public alias of the interrogative marker set, for the planner (module E), which needs
+#: the same vocabulary to find where a question's shared predicate begins. Same compiled
+#: object as :data:`_INTERROGATIVE_RE` - no second list to drift out of step.
+INTERROGATIVE_RE = _INTERROGATIVE_RE
+
+#: Public alias of the whole conjunction pattern, for the planner (module E). A dimension head
+#: ends at the first position any slice of this pattern matches, so the planner reads a question's
+#: structure with the classifier's own vocabulary instead of one of its own.
+CONJUNCTION_RE = _CONJUNCTION_RE
 
 #: A question that wants a NORMATIVE CLAUSE rather than a value: it asks how
 #: something is tested, which rule wins, what is required. On a standards corpus
@@ -374,14 +405,25 @@ def parse_sub_queries(result, question: str, max_sub_queries: int = MAX_SUB_QUER
     return out
 
 
-async def decompose_question(chat_mdl, question: str, max_sub_queries: int = MAX_SUB_QUERIES) -> list[str]:
+async def decompose_question(chat_mdl, question: str, max_sub_queries: int = MAX_SUB_QUERIES, outcome: dict | None = None) -> list[str]:
     """Split a composite question into atomic sub-queries.
 
     Returns an empty list - never raises - when there is no chat model, when the
     question is empty, or when the model call or its JSON response cannot be
     used. The caller then searches the original question alone, which is exactly
     the behaviour that predates this module.
+
+    ``outcome``, when given, is filled in with what happened on the model side:
+    ``error`` is ``"transport"`` when the call or its JSON parse failed, ``"parse"`` when the
+    payload arrived but carried no usable sub-query, and ``None`` when it succeeded; ``items`` is
+    the number of raw members the payload actually held. This is additive and optional - the
+    return value and every failure path are unchanged - and it exists because P1-2's planner has to
+    REPORT why the model channel was empty (fallback triggers T1 vs T2) rather than guess. The
+    planner treats the model as provenance only, so this information never reaches a route.
     """
+    if outcome is not None:
+        outcome.clear()
+        outcome.update({"error": "no_model", "items": 0})
     question = _WHITESPACE_RE.sub(" ", str(question or "")).strip()
     if not question or chat_mdl is None or max_sub_queries <= 0:
         return []
@@ -390,7 +432,13 @@ async def decompose_question(chat_mdl, question: str, max_sub_queries: int = MAX
         result = await gen_json(rendered, "Output:\n", chat_mdl)
     except Exception as exc:  # noqa: BLE001 - decomposition is an optimization
         _LOG.warning("[Decompose] failed for %r: %s", question[:80], exc)
+        if outcome is not None:
+            outcome.update({"error": "transport", "items": 0})
         return []
+    if outcome is not None:
+        outcome["items"] = len(result) if isinstance(result, (list, tuple)) else 1 if result else 0
     sub_queries = parse_sub_queries(result, question, max_sub_queries)
+    if outcome is not None:
+        outcome["error"] = None if sub_queries else "parse"
     _LOG.info("[Decompose] %r -> %s", question[:80], sub_queries)
     return sub_queries

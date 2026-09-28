@@ -310,6 +310,24 @@ def standard_designations(text: str) -> set[str]:
     return found
 
 
+def designation_spans(text: str) -> list[str]:
+    """The designations a question NAMES, as literal text, in the order it names them.
+
+    :func:`standard_designations` answers "which standard is this about" and normalizes the
+    answer hard (``Q/GDW73286.2``, uppercase, no slash, no spacing), which is what a
+    comparison against a file name needs. A retrieval ROUTE needs the other thing: the words
+    to actually search for, spelled the way the question and the corpus spell them
+    (``Q/GDW 73286.2``). Same pattern, same matches, no second vocabulary - only the match
+    text is kept instead of the normalized key.
+    """
+    spans: list[str] = []
+    for match in _STANDARD_DESIGNATION_RE.finditer(_normalized_name(text)):
+        span = " ".join(match.group(0).split())
+        if span and span not in spans:
+            spans.append(span)
+    return spans
+
+
 #: The context prefix the ingest writes into every chunk it can identify
 #: (``[标准号: Q/GDW 73286.1-2026 | 文档: … | 章节: …]``). It is the only place a
 #: multi-part standard's PART designation reaches the text - the file name carries
