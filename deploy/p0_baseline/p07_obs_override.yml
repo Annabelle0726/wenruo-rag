@@ -1,0 +1,4 @@
+# P0-7 operator observability deploy override (log-first structured event).
+services:
+  wenruo-rag-cpu:
+    image: my-wenruorag:p0-7-obs-9f3d2c79
