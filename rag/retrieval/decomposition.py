@@ -45,6 +45,7 @@ from __future__ import annotations
 
 import logging
 import re
+from dataclasses import replace
 from typing import Sequence
 
 from rag.prompts.generator import PROMPT_JINJA_ENV, gen_json
@@ -187,6 +188,53 @@ _QUESTION_NUMBER_RE = re.compile(r"\d+(?:[.．]\d+)?")
 #: comparative parameter question names, and every extra one is a pass over the pool.
 MAX_QUESTION_VALUES = 6
 
+def question_numeric_occurrences(question: str) -> list[NumericOccurrence]:
+    """Every numeric occurrence of ``question``, with offsets into the QUESTION AS GIVEN.
+
+    **The offset contract.** Normalization (section-reference stripping, whitespace collapsing) is still how
+    the extraction has always read a question, but its result is now a NORMALIZED COPY plus a
+    normalized-index to original-index map, and every published occurrence is translated back through that
+    map. Revision 2 handed out offsets into the copy, so ``第12部分  电压  220kV`` could not round-trip and a
+    caller could not tell which characters an occurrence meant. The invariant, asserted per occurrence by
+    the gate, is::
+
+        question[occurrence.start:occurrence.end] == occurrence.text
+
+    Two consequences worth stating. A figure normalization DELETED (a section number such as the ``12`` of
+    ``第12部分``) has no occurrence, which is the existing semantics: an outline coordinate is not a value. A
+    figure whose ORIGINAL spelling differs from its canonical form (the full-width dot of ``1．5``) is
+    published as written, with offsets to match, while its CLASS is still decided on the canonical form - a
+    recorded equivalence rather than a silent rewrite.
+    """
+    original = str(question or "")
+    if not original:
+        return []
+    normalized, mapping = _normalize_with_map(original)
+    if not normalized:
+        return []
+    translated: list[NumericOccurrence] = []
+    for occurrence in numeric_occurrences(normalized):
+        start = _map_index(mapping, occurrence.start)
+        end = _map_end(mapping, occurrence.end)
+        if start is None or end is None or end <= start:
+            continue
+        literal = original[start:end]
+        if not literal:
+            continue
+        translated.append(
+            replace(
+                occurrence,
+                text=literal,
+                start=start,
+                end=end,
+                unit_end=None if occurrence.unit_end is None else _map_end(mapping, occurrence.unit_end),
+                designation_span=_map_span(mapping, occurrence.designation_span),
+                model_span=_map_span(mapping, occurrence.model_span),
+            )
+        )
+    return translated
+
+
 def question_value_occurrences(question: str) -> list[NumericOccurrence]:
     """The OCCURRENCES of ``question`` that project into the answer-value set, in the order it names them.
 
@@ -197,18 +245,16 @@ def question_value_occurrences(question: str) -> list[NumericOccurrence]:
 
     The pre-existing extraction rule still governs the projection: a figure must carry two digits or a
     decimal part, which keeps ``800``/``1200``/``3.9``/``0.6`` and drops the ``1`` of ``1×800``. Figures
-    that are dropped here are deliberately still visible in :func:`chunk_profile.numeric_occurrences`, so
-    a diagnosis can see what was dropped and why.
+    that are dropped here are deliberately still visible in :func:`question_numeric_occurrences`, so a
+    diagnosis can see what was dropped and why.
     """
-    text = _WHITESPACE_RE.sub(" ", strip_section_references(str(question or ""))).strip()
-    if not text:
-        return []
     projected: list[NumericOccurrence] = []
     seen: set[str] = set()
-    for occurrence in numeric_occurrences(text):
+    for occurrence in question_numeric_occurrences(question):
         if not occurrence.counts_as_value:
             continue
-        if len(occurrence.text.replace(".", "")) < 2 and "." not in occurrence.text:
+        digits = occurrence.text.replace(".", "").replace("．", "")
+        if len(digits) < 2 and "." not in occurrence.text and "．" not in occurrence.text:
             continue
         if occurrence.text in seen:
             continue
@@ -217,6 +263,80 @@ def question_value_occurrences(question: str) -> list[NumericOccurrence]:
         if len(projected) >= MAX_QUESTION_VALUES:
             break
     return projected
+
+
+def _map_index(mapping: Sequence[int], index: int) -> int | None:
+    """The original index a normalized index came from."""
+    return mapping[index] if 0 <= index < len(mapping) else None
+
+
+def _map_end(mapping: Sequence[int], index: int) -> int | None:
+    """The original index one PAST the character a normalized end index follows."""
+    if index <= 0 or index - 1 >= len(mapping):
+        return None
+    return mapping[index - 1] + 1
+
+
+def _map_span(mapping: Sequence[int], span: tuple[int, int] | None) -> tuple[int, int] | None:
+    if span is None:
+        return None
+    start = _map_index(mapping, span[0])
+    end = _map_end(mapping, span[1])
+    return None if start is None or end is None else (start, end)
+
+
+def _emit(text: str, mapping: list[int], out: list[str], out_map: list[int], first: int, last: int) -> None:
+    for index in range(first, last):
+        out.append(text[index])
+        out_map.append(mapping[index])
+
+
+def _sub_with_map(text: str, mapping: list[int], pattern: re.Pattern, replacement: str) -> tuple[str, list[int]]:
+    """``pattern.sub`` that keeps every surviving character's ORIGINAL index."""
+    out: list[str] = []
+    out_map: list[int] = []
+    cursor = 0
+    for match in pattern.finditer(text):
+        if match.start() < cursor:
+            continue
+        _emit(text, mapping, out, out_map, cursor, match.start())
+        if replacement:
+            out.append(replacement)
+            out_map.append(mapping[match.start()])
+        cursor = match.end()
+    _emit(text, mapping, out, out_map, cursor, len(text))
+    return "".join(out), out_map
+
+
+def _strip_chars(text: str, mapping: list[int], chars: str) -> tuple[str, list[int]]:
+    start, end = 0, len(text)
+    while start < end and text[start] in chars:
+        start += 1
+    while end > start and text[end - 1] in chars:
+        end -= 1
+    return text[start:end], mapping[start:end]
+
+
+def _normalize_with_map(question: str) -> tuple[str, list[int]]:
+    """``(normalized, normalized_index -> original_index)`` - the extraction's own normalization.
+
+    Reproduces :func:`strip_section_references` step for step (glued section numbers, section words,
+    appendix labels, a leading dotted number, whitespace collapsing, the leading/trailing strip) while
+    recording where every surviving character came from, plus the same fallback for a question that is
+    nothing but a section reference.
+    """
+    original = str(question or "")
+    text, mapping = original, list(range(len(original)))
+    for pattern in (_GLUED_SECTION_NUMBER_RE, _SECTION_WORD_RE, _APPENDIX_RE):
+        text, mapping = _sub_with_map(text, mapping, pattern, " ")
+    text, mapping = _sub_with_map(text, mapping, _LEADING_SECTION_NUMBER_RE, "")
+    text, mapping = _sub_with_map(text, mapping, _WHITESPACE_RE, " ")
+    text, mapping = _strip_chars(text, mapping, " 　的,，、;；:：")
+    if len(text) >= 2:
+        return text, mapping
+    fallback = original.strip()
+    offset = len(original) - len(original.lstrip())
+    return fallback, list(range(offset, offset + len(fallback)))
 
 
 def question_values(question: str, chunks: Sequence[dict] = ()) -> list[str]:

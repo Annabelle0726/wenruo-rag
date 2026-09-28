@@ -510,19 +510,123 @@ NUMERIC_VALUE_CLASSES = frozenset(
     {NUMERIC_TECHNICAL_MEASUREMENT, NUMERIC_ANSWER_VALUE, NUMERIC_UNKNOWN, NUMERIC_IDENTITY_ASKED}
 )
 
-#: The attributes a question can ask FOR, i.e. the shapes that turn an identity occurrence into an
-#: answer. Each cue names the attribute, so the classifier asks "is the question about this attribute"
-#: rather than "does this sentence contain a year".
+#: The attributes a question can ask FOR. These cues bind the occurrences OF THAT ATTRIBUTE, which is how
+#: `GB/T 12706.2-2020的标准号是多少？` returns the designation itself: the question is about the
+#: attribute, so the figures spelling that attribute are what it asks for.
 _ASKED_ATTRIBUTE_CUES = {
-    "edition": re.compile(r"版本是|是什么版本|哪一版|哪版|年版还是|版还是|发布的是|发布日期是|实施日期是|现行版是"),
-    "designation": re.compile(r"标准号是多少|标准号是什么|标准编号是多少|是什么标准号|哪个标准号"),
-    "model": re.compile(r"型号是什么|是什么型号|型号是多少|哪个型号|型号是(?:什么|多少)"),
+    "edition": re.compile(r"版本是|是什么版本|哪一版|哪版|发布的是|发布日期是|实施日期是|现行版本是|现行版是"),
+    "designation": re.compile(r"标准号是多少|标准号是什么|标准编号是多少|是什么标准号|哪个标准号|标准号是(?:什么|多少)"),
+    "model": re.compile(r"型号是什么|是什么型号|型号是多少|哪个型号|型号是(?:什么|多少)|型号(?:是|为)"),
     "reference": re.compile(r"第\s*几\s*部分|哪一部分|表\s*几|图\s*几|哪个表|哪个图"),
 }
 
-#: A choice between two occurrences of the SAME attribute is a question about that attribute
-#: (`是2026版还是2025版`). Only `还是`/`或者` count: `或` alone occurs inside ordinary words.
-_ATTRIBUTE_CHOICE_RE = re.compile(r"还是|或者")
+#: Prepositions that introduce a document LOCATOR - the figures after them say WHICH document, not what its
+#: content is. A cue counts only at a clause edge, so the noun `依据` inside `投产依据` is not a phrase and
+#: cannot demote the year that follows it.
+_LOCATOR_CUES = ("根据", "依据", "按照", "依照", "遵照", "参照", "基于", "据")
+_LOCATOR_GAP_LIMIT = 10
+
+#: Characters that end a clause or open a bracket: a locator cue may start after one of them.
+_CLAUSE_EDGE_CHARS = "，。；、？！,;?!：:（）()《》【】\"' \t\n\u3000"
+
+#: The connectives that COMPARE two figures, and the interrogatives that ask which member of a preceding
+#: LIST is meant. Both are LOCAL: they bind the figures they actually sit between or follow, never every
+#: occurrence of a class that happens to appear somewhere in the sentence.
+_COMPARISON_CONNECTIVE_RE = re.compile(r"还是|或者")
+_CHOICE_INTERROGATIVE_RE = re.compile(r"哪一?[个部分版种条章节项表图]|哪几种?")
+#: What may sit between two members of a list without ending it.
+_LIST_CONNECTOR_RE = re.compile(r"[\s、,，]|和|与|及|以及|或")
+#: Suffixes that belong to an edition or a designation rather than ending a list (`2025年版、`).
+_ATTRIBUTE_SUFFIX_CHARS = "年版本号部分"
+
+
+def _occurrence_attribute(text: str, occurrence: "NumericOccurrence") -> str | None:
+    """The identity attribute of an occurrence, or ``None`` when it carries no identity."""
+    return _attribute_of(text, occurrence.text, occurrence.end, occurrence.designation_span, occurrence.model_span)
+
+
+def _locator_bound_starts(text: str, occurrences: Sequence["NumericOccurrence"]) -> set[int]:
+    """Starts of the occurrences a locator preposition introduces, plus the rest of their designation.
+
+    `根据 Q/GDW 73286.2-2026，厚度是3.9还是4.1mm？` binds `73286.2` and `2026` - both spell the document
+    the question locates - and leaves `3.9`/`4.1` untouched, which is the audit's A1.
+    """
+    bound: set[int] = set()
+    for cue in _LOCATOR_CUES:
+        position = text.find(cue)
+        while position != -1:
+            clause_edge = position == 0 or text[position - 1] in _CLAUSE_EDGE_CHARS
+            if clause_edge:
+                after = position + len(cue)
+                for occurrence in occurrences:
+                    if occurrence.start < after or _occurrence_attribute(text, occurrence) is None:
+                        continue
+                    gap = text[after : occurrence.start]
+                    if len(gap) > _LOCATOR_GAP_LIMIT or any(char in _CLAUSE_EDGE_CHARS for char in gap):
+                        break
+                    bound.add(occurrence.start)
+                    if occurrence.designation_span is not None:
+                        span_start, span_end = occurrence.designation_span
+                        bound.update(item.start for item in occurrences if span_start <= item.start and item.end <= span_end)
+                    break
+            position = text.find(cue, position + 1)
+    return bound
+
+
+def _compared_starts(text: str, occurrences: Sequence["NumericOccurrence"]) -> set[int]:
+    """Starts of the occurrences a comparison or a list interrogative actually asks about.
+
+    Two shapes, both local:
+
+    * a connective compares the figure in front of it with the figure behind it
+      (`厚度是3.9还是4.1mm`), so only those two are bound;
+    * an interrogative asks which member of the LIST in front of it is meant
+      (`2026年版、2025年版，哪一个是现行版本？`, `Q/GDW 73286.2 和 73286.3 哪一部分…`), so the walk
+      backwards stops at the first character that is not a list connector, whitespace or an attribute
+      suffix.
+    """
+    asked: set[int] = set()
+    for match in _COMPARISON_CONNECTIVE_RE.finditer(text):
+        before = [item for item in occurrences if item.end <= match.start() and match.start() - item.end <= 6]
+        after = [item for item in occurrences if item.start >= match.end() and item.start - match.end() <= 6]
+        if before and after:
+            left = max(before, key=lambda item: item.end)
+            right = min(after, key=lambda item: item.start)
+            if not any(char in _CLAUSE_EDGE_CHARS for char in text[left.end : match.start()]):
+                asked.add(left.start)
+            if not any(char in _CLAUSE_EDGE_CHARS for char in text[match.end() : right.start]):
+                asked.add(right.start)
+
+    for match in _CHOICE_INTERROGATIVE_RE.finditer(text):
+        cursor = match.start()
+        group: list[NumericOccurrence] = []
+        while True:
+            before = [item for item in occurrences if item.end <= cursor]
+            if not before:
+                break
+            previous = max(before, key=lambda item: item.end)
+            gap = text[previous.end : cursor]
+            if len(gap) > 4 or not all(char.isspace() or _LIST_CONNECTOR_RE.fullmatch(char) or char in _ATTRIBUTE_SUFFIX_CHARS for char in gap):
+                break
+            group.append(previous)
+            cursor = previous.start
+        if len(group) >= 2:
+            asked.update(item.start for item in group)
+    return asked
+
+
+def _asked_starts(text: str, occurrences: Sequence["NumericOccurrence"]) -> set[int]:
+    """Starts of the occurrences the question asks FOR - by attribute cue, or by a COMPARISON/LIST ITEM.
+
+    The rejected model asked "does the sentence contain a cue" and promoted every occurrence of a class.
+    This asks "is THIS occurrence the thing the cue or the comparison is about", so a sentence-level
+    connective cannot change a locator's verdict (the audit's A1, A2 and D1).
+    """
+    asked = _compared_starts(text, occurrences)
+    for attribute, cue in _ASKED_ATTRIBUTE_CUES.items():
+        if cue.search(text):
+            asked.update(item.start for item in occurrences if _occurrence_attribute(text, item) == attribute)
+    return asked
 
 #: A year, for the edition rule.
 _YEAR_RE = re.compile(r"(?:19|20)\d{2}")
@@ -642,13 +746,14 @@ def _unit_boundary_ok(text: str, end: int) -> bool:
 
 
 def _match_unit(text: str, digits_end: int) -> tuple[str, int] | None:
-    """The longest valid unit after the digits, with the whitespace the writer may have left.
+    """The longest valid unit after the digits, across whatever WHITESPACE the writer left.
 
-    Longest-match is what resolves ``kWh`` against ``kW`` without naming either one, and it is also what
-    keeps ``kV`` from being truncated to ``k``/``V`` by a shorter alternative.
+    Any whitespace counts (space, tab, newline, ideographic space): they are one separator to a reader and
+    different bytes to a regex, and the audit's section C is exactly that a tab must not turn a measurement
+    into a code. Longest-match is what resolves ``kWh`` against ``kW`` without naming either one.
     """
     position = digits_end
-    while position < len(text) and text[position] == " ":
+    while position < len(text) and text[position].isspace():
         position += 1
     best: tuple[str, int] | None = None
     for pattern in _unit_patterns():
@@ -721,6 +826,12 @@ def _containing_span(start: int, end: int, spans: Sequence[tuple[int, int]]) -> 
     return None
 
 
+#: The labels that make a span a STRUCTURAL reference rather than a document designation. `_REFERENCE_SPAN_RE`
+#: carries the designation prefixes too (it exists to FIND the span, not to name it), so the attribute test
+#: cannot use it: a `GB/T …` span would otherwise be called a reference and its own cue would never bind it.
+_REFERENCE_LABEL_RE = re.compile(r"^(?:第|表|图|附录)\s*", re.IGNORECASE)
+
+
 def _attribute_of(text: str, token: str, end: int, designation_span, model_span) -> str | None:
     """Which identity attribute an occurrence belongs to, or ``None`` when it is not an identity.
 
@@ -732,21 +843,8 @@ def _attribute_of(text: str, token: str, end: int, designation_span, model_span)
     if _YEAR_RE.fullmatch(token) and _EDITION_CUE_RE.match(text[end : end + 6]):
         return "edition"
     if designation_span is not None:
-        return "reference" if _REFERENCE_SPAN_RE.match(text, designation_span[0]) else "designation"
+        return "reference" if _REFERENCE_LABEL_RE.match(text[designation_span[0] :]) else "designation"
     return None
-
-
-def _asked_attributes(text: str, occurrences: Sequence["NumericOccurrence"]) -> set[str]:
-    """The attributes the QUESTION asks FOR: an explicit cue, or a choice between two of the same kind."""
-    asked = {attribute for attribute, cue in _ASKED_ATTRIBUTE_CUES.items() if cue.search(text)}
-    if _ATTRIBUTE_CHOICE_RE.search(text):
-        counts: dict[str, int] = {}
-        for occurrence in occurrences:
-            attribute = _attribute_of(text, occurrence.text, occurrence.end, occurrence.designation_span, occurrence.model_span)
-            if attribute:
-                counts[attribute] = counts.get(attribute, 0) + 1
-        asked |= {attribute for attribute, count in counts.items() if count >= 2}
-    return asked
 
 
 def numeric_occurrences(text: str) -> list[NumericOccurrence]:
@@ -783,7 +881,8 @@ def numeric_occurrences(text: str) -> list[NumericOccurrence]:
             )
         )
 
-    asked = _asked_attributes(body, candidates)
+    asked = _asked_starts(body, candidates)
+    locators = _locator_bound_starts(body, candidates)
     return [
         replace(
             occurrence,
@@ -792,18 +891,27 @@ def numeric_occurrences(text: str) -> list[NumericOccurrence]:
                 occurrence,
                 _attribute_of(body, occurrence.text, occurrence.end, occurrence.designation_span, occurrence.model_span),
                 asked,
+                locators,
             ),
         )
         for occurrence in candidates
     ]
 
 
-def _resolve_kind(text: str, occurrence: NumericOccurrence, attribute: str | None, asked: set[str]) -> str:
-    """The class of one occurrence, from its own evidence and the question's asked attribute."""
+def _resolve_kind(
+    text: str,
+    occurrence: NumericOccurrence,
+    attribute: str | None,
+    asked: set[int],
+    locators: set[int] = frozenset(),
+) -> str:
+    """The class of one occurrence, from its own evidence and the intent bound to THAT occurrence."""
     if attribute is not None:
-        # An identity or a model code. It is answer-bearing exactly when the question asks for that
-        # attribute - never merely because the corpus, or the calendar, says identity.
-        if attribute in asked:
+        # A name, unless this very occurrence is what the question asks for. A locator preposition wins:
+        # `根据 Q/GDW 73286.2-2026` says which document, whatever else the sentence compares.
+        if occurrence.start in locators:
+            return NUMERIC_IDENTITY_LOCATOR
+        if occurrence.start in asked:
             return NUMERIC_IDENTITY_ASKED
         return NUMERIC_MODEL_IDENTITY if attribute == "model" else NUMERIC_IDENTITY_LOCATOR
 
