@@ -107,25 +107,117 @@ def report_route_failure(exc: BaseException) -> None:
 
 
 def _bump(session, outcome: str, exc: BaseException | None = None) -> None:
-    counters = session.__dict__.setdefault("_route_counters", {"attempted": 0, "succeeded": 0, "failed": {}})
+    """Route-level bookkeeping only.
+
+    A route result is *not* a leg fact: one hybrid route call covers the dense leg **and** the lexical
+    leg, so the route layer cannot tell which of them ran and must never invent either one. Evidence
+    legs are reported where they actually execute (see the leg reporters below). The previous version
+    popped both legs and then re-declared one of them `success`; that erased the real dense fact and
+    left the other leg `UNKNOWN`, so a perfectly healthy request aggregated to `degraded` with a null
+    reason and the contract flagged it as silent degradation.
+    """
+    counters = session.__dict__.setdefault("_route_counters", {"attempted": 0, "succeeded": 0, "failed": 0})
     counters["attempted"] += 1
     if outcome == "success":
         counters["succeeded"] += 1
+        return
+    counters["failed"] += 1
+    if exc is None:
+        return
+    # Attribute a route failure to a leg only when no deeper boundary already owns that leg: an
+    # embedding-boundary failure has already been reported by the dense producer, with a more accurate
+    # reason than this heuristic can produce.
+    leg = leg_for_exception(exc)
+    if not _leg_facts(session).get(leg):
+        _record_leg_execution(leg, False, exc)
+
+
+#: Evidence-leg facts are produced at the boundary where the leg actually runs:
+#:   dense   -> the query-embedding request (``Dealer.get_vector`` in the store/search layer)
+#:   lexical -> the store round trip that carries the lexical expression
+#: Every attempt is counted and the counts aggregate into exactly one leg status, so a partially
+#: failing leg reports `degraded` with a reason instead of being rounded to success or to silence.
+_LEG_FACT_KEY = "_leg_facts"
+
+
+def _leg_facts(session) -> dict:
+    return session.__dict__.setdefault(_LEG_FACT_KEY, {})
+
+
+def _apply_leg_facts(session, leg: str) -> None:
+    facts = _leg_facts(session).get(leg)
+    if not facts:
+        return
+    attempted = facts["ok"] + facts["failed"]
+    if facts["failed"] and facts["ok"]:
+        session.leg_partially_failed(leg, reason=facts["reason"], routes_attempted=attempted, routes_succeeded=facts["ok"])
+    elif facts["failed"]:
+        session.leg_failed(leg, reason=facts["reason"], routes_attempted=attempted, routes_succeeded=0)
     else:
-        leg = leg_for_exception(exc) if exc is not None else "lexical"
-        counters["failed"][leg] = counters["failed"].get(leg, 0) + 1
-    session.legs.pop("lexical", None)
-    session.legs.pop("dense", None)
-    if counters["failed"]:
-        for leg, count in counters["failed"].items():
-            session.leg_partially_failed(leg, reason=producers.ReasonCode.EMBEDDING_QUOTA_EXHAUSTED if leg == "dense" and _is_quota(exc) else None, exc=None if leg == "dense" and _is_quota(exc) else (exc if exc is not None else RuntimeError("route failure")), routes_attempted=count, routes_succeeded=0)
-    if counters["succeeded"]:
-        leg = "lexical" if "lexical" not in counters["failed"] else "dense"
-        session.leg_succeeded(leg, routes_attempted=counters["succeeded"], routes_succeeded=counters["succeeded"])
+        session.leg_succeeded(leg, routes_attempted=attempted, routes_succeeded=facts["ok"])
 
 
-def _is_quota(exc: BaseException | None) -> bool:
-    return exc is not None and producers.reason_from_exception(exc, "dense") is producers.ReasonCode.EMBEDDING_QUOTA_EXHAUSTED
+def _record_leg_execution(leg: str, ok: bool, exc: BaseException | None = None) -> None:
+    """Record one real execution of an evidence leg, at the point where it happened."""
+    session = current_session()
+    if session is None:
+        return
+
+    def _record() -> None:
+        facts = _leg_facts(session).setdefault(leg, {"ok": 0, "failed": 0, "reason": None})
+        if ok:
+            facts["ok"] += 1
+        else:
+            facts["failed"] += 1
+            if facts["reason"] is None:
+                facts["reason"] = producers.reason_from_exception(exc, leg) if exc is not None else producers.ReasonCode.INTERNAL_ERROR
+        _apply_leg_facts(session, leg)
+
+    _safe(_record)
+
+
+def _record_leg_not_triggered(leg: str) -> None:
+    """The branch never required this leg. Never overrides an execution fact that already exists."""
+    session = current_session()
+    if session is None:
+        return
+
+    def _record() -> None:
+        if _leg_facts(session).get(leg):
+            return
+        session.leg_not_triggered(leg)
+
+    _safe(_record)
+
+
+def report_dense_executed() -> None:
+    """The dense (embedding) leg ran and returned a usable query vector."""
+    _record_leg_execution("dense", True)
+
+
+def report_dense_failed(exc: BaseException) -> None:
+    """The dense (embedding) leg ran and failed; the reason is read from the exception itself."""
+    _record_leg_execution("dense", False, exc)
+
+
+def report_dense_not_triggered() -> None:
+    """No embedding model was supplied, so the dense leg was never required."""
+    _record_leg_not_triggered("dense")
+
+
+def report_lexical_executed() -> None:
+    """The lexical leg ran: the store round trip carrying the lexical expression returned."""
+    _record_leg_execution("lexical", True)
+
+
+def report_lexical_failed(exc: BaseException) -> None:
+    """The lexical leg ran and failed; the reason is read from the exception itself."""
+    _record_leg_execution("lexical", False, exc)
+
+
+def report_lexical_not_triggered() -> None:
+    """The question produced no lexical expression, so the lexical leg was never required."""
+    _record_leg_not_triggered("lexical")
 
 
 def mark_no_question() -> None:

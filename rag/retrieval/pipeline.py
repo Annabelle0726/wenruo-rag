@@ -46,6 +46,12 @@ from rag.retrieval.multi_route import (
     merge_route_hits,
     multi_route_retrieve,
 )
+from rag.retrieval.health_bridge import (
+    attach_retrieval_health,
+    begin_retrieval_health,
+    mark_empty_window,
+    mark_no_question,
+)
 from rag.retrieval.query_router import route_question
 from rag.retrieval.rerank import DEFAULT_FINAL_TOP_N, rerank_chunks, resolve_final_top_n
 
@@ -341,8 +347,10 @@ async def retrieve_multi_route(
       sets 12 for a measured reason - see ``api/db/cable_defaults.py``).
     """
     question = " ".join(str(question or "").split())
+    begin_retrieval_health()
     if not question:
-        return empty_kbinfos()
+        mark_no_question()
+        return attach_retrieval_health(empty_kbinfos())
 
     # Adaptive routing (module D): the query SHAPE decides the two legs' balance
     # and the recall window, in memory, for this request only. Nothing is written
@@ -425,7 +433,8 @@ async def retrieve_multi_route(
 
     merged = await _retrieve(routes, doc_ids)
     if not merged.get("chunks"):
-        return empty_kbinfos()
+        mark_empty_window()
+        return attach_retrieval_health(empty_kbinfos())
 
     # Second chance for the standard: the cut can rebalance what was recalled, but
     # it cannot bring back a clause no route retrieved. When an auxiliary document
@@ -472,4 +481,4 @@ async def retrieve_multi_route(
         # part of the standard rather than from the specialized one it was asked
         # about, or the citation reads as a contradiction of the question.
         infos["generic_fallback"] = generic_fallback
-    return infos
+    return attach_retrieval_health(infos)

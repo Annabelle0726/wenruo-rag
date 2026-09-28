@@ -41,6 +41,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
+from rag.retrieval.health_bridge import report_route_failure, report_route_success
+
 _LOG = logging.getLogger(__name__)
 
 #: Passages recalled per route. The recommended band is 10-15: wide enough that a
@@ -304,7 +306,7 @@ async def multi_route_retrieve(
 
     async def _guard(query: str) -> RouteResult:
         try:
-            return await _retrieve_route(
+            result = await _retrieve_route(
                 retriever,
                 query,
                 embd_mdl=embd_mdl,
@@ -320,8 +322,11 @@ async def multi_route_retrieve(
                 must_not=must_not,
                 allow_dense_fallback=allow_dense_fallback,
             )
+            report_route_success()
+            return result
         except Exception as exc:  # noqa: BLE001 - one dead route must not sink the others
             _LOG.warning("[Multi-route] route %r failed: %s", query[:80], exc)
+            report_route_failure(exc)
             return RouteResult(query=query, failed=True)
 
     hits = await asyncio.gather(*[_guard(query) for query in routes])
