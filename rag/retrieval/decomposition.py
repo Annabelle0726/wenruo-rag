@@ -49,7 +49,7 @@ from typing import Sequence
 
 from rag.prompts.generator import PROMPT_JINJA_ENV, gen_json
 from rag.prompts.template import load_prompt
-from rag.retrieval.chunk_profile import carries_value, comparison_sides
+from rag.retrieval.chunk_profile import carries_value, comparison_sides, identity_spans
 
 _LOG = logging.getLogger(__name__)
 
@@ -182,13 +182,62 @@ _QUESTION_NUMBER_RE = re.compile(r"\d+(?:[.．]\d+)?")
 #: comparative parameter question names, and every extra one is a pass over the pool.
 MAX_QUESTION_VALUES = 6
 
-#: A figure is only worth matching when the pool does NOT already carry it everywhere.
-#:
-#: ``220kV`` is named by most passages of a 220kV corpus, so matching on it would move
-#: every candidate by the same factor - noise dressed as a signal. Measured on the live
-#: 220kV index: ``800`` and ``1200`` appear in 18 of the Part 2 document's 40 table
-#: passages (45%), which discriminates; ``220`` appears in nearly all of them.
-MAX_VALUE_POOL_SHARE = 0.8
+#: A year or edition reference: a bare four-digit year followed by 年/版 (``2026 年版``).
+_YEAR_REFERENCE_RE = re.compile(r"(?:19|20)\d{2}")
+
+#: The cue that says a four-digit number is a YEAR rather than a measurement. Without it a bare
+#: ``2000`` stays a value, so ``2000 mm²`` is still matchable.
+_YEAR_CUE_RE = re.compile(r"\s*(?:年|版)")
+
+#: A run of letters, i.e. the shape that turns neighbouring digits into a model code.
+_LETTER_RE = re.compile(r"[A-Za-z]")
+
+#: A number followed by nothing but a unit: ``220kV``, ``1.5mm``, ``30min``. This is a MEASUREMENT
+#: with its unit, not a code, and it is the shape that separates the two.
+_UNIT_SUFFIX_RE = re.compile(r"[A-Za-z]+")
+
+
+def _is_document_identity(text: str, start: int, end: int, spans: Sequence[tuple[int, int]]) -> bool:
+    """Whether a digit run names the DOCUMENT rather than measuring something.
+
+    Three shapes, all semantic - no token is listed by name:
+
+    1. **Inside a standard designation span.** ``Q/GDW 73286.2-2026`` contributes ``73286.2`` and
+       ``2026``, and both are parts of the document's name.
+    2. **A year or edition reference.** A bare four-digit year followed by 年/版 is an edition, not a
+       quantity. The cue is required, so a bare ``2000`` that is a measurement is left alone.
+    3. **A model-code fragment.** A digit run inside a chunk that also carries letters, where the
+       digits are NOT followed by a bare unit suffix. ``WDZC-YJY-0.6/1kV`` is a code and its digits
+       describe the article; ``220kV`` is a number with a unit and is a measurement.
+
+    The distinction is the one the value rules were missing. A document identifier is rare in a corpus
+    **because** it identifies one document, so a frequency test reads it as maximally discriminating
+    while it can never serve as an answer check; and a technical value is common in a single-standard
+    corpus **because** every table of that standard lists it, so the same test reads it as noise.
+    """
+    if any(span_start <= start and end <= span_end for span_start, span_end in spans):
+        return True
+    token = text[start:end]
+    if _YEAR_REFERENCE_RE.fullmatch(token) and _YEAR_CUE_RE.match(text[end : end + 4]):
+        return True
+    return _is_code_fragment(text, start, end)
+
+
+def _is_code_fragment(text: str, start: int, end: int) -> bool:
+    """Whether a digit run sits inside an alphanumeric identifier rather than standing as a number.
+
+    Shape only: take the whitespace-delimited chunk the digits sit in. A chunk with no letter is a
+    measurement (``800``, ``3×25``); a chunk with letters is a measurement only when the digits are
+    followed by a bare unit suffix (``220kV``), and is otherwise a code (``WDZC-YJY-0.6/1kV``).
+    """
+    chunk_start = text.rfind(" ", 0, start) + 1
+    chunk_end = text.find(" ", end)
+    if chunk_end == -1:
+        chunk_end = len(text)
+    chunk = text[chunk_start:chunk_end]
+    if not _LETTER_RE.search(chunk):
+        return False
+    return _UNIT_SUFFIX_RE.fullmatch(chunk[end - chunk_start :]) is None
 
 
 def question_values(question: str, chunks: Sequence[dict] = ()) -> list[str]:
@@ -204,31 +253,41 @@ def question_values(question: str, chunks: Sequence[dict] = ()) -> list[str]:
     keeps ``800``/``1200``/``3.9``/``0.6`` and drops the ``1`` of ``1×800`` and a bare
     "第 2 部分" style index that survived the strip.
 
-    With a pool, a figure the pool already carries nearly everywhere is dropped as
-    well: it cannot separate the passage that answers from the ones that do not. A
-    question whose every figure is that common returns NO values, which turns the
-    value-aware ordering off rather than adding a uniform nudge to every candidate.
+    **Document identity is then removed by SHAPE, before any frequency test runs**
+    (:func:`_is_document_identity`): a standard designation and its year, an edition reference, and a
+    model-code fragment are names, not quantities. They used to be admitted - and the technical values
+    they displaced used to be discarded - by a share test whose verdicts are inverted on a
+    single-standard corpus, where the answer-bearing figures are the ubiquitous ones and the identity
+    tokens are the rare ones.
+
+    With a pool, only a figure that EVERY candidate carries is dropped, because a token the whole
+    window carries cannot separate any two of its members; that is the degenerate case, not a tuned
+    ratio. A figure that is merely common - ``800`` in a corpus whose every table lists the 800 mm²
+    series - is KEPT, since ubiquity is evidence about discrimination and not about whether the
+    question asked for the figure.
     """
     text = _WHITESPACE_RE.sub(" ", strip_section_references(str(question or ""))).strip()
     if not text:
         return []
 
+    spans = identity_spans(text)
     found: list[str] = []
     for match in _QUESTION_NUMBER_RE.finditer(text):
         token = match.group(0).replace("．", ".")
         digits = token.replace(".", "")
         if len(digits) < 2 and "." not in token:
             continue
-        if token not in found:
-            found.append(token)
+        if token in found:
+            continue
+        if _is_document_identity(text, match.start(), match.end(), spans):
+            continue
+        found.append(token)
     if not found:
         return []
 
     pool = list(chunks or ())
     if pool:
-        discriminating = [value for value in found if _pool_share(value, pool) <= MAX_VALUE_POOL_SHARE]
-        # Every figure is common to the pool: there is nothing to target.
-        found = discriminating
+        found = [value for value in found if _pool_share(value, pool) < 1.0]
     return found[:MAX_QUESTION_VALUES]
 
 

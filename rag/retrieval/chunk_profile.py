@@ -154,8 +154,18 @@ VALUE_RESULT_WINDOW = 20
 
 
 def _values_text(chunk: dict) -> str:
-    """The passage as flat text, for matching figures written either way."""
-    return _plain(_content(chunk))
+    """The passage's OWN evidence as flat text, for matching figures written either way.
+
+    The ingest's identity preamble is removed first. It is not evidence: it names the document, its
+    voltage class and its section, and it is written by the pipeline rather than by the document. Left
+    in place it made every table in a standards corpus "carry" the question's figures - the standard
+    number is in every one of their headers - which turned the rule that exists to tell a table that
+    merely LISTS the question's figures from one that PAIRS them into a flat penalty on the whole type.
+
+    Only the preamble goes. A figure that also occurs in the document's own body - the answering table
+    beside the header - still matches, because the removal is scoped to the bracketed metadata block.
+    """
+    return _INGEST_METADATA_RE.sub(" ", _plain(_content(chunk)))
 
 
 def number_tokens(chunk: dict) -> set[str]:
@@ -249,6 +259,13 @@ def _plain(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip().lower()
 
 
+#: The metadata block the INGEST writes into the head of a passage it can identify:
+#: ``[标准号: Q/GDW 73286.3 | 文档: … | 电压: 220kV | 芯数: 三芯 | 章节: …]``. It is matched by its
+#: identity markers rather than by shape alone, so an ordinary bracketed phrase in a document's own
+#: prose is left in place.
+_INGEST_METADATA_RE = re.compile(r"\[(?=[^\]]*(?:标准号|文档)\s*[:：])[^\]]*\]")
+
+
 def document_key(chunk: dict) -> str:
     """The document a passage came from (``doc_id``, else its file name)."""
     for name in ("doc_id", "docnm_kwd", "docnm", "document_name"):
@@ -308,6 +325,27 @@ def standard_designations(text: str) -> set[str]:
     for match in _STANDARD_DESIGNATION_RE.finditer(_normalized_name(text)):
         found.add(re.sub(r"[\s/]+", "", match.group(0)).upper())
     return found
+
+
+#: A standard designation WITH its optional year suffix (``Q/GDW 73286.2-2026``). The pattern above
+#: stops before the year on purpose - a designation is compared against file names, which carry it
+#: without the year - so the suffix is appended HERE rather than changing a pattern that document
+#: resolution depends on.
+_IDENTITY_SPAN_RE = re.compile(_STANDARD_DESIGNATION_RE.pattern + r"(?:\s*[-–—]\s*\d{4})?", re.IGNORECASE)
+
+
+def identity_spans(text: str) -> list[tuple[int, int]]:
+    """Where the DOCUMENT IDENTIFIERS sit in ``text``: designation plus its year suffix.
+
+    Offsets are into ``text`` exactly as given, so the caller must pass the same flattened string it
+    intends to address - re-normalising here would return offsets into a copy.
+
+    This is the boundary the value rules need and the one they lacked: ``73286.2`` and the ``2026``
+    of ``Q/GDW 73286.2-2026`` are parts of the document's NAME, and no frequency test can tell them
+    from a measurement, because a document identifier is rare in a corpus precisely BECAUSE it
+    identifies one document.
+    """
+    return [(match.start(), match.end()) for match in _IDENTITY_SPAN_RE.finditer(str(text or ""))]
 
 
 def designation_spans(text: str) -> list[str]:
