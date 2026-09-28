@@ -461,6 +461,15 @@ class Dealer:
                 "doc_type_kwd",
                 "available_int",
                 "content_with_weight",
+                # The producer's record of what IT injected at the head of content_with_weight: the
+                # extent, a hash of exactly those characters, and the kind/version of the grammar. The
+                # retrieval consumer slices the prefix off only when the hash verifies and otherwise
+                # treats the whole content as evidence, so these four fields must travel with the
+                # content or that decision can never be made (see rag/nlp/doc_context.py).
+                "content_prefix_kind_kwd",
+                "content_prefix_version_int",
+                "content_prefix_chars_int",
+                "content_prefix_hash_kwd",
                 "mom_id",
                 PAGERANK_FLD,
                 TAG_FLD,
