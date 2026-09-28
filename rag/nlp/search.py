@@ -1154,6 +1154,19 @@ class Dealer:
                 "mom_id": chunk.get("mom_id", ""),
                 "row_id": chunk.get("row_id()"),
             }
+            # Provenance the producer recorded for the injected prefix travels WITH the content, or a
+            # consumer cannot tell an injected header from a body that merely looks like one. Copied only
+            # when the retrieved chunk carries it: no synthesis, no default value, no interpretation; a
+            # corrupted value passes through unchanged so the consumer can reject it, and a chunk without
+            # provenance stays without one.
+            for prefix_field in (
+                "content_prefix_kind_kwd",
+                "content_prefix_version_int",
+                "content_prefix_chars_int",
+                "content_prefix_hash_kwd",
+            ):
+                if prefix_field in chunk:
+                    d[prefix_field] = chunk[prefix_field]
             d["score_provenance"] = {
                 "mode": sres.retrieval_mode,
                 "score_kind": ("rerank" if rerank_mdl is not None else "lexical") if degraded else "hybrid",
