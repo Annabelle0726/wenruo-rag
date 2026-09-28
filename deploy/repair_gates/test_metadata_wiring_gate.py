@@ -151,11 +151,15 @@ def test_the_retrieval_path_uses_that_same_projection():
 def test_e2e_provenanced_chunk(stored_index):
     stored = stored_index["stored"]["provenanced"]
     retrieved = by_doc(stored_index["retrieved"], "provenanced")
-    for field in PROVENANCE_FIELDS:
-        assert retrieved[field] == stored[field], field
+    # Field for field, through the datastore's declared representation: keywords as written, integers as
+    # canonical unsigned decimals (pinned by test_the_datastore_representations_are_pinned).
+    assert retrieved["content_prefix_kind_kwd"] == stored["content_prefix_kind_kwd"]
+    assert retrieved["content_prefix_hash_kwd"] == stored["content_prefix_hash_kwd"]
+    assert retrieved["content_prefix_version_int"] == str(stored["content_prefix_version_int"])
+    assert retrieved["content_prefix_chars_int"] == str(stored["content_prefix_chars_int"])
 
     extent = doc_context.verified_prefix_extent(retrieved)
-    assert extent == stored["content_prefix_chars_int"], extent
+    assert extent == stored["content_prefix_chars_int"], (extent, stored["content_prefix_chars_int"])
     body = _body_text(retrieved)
     assert body == BODY, body
     assert "220kv" not in body.lower().replace(" ", "")
@@ -172,8 +176,10 @@ def test_e2e_body_collision(stored_index):
 def test_e2e_corrupted_provenance(stored_index):
     stored = stored_index["stored"]["corrupted"]
     retrieved = by_doc(stored_index["retrieved"], "corrupted")
-    for field in PROVENANCE_FIELDS:
-        assert retrieved[field] == stored[field], f"{field} must be transported unchanged"
+    assert retrieved["content_prefix_kind_kwd"] == stored["content_prefix_kind_kwd"]
+    assert retrieved["content_prefix_hash_kwd"] == stored["content_prefix_hash_kwd"]
+    assert retrieved["content_prefix_chars_int"] == str(stored["content_prefix_chars_int"]), "transported unchanged"
+    assert retrieved["content_prefix_version_int"] == str(stored["content_prefix_version_int"])
     assert doc_context.verified_prefix_extent(retrieved) is None, "the consumer must reject it"
     body = _body_text(retrieved)
     assert body == retrieved["content_with_weight"], "no partial strip"
@@ -188,14 +194,124 @@ def test_e2e_legacy_chunk(stored_index):
 
 
 def test_projection_fidelity(stored_index):
-    """Field for field, including type: no normalization, coercion or reconstruction."""
+    """Field for field through the transport, with no normalization, coercion or reconstruction by it: the
+    keywords arrive as written and the integers arrive as the canonical decimals the datastore writes."""
     stored = stored_index["stored"]["provenanced"]
     retrieved = by_doc(stored_index["retrieved"], "provenanced")
-    assert isinstance(retrieved["content_prefix_chars_int"], int)
-    assert isinstance(retrieved["content_prefix_version_int"], int)
+    assert retrieved["content_prefix_chars_int"] == str(stored["content_prefix_chars_int"])
+    assert retrieved["content_prefix_version_int"] == str(stored["content_prefix_version_int"])
     assert retrieved["content_prefix_kind_kwd"] == stored["content_prefix_kind_kwd"]
-    assert retrieved["content_prefix_version_int"] == stored["content_prefix_version_int"]
-    assert retrieved["content_prefix_chars_int"] == stored["content_prefix_chars_int"]
     assert retrieved["content_prefix_hash_kwd"] == stored["content_prefix_hash_kwd"]
-    header = retrieved["content_with_weight"][: retrieved["content_prefix_chars_int"]]
+    # The contract verifies against the bytes, whatever wire form carried the extent:
+    extent = doc_context.verified_prefix_extent(retrieved)
+    assert extent == stored["content_prefix_chars_int"]
+    header = retrieved["content_with_weight"][:extent]
     assert doc_context.prefix_hash(header) == retrieved["content_prefix_hash_kwd"]
+
+
+# ===========================================================================
+# The datastore's integer wire form, and the canonical parser that must accept it
+# ===========================================================================
+
+
+def test_the_datastore_representations_are_pinned(stored_index):
+    """What the transport actually hands a consumer, recorded here so the contract cannot drift from it.
+
+    `es_conn.get_fields` stringifies every non-list value except `available_int`, so the two integer
+    provenance fields arrive as canonical unsigned decimal strings - not as the ints the producer wrote.
+    """
+    stored = stored_index["stored"]["provenanced"]
+    retrieved = by_doc(stored_index["retrieved"], "provenanced")
+    assert isinstance(stored["content_prefix_version_int"], int) and stored["content_prefix_version_int"] == 1
+    assert isinstance(stored["content_prefix_chars_int"], int)
+
+    assert retrieved["content_prefix_version_int"] == "1", retrieved["content_prefix_version_int"]
+    assert retrieved["content_prefix_chars_int"] == str(stored["content_prefix_chars_int"])
+    assert retrieved["content_prefix_kind_kwd"] == doc_context.PREFIX_KIND_LEGACY
+    assert isinstance(retrieved["content_prefix_hash_kwd"], str)
+
+
+def test_the_projection_transports_all_four_fields_before_the_parser_is_considered(stored_index):
+    retrieved = by_doc(stored_index["retrieved"], "provenanced")
+    for field in PROVENANCE_FIELDS:
+        assert field in retrieved, field
+        assert retrieved[field] == stored_index["stored"]["provenanced"][field] or str(
+            stored_index["stored"]["provenanced"][field]
+        ) == retrieved[field]
+
+
+def _produced() -> dict:
+    return produce(BODY)
+
+
+@pytest.mark.parametrize("wire", [1, "1"])
+def test_canonical_wire_form_is_accepted_for_the_version(wire):
+    chunk = _produced()
+    chunk["content_prefix_version_int"] = wire
+    assert doc_context.verified_prefix_extent(chunk) == len(chunk["content_with_weight"]) - len(BODY)
+
+
+@pytest.mark.parametrize("wire", ["int", "str"])
+def test_canonical_wire_form_is_accepted_for_the_extent(wire):
+    chunk = _produced()
+    extent = chunk["content_prefix_chars_int"]
+    chunk["content_prefix_chars_int"] = extent if wire == "int" else str(extent)
+    assert doc_context.verified_prefix_extent(chunk) == extent
+    assert _body_text(chunk) == BODY
+
+
+@pytest.mark.parametrize(
+    "wire",
+    [
+        True,
+        False,
+        None,
+        1.0,
+        " 1",
+        "1 ",
+        "+1",
+        "-1",
+        "01",
+        "00105",
+        "1.0",
+        "1e0",
+        "１",
+        "",
+        "abc",
+        ["1"],
+        {"value": 1},
+        object(),
+    ],
+)
+def test_a_non_canonical_representation_fails_closed(wire):
+    """`True` is an int in Python, full-width digits are digits to `str.isdigit`, and `"01"` is a valid
+    decimal - none of them is a canonical unsigned decimal, and each must leave the whole content as
+    evidence."""
+    chunk = _produced()
+    chunk["content_prefix_chars_int"] = wire
+    assert doc_context.verified_prefix_extent(chunk) is None, wire
+    assert _body_text(chunk) == chunk["content_with_weight"]
+
+
+@pytest.mark.parametrize("wire", [0, "0", -5, "-5"])
+def test_a_canonical_but_semantically_impossible_extent_fails_closed(wire):
+    chunk = _produced()
+    chunk["content_prefix_chars_int"] = wire
+    assert doc_context.verified_prefix_extent(chunk) is None, wire
+    assert _body_text(chunk) == chunk["content_with_weight"]
+
+
+@pytest.mark.parametrize("wire", [3, "3", 0, "0", None, "x"])
+def test_an_unsupported_version_fails_closed(wire):
+    chunk = _produced()
+    chunk["content_prefix_version_int"] = wire
+    assert doc_context.verified_prefix_extent(chunk) is None, wire
+
+
+def test_an_out_of_range_extent_still_fails_closed_with_the_wire_form():
+    chunk = _produced()
+    size = len(chunk["content_with_weight"])
+    chunk["content_prefix_chars_int"] = str(size + 100)
+    assert doc_context.verified_prefix_extent(chunk) is None
+    chunk["content_prefix_chars_int"] = size
+    assert doc_context.verified_prefix_extent(chunk) is None, "an extent covering the whole content has no body"

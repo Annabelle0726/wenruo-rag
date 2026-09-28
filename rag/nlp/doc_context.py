@@ -110,20 +110,56 @@ def clear_prefix(chunk: Dict[str, Any]) -> None:
     chunk[PREFIX_HASH_FIELD] = ""
 
 
+#: Grammar versions this contract supports. A version the consumer does not know is not a prefix it may
+#: act on, so an unsupported (or unparsable) version fails closed like any other malformed provenance.
+_SUPPORTED_PREFIX_VERSIONS = (LEGACY_PREFIX_VERSION, PROFILE_PREFIX_VERSION)
+
+#: The canonical spelling of an unsigned decimal: ASCII digits only, no sign, no whitespace, no decimal
+#: point, no exponent, no full-width digit, and no leading zero beyond the single ``"0"``. `[0-9]` is
+#: deliberately used instead of ``\\d``/``str.isdigit``, both of which accept Unicode digits.
+_CANONICAL_UNSIGNED_DECIMAL_RE = re.compile(r"[0-9]+")
+
+
+def _canonical_unsigned_decimal(value: Any) -> int | None:
+    """The two wire forms an integer provenance field may arrive in, or ``None``.
+
+    The producer writes a Python ``int``, but the datastore does not hand one back: `es_conn.get_fields`
+    stringifies every non-list value it reads except ``available_int``, so a consumer sees ``"105"`` for a
+    stored ``105``. Accepting exactly the canonical unsigned decimal STRING alongside a real ``int`` keeps
+    the contract's invariant intact while adapting to the transport's declared representation - and only
+    those two forms. ``bool`` is rejected explicitly because ``isinstance(True, int)`` is true in Python,
+    and validation happens BEFORE any conversion: this is not ``int(value)`` with a try/except, which would
+    accept ``" 1"``, ``"+1"``, ``"01"``, ``"1.0"`` and full-width digits.
+    """
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if not isinstance(value, str):
+        return None
+    if not _CANONICAL_UNSIGNED_DECIMAL_RE.fullmatch(value):
+        return None
+    if len(value) > 1 and value[0] == "0":
+        return None
+    return int(value)
+
+
 def verified_prefix_extent(chunk: Dict[str, Any]) -> int | None:
     """The extent of the injected prefix, or ``None`` when it cannot be PROVEN.
 
-    The invariant: a kind other than ``none``, an integer extent in range, and a hash of
-    ``content[:extent]`` that matches what the producer recorded. Anything else - missing
-    fields, a string extent, a negative or out-of-range extent, an unknown kind, one
-    byte changed anywhere in the prefix or the body - returns ``None``, and the caller
-    must then treat the whole content as the passage's text.
+    The invariant: a kind other than ``none``, a version this contract supports, an integer extent in range
+    (given in either wire form), and a hash of ``content[:extent]`` that matches what the producer recorded.
+    Anything else - missing fields, a non-canonical representation, a negative or out-of-range extent, an
+    unknown kind, an unsupported version, one byte changed anywhere in the prefix - returns ``None``, and the
+    caller must then treat the whole content as the passage's text.
     """
     kind = chunk.get(PREFIX_KIND_FIELD)
     if not isinstance(kind, str) or not kind or kind == PREFIX_NONE:
         return None
-    extent = chunk.get(PREFIX_CHARS_FIELD)
-    if isinstance(extent, bool) or not isinstance(extent, int) or extent <= 0:
+    if _canonical_unsigned_decimal(chunk.get(PREFIX_VERSION_FIELD)) not in _SUPPORTED_PREFIX_VERSIONS:
+        return None
+    extent = _canonical_unsigned_decimal(chunk.get(PREFIX_CHARS_FIELD))
+    if extent is None or extent <= 0:
         return None
     content = chunk.get("content_with_weight")
     if not isinstance(content, str) or extent > len(content):
