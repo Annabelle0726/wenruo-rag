@@ -1,0 +1,3295 @@
+[
+ {
+  "id": "INCIDENT_COMPOSITE",
+  "question": "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+  "policy": {
+   "min_prose": 4,
+   "max_table_share": 0.5,
+   "table_penalty": 0.85,
+   "max_auxiliary_document_share": 0.4,
+   "core_document_boost": 1.15,
+   "core_documents": [
+    "28668474ba1b11f1be9555eabe501d5b",
+    "a2fa1c74b97511f1938f2592e9bc6fe4",
+    "f18db09cba1211f18bee33eac9b39c66"
+   ],
+   "max_document_share": 0.5,
+   "compared_documents": [
+    "28668474ba1b11f1be9555eabe501d5b",
+    "f18db09cba1211f18bee33eac9b39c66"
+   ],
+   "question_values": [
+    "2026",
+    "73286.2",
+    "73286.3"
+   ]
+  },
+  "counts": {
+   "routes": 8,
+   "pool": 58,
+   "tables_in_pool": 22,
+   "prose_in_pool": 36,
+   "chosen": 12,
+   "tables_chosen": 0,
+   "prose_chosen": 12
+  },
+  "chosen_profile": [
+   {
+    "chunk_id": "8daa8e50dcd8e921",
+    "is_table": false,
+    "similarity": 0.40437202267485056,
+    "rank_score": 0.4650278260760781,
+    "ordered_position": 1,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "ea4a0fbc49651bc5",
+    "is_table": false,
+    "similarity": 0.401643780226545,
+    "rank_score": 0.46189034726052675,
+    "ordered_position": 2,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的规格数量是多少？",
+     "单芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "三芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？ 通用技术规范 正文条款"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "bac8e77cef90c8cf",
+    "is_table": false,
+    "similarity": 0.40070842820610947,
+    "rank_score": 0.46081469243702583,
+    "ordered_position": 3,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "d8277d37a03a2b0a",
+    "is_table": false,
+    "similarity": 0.3914536119818527,
+    "rank_score": 0.45017165377913054,
+    "ordered_position": 4,
+    "routes": [
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "3fb0a03b92cc70d7",
+    "is_table": false,
+    "similarity": 0.38294864392131295,
+    "rank_score": 0.44039094050950983,
+    "ordered_position": 5,
+    "routes": [
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？",
+     "单芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "三芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "d5f07f5d24ec3cc7",
+    "is_table": false,
+    "similarity": 0.3639565407619422,
+    "rank_score": 0.4185500218762335,
+    "ordered_position": 6,
+    "routes": [
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "f224470a51f32350",
+    "is_table": false,
+    "similarity": 0.3634157128369126,
+    "rank_score": 0.41792806976244945,
+    "ordered_position": 7,
+    "routes": [
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "43e96b415797394b",
+    "is_table": false,
+    "similarity": 0.3532941166936524,
+    "rank_score": 0.4062882341977002,
+    "ordered_position": 8,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？",
+     "单芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "三芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？ 通用技术规范 正文条款"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "f6bf347f95c33598",
+    "is_table": false,
+    "similarity": 0.3440947298373839,
+    "rank_score": 0.39570893931299145,
+    "ordered_position": 10,
+    "routes": [
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "af74d2eeaaf2c4a4",
+    "is_table": false,
+    "similarity": 0.34113110919659667,
+    "rank_score": 0.39230077557608617,
+    "ordered_position": 11,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的规格数量是多少？",
+     "单芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "三芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？ 通用技术规范 正文条款"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "c7347587e61a3532",
+    "is_table": false,
+    "similarity": 0.3204568210741267,
+    "rank_score": 0.3685253442352457,
+    "ordered_position": 13,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "663de80696a67296",
+    "is_table": false,
+    "similarity": 0.31498632925714515,
+    "rank_score": 0.3622342786457169,
+    "ordered_position": 14,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的规格数量是多少？",
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？ 通用技术规范 正文条款"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   }
+  ],
+  "table_candidates": [
+   {
+    "chunk_id": "255c187f4e228542",
+    "similarity": 0.398046817551371,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.31127261132517214,
+    "rank_before_similarity_order": 4,
+    "rank_after_adjustment": 21,
+    "adjustment_delta_positions": -17,
+    "es_rank_best": 6,
+    "route_page_rank_best": 3,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的规格数量是多少？",
+     "单芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "423069af31359e65",
+    "similarity": 0.39765557342094765,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.31096665841518106,
+    "rank_before_similarity_order": 5,
+    "rank_after_adjustment": 22,
+    "adjustment_delta_positions": -17,
+    "es_rank_best": 7,
+    "route_page_rank_best": 2,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "ab96130b7a5d5c8f",
+    "similarity": 0.38240781599628326,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.2990429121090935,
+    "rank_before_similarity_order": 8,
+    "rank_after_adjustment": 28,
+    "adjustment_delta_positions": -20,
+    "es_rank_best": 7,
+    "route_page_rank_best": 6,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？",
+     "单芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "三芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "b5aaf72bcd33d44a",
+    "similarity": 0.37548129495609817,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.29362637265566877,
+    "rank_before_similarity_order": 9,
+    "rank_after_adjustment": 29,
+    "adjustment_delta_positions": -20,
+    "es_rank_best": 11,
+    "route_page_rank_best": 4,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "单芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "41f10551fa1033e5",
+    "similarity": 0.36686059930300535,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.28688498865495016,
+    "rank_before_similarity_order": 10,
+    "rank_after_adjustment": 30,
+    "adjustment_delta_positions": -20,
+    "es_rank_best": 39,
+    "route_page_rank_best": 9,
+    "routes": [
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "4bf3ddbeb9a17ec0",
+    "similarity": 0.36686059930300535,
+    "penalty": 0.40800000000000003,
+    "boost": 1.15,
+    "predicted_rank_score": 0.17213099319297012,
+    "rank_before_similarity_order": 11,
+    "rank_after_adjustment": 57,
+    "adjustment_delta_positions": -46,
+    "es_rank_best": 40,
+    "route_page_rank_best": 10,
+    "routes": [
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "hollow": true,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "a14eb97907268118",
+    "similarity": 0.3532941166936524,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.2762759992544362,
+    "rank_before_similarity_order": 15,
+    "rank_after_adjustment": 33,
+    "adjustment_delta_positions": -18,
+    "es_rank_best": 8,
+    "route_page_rank_best": 7,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？",
+     "单芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "三芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？ 通用技术规范 正文条款"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "d243b62eda461615",
+    "similarity": 0.3508517203811584,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.27436604533806586,
+    "rank_before_similarity_order": 17,
+    "rank_after_adjustment": 35,
+    "adjustment_delta_positions": -18,
+    "es_rank_best": 46,
+    "route_page_rank_best": 12,
+    "routes": [
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "7291b6a1b712f692",
+    "similarity": 0.3508517203811584,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.27436604533806586,
+    "rank_before_similarity_order": 18,
+    "rank_after_adjustment": 36,
+    "adjustment_delta_positions": -18,
+    "es_rank_best": 45,
+    "route_page_rank_best": 13,
+    "routes": [
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "49b9ee5b22f03ba9",
+    "similarity": 0.3508517203811584,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.27436604533806586,
+    "rank_before_similarity_order": 19,
+    "rank_after_adjustment": 37,
+    "adjustment_delta_positions": -18,
+    "es_rank_best": 56,
+    "route_page_rank_best": 14,
+    "routes": [
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "0eb621e18881e734",
+    "similarity": 0.31653986446752486,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.24753417401360445,
+    "rank_before_similarity_order": 24,
+    "rank_after_adjustment": 41,
+    "adjustment_delta_positions": -17,
+    "es_rank_best": 52,
+    "route_page_rank_best": 17,
+    "routes": [
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "d4d2304290d345b0",
+    "similarity": 0.31119495615605003,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.24335445571403114,
+    "rank_before_similarity_order": 26,
+    "rank_after_adjustment": 43,
+    "adjustment_delta_positions": -17,
+    "es_rank_best": 10,
+    "route_page_rank_best": 3,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "ddccb17046a6a9d8",
+    "similarity": 0.3083040957492215,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.24109380287589124,
+    "rank_before_similarity_order": 27,
+    "rank_after_adjustment": 44,
+    "adjustment_delta_positions": -17,
+    "es_rank_best": 41,
+    "route_page_rank_best": 20,
+    "routes": [
+     "Q/GDW 73286.2-2026 标准表 1 中单芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "d1d75672f2dbc333",
+    "similarity": 0.30324606239931556,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.23713842079626477,
+    "rank_before_similarity_order": 28,
+    "rank_after_adjustment": 45,
+    "adjustment_delta_positions": -17,
+    "es_rank_best": 13,
+    "route_page_rank_best": 4,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "acc2f7b2530f0d90",
+    "similarity": 0.28692896298935844,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.2243784490576783,
+    "rank_before_similarity_order": 32,
+    "rank_after_adjustment": 46,
+    "adjustment_delta_positions": -14,
+    "es_rank_best": 32,
+    "route_page_rank_best": 7,
+    "routes": [
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "3746a7eb6438f7fd",
+    "similarity": 0.28449628055032505,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.22247609139035418,
+    "rank_before_similarity_order": 33,
+    "rank_after_adjustment": 49,
+    "adjustment_delta_positions": -16,
+    "es_rank_best": 21,
+    "route_page_rank_best": 8,
+    "routes": [
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "6e6bb92c7dcdcb20",
+    "similarity": 0.28449628055032505,
+    "penalty": 0.40800000000000003,
+    "boost": 1.15,
+    "predicted_rank_score": 0.1334856548342125,
+    "rank_before_similarity_order": 34,
+    "rank_after_adjustment": 58,
+    "adjustment_delta_positions": -24,
+    "es_rank_best": 48,
+    "route_page_rank_best": 9,
+    "routes": [
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的规格数量是多少？"
+    ],
+    "hollow": true,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "980ed72de1325b3d",
+    "similarity": 0.27514016693445154,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.21515961054274108,
+    "rank_before_similarity_order": 35,
+    "rank_after_adjustment": 52,
+    "adjustment_delta_positions": -17,
+    "es_rank_best": 7,
+    "route_page_rank_best": 11,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？",
+     "三芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "a03230e9a7559b31",
+    "similarity": 0.26152615494441495,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.2045134531665325,
+    "rank_before_similarity_order": 40,
+    "rank_after_adjustment": 53,
+    "adjustment_delta_positions": -13,
+    "es_rank_best": 35,
+    "route_page_rank_best": 13,
+    "routes": [
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "4f291a3c82619d20",
+    "similarity": 0.2598574420371508,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.2032085196730519,
+    "rank_before_similarity_order": 42,
+    "rank_after_adjustment": 54,
+    "adjustment_delta_positions": -12,
+    "es_rank_best": 57,
+    "route_page_rank_best": 14,
+    "routes": [
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "2491aa2ce5eacd8d",
+    "similarity": 0.24643262792660514,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.1927103150386052,
+    "rank_before_similarity_order": 45,
+    "rank_after_adjustment": 55,
+    "adjustment_delta_positions": -10,
+    "es_rank_best": 50,
+    "route_page_rank_best": 20,
+    "routes": [
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "a0ad87807e53b172",
+    "similarity": 0.23734440635981477,
+    "penalty": 0.68,
+    "boost": 1.15,
+    "predicted_rank_score": 0.18560332577337516,
+    "rank_before_similarity_order": 47,
+    "rank_after_adjustment": 56,
+    "adjustment_delta_positions": -9,
+    "es_rank_best": 31,
+    "route_page_rank_best": 5,
+    "routes": [
+     "单芯 根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定， 与 交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？ 通用技术规范 正文条款"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   }
+  ],
+  "score_inversions": [
+   {
+    "chunk_id": "255c187f4e228542",
+    "table_similarity": 0.398046817551371,
+    "weakest_chosen_prose": 0.31498632925714515,
+    "gap": 0.08306048829422585
+   },
+   {
+    "chunk_id": "423069af31359e65",
+    "table_similarity": 0.39765557342094765,
+    "weakest_chosen_prose": 0.31498632925714515,
+    "gap": 0.0826692441638025
+   },
+   {
+    "chunk_id": "ab96130b7a5d5c8f",
+    "table_similarity": 0.38240781599628326,
+    "weakest_chosen_prose": 0.31498632925714515,
+    "gap": 0.06742148673913811
+   },
+   {
+    "chunk_id": "b5aaf72bcd33d44a",
+    "table_similarity": 0.37548129495609817,
+    "weakest_chosen_prose": 0.31498632925714515,
+    "gap": 0.06049496569895302
+   },
+   {
+    "chunk_id": "41f10551fa1033e5",
+    "table_similarity": 0.36686059930300535,
+    "weakest_chosen_prose": 0.31498632925714515,
+    "gap": 0.051874270045860205
+   },
+   {
+    "chunk_id": "4bf3ddbeb9a17ec0",
+    "table_similarity": 0.36686059930300535,
+    "weakest_chosen_prose": 0.31498632925714515,
+    "gap": 0.051874270045860205
+   },
+   {
+    "chunk_id": "a14eb97907268118",
+    "table_similarity": 0.3532941166936524,
+    "weakest_chosen_prose": 0.31498632925714515,
+    "gap": 0.03830778743650726
+   },
+   {
+    "chunk_id": "d243b62eda461615",
+    "table_similarity": 0.3508517203811584,
+    "weakest_chosen_prose": 0.31498632925714515,
+    "gap": 0.03586539112401327
+   },
+   {
+    "chunk_id": "7291b6a1b712f692",
+    "table_similarity": 0.3508517203811584,
+    "weakest_chosen_prose": 0.31498632925714515,
+    "gap": 0.03586539112401327
+   },
+   {
+    "chunk_id": "49b9ee5b22f03ba9",
+    "table_similarity": 0.3508517203811584,
+    "weakest_chosen_prose": 0.31498632925714515,
+    "gap": 0.03586539112401327
+   },
+   {
+    "chunk_id": "0eb621e18881e734",
+    "table_similarity": 0.31653986446752486,
+    "weakest_chosen_prose": 0.31498632925714515,
+    "gap": 0.0015535352103797084
+   }
+  ],
+  "pure_score_top12": {
+   "by_rank_score_without_table_penalty": {
+    "ids": [
+     "8daa8e50dcd8e921",
+     "ea4a0fbc49651bc5",
+     "bac8e77cef90c8cf",
+     "255c187f4e228542",
+     "423069af31359e65",
+     "d8277d37a03a2b0a",
+     "3fb0a03b92cc70d7",
+     "ab96130b7a5d5c8f",
+     "b5aaf72bcd33d44a",
+     "4bf3ddbeb9a17ec0",
+     "41f10551fa1033e5",
+     "d5f07f5d24ec3cc7"
+    ],
+    "tables": 6,
+    "prose": 6,
+    "target_in": false,
+    "target_position": null,
+    "control_in": true
+   },
+   "by_raw_similarity": {
+    "ids": [
+     "8daa8e50dcd8e921",
+     "ea4a0fbc49651bc5",
+     "bac8e77cef90c8cf",
+     "255c187f4e228542",
+     "423069af31359e65",
+     "d8277d37a03a2b0a",
+     "3fb0a03b92cc70d7",
+     "ab96130b7a5d5c8f",
+     "b5aaf72bcd33d44a",
+     "41f10551fa1033e5",
+     "4bf3ddbeb9a17ec0",
+     "d5f07f5d24ec3cc7"
+    ],
+    "tables": 6,
+    "prose": 6,
+    "target_in": false,
+    "target_position": null,
+    "control_in": true
+   }
+  },
+  "weakest_chosen_prose_similarity": 0.31498632925714515,
+  "overtakers_of_target": [
+   {
+    "chunk_id": "66f462a9de91e03c",
+    "is_table": false,
+    "similarity": 0.2285203240682017,
+    "similarity_vs_target": -0.07472573833111387,
+    "penalty": 1.0,
+    "boost": 1.4949999999999999,
+    "rank_score": 0.34163788448196153,
+    "rank_before": 50,
+    "rank_after": 15,
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "pairs_value": "{'2026'}",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "8065ad3f4096ca30",
+    "is_table": false,
+    "similarity": 0.29704730784013134,
+    "similarity_vs_target": -0.0061987545591842275,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.341604404016151,
+    "rank_before": 29,
+    "rank_after": 16,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "d79d92725b46b084",
+    "is_table": false,
+    "similarity": 0.2955095017918792,
+    "similarity_vs_target": -0.007736560607436382,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.339835927060661,
+    "rank_before": 30,
+    "rank_after": 17,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "bc2a6dfa54206eab",
+    "is_table": false,
+    "similarity": 0.2218078802168621,
+    "similarity_vs_target": -0.08143818218245347,
+    "penalty": 1.0,
+    "boost": 1.4949999999999999,
+    "rank_score": 0.3316027809242088,
+    "rank_before": 52,
+    "rank_after": 18,
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "pairs_value": "{'2026'}",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "9fa9e164a3e3ca7a",
+    "is_table": false,
+    "similarity": 0.28735616552514,
+    "similarity_vs_target": -0.01588989687417558,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.330459590353911,
+    "rank_before": 31,
+    "rank_after": 19,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "0b4e3c1a73c1e334",
+    "is_table": false,
+    "similarity": 0.2106156005466136,
+    "similarity_vs_target": -0.09263046185270196,
+    "penalty": 1.0,
+    "boost": 1.4949999999999999,
+    "rank_score": 0.3148703228171873,
+    "rank_before": 54,
+    "rank_after": 20,
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "pairs_value": "{'73286.2'}",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "7402cf6c99cbd67e",
+    "is_table": false,
+    "similarity": 0.26914927722541787,
+    "similarity_vs_target": -0.03409678517389769,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.30952166880923054,
+    "rank_before": 36,
+    "rank_after": 23,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "a0bd8a6bde77b17e",
+    "is_table": false,
+    "similarity": 0.26914927722541787,
+    "similarity_vs_target": -0.03409678517389769,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.30952166880923054,
+    "rank_before": 37,
+    "rank_after": 24,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "a18b9160c4084d5f",
+    "is_table": false,
+    "similarity": 0.2686308094423736,
+    "similarity_vs_target": -0.034615252956941955,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.30892543085872964,
+    "rank_before": 38,
+    "rank_after": 25,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "5d52c3f6cbe9e4c5",
+    "is_table": false,
+    "similarity": 0.26189113746382403,
+    "similarity_vs_target": -0.04135492493549153,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.30117480808339764,
+    "rank_before": 39,
+    "rank_after": 26,
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": false
+   },
+   {
+    "chunk_id": "36a52e5e2479fde1",
+    "is_table": false,
+    "similarity": 0.2603469649666661,
+    "similarity_vs_target": -0.04289909743264947,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.299399009711666,
+    "rank_before": 41,
+    "rank_after": 27,
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": false
+   },
+   {
+    "chunk_id": "1abf6295ae67beae",
+    "is_table": false,
+    "similarity": 0.2493414715885677,
+    "similarity_vs_target": -0.05390459081074786,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.28674269232685284,
+    "rank_before": 43,
+    "rank_after": 31,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "3970238838496efa",
+    "is_table": false,
+    "similarity": 0.2493414715885677,
+    "similarity_vs_target": -0.05390459081074786,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.28674269232685284,
+    "rank_before": 44,
+    "rank_after": 32,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "48f12a5a8ce5eb6c",
+    "is_table": false,
+    "similarity": 0.23875924554057174,
+    "similarity_vs_target": -0.06448681685874383,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.2745731323716575,
+    "rank_before": 46,
+    "rank_after": 34,
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "ecaeb84e531f4871",
+    "is_table": false,
+    "similarity": 0.23526964909158865,
+    "similarity_vs_target": -0.06797641330772691,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.2705600964553269,
+    "rank_before": 48,
+    "rank_after": 38,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "1cae0a6bd293e1ef",
+    "is_table": false,
+    "similarity": 0.23057904159259568,
+    "similarity_vs_target": -0.07266702080671988,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.26516589783148503,
+    "rank_before": 49,
+    "rank_after": 39,
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": false
+   },
+   {
+    "chunk_id": "f8ebc69e5af7d816",
+    "is_table": false,
+    "similarity": 0.2279631913618288,
+    "similarity_vs_target": -0.07528287103748676,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.2621576700661031,
+    "rank_before": 51,
+    "rank_after": 40,
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "d19a079b425d93b4",
+    "is_table": false,
+    "similarity": 0.21386349421177916,
+    "similarity_vs_target": -0.0893825681875364,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.245943018343546,
+    "rank_before": 53,
+    "rank_after": 42,
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   }
+  ],
+  "target": {
+   "before": {
+    "chunk_id": "d1d75672f2dbc333",
+    "similarity": 0.30324606239931556,
+    "is_table": true,
+    "is_prose": false,
+    "is_hollow_table": false,
+    "document_key": "f18db09cba1211f18bee33eac9b39c66",
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "is_core_document": true,
+    "is_compared_document": true,
+    "paired_value_with_result": "set()",
+    "carries_question_value": true,
+    "table_penalty_applied": 0.68,
+    "boost_applied": 1.15,
+    "predicted_rank_score": 0.23713842079626477,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 与 Q/GDW 73286.3-2026 标准表 1 的规定，单芯与三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围及规格数量各是多少？",
+     "Q/GDW 73286.3-2026 标准表 1 中三芯交联聚乙烯绝缘电力电缆的导体标称截面覆盖范围是多少？"
+    ],
+    "content_head": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯数: 三芯 | 线缆类别: 海底电力电缆 | 敷设环境: 海"
+   },
+   "rank_before_similarity_order": 28,
+   "rank_after_adjustment": 45,
+   "adjustment_delta_positions": -17,
+   "es_rank_best": 13,
+   "route_page_rank_best": 4,
+   "rank_score": 0.23713842079626477,
+   "chosen": false
+  },
+  "control_state": {
+   "rank_before": 9,
+   "rank_after": 29,
+   "es_rank_best": 11,
+   "route_page_rank_best": 4,
+   "chosen": false,
+   "in_pool": true
+  }
+ },
+ {
+  "id": "TABLE_SINGLE_PART2",
+  "question": "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？",
+  "policy": {
+   "min_prose": 0,
+   "max_table_share": 1.0,
+   "table_penalty": 1.0,
+   "max_auxiliary_document_share": 0.4,
+   "core_document_boost": 1.15,
+   "core_documents": [
+    "28668474ba1b11f1be9555eabe501d5b",
+    "a2fa1c74b97511f1938f2592e9bc6fe4"
+   ],
+   "max_document_share": 1.0,
+   "compared_documents": [],
+   "question_values": [
+    "2026",
+    "73286.2"
+   ]
+  },
+  "counts": {
+   "routes": 1,
+   "pool": 20,
+   "tables_in_pool": 10,
+   "prose_in_pool": 10,
+   "chosen": 12,
+   "tables_chosen": 5,
+   "prose_chosen": 7
+  },
+  "chosen_profile": [
+   {
+    "chunk_id": "b5aaf72bcd33d44a",
+    "is_table": true,
+    "similarity": 0.2931222661092994,
+    "rank_score": 0.26967248482055545,
+    "ordered_position": 1,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "1abf6295ae67beae",
+    "is_table": false,
+    "similarity": 0.21950416034635528,
+    "rank_score": 0.25242978439830854,
+    "ordered_position": 2,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "d8277d37a03a2b0a",
+    "is_table": false,
+    "similarity": 0.21895944594328032,
+    "rank_score": 0.25180336283477234,
+    "ordered_position": 3,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "af74d2eeaaf2c4a4",
+    "is_table": false,
+    "similarity": 0.21739662540505322,
+    "rank_score": 0.2500061192158112,
+    "ordered_position": 4,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "ab96130b7a5d5c8f",
+    "is_table": true,
+    "similarity": 0.25908588195333,
+    "rank_score": 0.23835901139706359,
+    "ordered_position": 5,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "1cae0a6bd293e1ef",
+    "is_table": false,
+    "similarity": 0.2033523697625989,
+    "rank_score": 0.23385522522698873,
+    "ordered_position": 6,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "ea4a0fbc49651bc5",
+    "is_table": false,
+    "similarity": 0.2015235827591092,
+    "rank_score": 0.23175212017297556,
+    "ordered_position": 7,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "41f10551fa1033e5",
+    "is_table": true,
+    "similarity": 0.25098599053946297,
+    "rank_score": 0.23090711129630592,
+    "ordered_position": 8,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "22ce10ed2fd538bf",
+    "is_table": true,
+    "similarity": 0.25098599053946297,
+    "rank_score": 0.23090711129630592,
+    "ordered_position": 9,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "a14eb97907268118",
+    "is_table": true,
+    "similarity": 0.25050791278609286,
+    "rank_score": 0.23046727976320544,
+    "ordered_position": 10,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "3fb0a03b92cc70d7",
+    "is_table": false,
+    "similarity": 0.19989533732221726,
+    "rank_score": 0.22987963792054983,
+    "ordered_position": 11,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "43e96b415797394b",
+    "is_table": false,
+    "similarity": 0.19989533732221726,
+    "rank_score": 0.22987963792054983,
+    "ordered_position": 12,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   }
+  ],
+  "table_candidates": [
+   {
+    "chunk_id": "b5aaf72bcd33d44a",
+    "similarity": 0.2931222661092994,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.26967248482055545,
+    "rank_before_similarity_order": 1,
+    "rank_after_adjustment": 1,
+    "adjustment_delta_positions": 0,
+    "es_rank_best": 28,
+    "route_page_rank_best": 1,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "ab96130b7a5d5c8f",
+    "similarity": 0.25908588195333,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.23835901139706359,
+    "rank_before_similarity_order": 2,
+    "rank_after_adjustment": 5,
+    "adjustment_delta_positions": -3,
+    "es_rank_best": 5,
+    "route_page_rank_best": 2,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "41f10551fa1033e5",
+    "similarity": 0.25098599053946297,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.23090711129630592,
+    "rank_before_similarity_order": 3,
+    "rank_after_adjustment": 8,
+    "adjustment_delta_positions": -5,
+    "es_rank_best": 60,
+    "route_page_rank_best": 3,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "22ce10ed2fd538bf",
+    "similarity": 0.25098599053946297,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.23090711129630592,
+    "rank_before_similarity_order": 4,
+    "rank_after_adjustment": 9,
+    "adjustment_delta_positions": -5,
+    "es_rank_best": 62,
+    "route_page_rank_best": 4,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "a14eb97907268118",
+    "similarity": 0.25050791278609286,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.23046727976320544,
+    "rank_before_similarity_order": 5,
+    "rank_after_adjustment": 10,
+    "adjustment_delta_positions": -5,
+    "es_rank_best": 6,
+    "route_page_rank_best": 5,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "255c187f4e228542",
+    "similarity": 0.2414868984889788,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.2221679466098605,
+    "rank_before_similarity_order": 6,
+    "rank_after_adjustment": 13,
+    "adjustment_delta_positions": -7,
+    "es_rank_best": 4,
+    "route_page_rank_best": 6,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "4bf3ddbeb9a17ec0",
+    "similarity": 0.2267583046638284,
+    "penalty": 0.48,
+    "boost": 1.15,
+    "predicted_rank_score": 0.12517058417443327,
+    "rank_before_similarity_order": 7,
+    "rank_after_adjustment": 19,
+    "adjustment_delta_positions": -12,
+    "es_rank_best": 61,
+    "route_page_rank_best": 7,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": true,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "69b5a1ff838d3cb0",
+    "similarity": 0.21264206112833,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.1956306962380636,
+    "rank_before_similarity_order": 11,
+    "rank_after_adjustment": 15,
+    "adjustment_delta_positions": -4,
+    "es_rank_best": 40,
+    "route_page_rank_best": 11,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "59bfe79ccc33f89f",
+    "similarity": 0.19689067514673456,
+    "penalty": 0.48,
+    "boost": 1.15,
+    "predicted_rank_score": 0.10868365268099746,
+    "rank_before_similarity_order": 17,
+    "rank_after_adjustment": 20,
+    "adjustment_delta_positions": -3,
+    "es_rank_best": 49,
+    "route_page_rank_best": 17,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": true,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "423069af31359e65",
+    "similarity": 0.1865598807607346,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.17163509029987584,
+    "rank_before_similarity_order": 19,
+    "rank_after_adjustment": 18,
+    "adjustment_delta_positions": 1,
+    "es_rank_best": 34,
+    "route_page_rank_best": 19,
+    "routes": [
+     "根据 Q/GDW 73286.2-2026 表 1，单芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   }
+  ],
+  "score_inversions": [
+   {
+    "chunk_id": "255c187f4e228542",
+    "table_similarity": 0.2414868984889788,
+    "weakest_chosen_prose": 0.19989533732221726,
+    "gap": 0.04159156116676155
+   },
+   {
+    "chunk_id": "4bf3ddbeb9a17ec0",
+    "table_similarity": 0.2267583046638284,
+    "weakest_chosen_prose": 0.19989533732221726,
+    "gap": 0.026862967341611144
+   },
+   {
+    "chunk_id": "69b5a1ff838d3cb0",
+    "table_similarity": 0.21264206112833,
+    "weakest_chosen_prose": 0.19989533732221726,
+    "gap": 0.012746723806112747
+   }
+  ],
+  "pure_score_top12": {
+   "by_rank_score_without_table_penalty": {
+    "ids": [
+     "b5aaf72bcd33d44a",
+     "ab96130b7a5d5c8f",
+     "41f10551fa1033e5",
+     "22ce10ed2fd538bf",
+     "a14eb97907268118",
+     "255c187f4e228542",
+     "4bf3ddbeb9a17ec0",
+     "1abf6295ae67beae",
+     "d8277d37a03a2b0a",
+     "af74d2eeaaf2c4a4",
+     "69b5a1ff838d3cb0",
+     "1cae0a6bd293e1ef"
+    ],
+    "tables": 8,
+    "prose": 4,
+    "target_in": false,
+    "target_position": null,
+    "control_in": true
+   },
+   "by_raw_similarity": {
+    "ids": [
+     "b5aaf72bcd33d44a",
+     "ab96130b7a5d5c8f",
+     "41f10551fa1033e5",
+     "22ce10ed2fd538bf",
+     "a14eb97907268118",
+     "255c187f4e228542",
+     "4bf3ddbeb9a17ec0",
+     "1abf6295ae67beae",
+     "d8277d37a03a2b0a",
+     "af74d2eeaaf2c4a4",
+     "69b5a1ff838d3cb0",
+     "1cae0a6bd293e1ef"
+    ],
+    "tables": 8,
+    "prose": 4,
+    "target_in": false,
+    "target_position": null,
+    "control_in": true
+   }
+  },
+  "weakest_chosen_prose_similarity": 0.19989533732221726
+ },
+ {
+  "id": "TABLE_THREE_PART3",
+  "question": "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？",
+  "policy": {
+   "min_prose": 0,
+   "max_table_share": 1.0,
+   "table_penalty": 1.0,
+   "max_auxiliary_document_share": 0.4,
+   "core_document_boost": 1.15,
+   "core_documents": [
+    "a2fa1c74b97511f1938f2592e9bc6fe4",
+    "f18db09cba1211f18bee33eac9b39c66"
+   ],
+   "max_document_share": 1.0,
+   "compared_documents": [],
+   "question_values": [
+    "2026",
+    "73286.3"
+   ]
+  },
+  "counts": {
+   "routes": 1,
+   "pool": 20,
+   "tables_in_pool": 12,
+   "prose_in_pool": 8,
+   "chosen": 12,
+   "tables_chosen": 4,
+   "prose_chosen": 8
+  },
+  "chosen_profile": [
+   {
+    "chunk_id": "b5aaf72bcd33d44a",
+    "is_table": true,
+    "similarity": 0.2769704755255431,
+    "rank_score": 0.2769704755255431,
+    "ordered_position": 1,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "ea4a0fbc49651bc5",
+    "is_table": false,
+    "similarity": 0.23386315810960526,
+    "rank_score": 0.26894263182604605,
+    "ordered_position": 2,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "3970238838496efa",
+    "is_table": false,
+    "similarity": 0.21950416034635528,
+    "rank_score": 0.25242978439830854,
+    "ordered_position": 3,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "d79d92725b46b084",
+    "is_table": false,
+    "similarity": 0.21895944594328032,
+    "rank_score": 0.25180336283477234,
+    "ordered_position": 4,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "af74d2eeaaf2c4a4",
+    "is_table": false,
+    "similarity": 0.21739662540505322,
+    "rank_score": 0.2500061192158112,
+    "ordered_position": 5,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "d1d75672f2dbc333",
+    "is_table": true,
+    "similarity": 0.2688945802336649,
+    "rank_score": 0.24738301381497174,
+    "ordered_position": 6,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "1cae0a6bd293e1ef",
+    "is_table": false,
+    "similarity": 0.2033523697625989,
+    "rank_score": 0.23385522522698873,
+    "ordered_position": 7,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "9fa9e164a3e3ca7a",
+    "is_table": false,
+    "similarity": 0.19989533732221726,
+    "rank_score": 0.22987963792054983,
+    "ordered_position": 8,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "0c919dcd5dbfb744",
+    "is_table": true,
+    "similarity": 0.2267583046638284,
+    "rank_score": 0.20861764029072213,
+    "ordered_position": 9,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "1abf6295ae67beae",
+    "is_table": false,
+    "similarity": 0.2033523697625989,
+    "rank_score": 0.2033523697625989,
+    "ordered_position": 10,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "d8277d37a03a2b0a",
+    "is_table": false,
+    "similarity": 0.20280765535952397,
+    "rank_score": 0.20280765535952397,
+    "ordered_position": 11,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "a2aa88912e75ca47",
+    "is_table": true,
+    "similarity": 0.21602313178398472,
+    "rank_score": 0.19874128124126594,
+    "ordered_position": 12,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   }
+  ],
+  "table_candidates": [
+   {
+    "chunk_id": "b5aaf72bcd33d44a",
+    "similarity": 0.2769704755255431,
+    "penalty": 1.0,
+    "boost": 1.0,
+    "predicted_rank_score": 0.2769704755255431,
+    "rank_before_similarity_order": 1,
+    "rank_after_adjustment": 1,
+    "adjustment_delta_positions": 0,
+    "es_rank_best": 56,
+    "route_page_rank_best": 1,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "d1d75672f2dbc333",
+    "similarity": 0.2688945802336649,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.24738301381497174,
+    "rank_before_similarity_order": 2,
+    "rank_after_adjustment": 6,
+    "adjustment_delta_positions": -4,
+    "es_rank_best": 44,
+    "route_page_rank_best": 2,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "ab96130b7a5d5c8f",
+    "similarity": 0.24293409136957364,
+    "penalty": 0.8,
+    "boost": 1.0,
+    "predicted_rank_score": 0.1943472730956589,
+    "rank_before_similarity_order": 3,
+    "rank_after_adjustment": 14,
+    "adjustment_delta_positions": -11,
+    "es_rank_best": 26,
+    "route_page_rank_best": 3,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "a14eb97907268118",
+    "similarity": 0.2343561222023365,
+    "penalty": 0.8,
+    "boost": 1.0,
+    "predicted_rank_score": 0.18748489776186922,
+    "rank_before_similarity_order": 4,
+    "rank_after_adjustment": 16,
+    "adjustment_delta_positions": -12,
+    "es_rank_best": 27,
+    "route_page_rank_best": 4,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "0c919dcd5dbfb744",
+    "similarity": 0.2267583046638284,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.20861764029072213,
+    "rank_before_similarity_order": 6,
+    "rank_after_adjustment": 9,
+    "adjustment_delta_positions": -3,
+    "es_rank_best": 53,
+    "route_page_rank_best": 6,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "6e6bb92c7dcdcb20",
+    "similarity": 0.2267583046638284,
+    "penalty": 0.48,
+    "boost": 1.15,
+    "predicted_rank_score": 0.12517058417443327,
+    "rank_before_similarity_order": 7,
+    "rank_after_adjustment": 20,
+    "adjustment_delta_positions": -13,
+    "es_rank_best": 54,
+    "route_page_rank_best": 7,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": true,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "255c187f4e228542",
+    "similarity": 0.22533510790522246,
+    "penalty": 0.8,
+    "boost": 1.0,
+    "predicted_rank_score": 0.18026808632417798,
+    "rank_before_similarity_order": 8,
+    "rank_after_adjustment": 19,
+    "adjustment_delta_positions": -11,
+    "es_rank_best": 16,
+    "route_page_rank_best": 8,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "a2aa88912e75ca47",
+    "similarity": 0.21602313178398472,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.19874128124126594,
+    "rank_before_similarity_order": 12,
+    "rank_after_adjustment": 12,
+    "adjustment_delta_positions": 0,
+    "es_rank_best": 48,
+    "route_page_rank_best": 12,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "a03230e9a7559b31",
+    "similarity": 0.21264206112833,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.1956306962380636,
+    "rank_before_similarity_order": 13,
+    "rank_after_adjustment": 13,
+    "adjustment_delta_positions": 0,
+    "es_rank_best": 51,
+    "route_page_rank_best": 13,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "acc2f7b2530f0d90",
+    "similarity": 0.2091593211994772,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.19242657550351902,
+    "rank_before_similarity_order": 14,
+    "rank_after_adjustment": 15,
+    "adjustment_delta_positions": -1,
+    "es_rank_best": 58,
+    "route_page_rank_best": 14,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "980ed72de1325b3d",
+    "similarity": 0.1974593856717984,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.18166263481805453,
+    "rank_before_similarity_order": 19,
+    "rank_after_adjustment": 17,
+    "adjustment_delta_positions": 2,
+    "es_rank_best": 4,
+    "route_page_rank_best": 19,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "3746a7eb6438f7fd",
+    "similarity": 0.19689067514673456,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.1811394211349958,
+    "rank_before_similarity_order": 20,
+    "rank_after_adjustment": 18,
+    "adjustment_delta_positions": 2,
+    "es_rank_best": 18,
+    "route_page_rank_best": 20,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   }
+  ],
+  "score_inversions": [
+   {
+    "chunk_id": "ab96130b7a5d5c8f",
+    "table_similarity": 0.24293409136957364,
+    "weakest_chosen_prose": 0.19989533732221726,
+    "gap": 0.04303875404735638
+   },
+   {
+    "chunk_id": "a14eb97907268118",
+    "table_similarity": 0.2343561222023365,
+    "weakest_chosen_prose": 0.19989533732221726,
+    "gap": 0.03446078488011925
+   },
+   {
+    "chunk_id": "6e6bb92c7dcdcb20",
+    "table_similarity": 0.2267583046638284,
+    "weakest_chosen_prose": 0.19989533732221726,
+    "gap": 0.026862967341611144
+   },
+   {
+    "chunk_id": "255c187f4e228542",
+    "table_similarity": 0.22533510790522246,
+    "weakest_chosen_prose": 0.19989533732221726,
+    "gap": 0.0254397705830052
+   },
+   {
+    "chunk_id": "a03230e9a7559b31",
+    "table_similarity": 0.21264206112833,
+    "weakest_chosen_prose": 0.19989533732221726,
+    "gap": 0.012746723806112747
+   },
+   {
+    "chunk_id": "acc2f7b2530f0d90",
+    "table_similarity": 0.2091593211994772,
+    "weakest_chosen_prose": 0.19989533732221726,
+    "gap": 0.009263983877259935
+   }
+  ],
+  "pure_score_top12": {
+   "by_rank_score_without_table_penalty": {
+    "ids": [
+     "d1d75672f2dbc333",
+     "b5aaf72bcd33d44a",
+     "ea4a0fbc49651bc5",
+     "0c919dcd5dbfb744",
+     "6e6bb92c7dcdcb20",
+     "3970238838496efa",
+     "d79d92725b46b084",
+     "af74d2eeaaf2c4a4",
+     "a2aa88912e75ca47",
+     "a03230e9a7559b31",
+     "ab96130b7a5d5c8f",
+     "acc2f7b2530f0d90"
+    ],
+    "tables": 8,
+    "prose": 4,
+    "target_in": true,
+    "target_position": 1,
+    "control_in": true
+   },
+   "by_raw_similarity": {
+    "ids": [
+     "b5aaf72bcd33d44a",
+     "d1d75672f2dbc333",
+     "ab96130b7a5d5c8f",
+     "a14eb97907268118",
+     "ea4a0fbc49651bc5",
+     "0c919dcd5dbfb744",
+     "6e6bb92c7dcdcb20",
+     "255c187f4e228542",
+     "3970238838496efa",
+     "d79d92725b46b084",
+     "af74d2eeaaf2c4a4",
+     "a2aa88912e75ca47"
+    ],
+    "tables": 8,
+    "prose": 4,
+    "target_in": true,
+    "target_position": 2,
+    "control_in": true
+   }
+  },
+  "weakest_chosen_prose_similarity": 0.19989533732221726,
+  "overtakers_of_target": [
+   {
+    "chunk_id": "ea4a0fbc49651bc5",
+    "is_table": false,
+    "similarity": 0.23386315810960526,
+    "similarity_vs_target": -0.03503142212405966,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.26894263182604605,
+    "rank_before": 5,
+    "rank_after": 2,
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "3970238838496efa",
+    "is_table": false,
+    "similarity": 0.21950416034635528,
+    "similarity_vs_target": -0.04939041988730963,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.25242978439830854,
+    "rank_before": 9,
+    "rank_after": 3,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "d79d92725b46b084",
+    "is_table": false,
+    "similarity": 0.21895944594328032,
+    "similarity_vs_target": -0.0499351342903846,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.25180336283477234,
+    "rank_before": 10,
+    "rank_after": 4,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   },
+   {
+    "chunk_id": "af74d2eeaaf2c4a4",
+    "is_table": false,
+    "similarity": 0.21739662540505322,
+    "similarity_vs_target": -0.05149795482861169,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "rank_score": 0.2500061192158112,
+    "rank_before": 11,
+    "rank_after": 5,
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf",
+    "pairs_value": "set()",
+    "carries_value": true
+   }
+  ],
+  "target": {
+   "before": {
+    "chunk_id": "d1d75672f2dbc333",
+    "similarity": 0.2688945802336649,
+    "is_table": true,
+    "is_prose": false,
+    "is_hollow_table": false,
+    "document_key": "f18db09cba1211f18bee33eac9b39c66",
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "is_core_document": true,
+    "is_compared_document": false,
+    "paired_value_with_result": "set()",
+    "carries_question_value": true,
+    "table_penalty_applied": 0.8,
+    "boost_applied": 1.15,
+    "predicted_rank_score": 0.24738301381497174,
+    "routes": [
+     "根据 Q/GDW 73286.3-2026 表 1，三芯电缆的导体标称截面有哪些规格？"
+    ],
+    "content_head": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯数: 三芯 | 线缆类别: 海底电力电缆 | 敷设环境: 海"
+   },
+   "rank_before_similarity_order": 2,
+   "rank_after_adjustment": 6,
+   "adjustment_delta_positions": -4,
+   "es_rank_best": 44,
+   "route_page_rank_best": 2,
+   "rank_score": 0.24738301381497174,
+   "chosen": true
+  },
+  "control_state": {
+   "rank_before": 1,
+   "rank_after": 1,
+   "es_rank_best": 56,
+   "route_page_rank_best": 1,
+   "chosen": true,
+   "in_pool": true
+  }
+ },
+ {
+  "id": "TABLE_STRUCTURE",
+  "question": "220kV 三芯海缆的主要结构有哪些？",
+  "policy": {
+   "min_prose": 0,
+   "max_table_share": 1.0,
+   "table_penalty": 1.0,
+   "max_auxiliary_document_share": 0.4,
+   "core_document_boost": 1.15,
+   "core_documents": [
+    "28668474ba1b11f1be9555eabe501d5b",
+    "a2fa1c74b97511f1938f2592e9bc6fe4",
+    "f18db09cba1211f18bee33eac9b39c66"
+   ],
+   "max_document_share": 1.0,
+   "compared_documents": [],
+   "question_values": []
+  },
+  "counts": {
+   "routes": 1,
+   "pool": 20,
+   "tables_in_pool": 11,
+   "prose_in_pool": 9,
+   "chosen": 12,
+   "tables_chosen": 5,
+   "prose_chosen": 7
+  },
+  "chosen_profile": [
+   {
+    "chunk_id": "5f81fce4a4628ebf",
+    "is_table": true,
+    "similarity": 0.31157688583585974,
+    "rank_score": 0.3583134187112387,
+    "ordered_position": 1,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "4859566265b332b6",
+    "is_table": false,
+    "similarity": 0.3041574123149749,
+    "rank_score": 0.3497810241622211,
+    "ordered_position": 2,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "834c0774c8fad3e2",
+    "is_table": false,
+    "similarity": 0.3041574123149749,
+    "rank_score": 0.3497810241622211,
+    "ordered_position": 3,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "91b65c311693d243",
+    "is_table": false,
+    "similarity": 0.3041574123149749,
+    "rank_score": 0.3497810241622211,
+    "ordered_position": 4,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "0eb621e18881e734",
+    "is_table": true,
+    "similarity": 0.26459780711891967,
+    "rank_score": 0.3042874781867576,
+    "ordered_position": 5,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "f8ebc69e5af7d816",
+    "is_table": false,
+    "similarity": 0.26459780711891967,
+    "rank_score": 0.3042874781867576,
+    "ordered_position": 6,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "96910118fe4e3fda",
+    "is_table": false,
+    "similarity": 0.26459780711891967,
+    "rank_score": 0.3042874781867576,
+    "ordered_position": 7,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
+   },
+   {
+    "chunk_id": "8065ad3f4096ca30",
+    "is_table": false,
+    "similarity": 0.2610903759170226,
+    "rank_score": 0.300253932304576,
+    "ordered_position": 8,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "d79d92725b46b084",
+    "is_table": false,
+    "similarity": 0.2610903759170226,
+    "rank_score": 0.300253932304576,
+    "ordered_position": 9,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "53fc79c470c7775d",
+    "is_table": true,
+    "similarity": 0.23098335225962655,
+    "rank_score": 0.2656308550985705,
+    "ordered_position": 10,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "877394408084e1be",
+    "is_table": true,
+    "similarity": 0.22153077072096736,
+    "rank_score": 0.25476038632911246,
+    "ordered_position": 11,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "3746a7eb6438f7fd",
+    "is_table": true,
+    "similarity": 0.22153077072096736,
+    "rank_score": 0.25476038632911246,
+    "ordered_position": 12,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   }
+  ],
+  "table_candidates": [
+   {
+    "chunk_id": "5f81fce4a4628ebf",
+    "similarity": 0.31157688583585974,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "predicted_rank_score": 0.3583134187112387,
+    "rank_before_similarity_order": 1,
+    "rank_after_adjustment": 1,
+    "adjustment_delta_positions": 0,
+    "es_rank_best": 1,
+    "route_page_rank_best": 1,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "hollow": false,
+    "pairs_value": false,
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "0eb621e18881e734",
+    "similarity": 0.26459780711891967,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "predicted_rank_score": 0.3042874781867576,
+    "rank_before_similarity_order": 5,
+    "rank_after_adjustment": 5,
+    "adjustment_delta_positions": 0,
+    "es_rank_best": 3,
+    "route_page_rank_best": 5,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "hollow": false,
+    "pairs_value": false,
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": true
+   },
+   {
+    "chunk_id": "53fc79c470c7775d",
+    "similarity": 0.23098335225962655,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "predicted_rank_score": 0.2656308550985705,
+    "rank_before_similarity_order": 10,
+    "rank_after_adjustment": 10,
+    "adjustment_delta_positions": 0,
+    "es_rank_best": 2,
+    "route_page_rank_best": 10,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "hollow": false,
+    "pairs_value": false,
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "877394408084e1be",
+    "similarity": 0.22153077072096736,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "predicted_rank_score": 0.25476038632911246,
+    "rank_before_similarity_order": 11,
+    "rank_after_adjustment": 11,
+    "adjustment_delta_positions": 0,
+    "es_rank_best": 7,
+    "route_page_rank_best": 11,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "hollow": false,
+    "pairs_value": false,
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "3746a7eb6438f7fd",
+    "similarity": 0.22153077072096736,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "predicted_rank_score": 0.25476038632911246,
+    "rank_before_similarity_order": 12,
+    "rank_after_adjustment": 12,
+    "adjustment_delta_positions": 0,
+    "es_rank_best": 11,
+    "route_page_rank_best": 12,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "hollow": false,
+    "pairs_value": false,
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "4c4d1f7b4823dbbb",
+    "similarity": 0.22153077072096736,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "predicted_rank_score": 0.25476038632911246,
+    "rank_before_similarity_order": 14,
+    "rank_after_adjustment": 14,
+    "adjustment_delta_positions": 0,
+    "es_rank_best": 17,
+    "route_page_rank_best": 14,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "hollow": false,
+    "pairs_value": false,
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "0ce3962f4fcb7f92",
+    "similarity": 0.22153077072096736,
+    "penalty": 0.6,
+    "boost": 1.15,
+    "predicted_rank_score": 0.15285623179746746,
+    "rank_before_similarity_order": 15,
+    "rank_after_adjustment": 19,
+    "adjustment_delta_positions": -4,
+    "es_rank_best": 19,
+    "route_page_rank_best": 15,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "hollow": true,
+    "pairs_value": false,
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "0c919dcd5dbfb744",
+    "similarity": 0.22153077072096736,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "predicted_rank_score": 0.25476038632911246,
+    "rank_before_similarity_order": 16,
+    "rank_after_adjustment": 15,
+    "adjustment_delta_positions": 1,
+    "es_rank_best": 21,
+    "route_page_rank_best": 16,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "hollow": false,
+    "pairs_value": false,
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "980ed72de1325b3d",
+    "similarity": 0.22153077072096736,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "predicted_rank_score": 0.25476038632911246,
+    "rank_before_similarity_order": 17,
+    "rank_after_adjustment": 16,
+    "adjustment_delta_positions": 1,
+    "es_rank_best": 25,
+    "route_page_rank_best": 17,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "hollow": false,
+    "pairs_value": false,
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "d1d75672f2dbc333",
+    "similarity": 0.22153077072096736,
+    "penalty": 1.0,
+    "boost": 1.15,
+    "predicted_rank_score": 0.25476038632911246,
+    "rank_before_similarity_order": 19,
+    "rank_after_adjustment": 18,
+    "adjustment_delta_positions": 1,
+    "es_rank_best": 27,
+    "route_page_rank_best": 19,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "hollow": false,
+    "pairs_value": false,
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "6e6bb92c7dcdcb20",
+    "similarity": 0.22153077072096736,
+    "penalty": 0.6,
+    "boost": 1.15,
+    "predicted_rank_score": 0.15285623179746746,
+    "rank_before_similarity_order": 20,
+    "rank_after_adjustment": 20,
+    "adjustment_delta_positions": 0,
+    "es_rank_best": 29,
+    "route_page_rank_best": 20,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "hollow": true,
+    "pairs_value": false,
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   }
+  ],
+  "score_inversions": [],
+  "pure_score_top12": {
+   "by_rank_score_without_table_penalty": {
+    "ids": [
+     "5f81fce4a4628ebf",
+     "4859566265b332b6",
+     "834c0774c8fad3e2",
+     "91b65c311693d243",
+     "0eb621e18881e734",
+     "f8ebc69e5af7d816",
+     "96910118fe4e3fda",
+     "8065ad3f4096ca30",
+     "d79d92725b46b084",
+     "53fc79c470c7775d",
+     "877394408084e1be",
+     "3746a7eb6438f7fd"
+    ],
+    "tables": 5,
+    "prose": 7,
+    "target_in": false,
+    "target_position": null,
+    "control_in": false
+   },
+   "by_raw_similarity": {
+    "ids": [
+     "5f81fce4a4628ebf",
+     "4859566265b332b6",
+     "834c0774c8fad3e2",
+     "91b65c311693d243",
+     "0eb621e18881e734",
+     "f8ebc69e5af7d816",
+     "96910118fe4e3fda",
+     "8065ad3f4096ca30",
+     "d79d92725b46b084",
+     "53fc79c470c7775d",
+     "877394408084e1be",
+     "3746a7eb6438f7fd"
+    ],
+    "tables": 5,
+    "prose": 7,
+    "target_in": false,
+    "target_position": null,
+    "control_in": false
+   }
+  },
+  "weakest_chosen_prose_similarity": 0.2610903759170226,
+  "overtakers_of_target": [],
+  "target": {
+   "before": {
+    "chunk_id": "d1d75672f2dbc333",
+    "similarity": 0.22153077072096736,
+    "is_table": true,
+    "is_prose": false,
+    "is_hollow_table": false,
+    "document_key": "f18db09cba1211f18bee33eac9b39c66",
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "is_core_document": true,
+    "is_compared_document": false,
+    "paired_value_with_result": false,
+    "carries_question_value": false,
+    "table_penalty_applied": 1.0,
+    "boost_applied": 1.15,
+    "predicted_rank_score": 0.25476038632911246,
+    "routes": [
+     "220kV 三芯海缆的主要结构有哪些？"
+    ],
+    "content_head": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯数: 三芯 | 线缆类别: 海底电力电缆 | 敷设环境: 海"
+   },
+   "rank_before_similarity_order": 19,
+   "rank_after_adjustment": 18,
+   "adjustment_delta_positions": 1,
+   "es_rank_best": 27,
+   "route_page_rank_best": 19,
+   "rank_score": 0.25476038632911246,
+   "chosen": false
+  },
+  "control_state": {
+   "rank_before": null,
+   "rank_after": null,
+   "es_rank_best": null,
+   "route_page_rank_best": null,
+   "chosen": false,
+   "in_pool": false
+  }
+ },
+ {
+  "id": "TABLE_VALUE_LOOKUP",
+  "question": "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？",
+  "policy": {
+   "min_prose": 0,
+   "max_table_share": 1.0,
+   "table_penalty": 1.0,
+   "max_auxiliary_document_share": 0.4,
+   "core_document_boost": 1.15,
+   "core_documents": [
+    "28668474ba1b11f1be9555eabe501d5b"
+   ],
+   "max_document_share": 1.0,
+   "compared_documents": [],
+   "question_values": [
+    "2026",
+    "73286.2"
+   ]
+  },
+  "counts": {
+   "routes": 1,
+   "pool": 20,
+   "tables_in_pool": 20,
+   "prose_in_pool": 0,
+   "chosen": 12,
+   "tables_chosen": 12,
+   "prose_chosen": 0
+  },
+  "chosen_profile": [
+   {
+    "chunk_id": "b5aaf72bcd33d44a",
+    "is_table": true,
+    "similarity": 0.26914626640035594,
+    "rank_score": 0.24761456508832744,
+    "ordered_position": 1,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "d1d75672f2dbc333",
+    "is_table": true,
+    "similarity": 0.22663406129591024,
+    "rank_score": 0.22663406129591024,
+    "ordered_position": 2,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "ab96130b7a5d5c8f",
+    "is_table": true,
+    "similarity": 0.24355048870183219,
+    "rank_score": 0.2240664496056856,
+    "ordered_position": 3,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "41f10551fa1033e5",
+    "is_table": true,
+    "similarity": 0.2373660067129547,
+    "rank_score": 0.21837672617591836,
+    "ordered_position": 4,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "22ce10ed2fd538bf",
+    "is_table": true,
+    "similarity": 0.2373660067129547,
+    "rank_score": 0.21837672617591836,
+    "ordered_position": 5,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "0c919dcd5dbfb744",
+    "is_table": true,
+    "similarity": 0.20700014592406496,
+    "rank_score": 0.20700014592406496,
+    "ordered_position": 6,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "f96c7773551514ae",
+    "is_table": true,
+    "similarity": 0.20700014592406496,
+    "rank_score": 0.20700014592406496,
+    "ordered_position": 7,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "4238f6f6e9af11af",
+    "is_table": true,
+    "similarity": 0.20102023821979176,
+    "rank_score": 0.20102023821979176,
+    "ordered_position": 8,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "a03230e9a7559b31",
+    "is_table": true,
+    "similarity": 0.19638455791632795,
+    "rank_score": 0.19638455791632795,
+    "ordered_position": 9,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "69b5a1ff838d3cb0",
+    "is_table": true,
+    "similarity": 0.20853090223188384,
+    "rank_score": 0.19184843005333313,
+    "ordered_position": 11,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "83d1e77c201be56a",
+    "is_table": true,
+    "similarity": 0.19485380160850907,
+    "rank_score": 0.17926549747982834,
+    "ordered_position": 12,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   },
+   {
+    "chunk_id": "bf550e46c94ec75b",
+    "is_table": true,
+    "similarity": 0.19193021988448986,
+    "rank_score": 0.17657580229373065,
+    "ordered_position": 13,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.p"
+   }
+  ],
+  "table_candidates": [
+   {
+    "chunk_id": "b5aaf72bcd33d44a",
+    "similarity": 0.26914626640035594,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.24761456508832744,
+    "rank_before_similarity_order": 1,
+    "rank_after_adjustment": 1,
+    "adjustment_delta_positions": 0,
+    "es_rank_best": 9,
+    "route_page_rank_best": 1,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "ab96130b7a5d5c8f",
+    "similarity": 0.24355048870183219,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.2240664496056856,
+    "rank_before_similarity_order": 2,
+    "rank_after_adjustment": 3,
+    "adjustment_delta_positions": -1,
+    "es_rank_best": 5,
+    "route_page_rank_best": 2,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "41f10551fa1033e5",
+    "similarity": 0.2373660067129547,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.21837672617591836,
+    "rank_before_similarity_order": 3,
+    "rank_after_adjustment": 4,
+    "adjustment_delta_positions": -1,
+    "es_rank_best": 42,
+    "route_page_rank_best": 3,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "22ce10ed2fd538bf",
+    "similarity": 0.2373660067129547,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.21837672617591836,
+    "rank_before_similarity_order": 4,
+    "rank_after_adjustment": 5,
+    "adjustment_delta_positions": -1,
+    "es_rank_best": 44,
+    "route_page_rank_best": 4,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "d1d75672f2dbc333",
+    "similarity": 0.22663406129591024,
+    "penalty": 1.0,
+    "boost": 1.0,
+    "predicted_rank_score": 0.22663406129591024,
+    "rank_before_similarity_order": 5,
+    "rank_after_adjustment": 2,
+    "adjustment_delta_positions": 3,
+    "es_rank_best": 11,
+    "route_page_rank_best": 5,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "4bf3ddbeb9a17ec0",
+    "similarity": 0.21914649023962085,
+    "penalty": 0.48,
+    "boost": 1.15,
+    "predicted_rank_score": 0.12096886261227069,
+    "rank_before_similarity_order": 6,
+    "rank_after_adjustment": 19,
+    "adjustment_delta_positions": -13,
+    "es_rank_best": 43,
+    "route_page_rank_best": 6,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": true,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "69b5a1ff838d3cb0",
+    "similarity": 0.20853090223188384,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.19184843005333313,
+    "rank_before_similarity_order": 7,
+    "rank_after_adjustment": 11,
+    "adjustment_delta_positions": -4,
+    "es_rank_best": 36,
+    "route_page_rank_best": 7,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "0c919dcd5dbfb744",
+    "similarity": 0.20700014592406496,
+    "penalty": 1.0,
+    "boost": 1.0,
+    "predicted_rank_score": 0.20700014592406496,
+    "rank_before_similarity_order": 8,
+    "rank_after_adjustment": 6,
+    "adjustment_delta_positions": 2,
+    "es_rank_best": 53,
+    "route_page_rank_best": 8,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "6e6bb92c7dcdcb20",
+    "similarity": 0.20700014592406496,
+    "penalty": 0.6,
+    "boost": 1.0,
+    "predicted_rank_score": 0.12420008755443897,
+    "rank_before_similarity_order": 9,
+    "rank_after_adjustment": 18,
+    "adjustment_delta_positions": -9,
+    "es_rank_best": 54,
+    "route_page_rank_best": 9,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": true,
+    "pairs_value": "set()",
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "f96c7773551514ae",
+    "similarity": 0.20700014592406496,
+    "penalty": 1.0,
+    "boost": 1.0,
+    "predicted_rank_score": 0.20700014592406496,
+    "rank_before_similarity_order": 10,
+    "rank_after_adjustment": 7,
+    "adjustment_delta_positions": 3,
+    "es_rank_best": 63,
+    "route_page_rank_best": 10,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "4238f6f6e9af11af",
+    "similarity": 0.20102023821979176,
+    "penalty": 1.0,
+    "boost": 1.0,
+    "predicted_rank_score": 0.20102023821979176,
+    "rank_before_similarity_order": 11,
+    "rank_after_adjustment": 8,
+    "adjustment_delta_positions": 3,
+    "es_rank_best": 28,
+    "route_page_rank_best": 11,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "59bfe79ccc33f89f",
+    "similarity": 0.19668566708055094,
+    "penalty": 0.48,
+    "boost": 1.15,
+    "predicted_rank_score": 0.1085704882284641,
+    "rank_before_similarity_order": 12,
+    "rank_after_adjustment": 20,
+    "adjustment_delta_positions": -8,
+    "es_rank_best": 32,
+    "route_page_rank_best": 12,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": true,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "a03230e9a7559b31",
+    "similarity": 0.19638455791632795,
+    "penalty": 1.0,
+    "boost": 1.0,
+    "predicted_rank_score": 0.19638455791632795,
+    "rank_before_similarity_order": 13,
+    "rank_after_adjustment": 9,
+    "adjustment_delta_positions": 4,
+    "es_rank_best": 51,
+    "route_page_rank_best": 13,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "83d1e77c201be56a",
+    "similarity": 0.19485380160850907,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.17926549747982834,
+    "rank_before_similarity_order": 14,
+    "rank_after_adjustment": 12,
+    "adjustment_delta_positions": 2,
+    "es_rank_best": 49,
+    "route_page_rank_best": 14,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "acc2f7b2530f0d90",
+    "similarity": 0.1938587592933263,
+    "penalty": 1.0,
+    "boost": 1.0,
+    "predicted_rank_score": 0.1938587592933263,
+    "rank_before_similarity_order": 15,
+    "rank_after_adjustment": 10,
+    "adjustment_delta_positions": 5,
+    "es_rank_best": 12,
+    "route_page_rank_best": 15,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": false,
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "bf550e46c94ec75b",
+    "similarity": 0.19193021988448986,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.17657580229373065,
+    "rank_before_similarity_order": 16,
+    "rank_after_adjustment": 13,
+    "adjustment_delta_positions": 3,
+    "es_rank_best": 30,
+    "route_page_rank_best": 16,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": true,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "fc52bb6fd2f9265a",
+    "similarity": 0.19070575937627776,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.17544929862617553,
+    "rank_before_similarity_order": 17,
+    "rank_after_adjustment": 14,
+    "adjustment_delta_positions": 3,
+    "es_rank_best": 24,
+    "route_page_rank_best": 17,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "423069af31359e65",
+    "similarity": 0.18901004764376048,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.17388924383225962,
+    "rank_before_similarity_order": 18,
+    "rank_after_adjustment": 15,
+    "adjustment_delta_positions": 3,
+    "es_rank_best": 7,
+    "route_page_rank_best": 18,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "a14eb97907268118",
+    "similarity": 0.18847828282392032,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.1734000201980067,
+    "rank_before_similarity_order": 19,
+    "rank_after_adjustment": 16,
+    "adjustment_delta_positions": 3,
+    "es_rank_best": 1,
+    "route_page_rank_best": 19,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   },
+   {
+    "chunk_id": "ddccb17046a6a9d8",
+    "similarity": 0.1847687409580244,
+    "penalty": 0.8,
+    "boost": 1.15,
+    "predicted_rank_score": 0.16998724168138243,
+    "rank_before_similarity_order": 20,
+    "rank_after_adjustment": 17,
+    "adjustment_delta_positions": 3,
+    "es_rank_best": 8,
+    "route_page_rank_best": 20,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "hollow": false,
+    "pairs_value": "set()",
+    "carries_value": true,
+    "document": "220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf",
+    "chosen": false,
+    "outranks_weakest_chosen_prose": false
+   }
+  ],
+  "score_inversions": [],
+  "pure_score_top12": {
+   "by_rank_score_without_table_penalty": {
+    "ids": [
+     "b5aaf72bcd33d44a",
+     "ab96130b7a5d5c8f",
+     "41f10551fa1033e5",
+     "22ce10ed2fd538bf",
+     "4bf3ddbeb9a17ec0",
+     "69b5a1ff838d3cb0",
+     "d1d75672f2dbc333",
+     "59bfe79ccc33f89f",
+     "83d1e77c201be56a",
+     "bf550e46c94ec75b",
+     "fc52bb6fd2f9265a",
+     "423069af31359e65"
+    ],
+    "tables": 12,
+    "prose": 0,
+    "target_in": true,
+    "target_position": 7,
+    "control_in": true
+   },
+   "by_raw_similarity": {
+    "ids": [
+     "b5aaf72bcd33d44a",
+     "ab96130b7a5d5c8f",
+     "41f10551fa1033e5",
+     "22ce10ed2fd538bf",
+     "d1d75672f2dbc333",
+     "4bf3ddbeb9a17ec0",
+     "69b5a1ff838d3cb0",
+     "0c919dcd5dbfb744",
+     "6e6bb92c7dcdcb20",
+     "f96c7773551514ae",
+     "4238f6f6e9af11af",
+     "59bfe79ccc33f89f"
+    ],
+    "tables": 12,
+    "prose": 0,
+    "target_in": true,
+    "target_position": 5,
+    "control_in": true
+   }
+  },
+  "weakest_chosen_prose_similarity": null,
+  "overtakers_of_target": [],
+  "target": {
+   "before": {
+    "chunk_id": "d1d75672f2dbc333",
+    "similarity": 0.22663406129591024,
+    "is_table": true,
+    "is_prose": false,
+    "is_hollow_table": false,
+    "document_key": "f18db09cba1211f18bee33eac9b39c66",
+    "document": "220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf",
+    "is_core_document": false,
+    "is_compared_document": false,
+    "paired_value_with_result": "set()",
+    "carries_question_value": false,
+    "table_penalty_applied": 1.0,
+    "boost_applied": 1.0,
+    "predicted_rank_score": 0.22663406129591024,
+    "routes": [
+     "Q/GDW 73286.2-2026 表 1 中 800 mm² 单芯电缆的导体标称截面规格数量是多少？"
+    ],
+    "content_head": "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分：220kV三芯海底电力电缆系统专用技术规范.pdf | 电压: 220kV | 芯数: 三芯 | 线缆类别: 海底电力电缆 | 敷设环境: 海"
+   },
+   "rank_before_similarity_order": 5,
+   "rank_after_adjustment": 2,
+   "adjustment_delta_positions": 3,
+   "es_rank_best": 11,
+   "route_page_rank_best": 5,
+   "rank_score": 0.22663406129591024,
+   "chosen": true
+  },
+  "control_state": {
+   "rank_before": 1,
+   "rank_after": 1,
+   "es_rank_best": 9,
+   "route_page_rank_best": 1,
+   "chosen": true,
+   "in_pool": true
+  }
+ }
+]
