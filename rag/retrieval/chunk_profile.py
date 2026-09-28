@@ -510,24 +510,38 @@ NUMERIC_VALUE_CLASSES = frozenset(
     {NUMERIC_TECHNICAL_MEASUREMENT, NUMERIC_ANSWER_VALUE, NUMERIC_UNKNOWN, NUMERIC_IDENTITY_ASKED}
 )
 
-#: The attributes a question can ask FOR. These cues bind the occurrences OF THAT ATTRIBUTE, which is how
-#: `GB/T 12706.2-2020的标准号是多少？` returns the designation itself: the question is about the
-#: attribute, so the figures spelling that attribute are what it asks for.
+#: The attributes a question can ask FOR. Every cue is bound INSIDE A CLAUSE (see
+#: :func:`_cue_bound_starts`): the cue belonging to one clause can never reach an occurrence in another,
+#: which is what stops `…；待审文件的标准号是多少？` from promoting the standard named in the first clause.
 _ASKED_ATTRIBUTE_CUES = {
     "edition": re.compile(r"版本是|是什么版本|哪一版|哪版|发布的是|发布日期是|实施日期是|现行版本是|现行版是"),
-    "designation": re.compile(r"标准号是多少|标准号是什么|标准编号是多少|是什么标准号|哪个标准号|标准号是(?:什么|多少)"),
+    "designation": re.compile(r"标准号是多少|标准号是什么|标准号分别是多少|标准编号是多少|是什么标准号|哪个标准号|标准号是(?:什么|多少)"),
     "model": re.compile(r"型号是什么|是什么型号|型号是多少|哪个型号|型号是(?:什么|多少)|型号(?:是|为)"),
     "reference": re.compile(r"第\s*几\s*部分|哪一部分|表\s*几|图\s*几|哪个表|哪个图"),
 }
 
 #: Prepositions that introduce a document LOCATOR - the figures after them say WHICH document, not what its
-#: content is. A cue counts only at a clause edge, so the noun `依据` inside `投产依据` is not a phrase and
-#: cannot demote the year that follows it.
+#: content is.
 _LOCATOR_CUES = ("根据", "依据", "按照", "依照", "遵照", "参照", "基于", "据")
-_LOCATOR_GAP_LIMIT = 10
+_LOCATOR_GAP_LIMIT = 12
 
 #: Characters that end a clause or open a bracket: a locator cue may start after one of them.
 _CLAUSE_EDGE_CHARS = "，。；、？！,;?!：:（）()《》【】\"' \t\n\u3000"
+
+#: Clause separators. `.` is deliberately absent - it is the decimal point of `12706.2` and `1.8`.
+_CLAUSE_SEPARATOR_RE = re.compile(r"[，,；;。？！?!]")
+
+#: A clause that asks something, either by a marker or by the question mark that closes it.
+_INTERROGATIVE_RE = re.compile(r"吗|呢|多少|是什么|是哪些|哪些|哪一个|哪个|哪一版|哪版|是否|哪一部分|第几")
+
+#: Where the QUESTIONED TARGET starts inside a clause. The audit's I4/I5 need "known context" separated
+#: from "the object being asked about", and these are the subject-shift words a Chinese question uses for
+#: it; binding may not reach back past the last one.
+_QUESTION_TARGET_RE = re.compile(r"待选|待审|待定|待核|拟选|拟审|询问|请问|目标|另一份|另一个|另一标准|另一|该文件|所询")
+
+#: The copula. A locator cue whose complement is the copula heads the PREDICATE - `依据是2026版` says what
+#: the basis IS - so it is the questioned subject, not a preposition. Applied to the whole family.
+_COPULA_RE = re.compile(r"^(?:就?是|为|乃|系|指的是|即是)|^(?:就?是)|^(?:为)")
 
 #: The connectives that COMPARE two figures, and the interrogatives that ask which member of a preceding
 #: LIST is meant. Both are LOCAL: they bind the figures they actually sit between or follow, never every
@@ -538,6 +552,8 @@ _CHOICE_INTERROGATIVE_RE = re.compile(r"哪一?[个部分版种条章节项表�
 _LIST_CONNECTOR_RE = re.compile(r"[\s、,，]|和|与|及|以及|或")
 #: Suffixes that belong to an edition or a designation rather than ending a list (`2025年版、`).
 _ATTRIBUTE_SUFFIX_CHARS = "年版本号部分"
+#: Punctuation that ends an object phrase: a locator may not reach across it.
+_OBJECT_PUNCTUATION = "，,；;。？！?!：:（）()"
 
 
 def _occurrence_attribute(text: str, occurrence: "NumericOccurrence") -> str | None:
@@ -545,29 +561,143 @@ def _occurrence_attribute(text: str, occurrence: "NumericOccurrence") -> str | N
     return _attribute_of(text, occurrence.text, occurrence.end, occurrence.designation_span, occurrence.model_span)
 
 
-def _locator_bound_starts(text: str, occurrences: Sequence["NumericOccurrence"]) -> set[int]:
-    """Starts of the occurrences a locator preposition introduces, plus the rest of their designation.
+def _clause_spans(text: str) -> list[tuple[int, int]]:
+    """The clauses of ``text``, split on question punctuation, as ``(start, end)`` spans."""
+    spans: list[tuple[int, int]] = []
+    start = 0
+    for match in _CLAUSE_SEPARATOR_RE.finditer(text):
+        if match.start() > start:
+            spans.append((start, match.start()))
+        start = match.end()
+    if start < len(text):
+        spans.append((start, len(text)))
+    return spans
 
-    `根据 Q/GDW 73286.2-2026，厚度是3.9还是4.1mm？` binds `73286.2` and `2026` - both spell the document
-    the question locates - and leaves `3.9`/`4.1` untouched, which is the audit's A1.
+
+def _clause_index(spans: Sequence[tuple[int, int]], position: int) -> int | None:
+    for index, (start, end) in enumerate(spans):
+        if start <= position < end:
+            return index
+    return None
+
+
+def _is_interrogative(text: str, span: tuple[int, int]) -> bool:
+    """Whether a clause asks something - by a marker in it, or by the question mark that closes it."""
+    start, end = span
+    if _INTERROGATIVE_RE.search(text[start:end]):
+        return True
+    cursor = end
+    while cursor < len(text) and text[cursor].isspace():
+        cursor += 1
+    return cursor < len(text) and text[cursor] in "？?"
+
+
+def _target_scope_start(text: str, span: tuple[int, int]) -> int:
+    """Where the questioned target begins in a clause: after its last subject-shift word."""
+    start, end = span
+    last = None
+    for match in _QUESTION_TARGET_RE.finditer(text, start, end):
+        last = match.end()
+    return start if last is None else last
+
+
+def _cue_bound_starts(text: str, occurrences: Sequence["NumericOccurrence"]) -> set[int]:
+    """Starts of the occurrences an attribute CUE binds - inside its own clause and its own target scope.
+
+    This is the replacement for the authority the audit rejected. Revision 3 asked *"does the sentence
+    contain a cue"* and then promoted **every occurrence of that attribute in the sentence**; the
+    counterexamples R1-R6 are all consequences of that. Binding is now:
+
+    * **clause-local** - the cue and the occurrence must share a clause, so a standard named in one clause
+      is not promoted by a question asked about another object in the next one;
+    * **interrogative-only** - a clause that declares (`已知型号为AB123CD`) never supplies an answer, so a
+      declarative clause's cue binds nothing;
+    * **target-scoped** - inside the clause, binding may not reach back past the last subject-shift word
+      (`待选`/`待审`/`询问`…), so a known context named before the target is not promoted by the question
+      that names the target.
+    """
+    spans = _clause_spans(text)
+    bound: set[int] = set()
+    for span in spans:
+        if not _is_interrogative(text, span):
+            continue
+        scope_start = _target_scope_start(text, span)
+        clause_text = text[scope_start : span[1]]
+        for attribute, cue in _ASKED_ATTRIBUTE_CUES.items():
+            if not cue.search(clause_text):
+                continue
+            bound.update(
+                occurrence.start
+                for occurrence in occurrences
+                if scope_start <= occurrence.start and occurrence.end <= span[1] and _occurrence_attribute(text, occurrence) == attribute
+            )
+    return bound
+
+
+def _locator_is_preposition(text: str, position: int, cue: str) -> bool:
+    """Whether the cue at ``position`` is really a PREPOSITION (so its object is a locator).
+
+    Two local tests, applied to the whole family rather than to one word:
+
+    * it must sit at a clause edge, so the `依据` inside the noun `投产依据` is not a phrase;
+    * its complement must not be the copula, so `依据是2026版…` - where `依据` is the questioned subject -
+      is not read as "according to".
+    """
+    if position > 0 and text[position - 1] not in _CLAUSE_EDGE_CHARS:
+        return False
+    cursor = position + len(cue)
+    while cursor < len(text) and text[cursor].isspace():
+        cursor += 1
+    return not _COPULA_RE.match(text, cursor)
+
+
+def _coordinated_objects(text: str, first: "NumericOccurrence", occurrences: Sequence["NumericOccurrence"]) -> set[int]:
+    """The objects a locator coordinates with the first one (`按照2026版和2025版`): same attribute, joined
+    by a list connector and nothing else. A different attribute does not continue the object phrase."""
+    bound = {first.start}
+    attribute = _occurrence_attribute(text, first)
+    cursor = first.end
+    for occurrence in occurrences:
+        if occurrence.start < cursor:
+            continue
+        gap = text[cursor : occurrence.start]
+        if len(gap) > 6 or any(char in _OBJECT_PUNCTUATION for char in gap):
+            break
+        if not all(char.isspace() or _LIST_CONNECTOR_RE.fullmatch(char) or char in _ATTRIBUTE_SUFFIX_CHARS for char in gap):
+            break
+        if _occurrence_attribute(text, occurrence) != attribute:
+            break
+        bound.add(occurrence.start)
+        cursor = occurrence.end
+    return bound
+
+
+def _locator_bound_starts(text: str, occurrences: Sequence["NumericOccurrence"]) -> set[int]:
+    """Starts of the occurrences a locator preposition introduces, including coordinated objects.
+
+    `根据 Q/GDW 73286.2-2026，厚度是3.9还是4.1mm？` binds `73286.2` and `2026` - both spell the document the
+    question locates - and leaves `3.9`/`4.1` untouched: the audit's A1. Whitespace does not change the
+    scope (the audit's I2), and every coordinated object is bound, not just the first (its I3/R3).
     """
     bound: set[int] = set()
     for cue in _LOCATOR_CUES:
         position = text.find(cue)
         while position != -1:
-            clause_edge = position == 0 or text[position - 1] in _CLAUSE_EDGE_CHARS
-            if clause_edge:
+            if _locator_is_preposition(text, position, cue):
                 after = position + len(cue)
                 for occurrence in occurrences:
                     if occurrence.start < after or _occurrence_attribute(text, occurrence) is None:
                         continue
                     gap = text[after : occurrence.start]
-                    if len(gap) > _LOCATOR_GAP_LIMIT or any(char in _CLAUSE_EDGE_CHARS for char in gap):
+                    if len(gap) > _LOCATOR_GAP_LIMIT or any(char in _OBJECT_PUNCTUATION for char in gap):
+                        break
+                    if _COPULA_RE.search(gap):
                         break
                     bound.add(occurrence.start)
                     if occurrence.designation_span is not None:
                         span_start, span_end = occurrence.designation_span
                         bound.update(item.start for item in occurrences if span_start <= item.start and item.end <= span_end)
+                    bound |= _coordinated_objects(text, occurrence, occurrences)
                     break
             position = text.find(cue, position + 1)
     return bound
@@ -584,6 +714,9 @@ def _compared_starts(text: str, occurrences: Sequence["NumericOccurrence"]) -> s
       (`2026年版、2025年版，哪一个是现行版本？`, `Q/GDW 73286.2 和 73286.3 哪一部分…`), so the walk
       backwards stops at the first character that is not a list connector, whitespace or an attribute
       suffix.
+
+    A list is ONE constituent, which is why this span may cross the comma that separates the list from its
+    interrogative - the clause-locality invariant is about CUE binding, not about a list's own extent.
     """
     asked: set[int] = set()
     for match in _COMPARISON_CONNECTIVE_RE.finditer(text):
@@ -616,17 +749,13 @@ def _compared_starts(text: str, occurrences: Sequence["NumericOccurrence"]) -> s
 
 
 def _asked_starts(text: str, occurrences: Sequence["NumericOccurrence"]) -> set[int]:
-    """Starts of the occurrences the question asks FOR - by attribute cue, or by a COMPARISON/LIST ITEM.
+    """Starts of the occurrences the question asks FOR - a comparison/list member, or a cue's local target.
 
-    The rejected model asked "does the sentence contain a cue" and promoted every occurrence of a class.
-    This asks "is THIS occurrence the thing the cue or the comparison is about", so a sentence-level
-    connective cannot change a locator's verdict (the audit's A1, A2 and D1).
+    There is no path here that promotes an occurrence because a cue exists SOMEWHERE in the sentence: cue
+    intent is resolved per clause and per target scope (:func:`_cue_bound_starts`), and a comparison binds
+    only the figures it sits between.
     """
-    asked = _compared_starts(text, occurrences)
-    for attribute, cue in _ASKED_ATTRIBUTE_CUES.items():
-        if cue.search(text):
-            asked.update(item.start for item in occurrences if _occurrence_attribute(text, item) == attribute)
-    return asked
+    return _compared_starts(text, occurrences) | _cue_bound_starts(text, occurrences)
 
 #: A year, for the edition rule.
 _YEAR_RE = re.compile(r"(?:19|20)\d{2}")
