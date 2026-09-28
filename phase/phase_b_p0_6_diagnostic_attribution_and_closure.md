@@ -15,7 +15,7 @@ production bundle, and the agreed promotion sequence was executed to completion.
 | P0-7 observability | `my-wenruorag:p0-7-obs-9f3d2c79` | **`ea93cd3bb795`** | deployed, now the baseline |
 | rollback anchor | `my-wenruorag:rollback-pre-p0-20260927` | `c50436820cb9` | retained |
 
-The diagnostic build instrumented **only** `web/src/utils/retrieval-health-notice.ts` and was served to the
+The diagnostic build instrumented **only** `../web/src/utils/retrieval-health-notice.ts` and was served to the
 browser by intercepting non-API requests (the real origin and real backend were used unchanged). The
 production source was then reverted and verified: **0 tracked changes, 0 instrumentation references**.
 

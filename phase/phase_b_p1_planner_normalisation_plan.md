@@ -18,7 +18,7 @@ invisible infrastructure condition (Redis cache occupancy).
 
 ## 2. Evidence base (measured, already on disk)
 
-From the earlier decomposition cold-cache probe (`decomposition_cold_raw.txt`,
+From the earlier decomposition cold-cache probe (`../scripts/audit/decomposition_cold_raw.txt`,
 `failure_mode_characterization.md`), with the in-process LLM cache **bypassed** so that misses are real and
 provable:
 

@@ -35,7 +35,7 @@ For reference, the payload the UI can rely on is exactly the contract's `api_vie
 
 ## 2. Audit — current notice logic (and why it must not be reused as-is)
 
-`web/src` has **zero** references to `retrieval_health`, `degradation_reason` or `evidence_completeness`
+`../web/src` has **zero** references to `retrieval_health`, `degradation_reason` or `evidence_completeness`
 (verified by repo-wide search). So `USER_VISIBLE_DISCLOSURE: NOT IMPLEMENTED`, confirming the earlier audit.
 
 Existing toast machinery:
@@ -135,7 +135,7 @@ brief — the extra field is already present, so no backend change is needed.
 
 Proposed strings (the only user-facing text; both files, nothing else):
 
-| key | `zh.ts` | `en.ts` (sentence case per `web/CLAUDE.md`) |
+| key | `zh.ts` | `en.ts` (sentence case per `../web/CLAUDE.md`) |
 | --- | --- | --- |
 | `semanticLimited` | 语义检索暂时受限，已自动切换为文本检索模式。 | Semantic search is limited right now; the answer fell back to text search. |
 | `degradedGeneric` | 检索服务已降级，本次回答可能不完整。 | Retrieval was degraded, so this answer may be incomplete. |
@@ -191,24 +191,24 @@ and contains no fragment of the input.
 
 | file | purpose | approx |
 | --- | --- | --- |
-| `web/src/utils/retrieval-health-notice.ts` | C1–C6 mapper (pure) + dedup dispatcher + sonner call | ~110 lines |
-| `web/src/utils/__tests__/retrieval-health-notice.test.ts` | C1–C6 table, dedup, replay, hostile-input, no-leak assertions | ~180 lines |
+| `../web/src/utils/retrieval-health-notice.ts` | C1–C6 mapper (pure) + dedup dispatcher + sonner call | ~110 lines |
+| `../web/src/utils/__tests__/retrieval-health-notice.test.ts` | C1–C6 table, dedup, replay, hostile-input, no-leak assertions | ~180 lines |
 
 ### Modified files (5)
 
 | file | change | why |
 | --- | --- | --- |
-| `web/src/interfaces/database/chat.ts` | add `IRetrievalHealth` + optional `retrieval_health?: IRetrievalHealth` on `IReference` (line ~147) | **shared type, additive & optional** — needs your explicit OK per the project's shared-schema rule |
-| `web/src/pages/next-chats/chat-stream/run-stream.ts` | dispatch once at the terminal frame (`chunk.final`, ~line 107) using `merged.reference` | primary chat surface; exactly one dispatch per answer |
-| `web/src/hooks/logic-hooks.ts` | dispatch in `addNewestAnswer` (684) and `addNewestOneAnswer` (705) | legacy SSE chat: multi chat box, shared-chat page, agent chat |
-| `web/src/pages/next-search/hooks.ts` | dispatch in the terminal-frame effect (472-482) | search surface |
-| `web/src/locales/zh.ts`, `web/src/locales/en.ts` | 3 keys each, under a new group | project rule: only these two locale files |
+| `../web/src/interfaces/database/chat.ts` | add `IRetrievalHealth` + optional `retrieval_health?: IRetrievalHealth` on `IReference` (line ~147) | **shared type, additive & optional** — needs your explicit OK per the project's shared-schema rule |
+| `../web/src/pages/next-chats/chat-stream/run-stream.ts` | dispatch once at the terminal frame (`chunk.final`, ~line 107) using `merged.reference` | primary chat surface; exactly one dispatch per answer |
+| `../web/src/hooks/logic-hooks.ts` | dispatch in `addNewestAnswer` (684) and `addNewestOneAnswer` (705) | legacy SSE chat: multi chat box, shared-chat page, agent chat |
+| `../web/src/pages/next-search/hooks.ts` | dispatch in the terminal-frame effect (472-482) | search surface |
+| `../web/src/locales/zh.ts`, `web/src/locales/en.ts` | 3 keys each, under a new group | project rule: only these two locale files |
 
 ### Deliberately NOT touched
 
 `src/components/ui/**` (locked), `utils/notification.ts` and `utils/message.ts` (no signature change
 needed), `utils/api-error.ts` + `next-request.ts` (their 413/504 and model-error behaviour is unrelated and
-stays exactly as is), any backend file, `docker/docker-compose.yml`, the credential, and all retrieval code.
+stays exactly as is), any backend file, `../docker/docker-compose.yml`, the credential, and all retrieval code.
 The route-isolation and exception-handling logic is untouched — the frontend never sees a raw exception
 from this path, and nothing is re-thrown or surfaced.
 
@@ -252,7 +252,7 @@ backend is unchanged, so those are expected to remain PASS and are cheap to conf
 The web bundle is baked into the image (`WEB_DIST_MODE`). A UI change therefore **cannot** be applied to the
 running container without a rebuild:
 
-`deploy/p0_build/Dockerfile` currently COPYs only the Python delta. Two options to present at that stage:
+`../deploy/p0_build/Dockerfile` currently COPYs only the Python delta. Two options to present at that stage:
 (a) add a frontend build stage so the derived image carries a rebuilt `web/dist`; or
 (b) do a normal `docker compose build` for the release path (the standing phase-Dockerfile caveat).
 Either way it produces a **new immutable tag**; `latest`, the rollback tag and all three earlier candidate

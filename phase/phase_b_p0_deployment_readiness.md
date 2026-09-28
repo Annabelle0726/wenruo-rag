@@ -35,7 +35,7 @@ Because not all four are PASS, the rebuild is **not ready for approval**. Item 1
 So `dialog_service → retrieve_multi_route → route execution → aggregation → synthesis` is a real chain, and
 the four intended insertion points (route loop, embedding boundary, plan layer, aggregation/DTO) sit on it.
 The call site line number (897) also matches the container forensics report, which is consistent with
-`dialog_service.py` being identical; `api/` files were **not** line-count-diffed, so treat that one hop as
+`dialog_service.py` being identical; `../api` files were **not** line-count-diffed, so treat that one hop as
 consistent-but-not-fully-diffed.
 
 ### 1.2 The blocking finding: the tree is not the deployed retrieval revision
@@ -44,12 +44,12 @@ Line counts, deployed container versus working tree:
 
 | file | deployed | working tree | match |
 | --- | --- | --- | --- |
-| `rag/retrieval/multi_route.py` | 337 | 337 | yes |
-| `rag/retrieval/decomposition.py` | 396 | 396 | yes |
-| `rag/retrieval/rerank.py` | 740 | 740 | yes |
-| `rag/retrieval/pipeline.py` | **329** | **475** | **no** |
-| `rag/retrieval/health.py` | absent | 352 | new |
-| `rag/retrieval/health_producers.py` | absent | 254 | new |
+| `../rag/retrieval/multi_route.py` | 337 | 337 | yes |
+| `../rag/retrieval/decomposition.py` | 396 | 396 | yes |
+| `../rag/retrieval/rerank.py` | 740 | 740 | yes |
+| `../rag/retrieval/pipeline.py` | **329** | **475** | **no** |
+| `../rag/retrieval/health.py` | absent | 352 | new |
+| `../rag/retrieval/health_producers.py` | absent | 254 | new |
 
 Function inventory of the drifted file:
 
@@ -135,7 +135,7 @@ objects, so adding `retrieval_health` follows an established pattern.
 
 ### 3.1 The existing policy, verbatim from the deployment
 
-`rag/retrieval/multi_route.py` (identical deployed and in-tree):
+`../rag/retrieval/multi_route.py` (identical deployed and in-tree):
 
 ```
 :306        try:
@@ -238,7 +238,7 @@ therefore be scheduled after the quota resets, or the gate must be explicitly re
 - Read-only: tree inspection, `docker images`, `docker inspect`, in-container `wc`/`grep`. Nothing was
   rebuilt, tagged, restarted, patched, or written to any index or configuration.
 - Coverage limits stated honestly: 250 of 304 `kbinfos` occurrences were read directly (the remainder were
-  the tail of the same search and were covered by the targeted strict-shape search in §2.1); `api/` files
+  the tail of the same search and were covered by the targeted strict-shape search in §2.1); `../api` files
   other than `dialog_service.py` were checked by pattern search, not line-diffed; the drift between
   deployed and in-tree `pipeline.py` was established by line counts and function inventory, not by a full
   textual diff — the full diff is step one of Option A in §1.3.

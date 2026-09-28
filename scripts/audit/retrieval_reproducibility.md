@@ -754,10 +754,10 @@ do not change the measurement, but they add mechanism and refine several details
 - **`bool_query.boost` evaluates to 0.0** because the fusion weights are hardcoded `0.001,1`
   (`search.py:331` -> `es_conn.py:236-244`), so the lexical clause inside the kNN request acts purely as a
   pre-filter rather than as a score contribution.
-- **No pagerank or tag-feature writer exists in `rag/`, `api/`, or `common/`** (`adjust_chunk_pagerank_fea`
+- **No pagerank or tag-feature writer exists in `../../rag`, `api/`, or `common/`** (`adjust_chunk_pagerank_fea`
   has no caller). Those fields still feed the fused score with weight 10 (`search.py:519-531`), so any
   out-of-tree writer would be invisible to this review.
-- **Deployment inconsistency:** `conf/mapping.json` defines dense-vector dynamic templates only for 512 / 768 /
+- **Deployment inconsistency:** `../../conf/mapping.json` defines dense-vector dynamic templates only for 512 / 768 /
   1024 / 1536 dimensions, yet the live field `q_3072_vec` exists with `dims: 3072`. The live mapping was
   therefore not produced by that file.
 - **Embedding backend discrepancy:** the container environment advertises `TEI_MODEL=Qwen/Qwen3-Embedding-0.6B`,
@@ -885,4 +885,4 @@ wrapper, which the pipeline route-failure isolation absorbed. Sections 10, 12 an
 deltas and per-route identities from that run; **those specific numbers are withdrawn as evidence**. The
 stability result in sections 3-7 rests on probe v1 (240 runs, zero errors, zero quota failures) and is
 unaffected. The 429 lines in the stage-probe stderr are real, but the empty windows cannot be attributed to
-the quota because the instrumentation broke retrieval in the same runs. See `failure_mode_characterization.md`.
+the quota because the instrumentation broke retrieval in the same runs. See `../../failure_mode_characterization.md`.

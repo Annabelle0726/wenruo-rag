@@ -29,10 +29,10 @@ Health state is produced **where execution happens**, never inferred:
 
 | point | location | change |
 | --- | --- | --- |
-| route loop / failure isolation | `rag/retrieval/multi_route.py` per-route execution | construct a `HealthSession`, call `route_execution(routes, call)`, report the dense or lexical leg from the per-route outcome |
+| route loop / failure isolation | `../rag/retrieval/multi_route.py` per-route execution | construct a `HealthSession`, call `route_execution(routes, call)`, report the dense or lexical leg from the per-route outcome |
 | embedding boundary | the query-embedding request inside the store/search layer | report the dense leg where the request is issued, using `reason_from_exception` |
-| plan layer | `rag/retrieval/decomposition.py` return and validation | report `decomposition` as success, `PLAN_VALIDATION_FAILED` or `PLAN_EMPTY` |
-| aggregation and DTO | `rag/retrieval/pipeline.py` retrieval entry return | `health.attach_health(result, session.build_with_validation(validator))` beside the existing keys |
+| plan layer | `../rag/retrieval/decomposition.py` return and validation | report `decomposition` as success, `PLAN_VALIDATION_FAILED` or `PLAN_EMPTY` |
+| aggregation and DTO | `../rag/retrieval/pipeline.py` retrieval entry return | `health.attach_health(result, session.build_with_validation(validator))` beside the existing keys |
 | propagation | answer layer, metrics, trace | consume `retrieval_health` as an input constraint; emit the structured event already produced by `emit_event` |
 | circuit breaker | embedding boundary | `producers.circuit_breaker_skip(...)` so a policy stop is reported as `skipped`, never `not_triggered` |
 
@@ -80,7 +80,7 @@ rule holds: the retrieval layer alone reports `partial`, and only a named valida
 The running container executes its own revision and shares no bind mount with this tree, so the producers are
 in the repository and their runtime chain is verified here, but the production defect is closed only after:
 
-1. rebuild the image from a commit that contains `rag/retrieval/health.py` and `rag/retrieval/health_producers.py`
+1. rebuild the image from a commit that contains `../rag/retrieval/health.py` and `rag/retrieval/health_producers.py`
    plus the four insertion points above;
 2. restart the service onto the new image (explicit authorization required, since it interrupts the running deployment);
 3. re-run this same injection suite against the live container with the embedding boundary doubled, and repeat the

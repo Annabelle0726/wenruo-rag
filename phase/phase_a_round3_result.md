@@ -5,7 +5,7 @@ corrective write, no embedding, no re-parse, no mapping change.
 
 ## 1. Corrective Migration: **READY**
 
-Produced by `tools/scripts/phase_a_readiness_check.py`, which calls the SAME projection as the
+Produced by `../tools/scripts/phase_a_readiness_check.py`, which calls the SAME projection as the
 migration (`retrieval_projection.project_chunk` + `token_fields`; the canary now delegates to
 them too, so there is one algorithm and no second opinion to disagree with).
 
@@ -32,7 +32,7 @@ not per passage, why a re-run from the stored state is deterministic (the walk a
 the first chunk of the document), and why the first canary run — which walked the *projected*
 bodies of 58 legacy-prefixed chunks — produced sections from the wrong text.
 
-Tests: `test/unit_test/rag/nlp/test_phase_a_migration.py` (6 cases: three rounds are a no-op after
+Tests: `../test/unit_test/rag/nlp/test_phase_a_migration.py` (6 cases: three rounds are a no-op after
 the first, for each of the three initial states; all three states converge to the same stored
 representation; a passage's section comes from its own heading, not the previous chunk; the raw
 body is never touched). `test/unit_test/rag/nlp` = **175 passed**.
@@ -47,7 +47,7 @@ revision's model-resolution API differs from this working tree's
 (`get_tenant_default_model_by_type` returns a string there while `LLMBundle` expects a dict). The
 adaptation has to be derived from the deployed code's own construction path
 (`dialog_service` -> retrieval -> `Dealer.retrieval`), which is exactly what
-`tools/scripts/retrieval_trace.py` was written to reuse via `Dealer.retrieval` — but the bundle
+`../tools/scripts/retrieval_trace.py` was written to reuse via `Dealer.retrieval` — but the bundle
 construction in it is still this tree's shape, so it cannot run yet. It pipes in over stdin
 (`docker exec -i ... python -`), so nothing was written into the container, and the container's
 code was not patched or replaced.

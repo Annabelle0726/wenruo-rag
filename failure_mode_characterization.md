@@ -7,7 +7,7 @@ No retrieval parameter, prompt, reranker, embedding model, index, Redis key, or 
 > **Correction up front.** The instrumentation-v2 stage capture is retracted: every one of its 120 runs
 > returned an empty window and 8-10 of 10 runs per query raised `TypeError: 'classmethod' object is not
 > callable` from this round's own wrapper, absorbed by the pipeline route-failure isolation. Sections 10,
-> 12 and 13 of `retrieval_reproducibility.md` drew pool sizes, cutoff deltas and per-route identities from
+> 12 and 13 of `scripts/audit/retrieval_reproducibility.md` drew pool sizes, cutoff deltas and per-route identities from
 > that run; those numbers are withdrawn. The stability result rests on probe v1 (240 runs, zero errors,
 > zero quota failures) and is unaffected.
 

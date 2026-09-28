@@ -12,7 +12,7 @@ Production dense call site:
 /ragflow/rag/nlp/search.py:105    qv, _ = await thread_pool_exec(emb_mdl.encode_queries, txt)   # txt is a STRING
 ```
 
-Deployed client (`rag/llm/embedding_model.py`, class `GeminiEmbed`):
+Deployed client (`../rag/llm/embedding_model.py`, class `GeminiEmbed`):
 
 | property | value |
 | --- | --- |
@@ -107,7 +107,7 @@ you required.
 
 **`USER_VISIBLE_QUOTA_NOTICE: NOT IMPLEMENTED`.**
 
-Evidence: a search of `web/src` for `degradation_reason`, `retrieval_health` and `evidence_completeness`
+Evidence: a search of `../web/src` for `degradation_reason`, `retrieval_health` and `evidence_completeness`
 returned **no matches**, and the container-side search found no Python consumer either. Front-end consumers
 of the response read `reference.chunks` and `reference.doc_aggs` only. There is no Toast, no Banner, no
 Inline notice, and no code that could display a degraded-retrieval state to a user. A degraded or

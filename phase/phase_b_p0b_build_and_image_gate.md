@@ -8,9 +8,9 @@ No `latest` overwrite, no restart, no production recreate, and no live acceptanc
 
 Hard interception item, implemented as a *gate* rather than a promise:
 
-- `rag/retrieval/health_bridge.py` now carries `ANSWER_POLICY_ENFORCEMENT = "disabled"`,
+- `../rag/retrieval/health_bridge.py` now carries `ANSWER_POLICY_ENFORCEMENT = "disabled"`,
   `answer_policy_enforced()` (always `False`) and `FORBIDDEN_POLICY_SYMBOLS`.
-- `tools/scripts/p0_option_a_candidate.py` gained the check
+- `../tools/scripts/p0_option_a_candidate.py` gained the check
   **`no_answer_policy_enforcement_symbols`**, which fails the build if any answer-policy symbol
   (`decide_answer_action`, `required_notice`, `AnswerAction`, `refuse_insufficient`, `refuse_failed`)
   appears in the candidate sources. Both files **PASS**.

@@ -29,7 +29,7 @@ this tag (or by this id) on any live-gate failure, then stop — no in-place rep
 | property | value |
 | --- | --- |
 | source | `/ragflow/rag/retrieval/pipeline.py` inside `wenruo-rag-cpu`, read with `docker exec cat` (read-only) |
-| extracted copy | `deploy/p0_baseline/pipeline.py` |
+| extracted copy | `../deploy/p0_baseline/pipeline.py` |
 | lines | **329** (container `wc -l` reports 329 — identical) |
 | sha256 of the extract | `F3A1AF567F7F3DBC84C77AA4E91A2540449083B28D69E251E9403E273386C6BB` |
 | `multi_route.py` | **not extracted**: the in-tree file matches the deployed file line for line (337 lines), confirmed in the readiness audit |
@@ -38,11 +38,11 @@ this tag (or by this id) on any live-gate failure, then stop — no in-place rep
 
 | artefact | detail |
 | --- | --- |
-| `deploy/p0_baseline/pipeline.p0-candidate.py` | 329 → **341** lines |
-| `deploy/p0_baseline/multi_route.p0-candidate.py` | 337 → **340** lines |
-| `deploy/p0_baseline/p0_option_a.patch` | unified diff, **6 hunks**, 69 lines |
-| `rag/retrieval/health_bridge.py` | new reporter-only bridge (no retrieval logic) |
-| `rag/retrieval/health.py`, `health_producers.py` | unchanged from the P0-A/P0-B commits |
+| `../deploy/p0_baseline/pipeline.p0-candidate.py` | 329 → **341** lines |
+| `../deploy/p0_baseline/multi_route.p0-candidate.py` | 337 → **340** lines |
+| `../deploy/p0_baseline/p0_option_a.patch` | unified diff, **6 hunks**, 69 lines |
+| `../rag/retrieval/health_bridge.py` | new reporter-only bridge (no retrieval logic) |
+| `../rag/retrieval/health.py`, `health_producers.py` | unchanged from the P0-A/P0-B commits |
 
 The instrumentation is exactly the reporter-only shape you specified:
 
@@ -71,7 +71,7 @@ cannot be shadowed or lost.
 
 ## 4. Semantic-Diff Gate — automated, both files PASS
 
-Run by `tools/scripts/p0_option_a_candidate.py`; result in `deploy/p0_baseline/p0_option_a_semantic_diff_result.json`.
+Run by `../tools/scripts/p0_option_a_candidate.py`; result in `deploy/p0_baseline/p0_option_a_semantic_diff_result.json`.
 
 | check | pipeline.py | multi_route.py |
 | --- | --- | --- |
@@ -171,4 +171,4 @@ and re-run; the candidate code was not changed to make the gate pass.
    constraint-bearing question will refuse under the deployed policy until that validator ships — a
    deliberate, visible consequence, not a defect.
 5. **Coverage limit:** the diff was established against the extracted baseline and the in-tree
-   `multi_route.py`; `api/` files outside `dialog_service.py` were checked by pattern search only.
+   `multi_route.py`; `../api` files outside `dialog_service.py` were checked by pattern search only.

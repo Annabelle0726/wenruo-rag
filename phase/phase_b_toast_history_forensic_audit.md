@@ -16,7 +16,7 @@ change, no DB access, no container recreate. All evidence is from Git history an
 
 The mechanism the user described is present in the code and is the *pre-multi-route* behaviour:
 
-1. **Hard failure at the embedding layer.** `rag/llm/embedding_model.py` wraps every failure:
+1. **Hard failure at the embedding layer.** `../rag/llm/embedding_model.py` wraps every failure:
    `raise embedding_failure("GeminiEmbed", str(_e))`. A quota 429 therefore became a raised exception, not a
    degraded result.
 2. **Per-request toast in the Search page.** `web/src/pages/next-search/hooks.ts:108-110`
@@ -35,13 +35,13 @@ The mechanism the user described is present in the code and is the *pre-multi-ro
 
    | file | change |
    | --- | --- |
-   | `common/model_errors.py` | **new**, 125 lines — backend model-error classification (`model_failure_response`) |
-   | `rag/llm/embedding_model.py` | +89 lines — embedding failure handling |
-   | `api/apps/restful_apis/search_api.py` | 28 lines — error frame for the answer stream |
-   | `api/utils/api_utils.py` | +13 lines |
-   | `web/src/components/model-service-unavailable/index.tsx` | **new**, 75 lines — the user-visible surface |
-   | `web/src/locales/en.ts` / `zh.ts` | +6 / +5 — the human wording |
-   | `web/src/interfaces/database/dataset.ts` | +6 — the new error_type field |
+   | `../common/model_errors.py` | **new**, 125 lines — backend model-error classification (`model_failure_response`) |
+   | `../rag/llm/embedding_model.py` | +89 lines — embedding failure handling |
+   | `../api/apps/restful_apis/search_api.py` | 28 lines — error frame for the answer stream |
+   | `../api/utils/api_utils.py` | +13 lines |
+   | `../web/src/components/model-service-unavailable/index.tsx` | **new**, 75 lines — the user-visible surface |
+   | `../web/src/locales/en.ts` / `zh.ts` | +6 / +5 — the human wording |
+   | `../web/src/interfaces/database/dataset.ts` | +6 — the new error_type field |
 
    The commit message and diff are explicit about intent: *"A model provider refusing the request answers
    with the same wording the rest of the API uses, so the answer bubble reads as a sentence rather than as
@@ -113,7 +113,7 @@ CURRENT-PATH HYPOTHESIS (isolation -> 200 -> silence):  CONFIRMED
 1. Whether `a785e1842` is exactly the commit implementing the user's request (its scope, message and tests
    match closely, but no issue link was found to prove one-to-one correspondence).
 2. Whether the **running image** contains `a785e1842` — the deployed revision is older than HEAD in at least
-   `pipeline.py`, so the presence of `common/model_errors.py` and the `model-service-unavailable` component in
+   `pipeline.py`, so the presence of `../common/model_errors.py` and the `model-service-unavailable` component in
    the container was **not** checked here.
 3. Which endpoint the observed toasts came from: `next-search` (search) versus the chat path
    (`use-chat-request.ts:723` `message.error(error.message)` also exists). Both are per-request and would

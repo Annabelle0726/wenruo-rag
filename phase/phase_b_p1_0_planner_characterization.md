@@ -27,7 +27,7 @@ G4 being blocked does **not** mark P1 blocked: the planner line proceeds; the re
 ## 2. What was measured, and how (isolation)
 
 Re-ran the Phase A cold-cache probe against the **current baseline `ea93cd3bb795`**, then analysed its
-capture with the new P1-0 characterizer (`deploy/p1_gates/p1_0_planner_characterization.py`).
+capture with the new P1-0 characterizer (`../deploy/p1_gates/p1_0_planner_characterization.py`).
 
 * Isolation: `get_llm_cache` forced to **miss** and `set_llm_cache` a **no-op**, in this process only —
   production Redis was never read, written, deleted or flushed; no deployed file modified.
@@ -100,7 +100,7 @@ by construction rather than by probability, and it keeps the contract change sma
 
 ## 5. Gate construction (built now, not yet expected to pass)
 
-`deploy/p1_gates/p1_0_planner_characterization.py` is the P1-0 harness. It computes, per frozen query:
+`../deploy/p1_gates/p1_0_planner_characterization.py` is the P1-0 harness. It computes, per frozen query:
 distinct raw vs canonical hashes, distinct route counts, min pairwise Jaccard, max symmetric difference,
 cosmetic-only vs real variance, and fallback provenance — i.e. the exact inputs G1/G2/G3 need.
 
@@ -118,9 +118,9 @@ ordered routes are chosen, G1 becomes strictly stronger and the `plan_hash` must
 
 ## 6. Deliverables and next step
 
-* New: `deploy/p1_gates/p1_0_planner_characterization.py` (characterization + gate construction), result
+* New: `../deploy/p1_gates/p1_0_planner_characterization.py` (characterization + gate construction), result
   artifact `p10_char_summary.json`.
-* Reused unchanged: `tools/scripts/decomposition_cold_cache_probe.py` (the Phase A isolation method).
+* Reused unchanged: `../tools/scripts/decomposition_cold_cache_probe.py` (the Phase A isolation method).
 * **Not done, by instruction:** no planner normalisation implementation, no cache-key change, no prompt
   change, no retrieval-parameter change, no new contract field.
 

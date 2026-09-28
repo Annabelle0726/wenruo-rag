@@ -352,7 +352,7 @@ genuine evidence insufficiency.
 
 ## R2.7 P0 implementation plan — Retrieval Health Contract
 
-**Deliverable 1: the contract module.** New dependency-free module `rag/retrieval/health.py`:
+**Deliverable 1: the contract module.** New dependency-free module `../rag/retrieval/health.py`:
 
 - Enumerations: `LegStatus` (success / degraded / failed / skipped / not_triggered / unknown), `OverallStatus`
   (full / degraded / failed), `ReasonCode` (enumerated failure reasons), `Completeness`

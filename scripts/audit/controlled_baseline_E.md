@@ -52,7 +52,7 @@ which is why the header value and a query naming the same term can still meet in
 
 ## Blocked at this boundary, stated for the next round
 
-`tools/scripts/ac_stage_trace.py` failed inside the container with
+`../../tools/scripts/ac_stage_trace.py` failed inside the container with
 `ModuleNotFoundError: No module named 'rag.nlp.retrieval_projection'`: the tracer imported a
 module that exists only in the HOST working tree, not in the deployed image (the container runs
 its own revision). The same class of boundary error as the earlier `LLMBundle` and

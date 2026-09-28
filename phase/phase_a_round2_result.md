@@ -7,7 +7,7 @@ are not the ones I could produce.
 ## A. Corrective migration (the 60 chunks) — partially delivered
 
 **Authoritative number: `changed = 60 / unchanged = 95`**, from the fixed canary dry run
-(`tools/scripts/phase_a_canary.py`, section walk over the RAW body). The other counts the
+(`../tools/scripts/phase_a_canary.py`, section walk over the RAW body). The other counts the
 approval depends on hold: family 155, outside-family mutations 0.
 
 **What is missing: the 60-row table** (id / Part / stored section / corrected section /
@@ -30,7 +30,7 @@ approval.
 
 ## B. A/C end-to-end trace — NOT measured
 
-`tools/scripts/retrieval_trace.py` was written to separate the three legs without changing a
+`../tools/scripts/retrieval_trace.py` was written to separate the three legs without changing a
 parameter (lexical-only = `vector_similarity_weight 0.0`, dense-only = `1.0`, hybrid = `0.3`),
 because the dense and reranker stages only exist where the embedding model does - inside the
 API container. It cannot run there yet:

@@ -279,3 +279,17 @@ internal/deepdoc/native/testdata
 # credentials (user password hashes, provider API keys), so they must never be
 # committed. Move them out of the repository once the migration is verified.
 migration/
+
+
+# Audit & benchmark runtime artifacts (local logs, raw traces, and evaluation output)
+scripts/audit/*.txt
+scripts/audit/*.json
+scripts/audit/*_err.txt
+scripts/audit/*_raw.txt
+scripts/audit/controlled_*
+scripts/audit/retrieval_benchmark_*
+
+scripts/ac_audit/*.json
+scripts/ac_audit/*.out
+scripts/ac_audit/*_raw.*
+scripts/ac_audit/*_err.*

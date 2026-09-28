@@ -33,7 +33,7 @@ variables are reported as **names only**.
 
 Two observations that matter for the recreate:
 
-- **The compose file is inside the repository** (`docker/docker-compose.yml`), so it is a tracked artifact and
+- **The compose file is inside the repository** (`../docker/docker-compose.yml`), so it is a tracked artifact and
   its drift is reviewable in Git.
 - `com.docker.compose.image` = `sha256:6ca36f9b…` is **not** a candidate image id — it is the image the compose
   *config* resolves to. Since the running container's actual image is `c50436820cb9`, the compose file's own

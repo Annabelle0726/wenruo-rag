@@ -93,7 +93,7 @@ confirmed by a live retrieval: **7 chunks, 2 document aggregates, no exception**
 
 ## Root cause (found, not fixed — fixing is not authorized in this window)
 
-`rag/retrieval/multi_route.py` calls `report_route_success()` (line 323) and `report_route_failure(exc)`
+`../rag/retrieval/multi_route.py` calls `report_route_success()` (line 323) and `report_route_failure(exc)`
 (line 327). Both names are defined in `rag/retrieval/health_bridge.py` and imported into
 `rag/retrieval/pipeline.py` — but **never imported into `multi_route.py`**. Verified in-container:
 `hasattr(multi_route, 'report_route_success') → False`.
@@ -145,7 +145,7 @@ Files created this window: `phase_b_p0_live_acceptance_result.json`, this report
 
 ## What the next window needs
 
-1. **Authorize the code fix** in `rag/retrieval/multi_route.py` — import the two bridge reporters (or drop the
+1. **Authorize the code fix** in `../rag/retrieval/multi_route.py` — import the two bridge reporters (or drop the
    calls and report the legs elsewhere). This is a one-line class of fix, but it is a code change and needed
    explicit authorization, so it was not made.
 2. **Add a binding gate**: import every deployed retrieval module and assert that every introduced reporter

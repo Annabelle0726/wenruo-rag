@@ -54,7 +54,7 @@ Two properties are demonstrated by this single event:
 
 ### 1.4 What the metrics currently cannot tell an operator (motivates P0-7)
 
-The grounding experiment (`deploy/p0_gates/leg_fallback_experiment.py`, zero external quota) shows that when the
+The grounding experiment (`../deploy/p0_gates/leg_fallback_experiment.py`, zero external quota) shows that when the
 dense leg fails, **`store_round_trips = 0`**: the route aborts before the store round trip, so lexical search
 never runs and **zero evidence** is returned. Consequence for operators:
 
@@ -75,9 +75,9 @@ Verified state of the deployment:
 
 | sink | present today? | evidence |
 | --- | --- | --- |
-| **Python logging → rotating file** | **YES** | `common/log_utils.py:40` `RotatingFileHandler(log_path, maxBytes=10MB, backupCount=5)`; files at `/ragflow/logs/{ragflow_server,admin_service,data_sync_*.log}`, bind-mounted to `docker/ragflow-logs` on the host |
+| **Python logging → rotating file** | **YES** | `common/log_utils.py:40` `RotatingFileHandler(log_path, maxBytes=10MB, backupCount=5)`; files at `/ragflow/logs/{ragflow_server,admin_service,data_sync_*.log}`, bind-mounted to `../docker/ragflow-logs` on the host |
 | **Langfuse (LLM tracing)** | **integrated but UNCONFIGURED** | `langfuse` imported in `dialog_service.py`, `TenantLangfuseService`, `trace_context`/`langfuse_session_id` threaded through model bundles — but `SELECT COUNT(*) FROM tenant_langfuse` = **0**, so no tenant has it enabled → effectively dead in this deployment |
-| **Metrics (`/metrics`, Prometheus, OTel)** | **ABSENT** | no `prometheus_client` / `opentelemetry` in first-party code (only vendored inside `litellm` in site-packages); `/metrics` → **404** on 9381 and connection-closed on 9383/9384; nothing in the Go `admin/` tree |
+| **Metrics (`/metrics`, Prometheus, OTel)** | **ABSENT** | no `prometheus_client` / `opentelemetry` in first-party code (only vendored inside `litellm` in site-packages); `/metrics` → **404** on 9381 and connection-closed on 9383/9384; nothing in the Go `../admin` tree |
 
 **Recommendation: log-first, one structured JSON line per retrieval, through the existing logger.**
 
