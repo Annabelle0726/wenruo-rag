@@ -1,0 +1,22 @@
+test(repair_gates): durable quote-health survival gate (RED/GREEN)
+
+Adds the harness that proves retrieval_health survival in async_chat's return
+reference is quote-independent:
+
+- quote_health_red_probe.py drives the real `async_chat` non-streaming branch
+  (real decorate_answer, real return statement, real structure_answer and
+  serialization downstream) over eight cases: quote on/off x authoritative
+  health present/absent x chunks present/absent. Assertions are absolute
+  statements of required behaviour, so the unrepaired source fails them and the
+  repaired source must pass them.
+- quote_health_red_wrapper.py neutralises only DB/provider seams (peewee
+  connect/cursor/execute_sql, ORM reads, model resolution, retriever ES
+  lookups). connection_context/atomic/transaction are deliberately left alone.
+- run_quote_health_matrix.ps1 runs both arms against the same container,
+  verifying the in-container file hash per arm, plus read-only identity checks
+  (base image == pre-repair candidate image) and the eight-file overlay hash
+  guard.
+
+Evidence: RED (77aef9dc) FAIL_AS_EXPECTED on cases B/F/G/H; GREEN (50cfd8d4)
+PASS 8/8 with base==candidate pre-repair IDENTICAL and overlay guard PASS.
+No product file changes in this commit.
