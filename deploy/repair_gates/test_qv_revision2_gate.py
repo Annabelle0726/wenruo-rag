@@ -47,6 +47,40 @@ def chunk(content, name="part3.pdf", doc_id="doc-a"):
     return {"chunk_id": "c1", "doc_id": doc_id, "docnm_kwd": name, "content_with_weight": content}
 
 
+def producer_recorded(content, name="part3.pdf", **kwargs):
+    """A fixture for a chunk the PRODUCER wrote: its leading ``[...] `` prefix is recorded as injected.
+
+    This is fixture construction, not boundary recovery. The tests that use it assert about a header the
+    ingest wrote, so the fixture records exactly what a producer records; the tests that assert the
+    fail-closed direction deliberately keep using :func:`chunk` with no provenance at all.
+    """
+    from rag.nlp.doc_context import LEGACY_PREFIX_VERSION, PREFIX_KIND_LEGACY, record_prefix
+
+    payload = chunk(content, name=name, **kwargs)
+    text = str(content)
+    prefix = text[: text.index("] ") + 2] if "] " in text else ""
+    if prefix and prefix.startswith("[标准号: "):
+        record_prefix(payload, prefix, PREFIX_KIND_LEGACY, LEGACY_PREFIX_VERSION)
+    return payload
+
+
+def producer_recorded(content, name="part3.pdf", **kwargs):
+    """A fixture for a chunk the PRODUCER wrote: its leading ``[...] `` prefix is recorded as injected.
+
+    This is fixture construction, not boundary recovery. The tests that use it assert about a header the
+    ingest wrote, so the fixture records exactly what a producer records; the tests that assert the
+    fail-closed direction deliberately keep using :func:`chunk` with no provenance at all.
+    """
+    from rag.nlp.doc_context import LEGACY_PREFIX_VERSION, PREFIX_KIND_LEGACY, record_prefix
+
+    payload = chunk(content, name=name, **kwargs)
+    text = str(content)
+    prefix = text[: text.index("] ") + 2] if "] " in text else ""
+    if prefix and prefix.startswith("[标准号: "):
+        record_prefix(payload, prefix, PREFIX_KIND_LEGACY, LEGACY_PREFIX_VERSION)
+    return payload
+
+
 # ===========================================================================
 # LAYER 1 (behaviour) - the unit adapter
 # ===========================================================================
@@ -191,19 +225,19 @@ BACKFILL_NAME = "220kV海底电力电缆系统采购标准+第2部分：220kV单
 
 
 def test_layer3_the_live_ingest_header_is_not_evidence():
-    table = chunk(f"{LIVE_HEADER}<table><tr><td>导体</td><td>铜</td></tr></table>", name=LIVE_CHUNK_NAME)
+    table = producer_recorded(f"{LIVE_HEADER}<table><tr><td>导体</td><td>铜</td></tr></table>", name=LIVE_CHUNK_NAME)
     assert carries_value(table, ("73237.1",)) is False
     assert carries_value(table, ("2026",)) is False
 
 
 def test_layer3_the_backfill_header_is_not_evidence():
-    table = chunk(f"{BACKFILL_HEADER}<table><tr><td>导体</td><td>铜</td></tr></table>", name=BACKFILL_NAME)
+    table = producer_recorded(f"{BACKFILL_HEADER}<table><tr><td>导体</td><td>铜</td></tr></table>", name=BACKFILL_NAME)
     assert carries_value(table, ("73286.2",)) is False
     assert carries_value(table, ("220",)) is False
 
 
 def test_layer3_the_body_figure_beside_a_header_is_still_evidence():
-    table = chunk(f"{BACKFILL_HEADER}<table><tr><td>800</td><td>3.9</td></tr></table>", name=BACKFILL_NAME)
+    table = producer_recorded(f"{BACKFILL_HEADER}<table><tr><td>800</td><td>3.9</td></tr></table>", name=BACKFILL_NAME)
     assert carries_value(table, ("800",)) is True
     assert paired_values(table, ("800",)) == {"800"}
 
@@ -221,7 +255,7 @@ def test_layer3_b_a_bracket_in_the_title_never_partially_deletes():
     title contains `]`. Cutting at the first `]` leaves the tail of the header behind AS IF it were
     evidence. For a header the producer cannot read back either, the only safe actions are all or nothing."""
     header = "[标准号: Q/GDW 73286.3 | 文档: 规范]附录.pdf | 章节: 4] "
-    table = chunk(f"{header}<table><tr><td>3.9</td></tr></table>", name="规范]附录.pdf")
+    table = producer_recorded(f"{header}<table><tr><td>3.9</td></tr></table>", name="规范]附录.pdf")
     text = _values_text(table)
     assert carries_value(table, ("73286.3",)) is False, text[:200]
     assert "附录.pdf" not in text, text[:200]
@@ -246,7 +280,7 @@ def test_layer3_an_unlabelled_leading_bracket_fails_closed():
 
 
 def test_layer3_a_verified_header_is_removed_whole_never_as_a_prefix():
-    text = _values_text(chunk(f"{BACKFILL_HEADER}<table><tr><td>3.9</td></tr></table>", name=BACKFILL_NAME))
+    text = _values_text(producer_recorded(f"{BACKFILL_HEADER}<table><tr><td>3.9</td></tr></table>", name=BACKFILL_NAME))
     assert not text.startswith("[标准号"), text[:120]
     assert "标准号" not in text and "芯数" not in text
     assert "3.9" in text

@@ -34,6 +34,15 @@ from the prefixed body, and the retrieval stage hands that same body to the mode
 question naming the standard number therefore matches the chunk lexically,
 semantically and visibly.
 
+**The prefix boundary is recorded, not re-derived.** Alongside the text this module
+writes four provenance fields (:data:`PREFIX_FIELDS`): the kind, the grammar version,
+the exact code-point extent of the injected prefix, and a hash of exactly those
+characters. A consumer that wants the passage's OWN text slices
+``content_with_weight[extent:]`` after verifying the hash, and otherwise treats the
+whole content as evidence. The text is never parsed to recover the boundary, because a
+document's own prose can begin with bytes identical to a prefix - which is also why the
+injection check below asks provenance, not the text, whether a prefix is already there.
+
 Injection is conditional by design: a document that declares no standard number
 keeps byte-identical chunks, so ordinary documents are untouched.
 
@@ -44,9 +53,113 @@ The Go ingestion backend implements the same policy in
 import re
 from typing import Any, Dict, Iterable, List, Sequence
 
-#: Starts every injected prefix and doubles as the idempotency marker — a re-run
-#: must not stack a second prefix on a chunk that already carries one.
+import xxhash
+
+#: Starts every injected prefix. It is the format's opening marker, NOT an idempotency
+#: authority: whether a chunk already carries a prefix is decided by
+#: :func:`verified_prefix_extent`, because a document's own body can start with these
+#: exact bytes.
 CONTEXT_PREFIX_OPEN = "[标准号: "
+
+# --- Injected-prefix provenance contract ------------------------------------
+#
+#: The four fields a producer writes when it injects a prefix. All four names are typed
+#: and stored by the chunk index's existing dynamic templates (`*_kwd` -> keyword,
+#: `*_int` -> integer, both stored), so no mapping change is needed.
+PREFIX_KIND_FIELD = "content_prefix_kind_kwd"
+PREFIX_VERSION_FIELD = "content_prefix_version_int"
+PREFIX_CHARS_FIELD = "content_prefix_chars_int"
+PREFIX_HASH_FIELD = "content_prefix_hash_kwd"
+PREFIX_FIELDS = (PREFIX_KIND_FIELD, PREFIX_VERSION_FIELD, PREFIX_CHARS_FIELD, PREFIX_HASH_FIELD)
+
+#: `kind` values. `none` (and an absent field) mean "no prefix was recorded here", which
+#: is the truthful answer for legacy chunks and for content a human edited.
+PREFIX_NONE = "none"
+PREFIX_KIND_LEGACY = "identity_legacy"
+PREFIX_KIND_PROFILE = "identity_profile"
+
+#: Grammar versions: 1 = this module's `标准号|文档|章节` line, 2 = the projection
+#: module's profile header.
+LEGACY_PREFIX_VERSION = 1
+PROFILE_PREFIX_VERSION = 2
+
+
+def prefix_hash(prefix: str) -> str:
+    """The hash a consumer verifies: xxhash64 (hex) of the exact injected characters."""
+    return xxhash.xxh64(str(prefix or "").encode("utf-8")).hexdigest()
+
+
+def record_prefix(chunk: Dict[str, Any], prefix: str, kind: str = PREFIX_KIND_LEGACY, version: int = LEGACY_PREFIX_VERSION) -> None:
+    """Record that ``prefix`` was injected at position 0 of this chunk's content.
+
+    Called by the producer immediately after it prepends, never by a reader: the extent is
+    what the producer WROTE, which is the only way to know where a prefix ends.
+    """
+    extent = len(str(prefix or ""))
+    chunk[PREFIX_KIND_FIELD] = kind
+    chunk[PREFIX_VERSION_FIELD] = int(version)
+    chunk[PREFIX_CHARS_FIELD] = extent
+    chunk[PREFIX_HASH_FIELD] = prefix_hash(prefix) if extent else ""
+
+
+def clear_prefix(chunk: Dict[str, Any]) -> None:
+    """State that this chunk has no recorded prefix (legacy, or content a human changed)."""
+    chunk[PREFIX_KIND_FIELD] = PREFIX_NONE
+    chunk[PREFIX_VERSION_FIELD] = 0
+    chunk[PREFIX_CHARS_FIELD] = 0
+    chunk[PREFIX_HASH_FIELD] = ""
+
+
+def verified_prefix_extent(chunk: Dict[str, Any]) -> int | None:
+    """The extent of the injected prefix, or ``None`` when it cannot be PROVEN.
+
+    The invariant: a kind other than ``none``, an integer extent in range, and a hash of
+    ``content[:extent]`` that matches what the producer recorded. Anything else - missing
+    fields, a string extent, a negative or out-of-range extent, an unknown kind, one
+    byte changed anywhere in the prefix or the body - returns ``None``, and the caller
+    must then treat the whole content as the passage's text.
+    """
+    kind = chunk.get(PREFIX_KIND_FIELD)
+    if not isinstance(kind, str) or not kind or kind == PREFIX_NONE:
+        return None
+    extent = chunk.get(PREFIX_CHARS_FIELD)
+    if isinstance(extent, bool) or not isinstance(extent, int) or extent <= 0:
+        return None
+    content = chunk.get("content_with_weight")
+    if not isinstance(content, str) or extent > len(content):
+        return None
+    digest = chunk.get(PREFIX_HASH_FIELD)
+    if not isinstance(digest, str) or not digest:
+        return None
+    return extent if prefix_hash(content[:extent]) == digest else None
+
+
+def split_prefix(chunk: Dict[str, Any]) -> tuple[str, str]:
+    """``(prefix, body)`` - the body being the whole content unless provenance proves a prefix."""
+    content = str(chunk.get("content_with_weight") or "")
+    extent = verified_prefix_extent(chunk)
+    if extent is None:
+        return "", content
+    return content[:extent], content[extent:]
+
+
+def invalidation_after_edit(chunk: Dict[str, Any], new_content: str, previous_content: str | None = None) -> None:
+    """Clear recorded provenance for a manual edit, unless the prefix bytes are unchanged.
+
+    Call it BEFORE assigning ``new_content`` to the chunk, or pass the content that is still
+    stored as ``previous_content`` (an update path that builds the replacement field set
+    first has to do the latter). Editing only the body keeps the prefix, and with it the
+    provenance; any other edit - including a rewrite of the prefix itself - clears it, so a
+    stale extent can never be inherited by content it does not describe. A caller that
+    assigns first and calls afterwards simply gets the fail-closed answer, which is also
+    correct.
+    """
+    content = str(new_content or "")
+    before = str(chunk.get("content_with_weight") or "") if previous_content is None else str(previous_content or "")
+    extent = verified_prefix_extent({**chunk, "content_with_weight": before})
+    if extent is not None and content.startswith(before[:extent]):
+        return
+    clear_prefix(chunk)
 
 #: Scan bounds. A standard number identifying the document is declared on the
 #: cover page (and often repeated in the running header), so the leading chunks
@@ -149,11 +262,16 @@ def apply_document_context(chunks: Sequence[Dict[str, Any]], doc_name: str, lang
             # Media-only chunks keep their retrievable content in the media
             # context fields, which this prefix does not cover.
             continue
-        if body.lstrip().startswith(CONTEXT_PREFIX_OPEN):
+        if verified_prefix_extent(ck) is not None:
+            # Provenance says a prefix is already here. The TEXT cannot say it: a body
+            # that happens to start with `[标准号: ` is a body, and skipping it would
+            # leave the chunk without the standard number it belongs to.
             continue
-        ck["content_with_weight"] = render_document_context(standard_id, title, sections[index]) + body
+        header = render_document_context(standard_id, title, sections[index])
+        ck["content_with_weight"] = header + body
         ck["content_ltks"] = _prepend_tokens(prefix_tks, ck.get("content_ltks"))
         ck["content_sm_ltks"] = _prepend_tokens(prefix_sm_tks, ck.get("content_sm_ltks"))
+        record_prefix(ck, header, PREFIX_KIND_LEGACY, LEGACY_PREFIX_VERSION)
         prefixed += 1
     return prefixed
 

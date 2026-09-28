@@ -46,9 +46,10 @@ import (
 // Injection is deliberately conditional: a document that declares no standard
 // number keeps byte-identical chunks, so ordinary documents are untouched.
 
-// contextPrefixOpen starts every injected prefix and doubles as the idempotency
-// marker — a resumed or re-fed pipeline must not stack a second prefix on a
-// chunk that already carries one.
+// contextPrefixOpen starts every injected prefix. It is the format's opening marker, NOT
+// an idempotency authority: whether a chunk already carries a prefix is decided by
+// verifiedPrefixExtent (see prefixprovenance.go), because a document's own body can start
+// with these exact bytes.
 const contextPrefixOpen = "[标准号: "
 
 const (
@@ -133,10 +134,15 @@ func attachDocumentContext(chunks []map[string]any, docName string) {
 		if !ok || strings.TrimSpace(text) == "" {
 			continue
 		}
-		if strings.HasPrefix(strings.TrimSpace(text), contextPrefixOpen) {
+		if verifiedPrefixExtent(chunks[i]) != nil {
+			// Provenance says a prefix is already here. The TEXT cannot say it: a body that
+			// happens to start with contextPrefixOpen is a body, and skipping it would leave
+			// the chunk without the standard number it belongs to.
 			continue
 		}
-		chunks[i]["text"] = renderDocumentContext(standardID, title, sections[i]) + text
+		header := renderDocumentContext(standardID, title, sections[i])
+		chunks[i]["text"] = header + text
+		recordPrefix(chunks[i], header, prefixKindLegacy, legacyPrefixVersion)
 	}
 }
 

@@ -1,0 +1,121 @@
+{
+ "purpose": "G8/G9: producer and consumer, previous revision vs this one",
+ "before": {
+  "producer": {
+   "clause": {
+    "content_with_weight": "[标准号: Q/GDW 73286.2-2026 | 文档: Q/GDW 73286.2-2026 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技 | 章节: 5.3.4 内衬层厚度应不小于1.5mm] 5.3.4 内衬层厚度应不小于1.5mm。",
+    "chunk_id": "a69a3106f454bc15",
+    "content_ltks": "标准 号 q gdw 73286 2 2026 文档 q gdw 73286 2 2026 220kv 海底 电力电缆 系统 采购 标准 第 2 部分 220kv 单 芯 海底 电力电缆 系统 专用 技 body tks",
+    "content_sm_ltks": "标准 号 q gdw 73286 2 2026 文档 q gdw 73286 2 2026 220kv 海底 电力 电缆 系统 采购 标准 第 2 部分 220kv 单 芯 海底 电力 电缆 系统 专用 技 body sm tks",
+    "embedding_input": "[标准号: Q/GDW 73286.2-2026 | 文档: Q/GDW 73286.2-2026 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技 | 章节: 5.3.4 内衬层厚度应不小于1.5mm] 5.3.4 内衬层厚度应不小于1.5mm。",
+    "provenance": {}
+   },
+   "table": {
+    "content_with_weight": "[标准号: Q/GDW 73286.2-2026 | 文档: Q/GDW 73286.2-2026 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技] <table><caption>表1</caption><tr><td>1×800</td><td>3.9</td></tr></table>",
+    "chunk_id": "094c900c91297ca9",
+    "content_ltks": "标准 号 q gdw 73286 2 2026 文档 q gdw 73286 2 2026 220kv 海底 电力电缆 系统 采购 标准 第 2 部分 220kv 单 芯 海底 电力电缆 系统 专用 技 body tks",
+    "content_sm_ltks": "标准 号 q gdw 73286 2 2026 文档 q gdw 73286 2 2026 220kv 海底 电力 电缆 系统 采购 标准 第 2 部分 220kv 单 芯 海底 电力 电缆 系统 专用 技 body sm tks",
+    "embedding_input": "[标准号: Q/GDW 73286.2-2026 | 文档: Q/GDW 73286.2-2026 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技] <table><caption>表1</caption><tr><td>1×800</td><td>3.9</td></tr></table>",
+    "provenance": {}
+   },
+   "look_alike": {
+    "content_with_weight": "[标准号: GB/T 10666-1997 | 文档: 某产品标准] 原文引用。",
+    "chunk_id": "aac0fefec2f84dfd",
+    "content_ltks": "body tks",
+    "content_sm_ltks": "body sm tks",
+    "embedding_input": "[标准号: GB/T 10666-1997 | 文档: 某产品标准] 原文引用。",
+    "provenance": {}
+   }
+  },
+  "consumer": {
+   "body": "3.9",
+   "carries": true
+  }
+ },
+ "after": {
+  "producer": {
+   "clause": {
+    "content_with_weight": "[标准号: Q/GDW 73286.2-2026 | 文档: Q/GDW 73286.2-2026 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技 | 章节: 5.3.4 内衬层厚度应不小于1.5mm] 5.3.4 内衬层厚度应不小于1.5mm。",
+    "chunk_id": "a69a3106f454bc15",
+    "content_ltks": "标准 号 q gdw 73286 2 2026 文档 q gdw 73286 2 2026 220kv 海底 电力电缆 系统 采购 标准 第 2 部分 220kv 单 芯 海底 电力电缆 系统 专用 技 body tks",
+    "content_sm_ltks": "标准 号 q gdw 73286 2 2026 文档 q gdw 73286 2 2026 220kv 海底 电力 电缆 系统 采购 标准 第 2 部分 220kv 单 芯 海底 电力 电缆 系统 专用 技 body sm tks",
+    "embedding_input": "[标准号: Q/GDW 73286.2-2026 | 文档: Q/GDW 73286.2-2026 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技 | 章节: 5.3.4 内衬层厚度应不小于1.5mm] 5.3.4 内衬层厚度应不小于1.5mm。",
+    "provenance": {
+     "content_prefix_chars_int": 120,
+     "content_prefix_hash_kwd": "2ba47329ce7d95f4",
+     "content_prefix_kind_kwd": "identity_legacy",
+     "content_prefix_version_int": 1
+    }
+   },
+   "table": {
+    "content_with_weight": "[标准号: Q/GDW 73286.2-2026 | 文档: Q/GDW 73286.2-2026 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技] <table><caption>表1</caption><tr><td>1×800</td><td>3.9</td></tr></table>",
+    "chunk_id": "094c900c91297ca9",
+    "content_ltks": "标准 号 q gdw 73286 2 2026 文档 q gdw 73286 2 2026 220kv 海底 电力电缆 系统 采购 标准 第 2 部分 220kv 单 芯 海底 电力电缆 系统 专用 技 body tks",
+    "content_sm_ltks": "标准 号 q gdw 73286 2 2026 文档 q gdw 73286 2 2026 220kv 海底 电力 电缆 系统 采购 标准 第 2 部分 220kv 单 芯 海底 电力 电缆 系统 专用 技 body sm tks",
+    "embedding_input": "[标准号: Q/GDW 73286.2-2026 | 文档: Q/GDW 73286.2-2026 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技] <table><caption>表1</caption><tr><td>1×800</td><td>3.9</td></tr></table>",
+    "provenance": {
+     "content_prefix_chars_int": 93,
+     "content_prefix_hash_kwd": "c0dcccc6749e1a9a",
+     "content_prefix_kind_kwd": "identity_legacy",
+     "content_prefix_version_int": 1
+    }
+   },
+   "look_alike": {
+    "content_with_weight": "[标准号: Q/GDW 73286.2-2026 | 文档: Q/GDW 73286.2-2026 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技] [标准号: GB/T 10666-1997 | 文档: 某产品标准] 原文引用。",
+    "chunk_id": "369fe7f252a6443e",
+    "content_ltks": "标准 号 q gdw 73286 2 2026 文档 q gdw 73286 2 2026 220kv 海底 电力电缆 系统 采购 标准 第 2 部分 220kv 单 芯 海底 电力电缆 系统 专用 技 body tks",
+    "content_sm_ltks": "标准 号 q gdw 73286 2 2026 文档 q gdw 73286 2 2026 220kv 海底 电力 电缆 系统 采购 标准 第 2 部分 220kv 单 芯 海底 电力 电缆 系统 专用 技 body sm tks",
+    "embedding_input": "[标准号: Q/GDW 73286.2-2026 | 文档: Q/GDW 73286.2-2026 220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技] [标准号: GB/T 10666-1997 | 文档: 某产品标准] 原文引用。",
+    "provenance": {
+     "content_prefix_chars_int": 93,
+     "content_prefix_hash_kwd": "c0dcccc6749e1a9a",
+     "content_prefix_kind_kwd": "identity_legacy",
+     "content_prefix_version_int": 1
+    }
+   }
+  },
+  "consumer": {
+   "body": "[标准号: q/gdw 73286.2-2026 | 文档: 规范]附录.pdf] 3.9",
+   "carries": true
+  }
+ },
+ "checks": {
+  "clause.content_with_weight.unchanged": true,
+  "clause.chunk_id.unchanged": true,
+  "clause.content_ltks.unchanged": true,
+  "clause.content_sm_ltks.unchanged": true,
+  "clause.embedding_input.unchanged": true,
+  "clause.provenance_before_is_empty": true,
+  "clause.provenance_after_is_recorded": true,
+  "table.content_with_weight.unchanged": true,
+  "table.chunk_id.unchanged": true,
+  "table.content_ltks.unchanged": true,
+  "table.content_sm_ltks.unchanged": true,
+  "table.embedding_input.unchanged": true,
+  "table.provenance_before_is_empty": true,
+  "table.provenance_after_is_recorded": true,
+  "look_alike.content_with_weight.unchanged": false,
+  "look_alike.chunk_id.unchanged": false,
+  "look_alike.content_ltks.unchanged": false,
+  "look_alike.content_sm_ltks.unchanged": false,
+  "look_alike.embedding_input.unchanged": false,
+  "look_alike.provenance_before_is_empty": true,
+  "look_alike.provenance_after_is_recorded": true,
+  "collision_fixture_was_skipped_before": true,
+  "collision_fixture_is_prefixed_now": true,
+  "collision_fixture_only_gained_a_prefix": true,
+  "old_consumer_on_new_chunk": {
+   "body": "3.9",
+   "carries": true
+  },
+  "new_consumer_on_unprovenanced_chunk": {
+   "body": "[标准号: q/gdw 73286.2-2026 | 文档: 规范]附录.pdf] 3.9",
+   "carries": true
+  }
+ },
+ "verdict": {
+  "corpus_bytes_frozen_outside_the_collision_fixture": true,
+  "collision_fixture_fixed_as_intended": true,
+  "provenance_is_additive_only": true
+ }
+}

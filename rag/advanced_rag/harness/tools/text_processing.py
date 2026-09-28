@@ -12,6 +12,8 @@ navigation).
 import hashlib
 import logging
 import re
+
+from rag.nlp.doc_context import clear_prefix
 from functools import lru_cache
 
 _LOG = logging.getLogger(__name__)
@@ -498,6 +500,9 @@ def _rewrite_payloads(chunks: list[dict], kwds: list[str], *, drop_unmatched: bo
             continue
         dedup.add(payload_hash)
         ck["content_with_weight"] = payload
+        # The payload is this stage's own text, so a recorded ingest prefix no longer describes the
+        # content: state that no prefix is recorded rather than leave a stale extent behind.
+        clear_prefix(ck)
         if "content" in ck:
             ck["content"] = payload
         ck.pop("highlight", None)

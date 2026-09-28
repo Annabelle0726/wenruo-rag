@@ -154,21 +154,37 @@ _REFERENCE_NUMBER_RE = re.compile(
 VALUE_RESULT_WINDOW = 20
 
 
+def _body_text(chunk: dict) -> str:
+    """The passage's OWN text: the recorded body, or the whole content when nothing is recorded.
+
+    The injected prefix is not evidence - it names the document, its voltage class and its section, and
+    the pipeline wrote it - so a passage's own text starts after it. Where that boundary is comes from the
+    PRODUCER's record (:data:`rag.nlp.doc_context.PREFIX_FIELDS`: the exact code-point extent, verified
+    against a hash of those characters), never from parsing the text: a document's own prose can begin
+    with bytes identical to a prefix, and no pattern can tell the two apart.
+
+    Failing closed is the rule. Missing, malformed, unverifiable or stale provenance means the whole
+    content is treated as the passage's own text, which can over-count metadata as evidence but can never
+    delete a document's own words.
+    """
+    content = _content(chunk)
+    try:
+        from rag.nlp.doc_context import split_prefix
+    except Exception:  # a build without the producer module: the whole content is evidence
+        return content
+    _prefix, body = split_prefix(chunk)
+    return body
+
+
 def _values_text(chunk: dict) -> str:
     """The passage's OWN evidence as flat text, for matching figures written either way.
 
-    The ingest's identity preamble is removed first, by the boundary its own producer uses
-    (:func:`_strip_ingest_preamble`). It is not evidence: it names the document, its voltage class and
-    its section, and it is written by the pipeline rather than by the document. Left in place it made
-    every table in a standards corpus "carry" the question's figures - the standard number is in every
-    one of their headers - which turned the rule that exists to tell a table that merely LISTS the
-    question's figures from one that PAIRS them into a flat penalty on the whole type.
-
-    Only a VERIFIED preamble goes (see :func:`_strip_ingest_preamble`): the removal is evidence-checked
-    against the passage's own stored document name, so a figure that also occurs in the document's body -
-    the answering table beside the header, or a bracketed clause the document itself wrote - still matches.
+    Left in place, the ingest prefix made every table in a standards corpus "carry" the question's
+    figures - the standard number is in every one of their headers - which turned the rule that exists to
+    tell a table that merely LISTS the question's figures from one that PAIRS them into a flat penalty on
+    the whole type. It is therefore excluded by provenance, and only when the producer's record verifies.
     """
-    return _plain(_strip_ingest_preamble(_content(chunk), chunk))
+    return _plain(_body_text(chunk))
 
 
 def number_tokens(chunk: dict) -> set[str]:
@@ -260,122 +276,6 @@ def table_family_key(chunk: dict) -> str | None:
 def _plain(text: str) -> str:
     text = re.sub(r"<[^>]+>", " ", str(text or ""))
     return re.sub(r"\s+", " ", text).strip().lower()
-
-
-#: The producer's own opening marker, ``rag/nlp/doc_context.CONTEXT_PREFIX_OPEN``. Both producers of the
-#: header start with it (the legacy one by construction, the Phase-A projection because a profile's first
-#: identity field is 标准号), so it is the one thing a leading candidate must have before anything else is
-#: considered. It is a producer constant, not a pattern this module invented.
-_CONTEXT_PREFIX_OPEN = "[标准号: "
-
-#: The header's field labels, taken from the producers' own declarations: the legacy three from
-#: `doc_context.render_document_context`, the rest from `retrieval_projection.PROFILES`. Used only to
-#: check that a candidate block really IS a field list; a label outside this set makes verification fail,
-#: and failing verification means STRIP NOTHING.
-_HEADER_FALLBACK_LABELS = frozenset({"标准号", "文档", "章节", "电压", "芯数", "线缆类别", "敷设环境", "纤芯数"})
-
-
-def _header_labels() -> frozenset[str]:
-    """The producers' field labels, from `retrieval_projection` when the build ships it."""
-    try:
-        from rag.nlp.retrieval_projection import PROFILES, SECTION_FIELD, profile_fields
-    except Exception:
-        return _HEADER_FALLBACK_LABELS
-    labels = {field.label for profile in PROFILES.values() for field in profile_fields(profile)}
-    labels.add(SECTION_FIELD.label)
-    return frozenset(labels) | _HEADER_FALLBACK_LABELS
-
-
-def _document_names(chunk: dict) -> set[str]:
-    """The names the header's title field could legitimately carry, from the STORED document name."""
-    name = document_name(chunk)
-    if not name:
-        return set()
-    names = {name}
-    try:
-        from rag.nlp.doc_context import document_title
-    except Exception:
-        names.add(re.sub(r"\.[A-Za-z]{1,6}$", "", name).strip())
-        return names
-    title = document_title(name)
-    if title:
-        names.add(title)
-    return names
-
-
-def _verified_header_end(text: str, chunk: dict) -> int | None:
-    """Where a VERIFIED ingest header ends, or ``None`` when it cannot be proven.
-
-    The audit's ``METADATA_BOUNDARY_VERDICT = BLOCKING_AMBIGUITY`` was about shape: a leading bracketed
-    block cannot be classified as injected or authored by looking at the bracket. This does not look at the
-    bracket. It looks for the one thing that a leading field list has and an authored bracket does not - a
-    ``文档``/``title`` field that EQUALS the document name the doc store returned with the passage
-    (``docnm_kwd``, or that name without its extension, which is what the legacy producer writes).
-
-    Consequences, all of them requirements of the audit's section 2:
-
-    * every field of the candidate block must parse as ``label: value`` with a label the PRODUCERS declare,
-      so an authored bracket such as ``[800 mm²：厚度3.9 mm]`` is never a candidate at all;
-    * candidates are tried at EVERY closing bracket in the leading block, so a title that itself contains
-      ``]`` is matched at its true end and the whole header goes - a header the producer's own regex cannot
-      read back is deleted WHOLE or not at all, never partially;
-    * a mismatch anywhere, or a passage with no stored document name, returns ``None`` and nothing is
-      removed. Failing closed costs evidence cleanliness; failing open costs the document's own text.
-    """
-    if not text.startswith(_CONTEXT_PREFIX_OPEN):
-        return None
-    names = _document_names(chunk)
-    if not names:
-        return None
-    labels = _header_labels()
-    limit = text.find("\n")
-    window = text if limit == -1 else text[:limit]
-    for close in range(1, len(window)):
-        if window[close] != "]":
-            continue
-        fields = window[1:close].split(" | ")
-        parsed: list[tuple[str, str]] = []
-        for field in fields:
-            label, separator, value = field.partition(": ")
-            if not separator or label not in labels:
-                parsed = []
-                break
-            parsed.append((label, value.strip()))
-        if not parsed:
-            continue
-        title = next((value for label, value in parsed if label in ("文档", "标题", "title")), "")
-        if title and title in names:
-            return close + 1
-    return None
-
-
-def _strip_ingest_preamble(text: str, chunk: dict) -> str:
-    """Drop a VERIFIED ingest header from the head of a passage, and nothing else.
-
-    The boundary is provenance-backed rather than inferred: :func:`_verified_header_end` accepts a leading
-    field list only when its title field equals the stored document name. When it cannot be verified the
-    text is returned untouched - the whole string is then treated as the passage's own evidence, which is
-    the conservative direction the audit demanded ("无法证明来源时宁可不 strip").
-
-    LIMITATION, reported rather than papered over: the deployed index stores NO provenance for the injected
-    header - it exists only inside ``content_with_weight`` (verified by reading the live mapping: the only
-    fields are ``content_with_weight``/``content_ltks``/``content_sm_ltks``/``docnm_kwd``/``title_tks``/
-    ``doc_id``/``kb_id``/… and none of them records an injected extent). The stored document name is the
-    one structured field a consumer can check against, and it makes the boundary verifiable for every
-    header either producer writes today, but it is not a byte-level record of what was injected: a body
-    that opens with a field list whose title field reproduces the document name exactly would still be
-    read as metadata. The deterministic fix is a producer-side representation change (see the window
-    report's METADATA_REPRESENTATION_DECISION), which this window reports as a contract boundary instead
-    of guessing around it.
-    """
-    body = str(text or "")
-    if not body.startswith(_CONTEXT_PREFIX_OPEN):
-        return body
-    end = _verified_header_end(body, chunk)
-    if end is None:
-        return body
-    remainder = body[end:]
-    return remainder[1:] if remainder.startswith(" ") else remainder
 
 
 def document_key(chunk: dict) -> str:

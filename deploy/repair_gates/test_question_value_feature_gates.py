@@ -66,7 +66,14 @@ def chunk(content, doc_id="doc-a", name=HEADER_DOCUMENT):
     header to be recognised as injected must name the document the header names, because that equality IS
     the check. Without it nothing is stripped - the fail-closed direction, asserted in
     `test_qv_revision2_gate.py::test_layer3_missing_document_name_fails_closed`."""
-    return {"chunk_id": "c1", "doc_id": doc_id, "docnm_kwd": name, "content_with_weight": content}
+    payload = {"chunk_id": "c1", "doc_id": doc_id, "docnm_kwd": name, "content_with_weight": content}
+    # A fixture that expects a LEADING INGEST HEADER to be metadata must record it the way the
+    # producer does: the boundary comes from provenance now, not from the bracket's shape.
+    if content.startswith(HEADER):
+        from rag.nlp.doc_context import LEGACY_PREFIX_VERSION, PREFIX_KIND_LEGACY, record_prefix
+
+        record_prefix(payload, HEADER + " ", PREFIX_KIND_LEGACY, LEGACY_PREFIX_VERSION)
+    return payload
 
 
 def pool_with(value, size=20, hits=None):

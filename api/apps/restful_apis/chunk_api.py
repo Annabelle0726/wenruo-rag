@@ -71,6 +71,7 @@ from common.string_utils import is_content_empty, remove_redundant_spaces
 from common.tag_feature_utils import validate_tag_features
 from rag.app.tag import label_question
 from rag.nlp import search
+from rag.nlp.doc_context import PREFIX_FIELDS, invalidation_after_edit
 from rag.prompts.generator import cross_languages, keyword_extraction
 
 
@@ -1391,6 +1392,14 @@ async def update_chunk(tenant_id, dataset_id, document_id, chunk_id):
     d = {"id": chunk_id, "content_with_weight": content}
     d["content_ltks"] = rag_tokenizer.tokenize(d["content_with_weight"])
     d["content_sm_ltks"] = rag_tokenizer.fine_grained_tokenize(d["content_ltks"])
+    # A manual edit mutates the content, so any recorded ingest-prefix provenance has to be
+    # re-decided: it survives only when the edited content still begins with the exact prefix
+    # bytes the producer recorded, and is cleared otherwise, so a stale extent can never
+    # describe text it was not written for.
+    for prefix_field in PREFIX_FIELDS:
+        if prefix_field in chunk:
+            d[prefix_field] = chunk[prefix_field]
+    invalidation_after_edit(d, d["content_with_weight"], previous_content=chunk.get("content_with_weight"))
     if "important_keywords" in req:
         if not isinstance(req["important_keywords"], list):
             return get_error_data_result("`important_keywords` should be a list")

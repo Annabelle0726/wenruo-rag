@@ -440,6 +440,30 @@ def project_chunk(stored_body: str, metadata: CanonicalMetadata, section: str = 
     return header, retrieval_text(stored_body, header)
 
 
+def apply_projection(chunk: dict, metadata: CanonicalMetadata, section: str = "") -> dict:
+    """Replace a chunk's prefix with the profile header and record provenance for what was WRITTEN.
+
+    The extent recorded here describes the header THIS function prepended - it is not inferred from the
+    text - but it is only claimed when the input's own prefix was already proven, because the body has to
+    come from somewhere: with verified provenance the body is ``content[extent:]`` exactly, and without it
+    this falls back to the legacy text replacement (:func:`retrieval_text`, whose inverse is a parse) and
+    records ``kind: none``. A re-projected legacy chunk therefore stays unprovenanced and a consumer treats
+    its whole text as evidence - deliberately, since a boundary this module did not observe is not one it
+    may certify.
+    """
+    from rag.nlp.doc_context import PROFILE_PREFIX_VERSION, PREFIX_KIND_PROFILE, clear_prefix, record_prefix, split_prefix, verified_prefix_extent
+
+    proven = verified_prefix_extent(chunk) is not None
+    stored_body = str(chunk.get("content_with_weight") or "")
+    header, text = project_chunk(stored_body if not proven else split_prefix(chunk)[1], metadata, section)
+    chunk["content_with_weight"] = text
+    if proven:
+        record_prefix(chunk, header, PREFIX_KIND_PROFILE, PROFILE_PREFIX_VERSION)
+    else:
+        clear_prefix(chunk)
+    return chunk
+
+
 def token_fields(body: str, *, language: str = "Chinese") -> dict[str, str]:
     """The lexical fields a stored body must carry - THE re-tokenization, and the only one.
 

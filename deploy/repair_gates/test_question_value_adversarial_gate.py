@@ -31,6 +31,23 @@ def chunk(content, doc_id="doc-a", name="part3.pdf"):
     return {"chunk_id": "c1", "doc_id": doc_id, "docnm_kwd": name, "content_with_weight": content}
 
 
+def producer_recorded(content, name="part3.pdf", **kwargs):
+    """A fixture for a chunk the PRODUCER wrote: its leading ``[...] `` prefix is recorded as injected.
+
+    This is fixture construction, not boundary recovery. The tests that use it assert about a header the
+    ingest wrote, so the fixture records exactly what a producer records; the tests that assert the
+    fail-closed direction deliberately keep using :func:`chunk` with no provenance at all.
+    """
+    from rag.nlp.doc_context import LEGACY_PREFIX_VERSION, PREFIX_KIND_LEGACY, record_prefix
+
+    payload = chunk(content, name=name, **kwargs)
+    text = str(content)
+    prefix = text[: text.index("] ") + 2] if "] " in text else ""
+    if prefix and prefix.startswith("[标准号: "):
+        record_prefix(payload, prefix, PREFIX_KIND_LEGACY, LEGACY_PREFIX_VERSION)
+    return payload
+
+
 # ---------------------------------------------------------------------------
 # A. technical measurements: unit-aware, and no unit is hardcoded
 # ---------------------------------------------------------------------------
@@ -206,7 +223,7 @@ TABLE_CELL_QUOTE = "<table><tr><td>原文要求 [标准号: GB/T 10000 | 电压:
 
 
 def test_e_the_leading_header_is_metadata_not_evidence():
-    table = chunk(PRODUCTION_HEADER, name="220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf")
+    table = producer_recorded(PRODUCTION_HEADER, name="220kV海底电力电缆系统采购标准+第2部分：220kV单芯海底电力电缆系统专用技术规范.pdf")
     for value in ("73286.2", "220"):
         assert carries_value(table, (value,)) is False, value
     assert carries_value(table, ("3.9",)) is True
@@ -217,7 +234,7 @@ def test_e_the_deployed_ingest_s_legacy_header_is_also_stripped():
     `[标准号: … | 文档: … | 章节: …]` (`doc_context`, the only one the image ships), while the Phase A
     backfill wrote the domain-attribute shape (`retrieval_projection`, run from the repository). Both
     verify against the same stored document name - and a header that cannot be verified is not removed."""
-    table = chunk(LEGACY_HEADER, name="450/750V聚氯乙烯绝缘电缆采购标准+第2部分：专用技术规范.pdf")
+    table = producer_recorded(LEGACY_HEADER, name="450/750V聚氯乙烯绝缘电缆采购标准+第2部分：专用技术规范.pdf")
     assert carries_value(table, ("73289.2",)) is False
     assert carries_value(table, ("2026",)) is False
 

@@ -56,7 +56,14 @@ MODEL = "WDZC-YJY-0.6/1kV 3×25 电缆的载流量是多少？"
 
 
 def chunk(content: str, name: str = HEADER_NAME) -> dict:
-    return {"chunk_id": "c1", "docnm_kwd": name, "content_with_weight": content}
+    payload = {"chunk_id": "c1", "docnm_kwd": name, "content_with_weight": content}
+    # A fixture that expects a LEADING INGEST HEADER to be metadata must record it the way the
+    # producer does: the boundary comes from provenance now, not from the bracket's shape.
+    if content.startswith(HEADER):
+        from rag.nlp.doc_context import LEGACY_PREFIX_VERSION, PREFIX_KIND_LEGACY, record_prefix
+
+        record_prefix(payload, HEADER + " ", PREFIX_KIND_LEGACY, LEGACY_PREFIX_VERSION)
+    return payload
 
 
 def pool_of(value: str, size: int, carrying: int) -> list[dict]:

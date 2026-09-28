@@ -31,6 +31,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import xxhash
 from common import settings
+from rag.nlp.doc_context import clear_prefix
 from rag.svr.task_executor_refactor.embedding_utils import EmbeddingUtils
 from rag.flow.pipeline import Pipeline
 
@@ -338,6 +339,9 @@ class DataflowService:
 
             if "content_with_weight" not in ck:
                 ck["content_with_weight"] = text
+                # This stage authored the content, so any ingest-prefix provenance that came with the
+                # chunk cannot describe it: state that no prefix is recorded rather than leave a stale one.
+                clear_prefix(ck)
             ck.pop("text", None)
 
             if "positions" in ck:

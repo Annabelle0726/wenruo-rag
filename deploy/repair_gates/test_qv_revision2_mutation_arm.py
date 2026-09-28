@@ -27,6 +27,23 @@ def chunk(content, name="part3.pdf"):
     return {"chunk_id": "c1", "doc_id": "doc-a", "docnm_kwd": name, "content_with_weight": content}
 
 
+def producer_recorded(content, name="part3.pdf", **kwargs):
+    """A fixture for a chunk the PRODUCER wrote: its leading ``[...] `` prefix is recorded as injected.
+
+    This is fixture construction, not boundary recovery. The tests that use it assert about a header the
+    ingest wrote, so the fixture records exactly what a producer records; the tests that assert the
+    fail-closed direction deliberately keep using :func:`chunk` with no provenance at all.
+    """
+    from rag.nlp.doc_context import LEGACY_PREFIX_VERSION, PREFIX_KIND_LEGACY, record_prefix
+
+    payload = chunk(content, name=name, **kwargs)
+    text = str(content)
+    prefix = text[: text.index("] ") + 2] if "] " in text else ""
+    if prefix and prefix.startswith("[标准号: "):
+        record_prefix(payload, prefix, PREFIX_KIND_LEGACY, LEGACY_PREFIX_VERSION)
+    return payload
+
+
 # ---------------------------------------------------------------------------
 # MUTANT 1 - metadata regex guessing (the previous revision's boundary)
 # ---------------------------------------------------------------------------
@@ -55,7 +72,7 @@ def test_mutant_1b_the_gate_catches_partial_deletion_too():
     first_close = header.index("]") + 1
     partial = header[first_close:].lstrip(" ")
     assert partial.startswith("附录.pdf"), partial
-    assert carries_value(chunk(header, name="规范]附录.pdf"), ("73286.3",)) is False, "the real boundary removes it whole"
+    assert carries_value(producer_recorded(header, name="规范]附录.pdf"), ("73286.3",)) is False, "the real boundary removes it whole"
 
 
 # ---------------------------------------------------------------------------
