@@ -49,7 +49,12 @@ from typing import Sequence
 
 from rag.prompts.generator import PROMPT_JINJA_ENV, gen_json
 from rag.prompts.template import load_prompt
-from rag.retrieval.chunk_profile import carries_value, comparison_sides, identity_spans
+from rag.retrieval.chunk_profile import (
+    NumericOccurrence,
+    carries_value,
+    comparison_sides,
+    numeric_occurrences,
+)
 
 _LOG = logging.getLogger(__name__)
 
@@ -182,62 +187,36 @@ _QUESTION_NUMBER_RE = re.compile(r"\d+(?:[.．]\d+)?")
 #: comparative parameter question names, and every extra one is a pass over the pool.
 MAX_QUESTION_VALUES = 6
 
-#: A year or edition reference: a bare four-digit year followed by 年/版 (``2026 年版``).
-_YEAR_REFERENCE_RE = re.compile(r"(?:19|20)\d{2}")
+def question_value_occurrences(question: str) -> list[NumericOccurrence]:
+    """The OCCURRENCES of ``question`` that project into the answer-value set, in the order it names them.
 
-#: The cue that says a four-digit number is a YEAR rather than a measurement. Without it a bare
-#: ``2000`` stays a value, so ``2000 mm²`` is still matchable.
-_YEAR_CUE_RE = re.compile(r"\s*(?:年|版)")
+    This is the layer the audit's section 3 asked for: the projection is a filter over per-occurrence
+    records, so two occurrences of one digit string keep two provenance records and two verdicts. The
+    function it replaces returned a ``{text: class}`` map, in which a voltage ``0.6`` and a model ``0.6``
+    in the same sentence collapsed onto whichever came last.
 
-#: A run of letters, i.e. the shape that turns neighbouring digits into a model code.
-_LETTER_RE = re.compile(r"[A-Za-z]")
-
-#: A number followed by nothing but a unit: ``220kV``, ``1.5mm``, ``30min``. This is a MEASUREMENT
-#: with its unit, not a code, and it is the shape that separates the two.
-_UNIT_SUFFIX_RE = re.compile(r"[A-Za-z]+")
-
-
-def _is_document_identity(text: str, start: int, end: int, spans: Sequence[tuple[int, int]]) -> bool:
-    """Whether a digit run names the DOCUMENT rather than measuring something.
-
-    Three shapes, all semantic - no token is listed by name:
-
-    1. **Inside a standard designation span.** ``Q/GDW 73286.2-2026`` contributes ``73286.2`` and
-       ``2026``, and both are parts of the document's name.
-    2. **A year or edition reference.** A bare four-digit year followed by 年/版 is an edition, not a
-       quantity. The cue is required, so a bare ``2000`` that is a measurement is left alone.
-    3. **A model-code fragment.** A digit run inside a chunk that also carries letters, where the
-       digits are NOT followed by a bare unit suffix. ``WDZC-YJY-0.6/1kV`` is a code and its digits
-       describe the article; ``220kV`` is a number with a unit and is a measurement.
-
-    The distinction is the one the value rules were missing. A document identifier is rare in a corpus
-    **because** it identifies one document, so a frequency test reads it as maximally discriminating
-    while it can never serve as an answer check; and a technical value is common in a single-standard
-    corpus **because** every table of that standard lists it, so the same test reads it as noise.
+    The pre-existing extraction rule still governs the projection: a figure must carry two digits or a
+    decimal part, which keeps ``800``/``1200``/``3.9``/``0.6`` and drops the ``1`` of ``1×800``. Figures
+    that are dropped here are deliberately still visible in :func:`chunk_profile.numeric_occurrences`, so
+    a diagnosis can see what was dropped and why.
     """
-    if any(span_start <= start and end <= span_end for span_start, span_end in spans):
-        return True
-    token = text[start:end]
-    if _YEAR_REFERENCE_RE.fullmatch(token) and _YEAR_CUE_RE.match(text[end : end + 4]):
-        return True
-    return _is_code_fragment(text, start, end)
-
-
-def _is_code_fragment(text: str, start: int, end: int) -> bool:
-    """Whether a digit run sits inside an alphanumeric identifier rather than standing as a number.
-
-    Shape only: take the whitespace-delimited chunk the digits sit in. A chunk with no letter is a
-    measurement (``800``, ``3×25``); a chunk with letters is a measurement only when the digits are
-    followed by a bare unit suffix (``220kV``), and is otherwise a code (``WDZC-YJY-0.6/1kV``).
-    """
-    chunk_start = text.rfind(" ", 0, start) + 1
-    chunk_end = text.find(" ", end)
-    if chunk_end == -1:
-        chunk_end = len(text)
-    chunk = text[chunk_start:chunk_end]
-    if not _LETTER_RE.search(chunk):
-        return False
-    return _UNIT_SUFFIX_RE.fullmatch(chunk[end - chunk_start :]) is None
+    text = _WHITESPACE_RE.sub(" ", strip_section_references(str(question or ""))).strip()
+    if not text:
+        return []
+    projected: list[NumericOccurrence] = []
+    seen: set[str] = set()
+    for occurrence in numeric_occurrences(text):
+        if not occurrence.counts_as_value:
+            continue
+        if len(occurrence.text.replace(".", "")) < 2 and "." not in occurrence.text:
+            continue
+        if occurrence.text in seen:
+            continue
+        seen.add(occurrence.text)
+        projected.append(occurrence)
+        if len(projected) >= MAX_QUESTION_VALUES:
+            break
+    return projected
 
 
 def question_values(question: str, chunks: Sequence[dict] = ()) -> list[str]:
@@ -250,49 +229,35 @@ def question_values(question: str, chunks: Sequence[dict] = ()) -> list[str]:
     Structural coordinates are dropped first (``第5章``, ``6.2.2``, ``附录A``, and the
     table/figure labels that go with them), because a chapter number is not a value to
     match on. What remains has to be at least two digits or carry a decimal part, which
-    keeps ``800``/``1200``/``3.9``/``0.6`` and drops the ``1`` of ``1×800`` and a bare
-    "第 2 部分" style index that survived the strip.
+    keeps ``800``/``1200``/``3.9``/``0.6`` and drops the ``1`` of ``1×800``.
 
-    **Document identity is then removed by SHAPE, before any frequency test runs**
-    (:func:`_is_document_identity`): a standard designation and its year, an edition reference, and a
-    model-code fragment are names, not quantities. They used to be admitted - and the technical values
-    they displaced used to be discarded - by a share test whose verdicts are inverted on a
-    single-standard corpus, where the answer-bearing figures are the ubiquitous ones and the identity
-    tokens are the rare ones.
+    **Each occurrence is then CLASSIFIED by its own evidence** (:func:`chunk_profile.numeric_occurrences`,
+    which publishes the classes and keeps the provenance) and only the classes that are not
+    answer-bearing are dropped. That is a semantic boundary, and it is the one the value rules needed,
+    because they ask whether a passage WRITES the figure the question asked for - a question about
+    ``Q/GDW 73286.2`` is not asking for ``73286.2``, and every table of a standard carries the standard's
+    own number in its header. The identity split matters here: when the question asks FOR the identity
+    (``标准发布的是2026年版还是2025年版？``) that figure IS the answer, and it is returned.
 
-    With a pool, only a figure that EVERY candidate carries is dropped, because a token the whole
-    window carries cannot separate any two of its members; that is the degenerate case, not a tuned
-    ratio. A figure that is merely common - ``800`` in a corpus whose every table lists the 800 mm²
-    series - is KEPT, since ubiquity is evidence about discrimination and not about whether the
-    question asked for the figure.
+    **``chunks`` is accepted and does NOT affect the result.** It used to: a figure the pool carried
+    almost everywhere was discarded as indiscriminating. On a single-standard corpus that verdict is
+    inverted - the answer-bearing figures (``800``, ``1200``, ``3.9``) are the ubiquitous ones and
+    the identity tokens are the rare ones - so the test removed the values and kept the identities, and
+    the red-team audit reproduced both halves. Ubiquity is evidence about DISCRIMINATION, and it is
+    now reported as a diagnostic (:func:`_pool_share`) instead of deciding what the question asked for.
+    The argument stays because ``rerank.DiversityPolicy.for_question`` passes the pool through; the
+    gate asserts the invariance directly rather than trusting this sentence.
     """
-    text = _WHITESPACE_RE.sub(" ", strip_section_references(str(question or ""))).strip()
-    if not text:
-        return []
-
-    spans = identity_spans(text)
-    found: list[str] = []
-    for match in _QUESTION_NUMBER_RE.finditer(text):
-        token = match.group(0).replace("．", ".")
-        digits = token.replace(".", "")
-        if len(digits) < 2 and "." not in token:
-            continue
-        if token in found:
-            continue
-        if _is_document_identity(text, match.start(), match.end(), spans):
-            continue
-        found.append(token)
-    if not found:
-        return []
-
-    pool = list(chunks or ())
-    if pool:
-        found = [value for value in found if _pool_share(value, pool) < 1.0]
-    return found[:MAX_QUESTION_VALUES]
+    return [occurrence.text for occurrence in question_value_occurrences(question)]
 
 
 def _pool_share(value: str, pool: Sequence[dict]) -> float:
-    """The share of the pool's passages that carry ``value``."""
+    """The share of the pool's passages that carry ``value``.
+
+    **Diagnostic only.** It reports how much a figure could discriminate the window; it does NOT decide
+    whether the question asked for it (:func:`question_values`), because on a single-standard corpus
+    that decision comes out inverted - the answering figures are the ubiquitous ones.
+    """
     if not pool:
         return 0.0
     hits = sum(1 for chunk in pool if carries_value(chunk, (value,)))

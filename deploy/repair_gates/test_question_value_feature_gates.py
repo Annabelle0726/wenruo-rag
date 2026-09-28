@@ -2,10 +2,10 @@
 
 Two things are proved here and they are deliberately separate.
 
-**Feature semantics** - `question_values` must stop reading DOCUMENT IDENTITY as answer-bearing, and
-must stop discarding answer-bearing technical values for being common; `chunk_profile._values_text`
-must stop treating the ingest's identity preamble as the passage's own evidence. Groups A-F are the
-operator's regression matrix.
+**Feature semantics** - `question_values` must stop reading DOCUMENT IDENTITY as answer-bearing, must
+keep every class of answer-bearing technical figure, and must derive a value set that does NOT depend
+on the pool; `chunk_profile._values_text` must strip the ingest header through its PRODUCER's boundary
+and nothing else. Groups A-F are the operator's regression matrix.
 
 **Frozen consumers** - the `×1.3` pairing boost, the `×0.8` value-list penalty and the selection and
 warning consumers must be provably untouched. Group G proves it two ways: the consumer module's bytes
@@ -53,10 +53,19 @@ YEAR_ONLY = "2026 年版的海底电缆标准对铠装层有什么规定？"
 YEAR_AS_MEASUREMENT = "2000 mm² 的导体直流电阻是多少？"
 PLAIN = "海底电缆的内衬层有什么要求？"
 
+#: The document name the header below names. It must be the passage's stored `docnm_kwd`, because that
+#: equality is the provenance check that makes the header removable at all.
+HEADER_DOCUMENT = "220kV海底电力电缆系统采购标准+第3部分.pdf"
 HEADER = "[标准号: Q/GDW 73286.3 | 文档: 220kV海底电力电缆系统采购标准+第3部分.pdf | 电压: 220kV | 芯数: 三芯 | 章节: 4 标准规范性要素]"
 
 
-def chunk(content, doc_id="doc-a", name="part3.pdf"):
+def chunk(content, doc_id="doc-a", name=HEADER_DOCUMENT):
+    """A passage with the stored document name the header's title field must equal.
+
+    The metadata boundary is provenance-checked, not shape-checked: a fixture that expects its leading
+    header to be recognised as injected must name the document the header names, because that equality IS
+    the check. Without it nothing is stripped - the fail-closed direction, asserted in
+    `test_qv_revision2_gate.py::test_layer3_missing_document_name_fails_closed`."""
     return {"chunk_id": "c1", "doc_id": doc_id, "docnm_kwd": name, "content_with_weight": content}
 
 
@@ -127,12 +136,45 @@ def test_b_multi_value_question_keeps_both_values():
 
 
 def test_b_only_a_universal_value_is_dropped():
-    """The degenerate case, stated as such: a token EVERY candidate carries cannot separate two of
-    them. It is an equality, not a tuned ratio - 0.95 and 0.83 are preserved above."""
+    """REPLACED by pool invariance, and the reason is the audit's counterexample.
+
+    The rejected repair dropped a figure that EVERY candidate carried, as a "degenerate case rather
+    than a tuned ratio". Twenty candidates that all carry `800` are the measured shape of this corpus
+    (a standard repeats its section series in every parameter table), so the rule removed exactly the
+    figures a question about `800 mm²` asks for, while the rare identity tokens were kept. Extraction
+    now reports ubiquity (`_pool_share`) and never acts on it; the assertion below is the contract.
+    """
     universal = pool_with("800", size=20, hits=20)
-    assert question_values("800 mm² 的厚度是多少？", universal) == []
     nearly = pool_with("800", size=20, hits=19)
-    assert question_values("800 mm² 的厚度是多少？", nearly) == ["800"]
+    bare = question_values("800 mm² 的厚度是多少？")
+    assert bare == ["800"]
+    assert question_values("800 mm² 的厚度是多少？", universal) == bare
+    assert question_values("800 mm² 的厚度是多少？", nearly) == bare
+
+
+def test_b_the_value_set_does_not_depend_on_the_pool():
+    """The invariant, asserted directly rather than argued: no pool changes what the question asked.
+
+    Three shapes of pool - universal, split, empty - over four questions, including the incident
+    composite and a year question. A pool-share rule had to fail at least one of these.
+    """
+    questions = [
+        "800 mm² 的厚度是多少？",
+        MULTI_VALUE,
+        TECHNICAL_VALUE,
+        QGDW_COMPOSITE,
+        "投产年份是否为2026年，而不是2025年？",
+    ]
+    pools = [
+        (),
+        pool_with("800", size=20, hits=20),
+        pool_with("800", size=20, hits=1),
+        [chunk("内衬层与外被层的一般要求", doc_id=f"doc-{index}") for index in range(20)],
+    ]
+    for question in questions:
+        bare = question_values(question)
+        for pool in pools:
+            assert question_values(question, pool) == bare, question
 
 
 def test_b_technical_value_query_keeps_every_declared_kind():

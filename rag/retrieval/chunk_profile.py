@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from dataclasses import dataclass, replace
 from typing import Sequence
 
 #: ``doc_type_kwd`` values the parsers write.
@@ -156,16 +157,18 @@ VALUE_RESULT_WINDOW = 20
 def _values_text(chunk: dict) -> str:
     """The passage's OWN evidence as flat text, for matching figures written either way.
 
-    The ingest's identity preamble is removed first. It is not evidence: it names the document, its
-    voltage class and its section, and it is written by the pipeline rather than by the document. Left
-    in place it made every table in a standards corpus "carry" the question's figures - the standard
-    number is in every one of their headers - which turned the rule that exists to tell a table that
-    merely LISTS the question's figures from one that PAIRS them into a flat penalty on the whole type.
+    The ingest's identity preamble is removed first, by the boundary its own producer uses
+    (:func:`_strip_ingest_preamble`). It is not evidence: it names the document, its voltage class and
+    its section, and it is written by the pipeline rather than by the document. Left in place it made
+    every table in a standards corpus "carry" the question's figures - the standard number is in every
+    one of their headers - which turned the rule that exists to tell a table that merely LISTS the
+    question's figures from one that PAIRS them into a flat penalty on the whole type.
 
-    Only the preamble goes. A figure that also occurs in the document's own body - the answering table
-    beside the header - still matches, because the removal is scoped to the bracketed metadata block.
+    Only a VERIFIED preamble goes (see :func:`_strip_ingest_preamble`): the removal is evidence-checked
+    against the passage's own stored document name, so a figure that also occurs in the document's body -
+    the answering table beside the header, or a bracketed clause the document itself wrote - still matches.
     """
-    return _INGEST_METADATA_RE.sub(" ", _plain(_content(chunk)))
+    return _plain(_strip_ingest_preamble(_content(chunk), chunk))
 
 
 def number_tokens(chunk: dict) -> set[str]:
@@ -259,11 +262,120 @@ def _plain(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip().lower()
 
 
-#: The metadata block the INGEST writes into the head of a passage it can identify:
-#: ``[标准号: Q/GDW 73286.3 | 文档: … | 电压: 220kV | 芯数: 三芯 | 章节: …]``. It is matched by its
-#: identity markers rather than by shape alone, so an ordinary bracketed phrase in a document's own
-#: prose is left in place.
-_INGEST_METADATA_RE = re.compile(r"\[(?=[^\]]*(?:标准号|文档)\s*[:：])[^\]]*\]")
+#: The producer's own opening marker, ``rag/nlp/doc_context.CONTEXT_PREFIX_OPEN``. Both producers of the
+#: header start with it (the legacy one by construction, the Phase-A projection because a profile's first
+#: identity field is 标准号), so it is the one thing a leading candidate must have before anything else is
+#: considered. It is a producer constant, not a pattern this module invented.
+_CONTEXT_PREFIX_OPEN = "[标准号: "
+
+#: The header's field labels, taken from the producers' own declarations: the legacy three from
+#: `doc_context.render_document_context`, the rest from `retrieval_projection.PROFILES`. Used only to
+#: check that a candidate block really IS a field list; a label outside this set makes verification fail,
+#: and failing verification means STRIP NOTHING.
+_HEADER_FALLBACK_LABELS = frozenset({"标准号", "文档", "章节", "电压", "芯数", "线缆类别", "敷设环境", "纤芯数"})
+
+
+def _header_labels() -> frozenset[str]:
+    """The producers' field labels, from `retrieval_projection` when the build ships it."""
+    try:
+        from rag.nlp.retrieval_projection import PROFILES, SECTION_FIELD, profile_fields
+    except Exception:
+        return _HEADER_FALLBACK_LABELS
+    labels = {field.label for profile in PROFILES.values() for field in profile_fields(profile)}
+    labels.add(SECTION_FIELD.label)
+    return frozenset(labels) | _HEADER_FALLBACK_LABELS
+
+
+def _document_names(chunk: dict) -> set[str]:
+    """The names the header's title field could legitimately carry, from the STORED document name."""
+    name = document_name(chunk)
+    if not name:
+        return set()
+    names = {name}
+    try:
+        from rag.nlp.doc_context import document_title
+    except Exception:
+        names.add(re.sub(r"\.[A-Za-z]{1,6}$", "", name).strip())
+        return names
+    title = document_title(name)
+    if title:
+        names.add(title)
+    return names
+
+
+def _verified_header_end(text: str, chunk: dict) -> int | None:
+    """Where a VERIFIED ingest header ends, or ``None`` when it cannot be proven.
+
+    The audit's ``METADATA_BOUNDARY_VERDICT = BLOCKING_AMBIGUITY`` was about shape: a leading bracketed
+    block cannot be classified as injected or authored by looking at the bracket. This does not look at the
+    bracket. It looks for the one thing that a leading field list has and an authored bracket does not - a
+    ``文档``/``title`` field that EQUALS the document name the doc store returned with the passage
+    (``docnm_kwd``, or that name without its extension, which is what the legacy producer writes).
+
+    Consequences, all of them requirements of the audit's section 2:
+
+    * every field of the candidate block must parse as ``label: value`` with a label the PRODUCERS declare,
+      so an authored bracket such as ``[800 mm²：厚度3.9 mm]`` is never a candidate at all;
+    * candidates are tried at EVERY closing bracket in the leading block, so a title that itself contains
+      ``]`` is matched at its true end and the whole header goes - a header the producer's own regex cannot
+      read back is deleted WHOLE or not at all, never partially;
+    * a mismatch anywhere, or a passage with no stored document name, returns ``None`` and nothing is
+      removed. Failing closed costs evidence cleanliness; failing open costs the document's own text.
+    """
+    if not text.startswith(_CONTEXT_PREFIX_OPEN):
+        return None
+    names = _document_names(chunk)
+    if not names:
+        return None
+    labels = _header_labels()
+    limit = text.find("\n")
+    window = text if limit == -1 else text[:limit]
+    for close in range(1, len(window)):
+        if window[close] != "]":
+            continue
+        fields = window[1:close].split(" | ")
+        parsed: list[tuple[str, str]] = []
+        for field in fields:
+            label, separator, value = field.partition(": ")
+            if not separator or label not in labels:
+                parsed = []
+                break
+            parsed.append((label, value.strip()))
+        if not parsed:
+            continue
+        title = next((value for label, value in parsed if label in ("文档", "标题", "title")), "")
+        if title and title in names:
+            return close + 1
+    return None
+
+
+def _strip_ingest_preamble(text: str, chunk: dict) -> str:
+    """Drop a VERIFIED ingest header from the head of a passage, and nothing else.
+
+    The boundary is provenance-backed rather than inferred: :func:`_verified_header_end` accepts a leading
+    field list only when its title field equals the stored document name. When it cannot be verified the
+    text is returned untouched - the whole string is then treated as the passage's own evidence, which is
+    the conservative direction the audit demanded ("无法证明来源时宁可不 strip").
+
+    LIMITATION, reported rather than papered over: the deployed index stores NO provenance for the injected
+    header - it exists only inside ``content_with_weight`` (verified by reading the live mapping: the only
+    fields are ``content_with_weight``/``content_ltks``/``content_sm_ltks``/``docnm_kwd``/``title_tks``/
+    ``doc_id``/``kb_id``/… and none of them records an injected extent). The stored document name is the
+    one structured field a consumer can check against, and it makes the boundary verifiable for every
+    header either producer writes today, but it is not a byte-level record of what was injected: a body
+    that opens with a field list whose title field reproduces the document name exactly would still be
+    read as metadata. The deterministic fix is a producer-side representation change (see the window
+    report's METADATA_REPRESENTATION_DECISION), which this window reports as a contract boundary instead
+    of guessing around it.
+    """
+    body = str(text or "")
+    if not body.startswith(_CONTEXT_PREFIX_OPEN):
+        return body
+    end = _verified_header_end(body, chunk)
+    if end is None:
+        return body
+    remainder = body[end:]
+    return remainder[1:] if remainder.startswith(" ") else remainder
 
 
 def document_key(chunk: dict) -> str:
@@ -327,15 +439,35 @@ def standard_designations(text: str) -> set[str]:
     return found
 
 
-#: A standard designation WITH its optional year suffix (``Q/GDW 73286.2-2026``). The pattern above
-#: stops before the year on purpose - a designation is compared against file names, which carry it
-#: without the year - so the suffix is appended HERE rather than changing a pattern that document
-#: resolution depends on.
-_IDENTITY_SPAN_RE = re.compile(_STANDARD_DESIGNATION_RE.pattern + r"(?:\s*[-–—]\s*\d{4})?", re.IGNORECASE)
+#: A document identity WITH its optional year or edition suffix (``Q/GDW 73286.2-2026``,
+#: ``IEC 60502-1:2021``, ``Q_GDW_73286.2-2026``). Built from the module's own vocabularies - the two
+#: patterns above are NOT edited, so `standard_designations` and document resolution see exactly what
+#: they saw before - with the three gaps the audit found closed:
+
+#: * ``_`` is accepted wherever ``/`` or a space is (``Q_GDW_73286.2-2026``), because an archived file
+#:   name and a pasted reference spell a designation that way.
+#: * ``:`` is accepted between a reference number and its edition (``ISO 9001:2015``), which the
+#:   ``_REFERENCE_NUMBER_RE`` separator class did not include, so both figures fell through as
+#:   measurements.
+#: * the suffix accepts ``:`` as well as the dashes.
+_DESIGNATION_SPAN_RE = re.compile(
+    r"\b(?:Q[\s_]*/?[\s_]*GDW|GB[\s_]*/?[\s_]*T|GB|DL[\s_]*/?[\s_]*T|JB[\s_]*/?[\s_]*T|NB[\s_]*/?[\s_]*T"
+    r"|YD[\s_]*/?[\s_]*T|T[\s_]*/?[\s_]*CEC|JJG|JG)[\s_]*\d{2,}(?:\.\d+)?",
+    re.IGNORECASE,
+)
+_REFERENCE_SPAN_RE = re.compile(
+    r"(?:Q[\s_]*/?[\s_]*GDW|GB[\s_]*/?[\s_]*T|GB|DL[\s_]*/?[\s_]*T|JB[\s_]*/?[\s_]*T|NB[\s_]*/?[\s_]*T"
+    r"|YD[\s_]*/?[\s_]*T|IEC|ISO|第|表|图|附录)[\s_]*\d+(?:[.\-/:]\d+)+",
+    re.IGNORECASE,
+)
+_IDENTITY_SPAN_RE = re.compile(
+    r"(?:" + _DESIGNATION_SPAN_RE.pattern + r"|" + _REFERENCE_SPAN_RE.pattern + r")" + r"(?:[\s_]*[-–—:][\s_]*\d{4})?",
+    re.IGNORECASE,
+)
 
 
 def identity_spans(text: str) -> list[tuple[int, int]]:
-    """Where the DOCUMENT IDENTIFIERS sit in ``text``: designation plus its year suffix.
+    """Where the DOCUMENT IDENTIFIERS sit in ``text``: designation plus its year/edition suffix.
 
     Offsets are into ``text`` exactly as given, so the caller must pass the same flattened string it
     intends to address - re-normalising here would return offsets into a copy.
@@ -344,8 +476,408 @@ def identity_spans(text: str) -> list[tuple[int, int]]:
     of ``Q/GDW 73286.2-2026`` are parts of the document's NAME, and no frequency test can tell them
     from a measurement, because a document identifier is rare in a corpus precisely BECAUSE it
     identifies one document.
+
+    It is also BOUNDED: a span covers the figures that spell the document's name and no more, so the
+    year of ``投产年份是否为2026年`` - a year the question asks ABOUT rather than one that names an
+    edition - is not inside any span.
     """
     return [(match.start(), match.end()) for match in _IDENTITY_SPAN_RE.finditer(str(text or ""))]
+
+
+# --- What a figure IS: the published classes -------------------------------------------------
+#
+#: The classes a numeric OCCURRENCE can fall into. Published because the extraction that projects the
+#: answer-value set is one reader and a diagnosis is another, and because each class names the EVIDENCE
+#: that put the occurrence in it - evidence that conflicts is reported as UNKNOWN rather than resolved by
+#: a guess about the corpus.
+#:
+#: The identity split is the audit's section 5: an identity occurrence is a NAME while it LOCATES the
+#: document and an answer-bearing value while the question asks FOR it. `2026` locates in
+#: `根据 Q/GDW 73286.2-2026，导体截面是多少？` and answers in `标准发布的是2026年版还是2025年版？`, so a
+#: context-free `year -> identity` rule is wrong in one of the two sentences no matter which way it is set.
+NUMERIC_IDENTITY_LOCATOR = "IDENTITY_USED_TO_LOCATE_DOCUMENT"
+NUMERIC_IDENTITY_ASKED = "IDENTITY_VALUE_EXPLICITLY_ASKED_BY_USER"
+NUMERIC_MODEL_IDENTITY = "MODEL_IDENTITY"
+NUMERIC_TECHNICAL_MEASUREMENT = "TECHNICAL_MEASUREMENT"
+NUMERIC_ANSWER_VALUE = "ANSWER_REQUESTED_NUMERIC_VALUE"
+NUMERIC_UNKNOWN = "UNKNOWN_NUMERIC"
+
+#: The classes that ARE a figure the question asks about. Pure identity - the locator kind and the model
+#: code - is a name; the rest are kept, UNKNOWN included, because discarding an occurrence on a
+#: classification the extraction could not make would be a silent regression. `NUMERIC_IDENTITY_ASKED`
+#: is value-bearing: the user asked for the identity itself (its edition, its number, its model).
+NUMERIC_VALUE_CLASSES = frozenset(
+    {NUMERIC_TECHNICAL_MEASUREMENT, NUMERIC_ANSWER_VALUE, NUMERIC_UNKNOWN, NUMERIC_IDENTITY_ASKED}
+)
+
+#: The attributes a question can ask FOR, i.e. the shapes that turn an identity occurrence into an
+#: answer. Each cue names the attribute, so the classifier asks "is the question about this attribute"
+#: rather than "does this sentence contain a year".
+_ASKED_ATTRIBUTE_CUES = {
+    "edition": re.compile(r"版本是|是什么版本|哪一版|哪版|年版还是|版还是|发布的是|发布日期是|实施日期是|现行版是"),
+    "designation": re.compile(r"标准号是多少|标准号是什么|标准编号是多少|是什么标准号|哪个标准号"),
+    "model": re.compile(r"型号是什么|是什么型号|型号是多少|哪个型号|型号是(?:什么|多少)"),
+    "reference": re.compile(r"第\s*几\s*部分|哪一部分|表\s*几|图\s*几|哪个表|哪个图"),
+}
+
+#: A choice between two occurrences of the SAME attribute is a question about that attribute
+#: (`是2026版还是2025版`). Only `还是`/`或者` count: `或` alone occurs inside ordinary words.
+_ATTRIBUTE_CHOICE_RE = re.compile(r"还是|或者")
+
+#: A year, for the edition rule.
+_YEAR_RE = re.compile(r"(?:19|20)\d{2}")
+
+#: The cue that makes a year an EDITION rather than the quantity a question asks about: ``2026 年版``,
+#: ``2026版``. Deliberately NOT a bare 年, which also ends an ordinary year the question wants the
+#: answer to - ``投产年份是否为2026年，而不是2025年？`` names two years to compare and both are values.
+_EDITION_CUE_RE = re.compile(r"\s*(?:年版|版)")
+
+#: An ASCII letter: the only thing that can make a digit run part of a NAME. A unit is letters too,
+#: which is why :func:`_unit_end` is consulted before the adjacency rule in every shape where both
+#: apply.
+_ASCII_LETTER_RE = re.compile(r"[A-Za-z]")
+
+#: What an alphanumeric run is made of. Whether the run is a DESIGNATION is decided by what LEADS it:
+#: a letter-led run is a model code (``WDZC-YJY-0.6/1kV``, ``AB123CD``), while a figure-led run is a
+#: quantity whose trailing letters are its unit (``2000mm2``, ``1x800mm2``) - the corpus writes both.
+_RUN_CHAR_RE = re.compile(r"[A-Za-z0-9]")
+#: Separators that keep an alphanumeric run ONE token without being run characters themselves.
+_RUN_CONNECTOR_RE = re.compile(r"[-–—/.·_]")
+#: A range or ratio continuation: a figure on the other side of ``800～1200mm²``, ``0.6/1kV``.
+_RANGE_SEPARATOR_RE = re.compile(r"[-–—~～×*·/:：]")
+
+
+def _alnum_run(text: str, start: int, end: int) -> tuple[int, int]:
+    """The alphanumeric run a digit run sits in, as ``(run_start, run_end)``.
+
+    A connector counts towards the run only when a run character sits on its far side, so the run
+    neither absorbs a leading dash nor trails one: ``WDZC-YJY-0.6/1kV`` is one run, ``- 800`` is not.
+    """
+    run_start, run_end = start, end
+    while run_start > 0:
+        char = text[run_start - 1]
+        if _RUN_CHAR_RE.match(char):
+            run_start -= 1
+        elif _RUN_CONNECTOR_RE.match(char) and run_start >= 2 and _RUN_CHAR_RE.match(text[run_start - 2]):
+            run_start -= 1
+        else:
+            break
+    while run_end < len(text):
+        char = text[run_end]
+        if _RUN_CHAR_RE.match(char):
+            run_end += 1
+        elif _RUN_CONNECTOR_RE.match(char) and run_end + 1 < len(text) and _RUN_CHAR_RE.match(text[run_end + 1]):
+            run_end += 1
+        else:
+            break
+    return run_start, run_end
+
+
+def _is_model_designation(text: str, start: int, end: int) -> bool:
+    """Whether a digit run spells an article's MODEL/type code rather than a quantity.
+
+    Shape only, three conditions, no token named: the run must be LETTER-LED, carry at least two
+    letters, and put a letter AFTER its last figure. The third is what separates a code from a unit -
+    ``WDZC-YJY-0.6/1kV`` and ``AB123CD`` are codes, while ``2000mm2`` and ``1x800mm2`` are quantities
+    whose trailing letters ARE the unit - and the first is what keeps ``1x800mm2`` out, since a
+    figure-led run is how this corpus writes a section.
+    """
+    run_start, run_end = _alnum_run(text, start, end)
+    run = text[run_start:run_end]
+    if not run or not _ASCII_LETTER_RE.fullmatch(run[0]):
+        return False
+    if len(_ASCII_LETTER_RE.findall(run)) < 2:
+        return False
+    last_figure = max((index for index, char in enumerate(run) if char.isdigit()), default=-1)
+    if last_figure < 0:
+        return False
+    return _ASCII_LETTER_RE.search(run[last_figure + 1 :]) is not None
+
+
+def _unit_end(text: str, start: int, end: int) -> int | None:
+    """Where the digits' unit ends, or ``None`` when they carry none."""
+    matched = _match_unit(text, end)
+    return None if matched is None else matched[1]
+
+
+#: The producer's unit lexicon, split into one anchored pattern per alternative. Parsed ONCE from
+#: `query_router._NUMERIC_UNIT_RE` rather than restated: a second word list is what the audit rejected,
+#: and a per-case whitelist (`kWh`, `MPa`, `dB`) would make the tests pass without fixing the adapter.
+_UNIT_PATTERNS: tuple[re.Pattern[str], ...] | None = None
+
+
+def _unit_patterns() -> tuple[re.Pattern[str], ...]:
+    """One anchored pattern per unit the retrieval router already knows.
+
+    Two deliberate ADAPTER transformations, both of them fixes rather than new vocabulary:
+
+    * the trailing ``\\b`` is dropped. Word boundaries are ASCII-based, so ``m\\b`` cannot match the
+      ``m`` of ``100m时`` and the unit vanished whenever a CJK character followed it - the audit's
+      section 4. The boundary is enforced by :func:`_unit_boundary_ok` instead.
+    * alternatives are kept separate so the CALLER can take the longest match. Matching the lexicon's
+      alternation directly returns ``kW`` for ``100kWh`` because that alternative is listed first, and
+      the leftover ``h`` then makes the digits look like a code.
+    """
+    global _UNIT_PATTERNS
+    if _UNIT_PATTERNS is None:
+        from rag.retrieval.query_router import _NUMERIC_UNIT_RE
+
+        pattern = _NUMERIC_UNIT_RE.pattern
+        body = pattern[pattern.rindex("(?:") + 3 : pattern.rindex(")")]
+        alternatives = [re.sub(r"\\b$", "", alternative.strip()) for alternative in body.split("|")]
+        _UNIT_PATTERNS = tuple(re.compile(alternative) for alternative in alternatives if alternative)
+    return _UNIT_PATTERNS
+
+
+def _unit_boundary_ok(text: str, end: int) -> bool:
+    """Whether a unit ending at ``end`` really ends there.
+
+    ASCII letters and digits continue the token (``123ABC``, ``mm2``); anything else - a space, punctuation,
+    a CJK character - ends it. This is the check ``\\b`` cannot perform next to CJK text.
+    """
+    if end >= len(text):
+        return True
+    char = text[end]
+    return not char.isascii() or not char.isalnum()
+
+
+def _match_unit(text: str, digits_end: int) -> tuple[str, int] | None:
+    """The longest valid unit after the digits, with the whitespace the writer may have left.
+
+    Longest-match is what resolves ``kWh`` against ``kW`` without naming either one, and it is also what
+    keeps ``kV`` from being truncated to ``k``/``V`` by a shorter alternative.
+    """
+    position = digits_end
+    while position < len(text) and text[position] == " ":
+        position += 1
+    best: tuple[str, int] | None = None
+    for pattern in _unit_patterns():
+        match = pattern.match(text, position)
+        if match and match.end() > position and (best is None or match.end() > best[1]):
+            best = (match.group(0), match.end())
+    if best is None:
+        return None
+    return best if _unit_boundary_ok(text, best[1]) else None
+
+
+#: How a figure relates to the figures beside it. Recorded per occurrence rather than inferred later,
+#: because ``0.6/1 kV`` and ``800～1200mm²`` are ranges/ratios whose members carry no unit of their own.
+_RANGE_MARKS = "～~-–—"
+_RATIO_MARKS = "/:×*·"
+_TOLERANCE_MARKS = ("±", "+/-", "+-")
+
+
+def _occurrence_relation(text: str, start: int, end: int, unit: str | None) -> str:
+    """``tolerance`` / ``compound`` / ``range`` / ``ratio`` / ``bare`` for one occurrence."""
+    window = text[max(0, start - 3) : start]
+    if any(mark in window for mark in _TOLERANCE_MARKS):
+        return "tolerance"
+    if unit and ("·" in unit or "/" in unit):
+        return "compound"
+    if start >= 2 and text[start - 1] in _RANGE_MARKS and text[start - 2].isdigit():
+        return "range"
+    if end + 1 < len(text) and text[end] in _RANGE_MARKS and text[end + 1].isdigit():
+        return "range"
+    if start >= 2 and text[start - 1] in _RATIO_MARKS and text[start - 2].isdigit():
+        return "ratio"
+    if end + 1 < len(text) and text[end] in _RATIO_MARKS and text[end + 1].isdigit():
+        return "ratio"
+    return "bare"
+
+
+@dataclass(frozen=True)
+class NumericOccurrence:
+    """ONE numeric occurrence and the local provenance that decides what it is.
+
+    The audit's section 3: a class keyed by the digit string cannot express that ``0.6`` in
+    ``额定电压0.6/1 kV`` is a measurement while ``0.6`` in ``WDZC-YJY-0.6/1kV`` is part of a name. Every
+    field here is local to the occurrence - offsets into the text, the unit span it matched, whether it
+    sits inside a designation span or a letter-led model run, and how it relates to the figures beside it.
+    """
+
+    text: str
+    start: int
+    end: int
+    kind: str
+    unit: str | None = None
+    unit_end: int | None = None
+    relation: str = "bare"
+    designation_span: tuple[int, int] | None = None
+    model_span: tuple[int, int] | None = None
+
+    @property
+    def counts_as_value(self) -> bool:
+        return self.kind in NUMERIC_VALUE_CLASSES
+
+
+#: The token shape a candidate figure has in a question (``800``, ``3.9``, ``0.6``).
+_QUESTION_DIGITS_RE = re.compile(r"\d+(?:[.．]\d+)?")
+
+
+def _containing_span(start: int, end: int, spans: Sequence[tuple[int, int]]) -> tuple[int, int] | None:
+    for span_start, span_end in spans:
+        if span_start <= start and end <= span_end:
+            return (span_start, span_end)
+    return None
+
+
+def _attribute_of(text: str, token: str, end: int, designation_span, model_span) -> str | None:
+    """Which identity attribute an occurrence belongs to, or ``None`` when it is not an identity.
+
+    ``model`` for a letter-led code, ``edition`` for a year carrying its edition cue, ``reference`` for a
+    ``表``/``图``/``第``/``附录`` number, and ``designation`` for a standard's own number.
+    """
+    if model_span is not None:
+        return "model"
+    if _YEAR_RE.fullmatch(token) and _EDITION_CUE_RE.match(text[end : end + 6]):
+        return "edition"
+    if designation_span is not None:
+        return "reference" if _REFERENCE_SPAN_RE.match(text, designation_span[0]) else "designation"
+    return None
+
+
+def _asked_attributes(text: str, occurrences: Sequence["NumericOccurrence"]) -> set[str]:
+    """The attributes the QUESTION asks FOR: an explicit cue, or a choice between two of the same kind."""
+    asked = {attribute for attribute, cue in _ASKED_ATTRIBUTE_CUES.items() if cue.search(text)}
+    if _ATTRIBUTE_CHOICE_RE.search(text):
+        counts: dict[str, int] = {}
+        for occurrence in occurrences:
+            attribute = _attribute_of(text, occurrence.text, occurrence.end, occurrence.designation_span, occurrence.model_span)
+            if attribute:
+                counts[attribute] = counts.get(attribute, 0) + 1
+        asked |= {attribute for attribute, count in counts.items() if count >= 2}
+    return asked
+
+
+def numeric_occurrences(text: str) -> list[NumericOccurrence]:
+    """Every numeric occurrence in ``text``, each with its class and its local provenance.
+
+    This is the model the audit's section 3 requires and the reason the projection is derived from
+    occurrences rather than from a map keyed by the digits: two occurrences of the same string can carry
+    two different classes in one sentence, and both records have to survive.
+
+    The evidence, per occurrence: a figure inside a document identity is a NAME, unless the question asks
+    for that attribute (:data:`NUMERIC_IDENTITY_ASKED`); a letter-led run is a model code; a unit makes it
+    a measurement; a range/ratio/tolerance relation makes it a measurement too; evidence that conflicts is
+    UNKNOWN; anything left is the bare figure the question is asking about.
+    """
+    body = str(text or "")
+    spans = identity_spans(body)
+    candidates: list[NumericOccurrence] = []
+    for match in _QUESTION_DIGITS_RE.finditer(body):
+        token = match.group(0).replace("．", ".")
+        start, end = match.start(), match.end()
+        unit = _match_unit(body, end)
+        is_model = _is_model_designation(body, start, end)
+        candidates.append(
+            NumericOccurrence(
+                text=token,
+                start=start,
+                end=end,
+                kind=NUMERIC_UNKNOWN,
+                unit=None if unit is None else unit[0],
+                unit_end=None if unit is None else unit[1],
+                relation=_occurrence_relation(body, start, end, None if unit is None else unit[0]),
+                designation_span=_containing_span(start, end, spans),
+                model_span=_alnum_run(body, start, end) if is_model else None,
+            )
+        )
+
+    asked = _asked_attributes(body, candidates)
+    return [
+        replace(
+            occurrence,
+            kind=_resolve_kind(
+                body,
+                occurrence,
+                _attribute_of(body, occurrence.text, occurrence.end, occurrence.designation_span, occurrence.model_span),
+                asked,
+            ),
+        )
+        for occurrence in candidates
+    ]
+
+
+def _resolve_kind(text: str, occurrence: NumericOccurrence, attribute: str | None, asked: set[str]) -> str:
+    """The class of one occurrence, from its own evidence and the question's asked attribute."""
+    if attribute is not None:
+        # An identity or a model code. It is answer-bearing exactly when the question asks for that
+        # attribute - never merely because the corpus, or the calendar, says identity.
+        if attribute in asked:
+            return NUMERIC_IDENTITY_ASKED
+        return NUMERIC_MODEL_IDENTITY if attribute == "model" else NUMERIC_IDENTITY_LOCATOR
+
+    if occurrence.unit is not None:
+        adjacent = _letter_adjacent(text, occurrence.start, occurrence.end, occurrence.unit_end)
+        return NUMERIC_UNKNOWN if adjacent else NUMERIC_TECHNICAL_MEASUREMENT
+    if occurrence.relation in ("range", "ratio", "tolerance"):
+        return NUMERIC_TECHNICAL_MEASUREMENT
+    if _letter_adjacent(text, occurrence.start, occurrence.end):
+        return NUMERIC_MODEL_IDENTITY
+    return NUMERIC_ANSWER_VALUE
+
+
+def classify_numeric_token(text: str, start: int, end: int, spans: Sequence[tuple[int, int]] = ()) -> str:
+    """The class of the occurrence at ``text[start:end]`` - a thin reader of :func:`numeric_occurrences`.
+
+    Kept because a caller may already hold offsets; it re-derives the occurrence list from ``text`` and
+    returns the record covering those offsets. ``spans`` is accepted for the previous signature and is
+    IGNORED: the occurrence list derives identity from the text itself, so a stale span list passed in
+    could only disagree with it.
+    """
+    del spans
+    for occurrence in numeric_occurrences(text):
+        if occurrence.start == start and occurrence.end == end:
+            return occurrence.kind
+    return NUMERIC_UNKNOWN
+
+
+def _is_multiplication_sign(text: str, index: int) -> bool:
+    """Whether the character at ``index`` is a multiplication sign rather than a name letter.
+
+    ``query_router._DIMENSION_PAIR_RE`` already reads ``3x25``/``3×25``/``4*16`` as a count times a
+    section, so a letter ``x`` sitting directly after a figure is an OPERATOR: ``1x800mm2`` is how this
+    corpus writes a section with no space, and treating its ``x`` as a name letter made the figure look
+    like a code. The test needs the figure on the far side, so ``x800`` keeps reading as a prefix.
+    """
+    return text[index] in ("x", "X") and index > 0 and text[index - 1].isdigit()
+
+
+def _letter_adjacent(text: str, start: int, end: int, unit_end: int | None = None) -> bool:
+    """Whether a letter run touches the figure, with a connector allowed in between.
+
+    ``AB123CD`` (letters on both sides), ``WDZC-YJY-0.6`` (letters behind one dash) and ``123ABC``
+    are all instances; the letters a unit already claimed are excluded, and so is a multiplication sign.
+    """
+    if start > 0 and _ASCII_LETTER_RE.match(text[start - 1]) and not _is_multiplication_sign(text, start - 1):
+        return True
+    if (
+        start >= 2
+        and _RUN_CONNECTOR_RE.match(text[start - 1])
+        and _ASCII_LETTER_RE.match(text[start - 2])
+        and not _is_multiplication_sign(text, start - 2)
+    ):
+        return True
+    after = end if unit_end is None else unit_end
+    if after < len(text) and _ASCII_LETTER_RE.match(text[after]) and not _is_multiplication_sign(text, after):
+        return True
+    return (
+        after + 1 < len(text)
+        and bool(_RUN_CONNECTOR_RE.match(text[after]))
+        and bool(_ASCII_LETTER_RE.match(text[after + 1]))
+        and not _is_multiplication_sign(text, after + 1)
+    )
+
+
+def _is_range_continuation(text: str, start: int, end: int) -> bool:
+    """Whether a figure continues into another figure across a range or ratio separator.
+
+    Kept as a predicate over offsets for callers that hold them; :func:`_occurrence_relation` records the
+    same relation on the occurrence itself.
+    """
+    if start >= 2 and _RANGE_SEPARATOR_RE.match(text[start - 1]) and text[start - 2].isdigit():
+        return True
+    return end + 1 < len(text) and bool(_RANGE_SEPARATOR_RE.match(text[end])) and text[end + 1].isdigit()
 
 
 def designation_spans(text: str) -> list[str]:

@@ -106,8 +106,9 @@ LISTING_3A = """<table><caption>表6 GIS终端参数表</caption>
 
 #: The rest of the real pool: the general part of the standard and two unrelated
 #: cable datasets, none of which names 800 or 1200. The live pool held 82 passages for
-#: this question and only 18 named the sections, which is what lets the figures
-#: discriminate at all - see ``MAX_VALUE_POOL_SHARE``.
+#: this question and only 18 named the sections. Ubiquity is a DISCRIMINATION diagnostic
+#: (`decomposition._pool_share`); it does not decide what the question asked, because on a
+#: single-standard corpus the answering figures are the ubiquitous ones.
 PART1 = "220kV海底电力电缆系统采购标准+第1部分：通用技术规范.pdf"
 OTHER = "10kV架空绝缘电缆采购标准+第2部分：专用技术规范.pdf"
 
@@ -236,7 +237,17 @@ def test_a_question_with_no_figures_keeps_the_score_order():
 
 @pytest.mark.p1
 def test_a_figure_the_whole_pool_carries_is_not_a_signal():
+    """CHANGED, and the change is the audit's finding rather than a convenience.
+
+    This used to assert `question_values(...) == []`: a figure the whole pool carried was discarded as
+    indiscriminating. The counterexample that retired it is this corpus's actual shape - 18 of 82
+    passages name the section series, and on a single-standard corpus the question's OWN figures are the
+    ubiquitous ones - so the rule deleted exactly the figures a question about `220kV` asks for while the
+    rare identity tokens were kept. Extraction now returns them; whether a figure discriminates a pool is
+    a DIAGNOSTIC (`decomposition._pool_share`), and the ordering's business rather than the extraction's.
+    """
     question = "220kV 电缆的金属套平均厚度是多少？"
     pool = [_chunk("a", PART2, LISTING_2B, 0.6), _chunk("b", PART2, LISTING_2C, 0.5)]
 
-    assert question_values(question, pool) == []
+    assert question_values(question, pool) == ["220"]
+    assert question_values(question, pool) == question_values(question, ())
