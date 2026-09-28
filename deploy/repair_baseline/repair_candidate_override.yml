@@ -1,0 +1,19 @@
+# Deploy override for the FALSE_EMPTY_BY_DENSE_EXCEPTION_SHORT_CIRCUIT repair window.
+#
+# It pins the IMMUTABLE candidate tag, not `latest`, so the running container's identity is a frozen
+# artifact rather than whatever `latest` happens to point at. That is the specific hazard this
+# override exists to remove: an un-overridden `docker compose up -d` resolves `RAGFLOW_IMAGE` from
+# docker/.env, which is `my-wenruorag:latest`, and once silently reverted production to the rollback
+# image. `latest` is deliberately NOT moved by this window's deploy step; it follows only after live
+# incident acceptance, in a separate promotion step.
+#
+# The P0-7 override stays in the config file list alongside this one so the recorded lineage keeps
+# every layer that produced the running container. This file is listed last, so its `image:` wins.
+#
+# Rollback: re-run compose with the P0-7 override only (i.e. drop this file), which restores
+# `my-wenruorag:p0-7-obs-9f3d2c79` = sha256:ea93cd3bb7953e518c8694d86fe7a58af381ca4593ec42656bfd4e4964b5dba5.
+# The pre-P0 rollback anchor `my-wenruorag:rollback-pre-p0-20260927` = sha256:c50436820cb9 is not
+# touched by this window at all.
+services:
+  wenruo-rag-cpu:
+    image: my-wenruorag:repair-798288f8

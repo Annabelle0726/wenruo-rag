@@ -9,7 +9,6 @@ Read-only. Writes only /tmp/lexical_window_probe.json inside whichever container
 """
 import asyncio
 import json
-import os
 import pathlib
 import sys
 import time

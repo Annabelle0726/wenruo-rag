@@ -21,6 +21,7 @@ settings.ES = {"hosts": "http://repair-es:9200"}
 from rag.utils.es_conn import ESConnection
 from rag.nlp.search import Dealer, _chunk_scalar, is_kb_scoped_chunk
 from rag.llm.embedding_model import EmbeddingError
+from common.exceptions import ModelException
 from rag.retrieval import health_bridge as hb
 from rag.retrieval.multi_route import RouteResult, merge_route_hits, multi_route_retrieve
 from rag.retrieval.rerank import rerank_chunks
@@ -514,3 +515,69 @@ async def test_nonrecoverable_not_swallowed(store):
             raise PermissionError("workspace membership revoked")
     with pytest.raises(PermissionError):
         await retrieve(make_dealer(store), Denied())
+
+
+#: Every shape that must SURFACE instead of degrading, and every shape that must DEGRADE. The
+#: operator named these explicitly, and they are exercised END TO END - through the real
+#: Dealer -> lexical branch -> health DTO - because a classification that is right in isolation and
+#: wrong in the pipeline is the failure mode this repair exists to remove.
+DEGRADES = [
+    ("incident_400_failed_precondition", EmbeddingError("Embedding request failed: 400 FAILED_PRECONDITION User location is not supported for the API use.")),
+    ("bare_model_exception_5xx_transient", ModelException("status: 503, response: service unavailable", retryable=True)),
+    ("quota_429", EmbeddingError("Embedding request failed: 429 RESOURCE_EXHAUSTED quota exceeded")),
+]
+SURFACES = [
+    ("embedding_error_401", EmbeddingError("Embedding request failed: 401 UNAUTHENTICATED invalid authentication credentials")),
+    ("embedding_error_403", EmbeddingError("Embedding request failed: 403 PERMISSION_DENIED caller does not have permission")),
+    ("bare_model_exception_401", ModelException("status: 401, response: unauthorized", retryable=False)),
+    ("bare_model_exception_403", ModelException("status: 403, response: forbidden", retryable=False)),
+    ("bare_model_exception_404", ModelException("status: 404, response: not found", retryable=False)),
+    ("bare_model_exception_422", ModelException("status: 422, response: unprocessable", retryable=False)),
+    ("unknown_exception", ValueError("something nobody classified")),
+]
+
+
+@pytest.mark.parametrize("label,exc", DEGRADES, ids=[case[0] for case in DEGRADES])
+async def test_recoverable_failure_degrades_to_lexical_execution(store, monkeypatch, label, exc):
+    """A recoverable dense failure must EXECUTE the lexical leg and serve its candidates."""
+    hb.begin_retrieval_health()
+
+    class Model:
+        def encode_queries(self, text):
+            raise exc
+
+    seen = []
+    original = store.search
+
+    def capture(*a, **kw):
+        seen.append([type(e).__name__ for e in a[3]])
+        return original(*a, **kw)
+
+    monkeypatch.setattr(store, "search", capture)
+    assert Dealer._recoverable_embedding_failure(exc) is True, f"{label} must be recoverable"
+    result = await routes(make_dealer(store), Model(), [CONTROL])
+    assert seen == [["MatchTextExpr"]], f"{label}: the lexical ES request must actually run"
+    assert ids(result), f"{label}: the degraded path must serve real lexical candidates"
+    for chunk in result["chunks"]:
+        assert chunk["vector_similarity"] is None and chunk["vector"] is None
+        assert chunk["score_provenance"]["dense_score"] is None
+        assert chunk["score_provenance"]["mode"] == "LEXICAL_DEGRADED"
+    dto = hb.attach_retrieval_health(result)["retrieval_health"]
+    assert dto["overall"] == "degraded"
+    assert hb.current_session().legs["dense"].status.value == "failed"
+    assert hb.current_session().legs["lexical"].status.value == "success"
+    REPORT.setdefault("degrades_end_to_end", []).append({"case": label, "exception": type(exc).__name__, "lexical_executed": True, "chunks": len(ids(result)), "dto": dto})
+
+
+@pytest.mark.parametrize("label,exc", SURFACES, ids=[case[0] for case in SURFACES])
+async def test_nonrecoverable_failure_surfaces_instead_of_degrading(store, label, exc):
+    """A credential, permission or unclassified failure must NOT become a silent degradation."""
+
+    class Model:
+        def encode_queries(self, text):
+            raise exc
+
+    assert Dealer._recoverable_embedding_failure(exc) is False, f"{label} must NOT be recoverable"
+    with pytest.raises(type(exc)):
+        await retrieve(make_dealer(store), Model())
+    REPORT.setdefault("surfaces_end_to_end", []).append({"case": label, "exception": type(exc).__name__, "raised": True})

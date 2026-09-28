@@ -21,8 +21,7 @@ settings.ES = {"hosts": "http://repair-es:9200"}
 from rag.utils.es_conn import ESConnection
 from rag.nlp.search import Dealer
 from rag.llm.embedding_model import EmbeddingError
-from rag.retrieval import health_bridge as hb
-from rag.retrieval.multi_route import RouteResult, merge_route_hits, multi_route_retrieve
+from rag.retrieval.multi_route import multi_route_retrieve
 
 KB = "9463d93eb97511f1938f2592e9bc6fe4"
 TENANT = "a9e28731ab7011f19b833887d563fb04"

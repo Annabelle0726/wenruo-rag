@@ -297,3 +297,9 @@ scripts/ac_audit/*.md
 scripts/ac_audit/*.txt
 scripts/ac_audit/*_raw.*
 scripts/ac_audit/*_err.*
+
+# 保留 phase/ 里的架构与审计文档 (*.md)，只忽略临时快照和日志产物
+phase/*_snapshot_*
+phase/*.log
+phase/*.tmp
+phase/*.out

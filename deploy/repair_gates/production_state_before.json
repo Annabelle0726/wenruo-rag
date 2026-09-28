@@ -1,0 +1,724 @@
+{
+ "es": {
+  "docs_count": 486,
+  "docs_deleted": 42,
+  "dynamic_templates": 19,
+  "exists": true,
+  "mapping_fp": "dffd30c12aaede88",
+  "number_of_shards": "2",
+  "properties_count": 22,
+  "similarity": [
+   "scripted_sim"
+  ]
+ },
+ "knowledgebases": [
+  {
+   "chunk_num": 31,
+   "doc_num": 3,
+   "embd_id": "f79e37e5ab7611f18ecb3887d563fb04",
+   "id": "014e4f2aab7911f191ac3887d563fb04",
+   "name": "Cable_Tech_Docs",
+   "parser_id": "naive",
+   "tenant_id": "a9e28731ab7011f19b833887d563fb04"
+  },
+  {
+   "chunk_num": 159,
+   "doc_num": 5,
+   "embd_id": "f79e37e5ab7611f18ecb3887d563fb04",
+   "id": "557849eeb7e511f1a39191085067ecfc",
+   "name": "架空绝缘导线",
+   "parser_id": "naive",
+   "tenant_id": "a9e28731ab7011f19b833887d563fb04"
+  },
+  {
+   "chunk_num": 156,
+   "doc_num": 3,
+   "embd_id": "f79e37e5ab7611f18ecb3887d563fb04",
+   "id": "9463d93eb97511f1938f2592e9bc6fe4",
+   "name": "海底电力电缆",
+   "parser_id": "naive",
+   "tenant_id": "a9e28731ab7011f19b833887d563fb04"
+  },
+  {
+   "chunk_num": 47,
+   "doc_num": 1,
+   "embd_id": "f79e37e5ab7611f18ecb3887d563fb04",
+   "id": "98eb5966b9af11f1bd2c7fdf1e99df6a",
+   "name": "电力电缆",
+   "parser_id": "naive",
+   "tenant_id": "a9e28731ab7011f19b833887d563fb04"
+  },
+  {
+   "chunk_num": 88,
+   "doc_num": 4,
+   "embd_id": "f79e37e5ab7611f18ecb3887d563fb04",
+   "id": "ae36fdfeb7ff11f1a39191085067ecfc",
+   "name": "工程采购范本专用技术规范",
+   "parser_id": "naive",
+   "tenant_id": "a9e28731ab7011f19b833887d563fb04"
+  }
+ ],
+ "models": {
+  "instances": [
+   {
+    "api_key_fp": "28cbaef6055e",
+    "id": "26012a7dab7611f198e83887d563fb04",
+    "model_name": null,
+    "model_type": null,
+    "provider_id": "25b84a6bab7611f19a863887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "api_key_fp": "fd676021ee3f",
+    "id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": null,
+    "model_type": null,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "api_key_fp": "062bcd934443",
+    "id": "f7825d47ab7611f18d8d3887d563fb04",
+    "model_name": null,
+    "model_type": null,
+    "provider_id": "ee6cb91bab7611f18f0b3887d563fb04",
+    "tenant_id": null
+   }
+  ],
+  "models": [
+   {
+    "id": "2607a247ab7611f1a2c83887d563fb04",
+    "instance_id": "26012a7dab7611f198e83887d563fb04",
+    "model_name": "deepseek-v4-flash",
+    "model_type": 1,
+    "provider_id": "25b84a6bab7611f19a863887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "260be49fab7611f1b6df3887d563fb04",
+    "instance_id": "26012a7dab7611f198e83887d563fb04",
+    "model_name": "deepseek-v4-flash-vision-exp",
+    "model_type": 9,
+    "provider_id": "25b84a6bab7611f19a863887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2610d2efab7611f19dc53887d563fb04",
+    "instance_id": "26012a7dab7611f198e83887d563fb04",
+    "model_name": "deepseek-v4-pro",
+    "model_type": 1,
+    "provider_id": "25b84a6bab7611f19a863887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "26e51071afdd11f198863887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "BAAI/bge-large-en-v1.5",
+    "model_type": 2,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "26e76b2fafdd11f1b4293887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "BAAI/bge-large-zh-v1.5",
+    "model_type": 2,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "26ea3ee0afdd11f1be383887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "BAAI/bge-m3",
+    "model_type": 2,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "26ecabceafdd11f1b5363887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "BAAI/bge-reranker-v2-m3",
+    "model_type": 16,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "26eee955afdd11f190a33887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "ByteDance-Seed/Seed-OSS-36B-Instruct",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "26f13887afdd11f1b26c3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "FunAudioLLM/CosyVoice2-0.5B",
+    "model_type": 32,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "26f4349dafdd11f18bd93887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "MiniMaxAI/MiniMax-M2.5",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "26f7b101afdd11f1b1e63887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Pro/BAAI/bge-m3",
+    "model_type": 2,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "26fb4bb3afdd11f199b23887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Pro/BAAI/bge-reranker-v2-m3",
+    "model_type": 16,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "26fe1651afdd11f198453887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Pro/MiniMaxAI/MiniMax-M2.5",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2700f6fbafdd11f18bcf3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Pro/Qwen/Qwen2.5-7B-Instruct",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "27046169afdd11f1bf083887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Pro/deepseek-ai/DeepSeek-R1",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "270744c1afdd11f1b1683887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Pro/deepseek-ai/DeepSeek-V3",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "270a4b8cafdd11f1a2343887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Pro/deepseek-ai/DeepSeek-V3.1-Terminus",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "270cf90dafdd11f1be113887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Pro/deepseek-ai/DeepSeek-V3.2",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "270f7ea8afdd11f197e43887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Pro/moonshotai/Kimi-K2.6",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "27125049afdd11f1990f3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Pro/zai-org/GLM-5.1",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "27156ccbafdd11f1b22b3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen2.5-14B-Instruct",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "271856b5afdd11f1b5773887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen2.5-32B-Instruct",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "271b4586afdd11f182c73887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen2.5-72B-Instruct",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "271e190aafdd11f1857e3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen2.5-72B-Instruct-128K",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2720d825afdd11f1badb3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen2.5-7B-Instruct",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2723cd4eafdd11f197f53887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-14B",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2726ac33afdd11f19b493887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2729a3a9afdd11f1840d3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-32B",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "272cd95dafdd11f1acfd3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-8B",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "272facddafdd11f1a8a93887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "27323d3dafdd11f1a4ef3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-Embedding-0.6B",
+    "model_type": 2,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "273470fcafdd11f19c823887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-Embedding-4B",
+    "model_type": 2,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "273783c2afdd11f18dc93887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-Embedding-8B",
+    "model_type": 2,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "273a2932afdd11f193453887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-Omni-30B-A3B-Captioner",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "273c6f12afdd11f1909b3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-Omni-30B-A3B-Instruct",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "273e88fbafdd11f19dda3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-Omni-30B-A3B-Thinking",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "27409595afdd11f1a5523887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-Reranker-0.6B",
+    "model_type": 16,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2742c7c3afdd11f199a03887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-Reranker-4B",
+    "model_type": 16,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "27451a52afdd11f1b4b23887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-Reranker-8B",
+    "model_type": 16,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "27475a50afdd11f198093887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-VL-30B-A3B-Instruct",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "274a62dbafdd11f194d23887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-VL-30B-A3B-Thinking",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "274d528fafdd11f1beb33887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-VL-32B-Instruct",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "274facddafdd11f1a8513887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-VL-32B-Thinking",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "27524d92afdd11f1bcf43887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2754ca7eafdd11f18d0f3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-VL-8B-Thinking",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "27574dceafdd11f1abf33887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-VL-Embedding-8B",
+    "model_type": 2,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "275a446fafdd11f1b6753887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3-VL-Reranker-8B",
+    "model_type": 16,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "275d555dafdd11f1aff03887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3.5-122B-A10B",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "276214afafdd11f1bdb43887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3.5-27B",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2764f476afdd11f180063887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3.5-35B-A3B",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2767aaf2afdd11f1bd923887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3.5-397B-A17B",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "276aa2a6afdd11f1a0d63887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3.5-4B",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "276d5bddafdd11f18be53887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3.5-9B",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2770635bafdd11f191ac3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3.6-27B",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2772bb2cafdd11f197613887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "Qwen/Qwen3.6-35B-A3B",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "27750097afdd11f1b5f83887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "THUDM/GLM-4-32B-0414",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "277736f3afdd11f1a3213887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "THUDM/GLM-4-9B-0414",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "27798677afdd11f1a2183887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "THUDM/GLM-Z1-9B-0414",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "277c790eafdd11f1ad383887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "deepseek-ai/DeepSeek-R1",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "277ebad7afdd11f1bc1a3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2780ffa3afdd11f18e963887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "deepseek-ai/DeepSeek-V3",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "278319b6afdd11f1a6383887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "deepseek-ai/DeepSeek-V3.1-Terminus",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "27852a3dafdd11f1bbc13887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "deepseek-ai/DeepSeek-V3.2",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2787592aafdd11f18b153887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "deepseek-ai/DeepSeek-V4-Flash",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "278a0840afdd11f18a783887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "deepseek-ai/DeepSeek-V4-Pro",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "278c329aafdd11f1a1b93887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "fnlp/MOSS-TTSD-v0.5",
+    "model_type": 32,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "278e6bafafdd11f1bd123887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "inclusionAI/Ling-flash-2.0",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "2790dff2afdd11f1a4cf3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "inclusionAI/Ling-mini-2.0",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "27931e4bafdd11f19ae73887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "nex-agi/Nex-N2-Pro",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "27958b33afdd11f1b8b83887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "stepfun-ai/Step-3.5-Flash",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "279844f1afdd11f18be23887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "tencent/Hunyuan-A13B-Instruct",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "279b1fa8afdd11f1a9813887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "tencent/Hunyuan-MT-7B",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "279d7ec7afdd11f1969f3887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "zai-org/GLM-4.5-Air",
+    "model_type": 1,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "279fb20cafdd11f19fc83887d563fb04",
+    "instance_id": "26e220b6afdd11f1bb263887d563fb04",
+    "model_name": "zai-org/GLM-4.5V",
+    "model_type": 9,
+    "provider_id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "tenant_id": null
+   },
+   {
+    "id": "f79e37e5ab7611f18ecb3887d563fb04",
+    "instance_id": "f7825d47ab7611f18d8d3887d563fb04",
+    "model_name": "gemini-embedding-001",
+    "model_type": 2,
+    "provider_id": "ee6cb91bab7611f18f0b3887d563fb04",
+    "tenant_id": null
+   }
+  ],
+  "providers": [
+   {
+    "api_key_fp": "",
+    "id": "25b84a6bab7611f19a863887d563fb04",
+    "provider_name": "DeepSeek",
+    "tenant_id": "a9e28731ab7011f19b833887d563fb04"
+   },
+   {
+    "api_key_fp": "",
+    "id": "26c2723cafdd11f1bc2f3887d563fb04",
+    "provider_name": "SILICONFLOW",
+    "tenant_id": "a9e28731ab7011f19b833887d563fb04"
+   },
+   {
+    "api_key_fp": "",
+    "id": "ee6cb91bab7611f18f0b3887d563fb04",
+    "provider_name": "Gemini",
+    "tenant_id": "a9e28731ab7011f19b833887d563fb04"
+   }
+  ]
+ },
+ "primary_kb": {
+  "embd_id": "f79e37e5ab7611f18ecb3887d563fb04",
+  "found": true,
+  "id": "014e4f2aab7911f191ac3887d563fb04",
+  "name": "Cable_Tech_Docs"
+ },
+ "redis": {
+  "keyspace": {
+   "db1": "{'keys': 95, 'expires': 90, 'avg_ttl': 314953255}"
+  },
+  "secret_key_present": true,
+  "synonyms_present": false
+ }
+}
