@@ -246,21 +246,37 @@ class Dealer:
         """Whether a dense-leg failure may degrade to lexical retrieval, or must surface.
 
         Recoverable: the leg failed for this request while the capability still exists - provider
-        quota/rate limiting (408/429), a timeout, a connection failure, and the 400
-        ``FAILED_PRECONDITION`` location restriction that caused the incident.
+        quota/rate limiting (408/429), a timeout, a connection failure, the 400
+        ``FAILED_PRECONDITION`` location restriction that caused the incident, and a bare
+        ``ModelException`` the tree itself has flagged transient.
 
         NOT recoverable: control signals, credential/permission failures, and everything
         unrecognised. ``asyncio.CancelledError`` is a ``BaseException`` and never reaches here
         through an ``except Exception``, but it is named explicitly so a future refactor that
         widened a handler cannot quietly turn a user abort into a degraded answer.
         """
+        from common.exceptions import ModelException
         from rag.llm.embedding_model import EmbeddingError
 
         if isinstance(exc, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
             return False
         if _looks_like_credential_or_permission_failure(exc):
             return False
-        return isinstance(exc, (EmbeddingError, TimeoutError, ConnectionError))
+        if isinstance(exc, (EmbeddingError, TimeoutError, ConnectionError)):
+            return True
+        # A requests-based connector (TEI, HuggingFace, an OpenAI-compatible local server) reports
+        # 5xx as a bare `ModelException` carrying the tree's own transience flag, and leaves 4xx
+        # with `retryable=False`. That flag is the only signal those paths give, and consulting it
+        # keeps a transient outage on those connectors from becoming the very false-empty result
+        # this repair exists to remove - the Gemini path raises `EmbeddingError` and is covered
+        # above, so the incident itself does not depend on this branch.
+        #
+        # It cannot widen the classification: `retryable` defaults to False, so a 401, a 403, a 404,
+        # a 422 and any exception the tree does not explicitly call transient stay non-recoverable.
+        # Note the incident's own provider error also carries `retryable=False` (the location
+        # restriction is classified by body text, which recognises only quota and rate limit), which
+        # is exactly why recoverability cannot be decided by that flag alone.
+        return isinstance(exc, ModelException) and getattr(exc, "retryable", False) is True
 
     async def get_vector(self, txt, emb_mdl, top_k=10, num_candidates=20, similarity=0.1):
         try:

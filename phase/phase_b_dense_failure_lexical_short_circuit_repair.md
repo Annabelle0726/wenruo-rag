@@ -71,15 +71,27 @@ have after this repair — and not as the repository's P1-2 pipeline.
 
 1. **Credential and permission failures were being converted into a silent degradation.**
    `_recoverable_embedding_failure` accepted any `EmbeddingError`, and in this tree that class wraps
-   every non-`ModelException` SDK failure as well as 408/429, with no status check anywhere. A revoked
-   API key or a `403 PERMISSION_DENIED` would therefore have produced "semantic search is temporarily
-   degraded" indefinitely instead of surfacing a lost capability. Credential/permission markers are
-   now non-recoverable, `CancelledError`/`KeyboardInterrupt`/`SystemExit` are named explicitly, and
-   everything unrecognised is fail-closed — while the incident's own
-   `400 FAILED_PRECONDITION ... location is not supported` stays recoverable, which is asserted.
-   Local pool saturation now raises a distinct `EmbeddingCapacityError` (`TimeoutError` subclass) so
-   back-pressure is distinguishable from a provider timeout **without adding a reason code or touching
-   any frozen enum**.
+   every non-`ModelException` SDK failure as well as 408/429, with no status check anywhere
+   (`common/model_errors.py:classify` recognises only quota and rate-limit bodies, and the tree has
+   **no** auth/permission class at all — the distinction is asserted in the phase docs and
+   effectively unimplemented). A revoked API key or a `403 PERMISSION_DENIED` would therefore have
+   produced "semantic search is temporarily degraded" indefinitely instead of surfacing a lost
+   capability. Credential/permission markers are now non-recoverable, `CancelledError` /
+   `KeyboardInterrupt` / `SystemExit` are named explicitly, and everything unrecognised is
+   fail-closed — while the incident's own `400 FAILED_PRECONDITION ... location is not supported`
+   stays recoverable, which is asserted. Local pool saturation now raises a distinct
+   `EmbeddingCapacityError` (`TimeoutError` subclass) so back-pressure is distinguishable from a
+   provider timeout **without adding a reason code or touching any frozen enum**.
+
+   The same correction closes a second reachable route to the very same incident class: a
+   requests-based connector (TEI, HuggingFace, an OpenAI-compatible local server) reports 5xx as a
+   bare `ModelException` and never raises `EmbeddingError`, so type-only classification left a
+   transient outage on those connectors aborting the route with an empty result. The tree's own
+   `retryable` flag is now consulted **for that shape only** (`ModelException` with
+   `retryable=True`), which cannot widen the classification because the flag defaults to `False`:
+   401/403/404/422 and every unclassified exception stay non-recoverable. A dedicated gate pins why
+   recoverability cannot be decided by that flag *alone* — the incident's own `EmbeddingError`
+   carries `retryable=False`, so a `retryable`-only rule would have reintroduced the bug.
 2. **The degraded `vector: None` crashed the citation path.** `insert_citations` computed
    `len(chunk_v[i])` on it, which raises as soon as the embedding provider recovers between retrieval
    and citation attribution — turning a degraded-but-answerable turn into a 500. An absent chunk
@@ -120,7 +132,7 @@ are fixed and documented in `deploy/repair_gates/README.md`.
 | `TIMEOUT_LEXICAL_EXECUTED_BEFORE_WORKER_RELEASE` | **PASS** — the real 60 s deadline ran (`elapsed_seconds = 60.218`); the store search executed while the worker was still blocked and unreleased |
 | `LATE_DENSE_RESULT_IGNORED` | **PASS** — the returned result and the session's `_leg_facts` are byte-identical before and after the late worker settles |
 | `RESOURCE_LEAK_GATE` | **PASS** — 12 timeout cycles: budget returns to 32/32 and worker threads stay within the 16-worker ceiling |
-| `CONTROL_SIGNAL_PRESERVATION` | **PASS** — `CancelledError`, `KeyboardInterrupt`, `SystemExit`, `PermissionError`, `401 UNAUTHENTICATED`, `403 PERMISSION_DENIED`, invalid-API-key are all **non**-recoverable; cancellation propagates out of the embedding await |
+| `CONTROL_SIGNAL_PRESERVATION` | **PASS** — `CancelledError`, `KeyboardInterrupt`, `SystemExit`, `PermissionError`, `401 UNAUTHENTICATED`, `403 PERMISSION_DENIED`, invalid-API-key, and bare `ModelException` 401/403/404/422 are all **non**-recoverable; a `ModelException` flagged transient (`503` on a requests-based connector) **is** recoverable; cancellation propagates out of the embedding await |
 | `MISSING_DENSE_REPRESENTED_AS_ZERO` | **PASS (not represented as zero)** — `vector_similarity`, `vector` and `score_provenance.dense_score` are `None`; no `_knn_scores`, no hybrid weighted score, and the zero-vector fallback is never consulted in degraded mode (`vector_column` is computed but the field lookup is bypassed) |
 | `HEALTHY_PATH_SEMANTIC_DELTA` | **PASS — none.** Against the frozen production `search.py` at weights `.5` and `.25`: identical result dicts after removing the one additive `score_provenance` field, byte-identical ES call trace, one provider call each, identical health DTO. Non-vacuity asserted (20 chunks at `.5`) |
 | `MIXED_ROUTE_SCORE_PROVENANCE_PRESERVED` | **PASS** — every chunk keeps its winning row's full provenance; `selection_sources` retains all rows; a hybrid score is never compared with a lexical one; no composite score; the merge is a pure function of its inputs (re-verified with the store patched to explode); a provenance-less row raises instead of being scored; reranker called once over the whole merged pool with unchanged model and position |
@@ -132,7 +144,7 @@ are fixed and documented in `deploy/repair_gates/README.md`.
 | `P1_2_STATUS` | **PAUSED** — no planner, cache or `plan_hash` change in this round. Two consequences of the suspension are recorded and deliberately **not** fixed here (section 6) |
 | `PRODUCTION_MUTATED` | **NO** — no build, no deploy, no retag; `latest` is still `ea93cd3bb795`; production ES/MySQL/Redis/config untouched; every production access was a read (`_search`, `_count`, `_stats`, `get_mapping`, `get_settings`, `SELECT id, name, kb_id`, `GET`) |
 
-**Gate totals: 44/44 PASS** (`test_degradation.py` 16, `test_embedding_execution.py` 28).
+**Gate totals: 51/51 PASS** (`test_degradation.py` 16, `test_embedding_execution.py` 35).
 
 ---
 

@@ -37,6 +37,7 @@ from rag.nlp.search import (
     _looks_like_credential_or_permission_failure,
 )
 from rag.llm.embedding_model import EmbeddingError, EmbeddingQuotaExhausted, EmbeddingRateLimited
+from common.exceptions import ModelException
 
 REPORT = {}
 SLOT_CAPACITY = 32
@@ -282,6 +283,16 @@ async def test_late_result_cannot_re_enter_or_move_health(monkeypatch):
         (asyncio.TimeoutError(), True, "provider timeout"),
         (TimeoutError("read timed out"), True, "provider read timeout"),
         (ConnectionError("connection reset"), True, "connection failure"),
+        # A requests-based connector reports 5xx as a bare ModelException flagged transient, and
+        # leaves 4xx unflagged. Consulting that flag is what keeps a transient outage on TEI /
+        # HuggingFace / an OpenAI-compatible local server from becoming the same false-empty result
+        # the Gemini incident produced - those connectors never raise EmbeddingError.
+        (ModelException("status: 503, response: service unavailable", retryable=True), True, "bare ModelException flagged transient (5xx connector)"),
+        (ModelException("status: 401, response: unauthorized", retryable=False), False, "bare ModelException 401"),
+        (ModelException("status: 403, response: forbidden", retryable=False), False, "bare ModelException 403"),
+        (ModelException("status: 404, response: not found", retryable=False), False, "bare ModelException 404"),
+        (ModelException("status: 422, response: unprocessable", retryable=False), False, "bare ModelException 422"),
+        (ModelException("status: 500, response: boom"), False, "bare ModelException with the default (non-transient) flag"),
         (ValueError("something nobody classified"), False, "unclassified failure (fail closed)"),
     ],
 )
@@ -289,6 +300,20 @@ def test_recoverable_classification(exc, expected, label):
     """Recoverable means 'degrade and keep serving'. Everything else must surface."""
     assert Dealer._recoverable_embedding_failure(exc) is expected, label
     REPORT.setdefault("classification", []).append({"case": label, "exception": type(exc).__name__, "recoverable": expected})
+
+
+def test_the_incidents_own_error_is_transient_by_no_flag_at_all():
+    """Pin why recoverability cannot be decided by `retryable` alone.
+
+    The provider location restriction arrives as a plain `EmbeddingError` whose `retryable` is the
+    default False, because `embedding_failure` only recognises quota and rate-limit bodies. A rule
+    of the form "recoverable iff retryable" would therefore classify the incident itself as
+    permanent and reintroduce the bug this repair removes.
+    """
+    incident = EmbeddingError("Embedding request failed for GeminiEmbed. Error: 400 FAILED_PRECONDITION User location is not supported for the API use.")
+    assert incident.retryable is False
+    assert Dealer._recoverable_embedding_failure(incident) is True
+    REPORT["incident_flag_pin"] = {"retryable_flag": incident.retryable, "classified_recoverable": True}
 
 
 def test_credential_markers_are_matched_but_the_incident_is_not():
