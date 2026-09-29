@@ -15,6 +15,7 @@
  */
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { TenantRole } from '@/pages/user-setting/constants';
@@ -85,6 +86,16 @@ jest.mock('@/hooks/use-user-setting-request', () => ({
   }),
 }));
 
+// The workspace quota section reads its numbers from `GET /tenants/<id>/usage/quota`
+// through React Query, so without this mock the page under test needs a
+// `QueryClientProvider` and a live request that this suite has no business making.
+// `UsagePolicySection` renders its "budget unavailable" panel for that empty
+// answer, which is how a manager sees the page when the backend has no budget row
+// yet; the roster controls this suite is about are unaffected.
+jest.mock('@/hooks/use-workspace-usage-request', () => ({
+  useFetchQuotaStatus: () => ({ data: undefined, loading: false }),
+}));
+
 const member = (
   user_id: string,
   role: string,
@@ -113,15 +124,27 @@ const tenant = (
   update_date: '2026-01-01T00:00:00',
 });
 
-const headerText = () => screen.getByRole('heading', { level: 2 }).textContent;
+// The page header keeps the subsection title in its `<h2>` and the workspace it is
+// showing on the line under it (`<name> workspace`, or `workspace` alone while the
+// workspace record is unknown). The workspace label is what these assertions are
+// about: the header must name the WORKSPACE, never the caller's own nickname.
+const workspaceLabel = () =>
+  screen.getByRole('heading', { level: 2 }).parentElement?.querySelector('p')
+    ?.textContent;
 
-// The page normally sits inside the app shell's `TooltipProvider`, which the
-// department pickers' empty-workspace hint relies on.
+// The page normally sits inside the app shell's `TooltipProvider` (the department
+// pickers' empty-workspace hint relies on it) and reads `useLocation` to decide
+// which workspace section it is showing, so it needs a router even though this
+// suite never navigates. Without one React throws
+// "useLocation() may be used only in the context of a <Router>" from the page's
+// own render.
 const renderPage = () =>
   render(
-    <TooltipProvider>
-      <UserSettingTeam />
-    </TooltipProvider>,
+    <MemoryRouter>
+      <TooltipProvider>
+        <UserSettingTeam />
+      </TooltipProvider>
+    </MemoryRouter>,
   );
 
 const rowOf = (name: string) => {
@@ -161,9 +184,9 @@ describe('setting-team page', () => {
       // The name comes from the workspace record (`tenant.name`). The roster
       // list answers each row with the OWNER's user row, so its `nickname` is a
       // person, and the caller's own nickname is never a workspace name.
-      expect(headerText()).toContain('Cable Works');
-      expect(headerText()).not.toContain('Ann Member');
-      expect(headerText()).not.toContain('Owner Person');
+      expect(workspaceLabel()).toContain('Cable Works');
+      expect(workspaceLabel()).not.toContain('Ann Member');
+      expect(workspaceLabel()).not.toContain('Owner Person');
     });
 
     it('names a joined workspace by the workspace, not by its owner', () => {
@@ -190,7 +213,7 @@ describe('setting-team page', () => {
 
       renderPage();
 
-      expect(headerText()).toBe('workspace');
+      expect(workspaceLabel()).toBe('workspace');
     });
 
     it('shows the roster read-only, with a role tag on every row', () => {
