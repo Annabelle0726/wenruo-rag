@@ -251,6 +251,41 @@ pricing GET返回opaque revision（workspace/model identity、model type、两�
 `U3_USAGE_POLICY_IMPLEMENTED`：**后端契约 YES / 前端编辑器 NO**；`U3_PRICING_FOUNDATION_IMPLEMENTED: NO`；
 `U3_ACCEPTANCE_VERDICT: USAGE_POLICY_BACKEND_ACCEPTED_AT_CODE_LEVEL; PRICING_NOT_ACCEPTED; G7_PRODUCTION_TYPE_SQL_AND_G13/G14_OPEN`。
 
+## 10. U3-A 记录：Usage Policy 垂直切片
+
+### 10.1 本轮交付
+
+**后端**（上一轮已交付，本轮回归保持）：`policy_revision` / `PolicyConflict` / `If-Match` 条件更新 / 存储范围校验 / `quota_status` 只读 revision。
+
+**前端**（本轮新增，Settings → Team → Usage policy）：
+
+| 文件 | 作用 |
+|---|---|
+| `web/src/pages/user-setting/setting-team/usage-policy-validation.ts` | 纯逻辑：字段校验（Calls 1..2147483647、Tokens 0..10^10、**留空不等于 0**、拒绝 `1.5`/`1e3`/`1,000`/`+3` 等非整数字面量）、只提交 dirty 字段的 patch、字段错误收集、`code=101 + error_type=POLICY_CONFLICT` 判定 |
+| `web/src/pages/user-setting/setting-team/usage-policy.tsx` | 编辑器状态机：Edit/Save/Cancel、draft 与 baseline 分离、conflict 需先 reload、超时=结果未知且**不自动重发**、保存成功但刷新失败单独提示、保存中禁重入、role 未解析或非管理员禁止编辑 |
+| `web/src/services/workspace-usage-service.ts` | 新增 `updateUsageBudget`：复用既有 `PUT /tenants/<id>/usage-budget`，patch 走 `data`、revision 走 `headers['If-Match']`（native 配置，二者不可能混淆） |
+| `web/src/hooks/use-workspace-usage-request.ts` | `useUpdateUsagePolicy` mutation：`retry: false`、只在 `code===0` 时按 workspace key 失效 quota/usage 缓存 |
+| `web/src/locales/{en,zh}.ts` | 各 +23 个 `usage.*` 键（含 0 语义、豁免、冲突、未知结果、缺省策略文案） |
+
+行为要点：编辑器**不改动已生效的 limits/cache/成功提示**（无 optimistic 写），只按 dirty 字段提交，因此保存一个字段不会覆盖其他字段；`0` 在 Calls 上被拒绝、在 Tokens 上即"未启用"；OWNER/ADMIN 豁免由服务端返回并显式显示；滚动分钟的 `used` 仍显示为"此处不跟踪"，不编造数值。
+
+### 10.2 Gate 状态
+
+| Gate | 状态 | 证据 |
+|---|---|---|
+| G1–G6 | **PASS** | `test_workspace_usage_policy.py` 18 项（含 audit 原子性、拒权、跨 workspace、partial、0 语义、存储范围） |
+| **G7** | **PASS（隔离生产同类型 SQL）** | 新增 `test_workspace_usage_policy_mysql.py`，跑在**临时 MySQL 8.0.40 容器**（`mysql:8.0.40`，与部署大版本一致，端口 3399，**不是**共享的 3307 实例）：`3 passed`。证明：引擎确为 8.0；两写入者持同一 revision → 恰好一个 `saved`、另一个 `POLICY_CONFLICT`；胜者值原样保留（**无丢失更新**），无关字段 `tokens_per_day` 不变；仅胜者留下 1 条成功 audit；10 个并发写入者恰好 1 个提交、0 异常 |
+| G12 | **PASS** | policy + budget/settlement/security/read-model/detached：`109 passed, 2 skipped`（本轮新增前），policy 写入不动 counters/period/reservation |
+| G13 | **部分 PASS** | 纯逻辑与状态机语义由 13 项 jest 单测覆盖（blank≠0、只发 dirty、冲突判定、越界拒绝）；**未做组件级 jsdom 交互测试**，UI 渲染状态未在浏览器中验证 |
+| G14 | **未执行** | 本轮上下文预算在完成 G7 与前端实现后耗尽，**未运行** `npm run build`、也未做 zh/en 真实浏览器写流程（保存→重载→持久化、stale conflict、NORMAL 拒绝入口）。因此**不宣称 G14**，`U3_USAGE_POLICY_COMPLETE` 保持 **NO** |
+
+### 10.3 结论
+
+Usage Policy 的**后端契约、前端编辑器、纯逻辑与 G7 并发门**均已交付并通过；**G14（构建 + 真实浏览器写流程）未执行**，
+故本轮不宣告 U3-A 完成。Pricing Foundation 仍未实施（`PRICING_WRITE_PATHS_CLOSED: NO`），不得启用任何定价 UI。
+未开 monetary cap、未做 schema migration、未改生产 DB/Redis/配置、未部署、未 retag `:latest`。
+本轮改动**未新增任何 credential 读取**。
+
 ## 8. 状态板与停止点
 
 ```text

@@ -99,6 +99,14 @@ const rawUsageService = registerNextServer({
       usagePath(config.tenantId, 'quota', config),
     method: 'get',
   },
+  // The write takes a NATIVE axios config (second call argument), so the patch
+  // travels in `data` and the revision in `headers` - the two can never be
+  // confused for one another the way a single merged object invites.
+  updateUsageBudget: {
+    url: (config: { tenantId: string }) =>
+      `/api/v1/tenants/${encodeURIComponent(config.tenantId)}/usage-budget`,
+    method: 'put',
+  },
 });
 
 /**
@@ -132,6 +140,23 @@ const workspaceUsageService = {
     rawUsageService.recordedModelBreakdown,
   ),
   quotaStatus: owningTheErrorSurface(rawUsageService.quotaStatus),
+  /**
+   * `PUT /tenants/<id>/usage-budget` with `If-Match: <policy_revision>`.
+   *
+   * The existing budget endpoint, not a second one: U3 configures rules that
+   * already exist. It is the ONE usage call that must NOT swallow its own error
+   * surface - a conflict is a state the editor renders - so it keeps the global
+   * notification path and the caller inspects `code`/`error_type` itself.
+   */
+  updateUsageBudget: (
+    tenantId: string,
+    patch: Record<string, unknown>,
+    revision: string,
+  ) =>
+    rawUsageService.updateUsageBudget(
+      { tenantId, data: patch, headers: { 'If-Match': revision } },
+      true,
+    ),
 };
 
 export default workspaceUsageService;

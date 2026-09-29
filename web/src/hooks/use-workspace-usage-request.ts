@@ -27,7 +27,8 @@ import workspaceUsageService, {
 } from '@/services/workspace-usage-service';
 import { useFetchTenantInfo } from '@/hooks/use-user-setting-request';
 import { getActiveTenantId } from '@/utils/active-tenant';
-import { useQuery } from '@tanstack/react-query';
+import { isSuccess } from '@/pages/user-setting/setting-team/usage-policy-validation';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 /**
  * Every usage query key this domain owns.
@@ -147,6 +148,57 @@ export const useFetchQuotaStatus = (memberUserId?: string) =>
   ) as {
     data?: IUsageEnvelope & { data?: IQuotaStatusData };
     loading: boolean;
-    refetch: () => void;
+    refetch: () => Promise<{ error?: unknown } | undefined>;
     error: unknown;
   };
+
+/**
+ * Saves a policy patch with the revision the reader was shown.
+ *
+ * It is a mutation rather than a plain request because the outcome drives the
+ * editor's state machine: `code=0` alone is a success (HTTP 200 does not mean a
+ * write happened - a conflict arrives as 200 too), and the caller must be able to
+ * tell a conflict from a failure from an unknown result. It NEVER auto-retries:
+ * a timeout leaves the outcome unknown, and re-sending a policy write that may
+ * already have landed is exactly what `If-Match` exists to prevent.
+ *
+ * On success the workspace's quota and usage caches are invalidated by KEY, so a
+ * save in one workspace cannot refresh another's data.
+ */
+export const useUpdateUsagePolicy = () => {
+  const queryClient = useQueryClient();
+  const tenantId = useActiveUsageTenantId();
+
+  const mutation = useMutation({
+    retry: false,
+    mutationFn: async ({
+      patch,
+      revision,
+    }: {
+      patch: Record<string, number>;
+      revision: string;
+    }) => {
+      const { data: body } = await workspaceUsageService.updateUsageBudget(
+        tenantId as string,
+        patch,
+        revision,
+      );
+      return body;
+    },
+    onSuccess: (body) => {
+      if (!isSuccess(body) || !tenantId) {
+        return;
+      }
+      queryClient.invalidateQueries({
+        queryKey: WorkspaceUsageKeys.all(tenantId),
+      });
+    },
+  });
+
+  return {
+    save: mutation.mutateAsync,
+    saving: mutation.isPending,
+    reset: mutation.reset,
+    tenantId,
+  };
+};
