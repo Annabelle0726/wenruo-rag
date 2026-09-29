@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { gridCapacity, rowsThatFit } from '@/utils/list-capacity';
 
 /**
@@ -52,13 +52,16 @@ const itemHeightOf = (region: HTMLElement, style: CSSStyleDeclaration) => {
  *
  * A loading skeleton is a deliberately different height (`h-24` against a 38px
  * row), so measuring one would page the table by the wrong number until the data
- * landed. Skeleton rows are skipped, and a table whose only row is a skeleton is
- * simply not measurable yet.
+ * landed. Skeleton rows are skipped. Before any row has rendered, the region may
+ * declare `data-list-item-height` - the table's own row height, stated once next
+ * to the table that uses it - so the first request can still be a whole page.
  */
 const tableRowHeightOf = (region: HTMLElement) => {
   const rows = [...region.querySelectorAll('tbody tr')];
   const row = rows.find((candidate) => !candidate.hasAttribute('data-skeleton'));
-  return row ? row.getBoundingClientRect().height : 0;
+  if (row) return row.getBoundingClientRect().height;
+  const declared = Number.parseFloat(region.dataset.listItemHeight ?? '');
+  return Number.isFinite(declared) && declared > 0 ? declared : 0;
 };
 
 const isGrid = (style: CSSStyleDeclaration) => style.display === 'grid';
@@ -67,6 +70,11 @@ const isGrid = (style: CSSStyleDeclaration) => style.display === 'grid';
  * How many complete items `region` can show, or `null` when it cannot be
  * measured yet (no region, no item height to page by, or a reading too small to
  * be a real region).
+ *
+ * The region may hold more than the list: a page's frame carries its own toolbar
+ * above the table, and its pagination can live inside the same box. What the
+ * table sits below, its header, and a `data-list-footer` are subtracted - the
+ * capacity is the space the ROWS have, not the space the box has.
  */
 export function readRegionCapacity(region: HTMLElement | null): number | null {
   if (!region) return null;
@@ -83,14 +91,21 @@ export function readRegionCapacity(region: HTMLElement | null): number | null {
       return gridCapacity(columns, rows);
     }
 
-    // A table pages by rows, and the header is part of the region: subtracting it
-    // is what stops the last row from being counted when only the header's height
-    // is left for it.
     const rowHeight = tableRowHeightOf(region);
     if (!rowHeight) return 0;
+    const table = region.querySelector('table');
     const header = region.querySelector('thead');
+    const footer = region.querySelector('[data-list-footer]');
+    const regionBox = region.getBoundingClientRect();
+    // Space above the table inside the same region: a card header, a toolbar.
+    const aboveTable = table
+      ? table.getBoundingClientRect().top - regionBox.top + region.scrollTop
+      : 0;
     const headerHeight = header ? header.getBoundingClientRect().height : 0;
-    return rowsThatFit(region.clientHeight - headerHeight, rowHeight);
+    const footerHeight = footer ? footer.getBoundingClientRect().height : 0;
+    const available =
+      region.clientHeight - aboveTable - headerHeight - footerHeight;
+    return rowsThatFit(available, rowHeight);
   })();
 
   return measured >= MIN_TRUSTWORTHY_CAPACITY ? measured : null;
@@ -124,6 +139,17 @@ export function useListCapacity(): {
   ready: boolean;
 } {
   const [capacity, setCapacity] = useState<number | null>(null);
+  // A page whose list has no marked region (a table on a settings page, say) must
+  // not wait forever for a measurement that will never come: after a grace period
+  // the query is released with the cap, which is what such a page did before
+  // capacities existed.
+  const [gaveUp, setGaveUp] = useState(false);
+  // A region read while the page is still laying out reports a height the page
+  // will not keep - a header that has not taken its space yet, a table whose first
+  // real row has not replaced its skeleton. Publishing such a reading pages the
+  // list by the wrong number and refetches when the layout settles, so a value is
+  // only published once the next frame agrees with it.
+  const pendingCapacity = useRef<number | null | undefined>(undefined);
 
   useLayoutEffect(() => {
     let resizeObserver: ResizeObserver | undefined;
@@ -132,13 +158,19 @@ export function useListCapacity(): {
 
     const measure = () => {
       const next = readRegionCapacity(measuredRegion);
-      publishedCapacity = next;
       // Mirrored onto the region so the number the page is paging by can be read
       // straight off the DOM (devtools, and the browser acceptance checks).
       if (measuredRegion) {
         measuredRegion.dataset.listCapacity =
           next === null ? 'unmeasured' : String(next);
       }
+      if (pendingCapacity.current !== next) {
+        // First sighting of this value: remember it, confirm on the next frame.
+        pendingCapacity.current = next;
+        requestAnimationFrame(() => measure());
+        return;
+      }
+      publishedCapacity = next;
       setCapacity((previous) => (previous === next ? previous : next));
     };
 
@@ -170,18 +202,20 @@ export function useListCapacity(): {
 
     // The region belongs to the page's frame; watch for it rather than measuring
     // once and giving up, so a page that renders its frame late still pages by
-    // its real capacity.
+    // its real capacity. If it never appears, the grace period releases the query.
+    const graceTimer = setTimeout(() => setGaveUp(true), 400);
     const mutations = new MutationObserver(() => {
       if (attach()) mutations.disconnect();
     });
     mutations.observe(document.body, { childList: true, subtree: true });
 
     return () => {
+      clearTimeout(graceTimer);
       mutations.disconnect();
       resizeObserver?.disconnect();
       contentObserver?.disconnect();
     };
   }, []);
 
-  return { capacity, ready: capacity !== null };
+  return { capacity, ready: capacity !== null || gaveUp };
 }

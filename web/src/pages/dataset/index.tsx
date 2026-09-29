@@ -36,7 +36,17 @@ export default function DatasetWrapper() {
       <article className="pt-3 size-full grid grid-cols-[auto_minmax(0,1fr)] grid-rows-1">
         <SideBar dataset={data} />
 
-        <div className="min-w-0 min-h-0 overflow-auto">
+        {/* The region a dataset page's list pages by: this is the box the shell
+            gives the page (one viewport minus the header and the breadcrumb bar),
+            so it is the one place that knows how many rows fit. The declared item
+            height is the document table's own row height (`h-[38px]` in
+            `dataset/dataset/dataset-table.tsx`), used only until its first real row
+            has rendered - after that the row itself is measured. */}
+        <div
+          className="min-w-0 min-h-0 overflow-auto"
+          data-list-region=""
+          data-list-item-height="38"
+        >
           <Outlet />
         </div>
       </article>
