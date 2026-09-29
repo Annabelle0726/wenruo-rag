@@ -302,9 +302,11 @@ U1 不得复制其模式，也不得顺手修复它们。
 `BACKLOG.md`（仓库根）本轮**未修改**；上述条目即为本报告封存的 U0 Backlog 登记，
 `sealed` 的含义是“已知、已记录、本轮不修”。
 
-## 7. Production Shape Validation — 未获授权
+## 7. Production Shape Validation — U0.5 时点未获授权
 
-`PRODUCTION_SHAPE_VALIDATION: NOT_AUTHORISED`。
+**本节记录 U0.5 时点的结论；该 blocker 已在 U0.6 追加执行并解除，见 §11。** 为保留历史真实，本节不重写。
+
+`PRODUCTION_SHAPE_VALIDATION: NOT_AUTHORISED`（U0.5 时点）。
 
 - 本轮执行任务清单**不包含**生产形状核对；红线为 NO DB/Redis/Production mutation，且未提供任何已授权的只读连接。
 - U0 遗留 Open Decision #2（“生产只读验证使用哪个已授权连接/环境”）**仍未回答**。
@@ -406,3 +408,142 @@ scope 冻结、源测试环境、会计语义、授权矩阵、成本术语五�
   以及未跟踪的 `deploy/**` 审计产物。把它们并入本次 readiness commit 会把无关的 retrieval/fusion 工作与部署产物混入 U0.5 记录，
   因此明确留待各自批次处理。
 - **STOP**：不开始 U1 代码执行，等待明确授权。
+
+## 11. U0.6 Addendum — Production Read-Only Shape Validation（blocker 解除）
+
+验证时刻：DB 时间 `2026-09-29 18:13:32`（UTC）。**目标**：本机已部署栈的元数据库
+`docker wenruo-rag-mysql-1`（MySQL **8.0.40**，schema `rag_flow`，容器 `023f91bf0edd`），即支撑运行中
+`wenruo-rag-cpu` 应用容器的同一实例。**这是"已部署栈"形状，不是客户多租户生产**——该差别在下文的风险结论里显式保留。
+
+**方法与非变更证明**：所有查询经 `docker exec` 进入 mysql 容器执行，凭据只引用容器自身的环境变量
+（`MYSQL_ROOT_PASSWORD`），**任何口令都未进入本机 shell 或输出**。每个批次包在
+`START TRANSACTION READ ONLY; … ROLLBACK;` 内，**未发出任何 DML/DDL**。
+诚实说明：`@@read_only = 0`、`@@super_read_only = 0`、`@@transaction_read_only = 0`，
+即服务端本身可写，只读保证来自事务模式而非服务器配置。非变更证据：`workspace_usage` 与
+`workspace_usage_ledger` 的 `UPDATE_TIME` 仍为 `2026-09-29 16:31:50`（早于验证 1h42m），
+行数在各批次间完全一致（ledger 1109 / usage 5 / tenant_model 75 / workspace_budget 0 / workspace_audit 9 / user_tenant 3），
+且 `workspace_audit` 未新增行（任何配置变更都会写审计行）。**未访问 Redis，未调用 provider。**
+
+### 11.1 `workspace_usage_ledger` 形状：存在，且与 ORM 零漂移
+
+表存在，InnoDB，20 列，与 [`WorkspaceUsageLedger`](C:/Projects/RAG/wenruo-rag/api/db/db_models.py:1747) 声明**逐列一致**
+（`id/create_time/create_date/update_time/update_date/tenant_id/user_id/call_kind/model_name/period_day/period_month/`
+`timezone/reserved_tokens/reserved_cost_micros/prompt_tokens/completion_tokens/tokens/cost_micros/status/settled_at`）。
+
+| 项             | 线上事实                                                                                           |
+|----------------|----------------------------------------------------------------------------------------------------|
+| 主键           | `PRIMARY (id)`，varchar(64)                                                                          |
+| 索引           | `tenant_id`、`user_id`、`status`、`create_time`、`create_date`、`update_time`、`update_date`（**全部单列，无复合索引**） |
+| 索引基数       | `id` 918、`status` 3、`tenant_id` **1**、`user_id` **1**                                              |
+| **缺失索引**   | `period_day`、`period_month`、`model_name` **无任何索引**（与 U0 预测一致，现已实测确认）                |
+| 保留政策       | 未见 TTL/清理实现；`reserved` 孤立行亦无任何清理者                                                      |
+
+`workspace_usage`：存在，PK `SHA256(tenant:user:period)`，索引为 PK + `tenant_id` + `user_id` + 四个共同时间列；
+**`period` 无索引**。
+
+### 11.2 体量与分布（实测）
+
+| 指标                     | 实测值                                                                     |
+|--------------------------|----------------------------------------------------------------------------|
+| 精确行数                 | **1109**（`information_schema` 估算 1087，偏差 +2%）                          |
+| 数据 / 索引 / 合计字节    | 409,600 / 704,512 / **1,114,112 B ≈ 1.06 MiB**；约 **1,005 B/行**             |
+| 写入窗口                 | `2026-09-26 21:12:45` → `2026-09-29 16:31:46`（3 天，≈ **370 行/天**）        |
+| 维度基数                 | tenant **1**、user **1**、`period_day` **4**、`period_month` **1**、timezone **1**（UTC） |
+| `status` 分布            | `reserved` **7**（14,618 tokens）／`settled` **987**（916,565 tokens）／`unsettled` **115**（684,711 tokens） |
+| `model_name`             | NULL **0**、空串 **0**、有值 **1109**、distinct **3**（`gemini-embedding-001` 859 行 / `deepseek-v4-flash` 232 行 / `BAAI/bge-reranker-v2-m3` 18 行） |
+| `call_kind`              | 空 **0**、distinct **3**（embedding / chat / rerank）                          |
+| `unrecorded` 桶          | **空**——即 `charge_provider_call` 的额外轮次在本栈从未发生（代码路径存在但未被执行） |
+| `period_day` 范围        | `2026-09-26` … `2026-09-29`（min/max，4 天）                                  |
+| `period_month` 范围      | 仅 `2026-09`                                                                 |
+
+**孤立预留已被实测证明**：7 条 `reserved` 行最新一条为 `2026-09-27 15:00:54`，比验证时刻早 **2 天**，
+不存在任何在飞进程能持有 2 天的预留——`reserved` ≠ "仍在运行"，这是 live 证据而非推断。
+
+**`unsettled` 成因**：115 行分布为 embedding 77 行（162,832 tokens）+ chat 38 行（521,879 tokens），
+**全部带 `model_name`/`call_kind`**，即真实 dispatch 未报告 usage（超时/取消/不报告的调用点），
+不是额外轮次。因此 live 数据中 `unsettled` 只出现成因 (a)，成因 (b) 未被执行。
+
+### 11.3 冻结的读侧公式与对账门：在 live 数据上逐条成立
+
+| 校验                                                              | 结果                                                                    |
+|-------------------------------------------------------------------|-------------------------------------------------------------------------|
+| 有效值公式 `CASE WHEN status='settled' THEN tokens ELSE reserved_tokens END` | 916,565 + 14,618 + 684,711 = **1,615,894**（精确闭合）                     |
+| 只读 `tokens` 的低报量                                             | 1,615,894 − 916,565 = **699,329 tokens = 低估 43.3%**（实测，非估算）       |
+| `workspace_usage` 月行 vs ledger                                   | calls **1109** = ledger 行数 1109；tokens **1,615,894** = 有效值 —— **完全一致** |
+| 对账门 `COUNT(ledger) == counter.calls`                            | **PASS**                                                                 |
+| `settled` 行的成本覆盖                                              | `settled_cost_established = 0`，`settled_cost_unestablished = 987`（987/987） |
+
+即：U0.5 冻结的"必须用有效值公式"与"counter 是占用、ledger 是逐 attempt 事实"两条规则，
+在 live 数据上同时得到数值验证，且**若违反公式将系统性低估 43.3%**。
+
+### 11.4 Model pricing coverage（仅白名单非 secret 字段）
+
+只读取 `tenant_model` 的 `id / model_name / provider_id / instance_id / model_type / status` 与用
+`JSON_CONTAINS_PATH`/`JSON_VALUE` **抽取出的两个定价键**；**完全未访问 `tenant_model_instance`**，
+**未读取 `api_key` 或任何 secret/token 列，未 hydrate 任何 credential ORM 对象，未 SELECT 原始 `extra` 内容**。
+
+| 分类                   | 行数（共 75 行，全部 `status='active'`） |
+|------------------------|------------------------------------------|
+| `PRICED`               | **0**                                    |
+| `UNPRICED`             | **75**                                   |
+| `INVALID`（非数值/负值） | **0**                                    |
+
+键位校验（排除"键名猜错导致假阴性"）：75 行 `extra` **全部为合法 JSON**，只有 **1 种** key-set，
+每行恰好 **4 个顶层键**；`price_input_per_million` 出现 **0/75**，`price_output_per_million` 出现 **0/75**，
+嵌套 `pricing` 对象出现 **0/75**；所有 price/cost/pricing/token/rate 类键中**只存在 `max_tokens`**。
+→ 线上配置**确实没有任何模型定价**，与本轮分类一致。
+
+**与 ledger 交叉**：ledger 中出现的 3 个模型名各有 **1** 条匹配的 `tenant_model` 行，其中 **priced_matches = 0**；
+且 ledger 全部 1109 行在三种 status 下 `reserved_cost_micros = 0`、`cost_micros = 0`。
+→ **live `cost_coverage` 在任何 workspace / member / period / model 作用域上都是 `unavailable`**。
+任何把 `$0.00` 渲染成"已知成本"的读模型在本栈都是在说谎；`Estimated model cost` 只能显示 Not available / —。
+
+附带事实：本栈 cost 维度的 WorkspaceBudget limit 因无定价而无从计算（何况默认 0 = 未启用）。
+
+### 11.5 两个影响 U1 的额外形状事实
+
+1. **`workspace_budget` 线上 0 行**。该 workspace 从未写过预算行，`reserve_call` / `configure_budget` 走
+   `WorkspaceBudget()` 代码默认值（20/rolling 60s、1000/day、20000/month、200000 tokens/day、4000000 tokens/month、
+   cost 0、timezone UTC）。U1 的 `quota_status` **必须把"缺行"解释为默认值**，不得报成"全部为 0 / 无限制"，
+   也不得报错。此点已冻结。
+2. **身份域重叠（实测）**：ledger 中唯一的 `(tenant_id, user_id)` 组合 **tenant_id == user_id**。
+   部署共有 user_tenant 3 行 / 2 个 workspace / 3 个 user（角色 2×owner + 1×admin，status=`'1'`），
+   但**只有 1 个组合被计量过，且 ledger 中不存在任何 NORMAL 成员的行**。
+   → 在本栈上"按值区分 user 与 workspace"**在物理上不可能**：`tenant_id = current_user.id` 这类域错误写法
+   在本数据上会"看起来正常工作"。这为 U0.5 冻结的"必须用 membership 解析 workspace、绝不靠 id 形态或相等"
+   提供了最强的本地证据，同时意味着 **U1 的 NORMAL 隔离、member_breakdown、跨 workspace 隔离在 live 上完全没有数据可验**。
+
+### 11.6 U0.6 结论
+
+```text
+PRODUCTION_SHAPE_VALIDATION: PASS
+LEDGER_INDEX_RISK: REAL_BUT_LATENT; NOT_BLOCKING_V1
+LEDGER_VOLUME_RISK: LOW_TODAY; UNBOUNDED_WITHOUT_RETENTION
+PRICING_COVERAGE: 0_PRICED / 75_UNPRICED / 0_INVALID; ALL_SCOPES_UNAVAILABLE
+API_KEY_PLAINTEXT_READS: 0
+PRODUCTION_MUTATED: NO
+U1_IMPLEMENTATION_READY: YES
+```
+
+- `LEDGER_INDEX_RISK`：`period_day`/`period_month`/`model_name` 无索引已实测确认，且 `tenant_id` 索引基数 = 1，
+  退化为按 tenant 扫描。**1109 行时无关紧要**；多成员体量下 U1 的 period 聚合与 model 分组将成为全表扫描。
+  补救需要复合索引（迁移），属 U1 V1 冻结范围之外，需单独授权；U1 V1 必须自行限制扫描窗口与返回量。
+- `LEDGER_VOLUME_RISK`：今天 1.06 MiB / 1109 行 / 单成员 ≈370 行/天 = **LOW**。
+  但**没有 retention/TTL 实现**、`reserved` 孤立行无清理者、且 OWNER/ADMIN 豁免调用限额使总量增长无配置上界。
+  按 ~1.0 KB/行与 ~370 行/成员/天外推：20 成员 ≈ 2.7M 行 ≈ 2.7 GB/年；500 成员 ≈ 67.5M 行 ≈ 68 GB/年——
+  届时上面那条缺失索引会把一次 workspace 期间聚合变成全表扫描。
+- `PRICING_COVERAGE`：**0 / 75 / 0**，所有 live 作用域 `cost_coverage = unavailable`，987/987 settled 行成本未成立。
+  U1 必须把 `unavailable` 当作本栈的主路径实现；`PRICED` 路径与 `unrecorded` 桶在本栈**未被数据覆盖**，只能靠 fixture 验证。
+
+**非阻塞但必须带入 U1 验收计划的条件**（不是 readiness blocker）：
+
+1. live 无 NORMAL 成员计量、无多成员分解、无跨 workspace 数据 → 必须由多成员 SQLite fixture 单测承载；
+   U1 的 live 验收需要新建 NORMAL 成员与第二个 workspace 的 fixture，**那本身是数据写入，需单独授权**。
+2. 由于唯一被计量组合满足 `tenant_id == user_id`，本栈上的 live smoke **无法区分"域正确"与
+   `tenant_id = current_user.id` 走捷径** —— 隔离必须由 fixture 证明，不能由本栈"看起来对"来证明。
+3. `PRICED` 路径与 `unrecorded` 桶需 fixture 覆盖。
+4. 复合索引与保留策略在多成员体量前必须决定/授权（迁移），不在 U1 V1 范围内。
+
+**U0.6 停止点**：未实现 U1，未修改任何代码/迁移/配置，未访问 Redis，未调用 provider，未读任何 secret；
+仅新增本节与 AGENTS.md 记录并提交。
+
