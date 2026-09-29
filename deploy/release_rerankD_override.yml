@@ -1,0 +1,27 @@
+# Deploy override for the Variant D rerank reservation-budget / dedup / unified-fill repair.
+#
+# Pins the IMMUTABLE candidate tag, not `latest`, so the running container's identity is a frozen
+# artifact rather than whatever `latest` happens to point at. Listed LAST in the compose config file
+# list, so its `image:` wins over the P0-7 override, the repair override, the nine-file override,
+# the fusion override and `RAGFLOW_IMAGE` in docker/.env.
+#
+# Candidate: my-wenruorag:candidate-rerankD-4498c2ed
+#            sha256:44a3e35359845e5e5ce58c297a53ab54eba3a6cdb95056acee70be86ed38c8f5
+# Base:      production sha256:26a44ae5749dbb2e666ede8e8a3ddce323a5b2c2526cc4ae355fd2e502200ee5
+# Overlay:   EXACTLY rag/retrieval/rerank.py
+#            in-image sha256 4498c2ed2b2ce64d11af05106e4b85815c9dc4249e974329500467b4e42de96d
+#            (deployed was 1152c59a782766bfb219474cc9a00b7df5168c08c802d280252d8965af3e25cc)
+#
+# Whole-image diff vs production: exactly ONE changed path, /ragflow/rag/retrieval/rerank.py,
+# no added or removed product paths.
+#
+# What Variant D changes: step-1b compared-document dedup, a combined reservation budget
+# (top_n - 1), and ONE score-ordered fill replacing the deployed pass-3 prose-first /
+# pass-4 table-second pair. No ranking multiplier, penalty, cap, Top-N, threshold or weight change.
+#
+# Rollback: re-run compose with this file DROPPED, which restores the fusion override's
+#   my-wenruorag:candidate-fusionfix-2daccc2f = sha256:26a44ae5749dbb2e666ede8e8a3ddce323a5b2c2526cc4ae355fd2e502200ee5
+# also available as my-wenruorag:rollback-pre-rerankD-20260929.
+services:
+  wenruo-rag-cpu:
+    image: my-wenruorag:candidate-rerankD-4498c2ed
