@@ -548,13 +548,7 @@ class Dealer:
                     vector_weight = req.get("vector_similarity_weight", 0.3)
                     fusionExpr = FusionExpr("weighted_sum", knn_top_k, {"weights": f"{1 - float(vector_weight)},{float(vector_weight)}"})
                 else:
-                    # Elasticsearch healthy hybrid. This branch used to hardcode "0.001,1", which
-                    # discarded the request's `vector_similarity_weight` entirely: the ES connector
-                    # reads that expr's components to weight the two legs, so the literal made the
-                    # vector weight 1.0 and the lexical boost 1 - 1 = 0.0 regardless of what the caller
-                    # asked for. The fusion is built from the configured weight exactly as the Infinity
-                    # and GaussDB branches already do.
-                    fusionExpr = build_fusion_expr(knn_top_k, float(req.get("vector_similarity_weight", 0.3)))
+                    fusionExpr = FusionExpr("weighted_sum", knn_top_k, {"weights": "0.001,1"})
                 matchExprs = [matchText, matchDense, fusionExpr] if matchText else [matchDense]
 
                 try:

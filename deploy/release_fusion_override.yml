@@ -1,0 +1,16 @@
+# Deploy override for the Elasticsearch healthy-hybrid fusion contract fix.
+#
+# Pins the IMMUTABLE candidate tag, not `latest`, so the running container's identity is a frozen
+# artifact. Listed LAST in the compose config file list, so its `image:` wins over the P0-7 override,
+# the nine-file release override and RAGFLOW_IMAGE in docker/.env.
+#
+# Candidate: my-wenruorag:candidate-fusionfix-2daccc2f
+#            sha256:26a44ae5749dbb2e666ede8e8a3ddce323a5b2c2526cc4ae355fd2e502200ee5
+# Base:      production sha256:a41dcc649780eee2e1676157ad279bac61e00478005b5529eacd71e453404990
+# Overlay:   EXACTLY rag/nlp/search.py and rag/utils/es_conn.py (+ two test files)
+#
+# Rollback: re-run compose with this file DROPPED, which restores
+#   my-wenruorag:candidate-nine-91b8bfc6 = sha256:a41dcc64… = the previous production image.
+services:
+  wenruo-rag-cpu:
+    image: my-wenruorag:candidate-fusionfix-2daccc2f

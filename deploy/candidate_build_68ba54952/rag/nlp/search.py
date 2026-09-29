@@ -548,13 +548,7 @@ class Dealer:
                     vector_weight = req.get("vector_similarity_weight", 0.3)
                     fusionExpr = FusionExpr("weighted_sum", knn_top_k, {"weights": f"{1 - float(vector_weight)},{float(vector_weight)}"})
                 else:
-                    # Elasticsearch healthy hybrid. This branch used to hardcode "0.001,1", which
-                    # discarded the request's `vector_similarity_weight` entirely: the ES connector
-                    # reads that expr's components to weight the two legs, so the literal made the
-                    # vector weight 1.0 and the lexical boost 1 - 1 = 0.0 regardless of what the caller
-                    # asked for. The fusion is built from the configured weight exactly as the Infinity
-                    # and GaussDB branches already do.
-                    fusionExpr = build_fusion_expr(knn_top_k, float(req.get("vector_similarity_weight", 0.3)))
+                    fusionExpr = FusionExpr("weighted_sum", knn_top_k, {"weights": "0.001,1"})
                 matchExprs = [matchText, matchDense, fusionExpr] if matchText else [matchDense]
 
                 try:
@@ -1160,19 +1154,6 @@ class Dealer:
                 "mom_id": chunk.get("mom_id", ""),
                 "row_id": chunk.get("row_id()"),
             }
-            # Provenance the producer recorded for the injected prefix travels WITH the content, or a
-            # consumer cannot tell an injected header from a body that merely looks like one. Copied only
-            # when the retrieved chunk carries it: no synthesis, no default value, no interpretation; a
-            # corrupted value passes through unchanged so the consumer can reject it, and a chunk without
-            # provenance stays without one.
-            for prefix_field in (
-                "content_prefix_kind_kwd",
-                "content_prefix_version_int",
-                "content_prefix_chars_int",
-                "content_prefix_hash_kwd",
-            ):
-                if prefix_field in chunk:
-                    d[prefix_field] = chunk[prefix_field]
             d["score_provenance"] = {
                 "mode": sres.retrieval_mode,
                 "score_kind": ("rerank" if rerank_mdl is not None else "lexical") if degraded else "hybrid",

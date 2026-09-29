@@ -1,0 +1,19 @@
+# Deploy override for the nine-file release candidate window.
+#
+# It pins the IMMUTABLE candidate tag, not `latest`, so the running container's identity is a frozen
+# artifact rather than whatever `latest` happens to point at. This file is listed LAST in the compose
+# config file list, so its `image:` wins over the P0-7 override and over `RAGFLOW_IMAGE` in docker/.env.
+#
+# Candidate: my-wenruorag:candidate-nine-91b8bfc6
+#            sha256:a41dcc649780eee2e1676157ad279bac61e00478005b5529eacd71e453404990
+#
+# `latest` is deliberately NOT moved by this window's deploy step; it follows only after the live smoke
+# passes, as a separate promotion step.
+#
+# Rollback: re-run compose with this file DROPPED, which restores
+#   my-wenruorag:repair-798288f8 = sha256:6e926b5d8ef641d15a4ef623002531a5490b54154e0fa93648ff3cd61fb41bd0
+# The pre-P0 rollback anchor `my-wenruorag:rollback-pre-p0-20260927` = sha256:c50436820cb9 is never
+# touched by this window.
+services:
+  wenruo-rag-cpu:
+    image: my-wenruorag:candidate-nine-91b8bfc6
