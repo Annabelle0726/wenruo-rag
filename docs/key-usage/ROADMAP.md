@@ -1,3 +1,22 @@
+> **执行状态（2026-09-29 更新）**
+>
+> | 阶段   | 状态             | 证据 / 说明                                                                                                        |
+> |--------|------------------|--------------------------------------------------------------------------------------------------------------------|
+> | U0     | DONE（审计冻结）  | `docs/key-usage/workspace-ai-usage-provider-reliability-u0.md`                                                      |
+> | U0.5   | DONE（readiness） | `...-u0-5.md`：范围/会计/术语/授权矩阵冻结；源测试在仓库自带 `.venv` 中执行 `48 passed, 2 skipped`                     |
+> | U0.6   | DONE（解除 blocker） | `...-u0-5.md` §11：生产只读形状核对 PASS；`U1_IMPLEMENTATION_READY: YES`                                            |
+> | **U1** | **DONE（本轮实现）** | `...-u1.md`：7 个只读视图 + 43 个新测试；连同既有预算/安全回归 `91 passed, 2 skipped`；**无 migration**              |
+> | U2     | NOT STARTED      | 等待明确授权                                                                                                        |
+> | U3–U8  | NOT STARTED      | 未触碰                                                                                                              |
+>
+> U1 已实现视图：`my_usage` / `workspace_summary` / `member_breakdown` / `daily_series` / `monthly_series` /
+> `recorded_model_breakdown` / `quota_status`，注册于 `/api/v1/tenants/<tenant_id>/usage/*`（只读 GET）。
+> 仅映射既有权威事实（`workspace_usage_ledger` / `workspace_usage` / `workspace_budget` / `user_tenant`）；
+> provider、key-instance、workload 历史归因与任何历史重建**明确排除**，unknown 保持 unknown。
+> 成本术语固定为 **Estimated model cost**；无定价证据时返回 `null` + `cost_coverage=unavailable`，**绝不 `$0.00`**。
+> 当前 live 栈为 0 PRICED / 75 UNPRICED，因此 live 上所有成本视图都只会显示 Not available —— 这是预期行为。
+> `period_day`/`period_month`/`model_name` 无索引与 ledger 保留策略是 **backlog**（需单独授权的 migration），不在 U1 内。
+
 多数客户未必自建 GPU，第一阶段以 Managed API + Private Endpoint 框架为主，私有算力/GPU 监控以后再补
 还有一个关键判断：“查看 API Key 剩余额度”不能设计成所有 Provider 都必须支持。
 不同厂商差异非常大。例如 DeepSeek 官方确实提供 /user/balance，可以查账户可用余额，但这仍是“账户余额”，不等于每个 API Key 独立 quota。DeepSeek API Docs OpenAI 有组织级 Usage/Costs API，并且 Usage 可以按 api_key_id 聚合，但这也更接近“历史消耗统计”，不等于一个统一的“这个 key 还剩 37% 配额”接口。OpenAI Platform SiliconFlow 更明确：Rate Limit 是账户级而不是 API Key 级，而且按模型分别限制。SiliconFlow
