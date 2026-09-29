@@ -6,7 +6,8 @@
 > | U0.5   | DONE（readiness） | `...-u0-5.md`：范围/会计/术语/授权矩阵冻结；源测试在仓库自带 `.venv` 中执行 `48 passed, 2 skipped`                     |
 > | U0.6   | DONE（解除 blocker） | `...-u0-5.md` §11：生产只读形状核对 PASS；`U1_IMPLEMENTATION_READY: YES`                                            |
 > | **U1** | **DONE（本轮实现）** | `...-u1.md`：7 个只读视图 + 43 个新测试；连同既有预算/安全回归 `91 passed, 2 skipped`；**无 migration**              |
-> | U2     | NOT STARTED      | 等待明确授权                                                                                                        |
+> | **U2** | **DONE（本轮实现）** | `...-u2.md`：Settings 导航（Model providers / Team / Usage & operations）+ Usage & Operations 四 Tab + 通知铃铛外壳；接入 U1 的 7 个 GET；jest `23 passed`、类型检查新增文件 0 error、`npm run build` 通过；**后端与 DB 零改动** |
+> | U3     | NOT STARTED      | 等待明确授权                                                                                                        |
 > | U3–U8  | NOT STARTED      | 未触碰                                                                                                              |
 >
 > U1 已实现视图：`my_usage` / `workspace_summary` / `member_breakdown` / `daily_series` / `monthly_series` /
@@ -16,6 +17,15 @@
 > 成本术语固定为 **Estimated model cost**；无定价证据时返回 `null` + `cost_coverage=unavailable`，**绝不 `$0.00`**。
 > 当前 live 栈为 0 PRICED / 75 UNPRICED，因此 live 上所有成本视图都只会显示 Not available —— 这是预期行为。
 > `period_day`/`period_month`/`model_name` 无索引与 ledger 保留策略是 **backlog**（需单独授权的 migration），不在 U1 内。
+>
+> U2 已交付的骨架：Settings rail 三个控制台分区（Model providers / Team / Usage & operations）+ Profile；
+> Model Providers 按 **Managed API / Private Endpoint / Unclassified** 分组并显示 `[Chat][Embedding][Rerank][VLM]` 能力标签
+> （数据来自既有的凭据无关 `GET /api/v1/models`，状态为 "not observed yet" 占位，**不显示任何余额/额度/健康**）；
+> Team 新增只读 **Usage Policy** 限额可视化（limit=0 → 未启用；缺 budget 行 → 后端默认值；滚动分钟 → 此处不跟踪）；
+> Usage & Operations 四 Tab：**My Usage（全部成员）** 与 **Workspace Analytics / Provider Health / Retrieval Health（仅 OWNER/ADMIN）**，
+> 其中 Provider Health 与 Retrieval Health 是**诚实空状态**，不含任何伪造指标；
+> 全局导航新增**通知铃铛外壳**（图标 + 未读徽标 + 抽屉 + 会话内类型化状态），唯一真实事件源是未应答的工作区邀请，
+> 其余分类在后端事实源就绪前**不产生条目**，且**不伪造时间戳**。整轮未改后端/DB，成本一律 `null` → "Not available"，**绝不 `$0.00`**。
 
 多数客户未必自建 GPU，第一阶段以 Managed API + Private Endpoint 框架为主，私有算力/GPU 监控以后再补
 还有一个关键判断：“查看 API Key 剩余额度”不能设计成所有 Provider 都必须支持。

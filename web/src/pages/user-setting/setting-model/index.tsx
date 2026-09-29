@@ -34,6 +34,7 @@ import { ProviderInstanceCard } from './instance-card/provider-instance-card';
 import { ProviderHeaderBar } from './layout/provider-header-bar';
 import { Sidebar, SidebarSelection } from './layout/sidebar';
 import SystemSetting from './layout/system-setting';
+import { ModelProviderOverview } from './model-provider-overview';
 import { ModelSettingsReadOnlyProvider } from './read-only-context';
 
 /**
@@ -306,6 +307,10 @@ const SettingModelV2: FC = () => {
             that separates it from the configuration panel. */}
         <section className="ceramic-rail ceramic-seam-r flex flex-col gap-4 w-[320px] shrink-0 px-5 overflow-auto scrollbar-auto">
           <Sidebar selection={selection} onSelect={setSelection} />
+          {/* Read-only endpoint overview: which providers are Managed API and which
+              are Private Endpoint, with their capability tags. It is additive and
+              fires its own query; it neither reads nor shows a credential. */}
+          <ModelProviderOverview />
         </section>
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {readOnly && (

@@ -14,6 +14,7 @@ const SectionLabelKeys: Record<string, string> = {
   [Routes.Model]: 'setting.model',
   [Routes.DataSource]: 'setting.dataSources',
   [Routes.Team]: 'setting.team',
+  [Routes.Usage]: 'setting.usageOperations',
   [Routes.Profile]: 'setting.profile',
   [Routes.Api]: 'setting.api',
 };

@@ -27,13 +27,28 @@ import {
 import { cn } from '@/lib/utils';
 import { Routes } from '@/routes';
 import { TFunction } from 'i18next';
-import { LucideBox, LucideLogOut, LucideUser, LucideUsers } from 'lucide-react';
+import {
+  LucideActivity,
+  LucideBox,
+  LucideLogOut,
+  LucideUser,
+  LucideUsers,
+} from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import RoleTag from '@/components/role-tag';
 import { useHandleMenuClick } from './hooks';
 
+/**
+ * The settings rail, in the order the console presents it.
+ *
+ * The three operating sections come first - Model Providers, Team, and Usage &
+ * Operations - and the account section (Profile) stays last. The rail is the
+ * navigation; which of a section's views a caller may OPEN is decided inside the
+ * section itself, because a rail entry that hid a page would still leave the
+ * route reachable.
+ */
 const menuItems = (t: TFunction) => [
   {
     icon: <LucideBox className="size-[1em]" />,
@@ -45,11 +60,19 @@ const menuItems = (t: TFunction) => [
     icon: <LucideUsers className="size-[1em]" />,
     label: t('setting.team'),
     key: Routes.Team,
+    'data-testid': 'settings-nav-team',
+  },
+  {
+    icon: <LucideActivity className="size-[1em]" />,
+    label: t('setting.usageOperations'),
+    key: Routes.Usage,
+    'data-testid': 'settings-nav-usage-operations',
   },
   {
     icon: <LucideUser className="size-[1em]" />,
     label: t('setting.profile'),
     key: Routes.Profile,
+    'data-testid': 'settings-nav-profile',
   },
 ];
 

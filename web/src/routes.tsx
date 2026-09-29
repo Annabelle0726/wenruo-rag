@@ -56,6 +56,7 @@ export enum Routes {
   Api = '/api',
   Mcp = '/mcp',
   Team = '/team',
+  Usage = '/usage',
   Plan = '/plan',
   Model = '/model',
   Prompt = '/prompt',
@@ -309,6 +310,10 @@ const routeConfigOptions = [
           {
             path: `${Routes.UserSetting}/team`,
             Component: () => import('@/pages/user-setting/setting-team'),
+          },
+          {
+            path: `${Routes.UserSetting}${Routes.Usage}`,
+            Component: () => import('@/pages/user-setting/usage-operations'),
           },
           {
             path: `${Routes.UserSetting}${Routes.Api}`,

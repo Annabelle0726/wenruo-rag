@@ -17,21 +17,17 @@
 import { CardIdentityIcon } from '@/components/card-identity-icon';
 import { Button } from '@/components/ui/button';
 import { useChangeLanguage } from '@/hooks/logic-hooks';
-import {
-  useFetchUserInfo,
-  useListTenant,
-} from '@/hooks/use-user-setting-request';
+import { useFetchUserInfo } from '@/hooks/use-user-setting-request';
 import { cn } from '@/lib/utils';
-import { TenantRole } from '@/pages/user-setting/constants';
 import { Routes } from '@/routes';
-import { LucideLanguages } from 'lucide-react';
-import React, { useMemo } from 'react';
+import { BellRing, LucideLanguages } from 'lucide-react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router';
-import { BellButton } from './bell-button';
 import { BrandLockup } from './brand-lockup';
 import { DesktopNavbar, MobileNavbar } from './global-navbar';
 import { MobileMenuFooter } from './mobile-menu-footer';
+import { NotificationCenter } from './notification-center';
 import ThemeButton from './theme-button';
 import { useHeaderNavLayout } from './use-header-nav-layout';
 
@@ -62,11 +58,9 @@ export function Header({
     data: { language, avatar },
   } = useFetchUserInfo();
 
-  const { data: tenantData } = useListTenant();
-  const hasNotification = useMemo(
-    () => tenantData?.some((x) => x.role === TenantRole.Invite),
-    [tenantData],
-  );
+  // The notification bell owns the pending-invitation source itself, so the
+  // header no longer reads the tenant list to decide whether to show a bell: the
+  // bell is always present and its badge reports the unread count.
 
   // 获取当前正在使用的语言
   const currentLangCode = i18n.resolvedLanguage || language || 'zh';
@@ -85,7 +79,7 @@ export function Header({
     expandedRightMeasureRef,
     navMeasureRef,
     isCompact,
-  } = useHeaderNavLayout(`${hasNotification}-${currentLangCode}`);
+  } = useHeaderNavLayout(currentLangCode);
 
   return (
     <>
@@ -146,9 +140,9 @@ export function Header({
             <LucideLanguages className="size-[1.05rem]" />
           </Button>
 
-          {!isCompact && hasNotification && (
-            <BellButton className={headerControlClass} />
-          )}
+          {/* Always present: the drawer is the notification shell, and a bell that
+              appeared only when a count was non-zero could never be discovered. */}
+          <NotificationCenter className={headerControlClass} />
 
           {/* Dark/light switch. */}
           <ThemeButton className={headerControlClass} />
@@ -187,8 +181,13 @@ export function Header({
           <Button variant="ghost" className={headerControlClass}>
             <LucideLanguages className="size-[1.05rem]" />
           </Button>
+          <Button variant="ghost" className={headerControlClass}>
+            {/* The bell's own width comes from these classes, so measuring this
+                mirror keeps the compact breakpoint exact without mounting a second
+                dialog root off-screen. */}
+            <BellRing className="size-[1.05rem]" />
+          </Button>
           <ThemeButton className={headerControlClass} />
-          {hasNotification && <BellButton className={headerControlClass} />}
           <div className="relative ms-2 flex size-8 shrink-0 items-center justify-center">
             <CardIdentityIcon kind="user" avatar={avatar} className="size-8" />
           </div>
