@@ -14,23 +14,23 @@
  *  limitations under the License.
  */
 
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   useFetchTenantInfo,
   useFetchUserInfo,
 } from '@/hooks/use-user-setting-request';
 import { canRenderTenantControls } from '@/utils/tenant-role';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router';
 
 import {
   ceramicSearchFieldClassName,
   ceramicSearchFieldRootClassName,
 } from '@/components/list-filter-bar';
+import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { UserPlus } from 'lucide-react';
-import { useState } from 'react';
 import { ProfileSettingWrapperCard } from '../components/user-setting-header';
 import AddingUserModal from './add-user-modal';
 import DepartmentTable from './department-table';
@@ -39,26 +39,49 @@ import TenantTable from './tenant-table';
 import UsagePolicySection from './usage-policy';
 import UserTable from './user-table';
 
+/**
+ * The Team section's subsections.
+ *
+ * Members & roles, Usage policy and Department management are separate
+ * DESTINATIONS - the route names one and the page renders it - rather than three
+ * cards stacked on one page. The previous shape put Usage policy at the bottom of
+ * the roster, where it read as an afterthought and could not be linked to.
+ */
+const SUBSECTIONS = ['members', 'usage-policy', 'departments'] as const;
+
+type TeamSubsection = (typeof SUBSECTIONS)[number];
+
+const SUBSECTION_TITLE_KEY: Record<TeamSubsection, string> = {
+  members: 'setting.teamMembersAndRoles',
+  'usage-policy': 'setting.usagePolicy',
+  departments: 'setting.teamDepartments',
+};
+
+const resolveSubsection = (pathname: string): TeamSubsection => {
+  const segment = pathname.split('/').filter(Boolean).pop() ?? '';
+  return (SUBSECTIONS as readonly string[]).includes(segment)
+    ? (segment as TeamSubsection)
+    : 'members';
+};
+
 const UserSettingTeam = () => {
   const { data: userInfo } = useFetchUserInfo();
   // The active workspace's own record: `name` lives on the tenant, which is the
-  // only place the workspace's name is reported (`GET /tenants` answers each
-  // row with the OWNER's user row, so its `nickname` is a person, not a
-  // workspace).
+  // only place the workspace's name is reported.
   const { data: tenantInfo } = useFetchTenantInfo();
   const { t } = useTranslation();
+  const { pathname } = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchUser, setSearchUser] = useState('');
-  // The workspace this page is showing, not the person reading it: a member who
-  // owns no tenant of their own still works inside the one they joined. Controls
-  // wait for the role to be reported, so a NORMAL member is never briefly offered
-  // the invite button while `/users/me` is in flight.
+  const subsection = useMemo(() => resolveSubsection(pathname), [pathname]);
+  // Controls wait for the role to be reported, so a NORMAL member is never
+  // briefly offered the invite button while `/users/me` is in flight.
   const readOnly = !canRenderTenantControls(userInfo?.role);
+  const roleResolved = Boolean(userInfo?.role);
   /**
    * The header names the workspace. It must never fall back to the caller's own
    * nickname: a NORMAL member would then be told their personal space is this
-   * page's subject while the workspace record is still in flight. An unknown
-   * name renders the section label alone.
+   * page's subject while the workspace record is still in flight.
    */
   const workspaceName = tenantInfo?.name;
   const {
@@ -67,30 +90,28 @@ const UserSettingTeam = () => {
     showAddingTenantModal,
     handleAddUserOk,
     invitePath,
-    loading,
+    loading: inviting,
   } = useAddUser();
 
-  return (
-    // <div className="w-full flex flex-col gap-4 relative">
-    //   <Spotlight />
-    //   <UserSettingHeader
-    //     name={userInfo?.nickname + ' ' + t('setting.workspace')}
-    //   />
-    <ProfileSettingWrapperCard
-      header={
-        <header>
-          <h2 className="text-2xl font-medium text-text-primary">
-            {workspaceName
-              ? `${workspaceName} ${t('setting.workspace')}`
-              : t('setting.workspace')}
-          </h2>
-        </header>
-      }
-    >
-      <div className="h-full overflow-x-hidden overflow-y-auto">
+  const renderSubsection = () => {
+    if (subsection === 'usage-policy') {
+      return <UsagePolicySection readOnly={readOnly} roleResolved={roleResolved} />;
+    }
+
+    if (subsection === 'departments') {
+      return (
+        <Card className="bg-transparent border-none rounded-none shadow-none">
+          <CardContent className="p-4 pt-0">
+            <DepartmentTable readOnly={readOnly} />
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <>
         <Card className="bg-transparent border-none rounded-none shadow-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
-            {/* <User className="mr-2 h-5 w-5 text-[#1677ff]" /> */}
             <CardTitle className="text-base">
               {t('setting.teamMembers')}
             </CardTitle>
@@ -109,7 +130,6 @@ const UserSettingTeam = () => {
                   className="ceramic-cta h-8 shrink-0 rounded-[2px] px-3 text-xs font-medium gap-1.5 whitespace-nowrap"
                   onClick={showAddingTenantModal}
                 >
-                  <UserPlus className="size-3.5 shrink-0" />
                   {t('setting.invite')}
                 </Button>
               )}
@@ -117,32 +137,12 @@ const UserSettingTeam = () => {
           </CardHeader>
 
           <CardContent className="p-4 pt-0">
-            <UserTable searchUser={searchUser}></UserTable>
+            <UserTable searchUser={searchUser} />
           </CardContent>
         </Card>
 
-        <Card className="bg-transparent border-none mt-8 rounded-none shadow-none">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
-            <CardTitle className="text-base w-fit">
-              {t('setting.usagePolicy')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <UsagePolicySection readOnly={readOnly} />
-          </CardContent>
-        </Card>
-
-        <Card className="bg-transparent border-none mt-8 rounded-none shadow-none">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
-            <CardTitle className="text-base w-fit">
-              {t('setting.departments')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <DepartmentTable readOnly={readOnly} />
-          </CardContent>
-        </Card>
-
+        {/* The workspaces the caller belongs to. It stays under Members & roles
+            because it is the same roster question read from the other side. */}
         <Card className="bg-transparent border-none mt-8 rounded-none shadow-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
             <CardTitle className="text-base w-fit">
@@ -157,9 +157,30 @@ const UserSettingTeam = () => {
             />
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <TenantTable searchTerm={searchTerm}></TenantTable>
+            <TenantTable searchTerm={searchTerm} />
           </CardContent>
         </Card>
+      </>
+    );
+  };
+
+  return (
+    <ProfileSettingWrapperCard
+      header={
+        <header className="flex flex-col gap-1">
+          <h2 className="text-2xl font-medium text-text-primary">
+            {t(SUBSECTION_TITLE_KEY[subsection])}
+          </h2>
+          <p className="text-xs text-text-secondary">
+            {workspaceName
+              ? `${workspaceName} ${t('setting.workspace')}`
+              : t('setting.workspace')}
+          </p>
+        </header>
+      }
+    >
+      <div className="h-full overflow-x-hidden overflow-y-auto">
+        {renderSubsection()}
       </div>
 
       {addingTenantModalVisible && (
@@ -168,8 +189,8 @@ const UserSettingTeam = () => {
           hideModal={hideAddingTenantModal}
           onOk={handleAddUserOk}
           invitePath={invitePath}
-          loading={loading}
-        ></AddingUserModal>
+          loading={inviting}
+        />
       )}
     </ProfileSettingWrapperCard>
   );

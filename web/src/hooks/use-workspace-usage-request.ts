@@ -22,7 +22,10 @@ import {
   IUsageRangeParams,
   UsageView,
 } from '@/interfaces/database/workspace-usage';
-import workspaceUsageService from '@/services/workspace-usage-service';
+import workspaceUsageService, {
+  USAGE_QUERY_OPTIONS,
+} from '@/services/workspace-usage-service';
+import { useFetchTenantInfo } from '@/hooks/use-user-setting-request';
 import { getActiveTenantId } from '@/utils/active-tenant';
 import { useQuery } from '@tanstack/react-query';
 
@@ -39,99 +42,71 @@ export const WorkspaceUsageKeys = {
     ['workspaceUsage', tenantId, view, params] as const,
 };
 
-const ok = (code: unknown) => code === 0;
-
 const unwrap = (body: any): IUsageEnvelope | undefined =>
-  ok(body?.code) ? (body.data as IUsageEnvelope) : undefined;
+  body?.code === 0 ? (body.data as IUsageEnvelope) : undefined;
 
 /**
  * Which workspace the usage pages read.
  *
- * It is the SELECTED workspace, never the caller's user id: on this platform a
- * workspace key and a member key are different identity domains, and they can
- * even share a value, so an id comparison would prove nothing.
+ * It is the workspace the SERVER resolved for this caller (`/v1/user/tenant_info`
+ * mirrors it into the selection), never the caller's user id: on this platform a
+ * workspace key and a member key are different identity domains and can even
+ * share a value, so an id comparison would prove nothing.
+ *
+ * It is read through the tenant-info QUERY rather than straight out of
+ * localStorage because the value must be REACTIVE: read once during the first
+ * render it is still empty, and a query disabled by an empty id would never fire
+ * when the id arrives.
  */
-export const useActiveUsageTenantId = (): string | undefined =>
-  getActiveTenantId() || undefined;
+export const useActiveUsageTenantId = (): string | undefined => {
+  const { data: tenantInfo } = useFetchTenantInfo();
+  return tenantInfo?.tenant_id || getActiveTenantId() || undefined;
+};
 
 /**
- * `GET /tenants/<id>/usage/my` - the caller's own usage.
+ * One read of the usage model.
  *
- * The server forces the subject to the caller for a NORMAL member, so this hook
- * cannot be pointed at someone else's rows even if a caller tried.
+ * Every view goes through here so the four rules that apply to all of them are
+ * stated once: the workspace must be resolved before anything is requested, the
+ * cache key carries that workspace, the retry policy refuses to hammer a refusal
+ * (`USAGE_QUERY_OPTIONS`), and the response is unwrapped only when the server
+ * reports success - a payload with a non-zero `code` is NOT data.
  */
-export const useFetchMyUsage = (params: IUsageRangeParams = {}) => {
+const useUsageView = (
+  view: UsageView,
+  params: object,
+  fetcher: (config: Record<string, unknown>) => Promise<any>,
+) => {
   const tenantId = useActiveUsageTenantId();
   const { data, isFetching, refetch, error } = useQuery({
-    queryKey: WorkspaceUsageKeys.view(tenantId, 'my_usage', params),
+    queryKey: WorkspaceUsageKeys.view(tenantId, view, params),
     enabled: Boolean(tenantId),
+    ...USAGE_QUERY_OPTIONS,
     queryFn: async () => {
-      const { data: body } = await workspaceUsageService.myUsage({
-        tenantId,
-        ...params,
-      });
+      const { data: body } = await fetcher({ tenantId, ...params });
       return unwrap(body);
     },
   });
 
   return { data, loading: isFetching, refetch, error };
 };
+
+/** `GET /tenants/<id>/usage/my` - the caller's own usage. */
+export const useFetchMyUsage = (params: IUsageRangeParams = {}) =>
+  useUsageView('my_usage', params, workspaceUsageService.myUsage);
 
 /** `GET /tenants/<id>/usage/summary` - the workspace aggregate (OWNER/ADMIN). */
-export const useFetchWorkspaceUsageSummary = (params: IUsageRangeParams = {}) => {
-  const tenantId = useActiveUsageTenantId();
-  const { data, isFetching, refetch, error } = useQuery({
-    queryKey: WorkspaceUsageKeys.view(tenantId, 'workspace_summary', params),
-    enabled: Boolean(tenantId),
-    queryFn: async () => {
-      const { data: body } = await workspaceUsageService.workspaceSummary({
-        tenantId,
-        ...params,
-      });
-      return unwrap(body);
-    },
-  });
-
-  return { data, loading: isFetching, refetch, error };
-};
+export const useFetchWorkspaceUsageSummary = (params: IUsageRangeParams = {}) =>
+  useUsageView('workspace_summary', params, workspaceUsageService.workspaceSummary);
 
 /** `GET /tenants/<id>/usage/members` - the per-member breakdown (OWNER/ADMIN). */
 export const useFetchMemberUsageBreakdown = (
   params: IUsageRangeParams & IUsagePageParams = {},
-) => {
-  const tenantId = useActiveUsageTenantId();
-  const { data, isFetching, refetch, error } = useQuery({
-    queryKey: WorkspaceUsageKeys.view(tenantId, 'member_breakdown', params),
-    enabled: Boolean(tenantId),
-    queryFn: async () => {
-      const { data: body } = await workspaceUsageService.memberBreakdown({
-        tenantId,
-        ...params,
-      });
-      return unwrap(body);
-    },
-  });
-
-  return { data, loading: isFetching, refetch, error };
-};
+) => useUsageView('member_breakdown', params, workspaceUsageService.memberBreakdown);
 
 /** `GET /tenants/<id>/usage/daily` - one bucket per day (OWNER/ADMIN). */
-export const useFetchDailyUsageSeries = (params: IUsageRangeParams = {}) => {
-  const tenantId = useActiveUsageTenantId();
-  const { data, isFetching, refetch, error } = useQuery({
-    queryKey: WorkspaceUsageKeys.view(tenantId, 'daily_series', params),
-    enabled: Boolean(tenantId),
-    queryFn: async () => {
-      const { data: body } = await workspaceUsageService.dailySeries({
-        tenantId,
-        ...params,
-      });
-      return unwrap(body);
-    },
-  });
-
-  return { data, loading: isFetching, refetch, error };
-};
+export const useFetchDailyUsageSeries = (params: IUsageRangeParams = {}) =>
+  useUsageView('daily_series', params, workspaceUsageService.dailySeries);
 
 /**
  * `GET /tenants/<id>/usage/monthly` - one bucket per month (OWNER/ADMIN).
@@ -141,67 +116,37 @@ export const useFetchDailyUsageSeries = (params: IUsageRangeParams = {}) => {
  */
 export const useFetchMonthlyUsageSeries = (
   params: IUsageMonthRangeParams = {},
-) => {
-  const tenantId = useActiveUsageTenantId();
-  const { data, isFetching, refetch, error } = useQuery({
-    queryKey: WorkspaceUsageKeys.view(tenantId, 'monthly_series', params),
-    enabled: Boolean(tenantId),
-    queryFn: async () => {
-      const { data: body } = await workspaceUsageService.monthlySeries({
-        tenantId,
-        ...params,
-      });
-      return unwrap(body);
-    },
-  });
-
-  return { data, loading: isFetching, refetch, error };
-};
+) => useUsageView('monthly_series', params, workspaceUsageService.monthlySeries);
 
 /** `GET /tenants/<id>/usage/models` - by RECORDED model name (OWNER/ADMIN). */
 export const useFetchRecordedModelUsage = (
   params: IUsageRangeParams & IUsagePageParams = {},
-) => {
-  const tenantId = useActiveUsageTenantId();
-  const { data, isFetching, refetch, error } = useQuery({
-    queryKey: WorkspaceUsageKeys.view(
-      tenantId,
-      'recorded_model_breakdown',
-      params,
-    ),
-    enabled: Boolean(tenantId),
-    queryFn: async () => {
-      const { data: body } = await workspaceUsageService.recordedModelBreakdown(
-        { tenantId, ...params },
-      );
-      return unwrap(body);
-    },
-  });
-
-  return { data, loading: isFetching, refetch, error };
-};
+) =>
+  useUsageView(
+    'recorded_model_breakdown',
+    params,
+    workspaceUsageService.recordedModelBreakdown,
+  );
 
 /**
  * `GET /tenants/<id>/usage/quota` - the current period's limits and occupancy.
  *
  * A NORMAL member may read their own; naming another member is refused by the
- * server, so the Usage Policy view only passes a member when it is allowed to.
+ * server, so the Usage Policy destination only passes a member when it is allowed
+ * to.
  */
-export const useFetchQuotaStatus = (memberUserId?: string) => {
-  const tenantId = useActiveUsageTenantId();
-  const { data, isFetching, refetch, error } = useQuery({
-    queryKey: WorkspaceUsageKeys.view(tenantId, 'quota_status', {
-      memberUserId,
-    }),
-    enabled: Boolean(tenantId),
-    queryFn: async () => {
-      const { data: body } = await workspaceUsageService.quotaStatus({
-        tenantId,
+export const useFetchQuotaStatus = (memberUserId?: string) =>
+  useUsageView(
+    'quota_status',
+    { memberUserId },
+    (config) =>
+      workspaceUsageService.quotaStatus({
+        ...config,
         ...(memberUserId ? { user_id: memberUserId } : {}),
-      });
-      return unwrap(body) as IUsageEnvelope & { data?: IQuotaStatusData };
-    },
-  });
-
-  return { data, loading: isFetching, refetch, error };
-};
+      }),
+  ) as {
+    data?: IUsageEnvelope & { data?: IQuotaStatusData };
+    loading: boolean;
+    refetch: () => void;
+    error: unknown;
+  };

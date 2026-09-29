@@ -21,8 +21,8 @@ import {
 } from '@/hooks/use-workspace-usage-request';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ComingDataPanel } from './components/coming-data-panel';
 import { LimitStandingList } from './components/limit-standing-list';
+import { ReadModelNotice } from './components/read-model-notice';
 import { EstimatedCostTile, UsageTotalsGrid } from './components/usage-metric';
 import {
   UsageRangeDays,
@@ -33,47 +33,48 @@ import {
 /**
  * My Usage: the caller's OWN metered usage and current quota standing.
  *
- * It is the one view every member may read, and its subject is the reader rather
- * than the workspace - the server forces that, so this view cannot be pointed at
- * another member's rows even if it tried.
+ * It is the one destination every member has, and its subject is the reader
+ * rather than the workspace - the server forces that, so this view cannot be
+ * pointed at another member's rows even if it tried.
  *
- * There is deliberately NO per-day chart here. A member's own daily series does
- * not exist in the read model: `daily_series` is a workspace-aggregate view the
- * server refuses to a NORMAL caller, and inventing a chart from the window total
- * would draw a trend the records do not support.
+ * There is deliberately NO per-day chart: a member's own daily series does not
+ * exist in the read model (`daily_series` is a workspace-aggregate view the server
+ * refuses to a NORMAL caller), and drawing a trend from the window total would
+ * show a shape the records do not support.
  */
 function MyUsage() {
   const { t } = useTranslation();
   const [days, setDays] = useState<UsageRangeDays>(31);
   const window = useUsageDayWindow(days);
-  const { data, loading } = useFetchMyUsage(window);
-  const { data: quota, loading: quotaLoading } = useFetchQuotaStatus();
+  const { data, loading, refetch, error } = useFetchMyUsage(window);
+  const {
+    data: quota,
+    loading: quotaLoading,
+    refetch: refetchQuota,
+    error: quotaError,
+  } = useFetchQuotaStatus();
 
   const accounting = data?.accounting;
 
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-col">
-          <h3 className="text-sm text-text-primary">{t('usage.myUsage')}</h3>
-          <span className="text-xs text-text-secondary">
-            {t('usage.windowLabel', {
-              start: window.start_day,
-              end: window.end_day,
-            })}
-          </span>
-        </div>
+        <span className="text-xs text-text-secondary">
+          {t('usage.windowLabel', {
+            start: window.start_day,
+            end: window.end_day,
+          })}
+        </span>
         <UsageRangeFilter value={days} onChange={setDays} />
       </div>
 
       {loading && !data ? (
         <CardSkeleton />
-      ) : !data || !accounting ? (
-        <ComingDataPanel
+      ) : !accounting ? (
+        <ReadModelNotice
           testId="my-usage-unavailable"
-          tone="unavailable"
-          titleKey="usage.unavailableTitle"
-          descriptionKey="usage.unavailableDescription"
+          failed={Boolean(error)}
+          onRetry={refetch}
         />
       ) : (
         <>
@@ -110,16 +111,22 @@ function MyUsage() {
         </>
       )}
 
-      {quotaLoading && !quota ? (
-        <CardSkeleton />
-      ) : quota?.data ? (
-        <div className="ceramic-relief flex flex-col rounded-[2px] p-3">
-          <span className="pb-2 text-sm text-text-primary">
-            {t('usage.myQuotaTitle')}
-          </span>
+      <section className="ceramic-relief flex flex-col rounded-[2px] p-3">
+        <span className="pb-2 text-sm text-text-primary">
+          {t('usage.myQuotaTitle')}
+        </span>
+        {quotaLoading && !quota ? (
+          <CardSkeleton />
+        ) : quota?.data ? (
           <LimitStandingList quota={quota} />
-        </div>
-      ) : null}
+        ) : (
+          <ReadModelNotice
+            testId="my-quota-unavailable"
+            failed={Boolean(quotaError)}
+            onRetry={refetchQuota}
+          />
+        )}
+      </section>
     </div>
   );
 }

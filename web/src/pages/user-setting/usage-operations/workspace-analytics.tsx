@@ -31,8 +31,8 @@ import {
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ComingDataPanel } from './components/coming-data-panel';
 import { EstimatedCostTile, UsageTotalsGrid } from './components/usage-metric';
+import { ReadModelNotice } from './components/read-model-notice';
 import {
   UsageRangeDays,
   UsageRangeFilter,
@@ -47,10 +47,10 @@ import {
 /**
  * The reconciliation strip.
  *
- * The counters and the ledger are two records of the same attempts, and nothing
- * reconciles them automatically, so when they disagree the reader is TOLD rather
- * than shown whichever figure looks better. Both numbers are on screen either
- * way.
+ * The counters and the ledger are two records of the same attempts and nothing
+ * reconciles them automatically, so a disagreement is TOLD to the reader rather
+ * than resolved by showing whichever figure looks better. Both numbers are on
+ * screen either way.
  */
 function ReconciliationStrip({ payload }: { payload: IUsageEnvelope }) {
   const { t } = useTranslation();
@@ -85,20 +85,57 @@ function ReconciliationStrip({ payload }: { payload: IUsageEnvelope }) {
             })}
       </span>
       <span className="text-xs text-text-disabled">
-        {reconciliation.semantics}
+        {t('usage.reconciliationSemantics')}
       </span>
     </div>
   );
 }
 
 /**
+ * One block of the analytics page, so every block states its own three states the
+ * same way: loading, a failure that the block owns, or content.
+ */
+function AnalyticsSection({
+  title,
+  hint,
+  loading,
+  failed,
+  onRetry,
+  empty,
+  testId,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  loading: boolean;
+  failed: boolean;
+  onRetry: () => void;
+  empty: boolean;
+  testId: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="flex flex-col gap-2">
+      <h4 className="text-sm text-text-primary">{title}</h4>
+      {hint && <p className="text-xs text-text-disabled">{hint}</p>}
+      {loading ? (
+        <CardSkeleton />
+      ) : failed || empty ? (
+        <ReadModelNotice failed={failed} onRetry={onRetry} testId={testId} />
+      ) : (
+        children
+      )}
+    </section>
+  );
+}
+
+/**
  * Workspace Analytics: OWNER/ADMIN only.
  *
- * The page mounts only for a manager, and each block fires its own query, so a
- * NORMAL member never issues a workspace-aggregate request the server would
- * refuse. Nothing here is computed on the client: `sum(member_breakdown)` is the
- * server's own reconciliation flag, not a second calculation that could drift
- * from it.
+ * Each block fires its own read, so a reader who only wants the model breakdown
+ * does not pay for the series. Nothing is computed here: the reconciliation
+ * verdict is the server's own flag rather than a second sum that could drift from
+ * the server's.
  */
 function WorkspaceAnalytics() {
   const { t } = useTranslation();
@@ -113,37 +150,29 @@ function WorkspaceAnalytics() {
 
   const accounting = summary.data?.accounting;
   const memberData = members.data?.data as IMemberBreakdownData | undefined;
-  const modelData = models.data?.data as
-    | IRecordedModelBreakdownData
-    | undefined;
+  const modelData = models.data?.data as IRecordedModelBreakdownData | undefined;
   const dailyData = daily.data?.data as ISeriesData | undefined;
   const monthlyData = monthly.data?.data as ISeriesData | undefined;
 
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-col">
-          <h3 className="text-sm text-text-primary">
-            {t('usage.workspaceAnalytics')}
-          </h3>
-          <span className="text-xs text-text-secondary">
-            {t('usage.windowLabel', {
-              start: window.start_day,
-              end: window.end_day,
-            })}
-          </span>
-        </div>
+        <span className="text-xs text-text-secondary">
+          {t('usage.windowLabel', {
+            start: window.start_day,
+            end: window.end_day,
+          })}
+        </span>
         <UsageRangeFilter value={days} onChange={setDays} />
       </div>
 
       {summary.loading && !summary.data ? (
         <CardSkeleton />
-      ) : !summary.data || !accounting ? (
-        <ComingDataPanel
+      ) : !accounting ? (
+        <ReadModelNotice
           testId="workspace-summary-unavailable"
-          tone="unavailable"
-          titleKey="usage.unavailableTitle"
-          descriptionKey="usage.workspaceUnavailableDescription"
+          failed={Boolean(summary.error)}
+          onRetry={summary.refetch}
         />
       ) : (
         <>
@@ -169,113 +198,70 @@ function WorkspaceAnalytics() {
             />
           </div>
 
-          <ReconciliationStrip payload={summary.data} />
+          {summary.data && <ReconciliationStrip payload={summary.data} />}
 
-          <section className="flex flex-col gap-2">
-            <div className="flex items-baseline justify-between gap-2">
-              <h4 className="text-sm text-text-primary">
-                {t('usage.memberBreakdown')}
-              </h4>
-              {memberData?.truncated && (
-                <span className="text-xs text-text-disabled">
-                  {t('usage.truncatedNotice', {
+          <AnalyticsSection
+            title={t('usage.memberBreakdown')}
+            hint={
+              memberData?.truncated
+                ? t('usage.truncatedNotice', {
                     total: memberData.total_members,
-                  })}
-                </span>
-              )}
-            </div>
-            {members.loading && !memberData ? (
-              <CardSkeleton />
-            ) : memberData?.members?.length ? (
-              <MemberUsageTable members={memberData.members} />
-            ) : (
-              <ComingDataPanel
-                tone="unavailable"
-                testId="member-breakdown-empty"
-                titleKey="usage.noMeteredActivityTitle"
-                descriptionKey="usage.noMeteredActivityDescription"
-              />
-            )}
-          </section>
+                  })
+                : undefined
+            }
+            loading={members.loading && !memberData}
+            failed={Boolean(members.error)}
+            onRetry={members.refetch}
+            empty={!memberData?.members?.length}
+            testId="member-breakdown-unavailable"
+          >
+            <MemberUsageTable members={memberData?.members ?? []} />
+          </AnalyticsSection>
 
-          <section className="flex flex-col gap-2">
-            <div className="flex items-baseline justify-between gap-2">
-              <h4 className="text-sm text-text-primary">
-                {t('usage.recordedModelBreakdown')}
-              </h4>
-              {modelData?.truncated && (
-                <span className="text-xs text-text-disabled">
-                  {t('usage.truncatedNotice', {
+          <AnalyticsSection
+            title={t('usage.recordedModelBreakdown')}
+            hint={
+              modelData?.truncated
+                ? t('usage.truncatedNotice', {
                     total: modelData.total_buckets,
-                  })}
-                </span>
-              )}
-            </div>
-            {models.loading && !modelData ? (
-              <CardSkeleton />
-            ) : modelData?.models?.length ? (
-              <>
-                <RecordedModelUsageTable models={modelData.models} />
-                <p className="text-xs text-text-disabled">
-                  {modelData.not_answered}
-                </p>
-              </>
-            ) : (
-              <ComingDataPanel
-                tone="unavailable"
-                testId="model-breakdown-empty"
-                titleKey="usage.noMeteredActivityTitle"
-                descriptionKey="usage.noMeteredActivityDescription"
-              />
-            )}
-          </section>
+                  })
+                : t('usage.modelAttributionCaveat')
+            }
+            loading={models.loading && !modelData}
+            failed={Boolean(models.error)}
+            onRetry={models.refetch}
+            empty={!modelData?.models?.length}
+            testId="model-breakdown-unavailable"
+          >
+            <RecordedModelUsageTable models={modelData?.models ?? []} />
+          </AnalyticsSection>
 
-          <section className="flex flex-col gap-2">
-            <h4 className="text-sm text-text-primary">
-              {t('usage.dailySeries')}
-            </h4>
-            {daily.loading && !dailyData ? (
-              <CardSkeleton />
-            ) : dailyData?.buckets?.length ? (
-              <>
-                <UsageSeriesTable granularity="day" buckets={dailyData.buckets} />
-                <p className="text-xs text-text-disabled">
-                  {dailyData.zero_filled}
-                </p>
-              </>
-            ) : (
-              <ComingDataPanel
-                tone="unavailable"
-                testId="daily-series-empty"
-                titleKey="usage.noMeteredActivityTitle"
-                descriptionKey="usage.noMeteredActivityDescription"
-              />
-            )}
-          </section>
+          <AnalyticsSection
+            title={t('usage.dailySeries')}
+            hint={dailyData?.zero_filled}
+            loading={daily.loading && !dailyData}
+            failed={Boolean(daily.error)}
+            onRetry={daily.refetch}
+            empty={!dailyData?.buckets?.length}
+            testId="daily-series-unavailable"
+          >
+            <UsageSeriesTable granularity="day" buckets={dailyData?.buckets ?? []} />
+          </AnalyticsSection>
 
-          <section className="flex flex-col gap-2">
-            <h4 className="text-sm text-text-primary">
-              {t('usage.monthlySeries')}
-            </h4>
-            <p className="text-xs text-text-disabled">
-              {t('usage.monthlySeriesHint')}
-            </p>
-            {monthly.loading && !monthlyData ? (
-              <CardSkeleton />
-            ) : monthlyData?.buckets?.length ? (
-              <UsageSeriesTable
-                granularity="month"
-                buckets={monthlyData.buckets}
-              />
-            ) : (
-              <ComingDataPanel
-                tone="unavailable"
-                testId="monthly-series-empty"
-                titleKey="usage.noMeteredActivityTitle"
-                descriptionKey="usage.noMeteredActivityDescription"
-              />
-            )}
-          </section>
+          <AnalyticsSection
+            title={t('usage.monthlySeries')}
+            hint={t('usage.monthlySeriesHint')}
+            loading={monthly.loading && !monthlyData}
+            failed={Boolean(monthly.error)}
+            onRetry={monthly.refetch}
+            empty={!monthlyData?.buckets?.length}
+            testId="monthly-series-unavailable"
+          >
+            <UsageSeriesTable
+              granularity="month"
+              buckets={monthlyData?.buckets ?? []}
+            />
+          </AnalyticsSection>
         </>
       )}
     </div>

@@ -164,11 +164,13 @@ export function LimitStandingList({ quota }: { quota: IUsageEnvelope }) {
         limits_source?: string;
         limits_scope?: string;
         not_answered?: string;
+        subject?: { live_member?: boolean; role?: string | null };
       }
     | undefined;
 
   const standing = data?.standing ?? {};
   const zeroMeansUnlimited = new Set(data?.zero_means_unlimited ?? []);
+  const liveMemberFalse = data?.subject?.live_member === false;
 
   return (
     <div className="flex flex-col">
@@ -211,9 +213,18 @@ export function LimitStandingList({ quota }: { quota: IUsageEnvelope }) {
         </p>
       )}
 
-      {/* The server's own caveat, shown verbatim rather than paraphrased. */}
-      {data?.not_answered && (
-        <p className="pt-2 text-xs text-text-disabled">{data.not_answered}</p>
+      {/* The semantics are the server's, but the WORDING is ours: the server's own
+          caveat is English-only prose, and a Chinese console must not show an
+          English paragraph. The statement below says the same things in the
+          reader's language, so it is translatable and cannot drift into a
+          different claim. */}
+      <p className="pt-2 text-xs text-text-disabled">
+        {t('usage.limitsPerMemberCaveat')}
+      </p>
+      {liveMemberFalse && (
+        <p className="pt-1 text-xs text-text-disabled">
+          {t('usage.memberNoLongerActive')}
+        </p>
       )}
     </div>
   );

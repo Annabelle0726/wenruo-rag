@@ -234,6 +234,133 @@ NORMAL/OWNER 双角色数据，属于需要单独授权的运行态操作（U0.6
 - 未做 CSV 导出、未做图表库引入（日/月以表格呈现，避免为了"看起来像仪表盘"而引入未验证的可视化）。
 - 未修复任何 U0 缺陷（特殊任务归因、OCR 绕过、结算缺口、身份域错误等仍为 backlog）。
 
-## 11. 停止点
+## 12. U2.1 — Settings IA, i18n repair and the 404 root cause
+
+按用户要求，本轮是 U2 的修正/补全：把 Settings 改成**真正的两级导航**、把 Model Providers 变成**真实分类**、把 Team 拆成**真实子页面**、
+修掉可见的 404，并把中英文补齐（默认中文）。**未开始 U3，未改 U1 后端/会计语义，未部署、未 retag。**
+
+### 12.1 404 的确切根因
+
+复现与取证：用户看到的是 `vite dev`（端口 **9222**，`web/.env` 的 `PORT=9222`），它按 `web/vite.config.ts` 把
+`/api` 与 `/v1` 代理到 `http://127.0.0.1:9380/`，也就是**运行中的容器 `wenruo-rag-cpu`**。检查该容器的后端代码：
+
+```text
+$ docker exec wenruo-rag-cpu ls /ragflow/api/apps/restful_apis/ | grep -i workspace_usage
+(空)
+$ docker exec wenruo-rag-cpu ls /ragflow/api/db/services/ | grep -i workspace_usage
+(空)
+```
+
+**容器镜像早于 U1**：它没有 `workspace_usage_api.py`，也没有 `workspace_usage_read_service.py`，
+因此 7 个 `/api/v1/tenants/<id>/usage/*` 请求全部得到 **HTTP 404**，`next-request` 的拦截器把每个失败请求变成一条
+`请求错误 404: undefined` toast。`undefined` 是既有实现的产物（`errorHandler` 读 `error.response.url`，axios 不填该字段），
+不是本轮引入。**根因是环境，不是 URL 拼装、不是 workspace 标识、也不是路由写法** —— U1 的 7 条路由在 U1 已用真实
+app bootstrap 验证存在，本轮也再次确认前端拼出的路径正确（fixture 断言 `GET /api/v1/tenants/<id>/usage/<view>` 命中）。
+
+本轮在**前端**做了两处与之对应的正当修复（都不是"把 toast 关掉让截图好看"）：
+
+1. **重试策略**：`USAGE_QUERY_OPTIONS` 让 4xx/5xx 不再按 React Query 默认重试 3 次 —— 一次不可达的读取模型原本会变成
+   每个端点 4 次请求（7 个端点 × 4 = 28 条 toast），这正是"repeated 404"的来源。
+2. **错误归属**：用量读取带 `skipGlobalErrorNotification`，由 `ReadModelNotice` **在页面上**显示失败原因并给出**重试按钮**。
+   失败比 toast 更可见（就地、持久、带上下文），只是不再刷屏；错误没有被隐藏。
+3. 顺带修掉一个真实缺陷：`useActiveUsageTenantId` 以前直接读 `localStorage`（非响应式），首次渲染取不到 workspace 时查询会**永久禁用**；
+   现在改为经 `/v1/users/me/models` 的 TanStack 查询派生，workspace 解析到位后查询会自动发出。
+
+**部署后端的 U1 缺失仍是环境前置条件**：验收必须让前端连接到带 U1 的后端（重建镜像或在本地跑 checkout 的 API）。
+本轮没有部署、没有 retag：那是需要单独授权的动作。
+
+### 12.2 二级导航（真实导航，不是页面内标题）
+
+新增数据模型 `web/src/pages/user-setting/settings-nav.ts`：四个分区 + 子目的地的树，**每个子项都是真实路由**，
+`matchActiveSection` / `matchActiveChild`（最长前缀匹配）同时驱动 rail 高亮与面包屑，因此"选中的子项"和"渲染的页面"不可能不一致。
+
+```text
+用户设置
+├── 模型提供商         /user-setting/model           + 全部提供商 / 托管 API / 私有端点 / 未分类*
+├── 团队               /user-setting/team            + 成员与角色 / 用量策略 / 部门管理
+├── 用量与运维         /user-setting/usage           + 我的用量 / 工作区分析† / 服务商健康† / 检索健康†
+└── 概要               /user-setting/profile         （保留既有功能，无编造子项）
+```
+`*` 未分类**仅在确有无法分类的提供商时**出现在 rail 中；`†` 仅 OWNER/ADMIN 可见，且在角色返回之前不渲染。
+
+rail 自身改造：父项 = 可点击的分区入口，左侧 chevron 独立展开/折叠（一个控件无法同时"导航"和"展开"），
+子项缩进并以竖线归属父项，激活子项用 `accent-primary-5` 高亮；**未新增第二条常驻宽侧栏**，仍复用原 Settings rail。
+面包屑改为两级（父 + 子），并且与 rail 共用同一模型 —— U2 里那段写死 `Routes.DataSource` 的 label 表被删除（还顺带消掉一个既有 TS 错误）。
+
+### 12.3 Model Providers 真实分类
+
+`/model` 保持既有管理页不变（U2 里塞进 rail 的那块 overview 已**删除**，避免与真实分类目的地重复）。
+分类目的地为 `provider-category.tsx`：按 `provider_name`（**工作区实际配置的 factory 身份**，不是显示名）分组，
+`Managed API / Private Endpoint / Unclassified` 各自一个路由；每个提供商卡默认折叠为一行（名称 + 类型 + 能力标签 + 模型数），
+展开后显示模型清单、连接实例与 `状态：尚无观测` 占位。能力标签用 `能力：对话 / 向量化 / 重排序 / 视觉语言 / 语音识别 / 语音合成 / OCR`。
+
+更强信号（自定义 `base_url` 表示自建网关）只存在于 provider-instance 端点，而该端点 payload 含 `api_key` 字段 ——
+为了给一个展示分组"顺带"把密钥拉进浏览器不值得，因此分类只依据 factory 身份，**无法判定的一律进未分类而不是猜成托管 API**。
+
+### 12.4 i18n：找到并修掉"中文里冒英文"的真正原因
+
+用户列出的 `Usage operations` / `Capability chat` / `Usage policy` 等并不是漏翻，而是**键不在 `setting` 命名空间里**：
+上一轮的插入脚本用 `re.search` 定位 `\n      model: '...'` 这行，而每个语言文件里**第一个**匹配是 `chat` 块里的 `model`，
+于是 9 个 `setting.*` 键被写进了 `chat.*`。后果：`setting.capabilityChat` 等根本不存在，
+i18next 落到 `parseMissingKeyHandler`，把键名"人化"成 `Capability chat`；`setting` 整体缺失又让部分界面回落到英文包。
+
+修复与补全（脚本化、幂等）：把这 9 个键从 `chat` 移到 `setting`，补上 U2.1 新增键（en/zh 各 +17 setting、+15 usage），
+并把中文术语按验收清单固定：`服务商健康`（原"供应商健康"）、`向量化`、`重排序`、`视觉语言`、`能力`、
+`成员与角色`、`部门管理`、`模型提供商`、`用量与运维`、`用量策略`、`托管 API`、`私有端点`、`未分类`。
+
+**新增自动化审计** `src/locales/__tests__/settings-locale-audit.test.ts`（20 项）：扫描 U2/U2.1 源文件里所有
+`t('...')`、`labelKey`/`titleKey`/`descriptionKey`/`pendingKeys` 字面量与动态键表（共 105+ 键），断言
+① 每个键在 en 与 zh **都能解析成字符串**；② 没有空值；③ 没有任何键回落到"人化键名"（这正是本次缺陷的症状）；
+④ zh 与 en 不会给出同一串（除白名单专有名词）；⑤ zh 值不得是纯 ASCII 英文；⑥ 验收清单里的中文术语**逐字**比对；
+⑦ 源码里不得出现硬编码的英文 JSX 文本节点或 `aria-label`/`title`/`placeholder` 英文字面量。
+
+同时**停止渲染服务端的英文散文**（`not_answered`、`reconciliation.semantics`）：语义不变，措辞改由可翻译的键承担，
+否则中文界面必然出现整段英文。
+
+### 12.5 U2.1 验证
+
+| 检查 | 结果 |
+|------|------|
+| `npx jest`（IA + locale 审计 + 既有 U2 套件） | **5 suites / 62 tests 全部通过**（其中 locale 审计 20 项、IA 模型 18 项） |
+| `npm run type-check` | 新增/改动文件 **0 error**（整仓既有基线 203 → **202**，本轮修掉 1 条既有错误） |
+| `npx oxlint`（本轮文件） | **0 error / 0 warning** |
+| `npm run build` | 见 §12.6 |
+| 真实浏览器验收（中文 + 英文） | **BLOCKED**：见 §12.6 |
+
+### 12.6 浏览器验收结论（诚实记录，不宣称通过）
+
+用真实 Chrome（Playwright，`channel="chrome"`）跑了 11 个目的地 × 中英文两轮，并用一个**仅验收用的** Vite 配置
+（扩展项目自身配置、另起 9323 端口、对 7 个 U1 端点返回契约同形的 fixture，其余全部走真实后端）来绕开"部署后端没有 U1"这一环境前置条件。
+该临时配置与脚本都不在仓库内（已在提交前删除），**没有改动生产、没有部署、没有 retag**。
+
+**已获得的证据**（页面渲染文本，截图在 `%TEMP%\u21_acceptance\`）：
+
+- 中文界面：`用户设置 > 用量与运维 > 我的用量`、rail `模型提供商 / 团队 / 用量与运维 / 概要 / 登出`、
+  `区间 2026-08-30 至 2026-09-29`、`最近 7 天/31 天/92 天`、`该区间没有用量记录`；英文界面全部对应英文。
+- **两级面包屑**与 rail 父子结构在真实浏览器中可见（这是"二级导航真的生效"的直接证据）。
+- 所有目的地：`raw_key_hit = None`、`forbidden_hits = []` —— 无原始/人化键，中文模式无被点名的英文串，英文模式无中文串。
+
+**未通过的部分**：两轮运行中，经代理的**所有**后端调用都返回 **HTTP 500**（Vite 日志为 `http proxy error: socket hang up`），
+包括 `/api/v1/language`、`/api/v1/users/me`、`/api/v1/models`、`/api/v1/tenants`；同一时刻直接请求
+`http://127.0.0.1:9380/api/v1/language` 返回 **200**，容器日志也显示这些路径对用户会话返回 200。
+期间容器 `wenruo-rag-cpu` **重启过一次**（`Up 4 minutes`），第一次运行正处于该窗口。
+由于会话无法稳定建立（`/api/v1/users/me` 也 500），workspace 无法解析，用量查询被禁用，
+页面因此落到"没有用量记录"的诚实空状态，**7 个 U1 端点在浏览器里没有被真正请求到**。
+因此：
+
+- "打开用量与运维不产生意外 404" —— **无法在本轮证明**（后端 500 掩盖了它）；
+- 中文/英文浏览器验收 —— **FAIL/BLOCKED**，原因在验收环境（代理链路 500 + 后端重启 + 令牌被拒 401），不在本轮前端改动。
+
+**未伪造任何结论**：本轮不宣称 ZERO unexpected 404、不宣称浏览器 PASS。复现所需的下一步是让前端连到**带 U1 且稳定**的后端
+（重建镜像或在本地运行 checkout 的 API），这需要单独授权；届时同一脚本可直接复用。
+
+### 12.7 U2.1 停止点
+
+前端 IA、二级导航、分类、Team 子页面、i18n 修复与审计均已完成并通过代码级门禁；
+**浏览器验收因环境阻塞而未能通过，已如实记录**。**U3 未开始，等待明确授权。**
+
+
+
+## 11. U2 停止点
 
 U2 骨架与 U1 接入完成并通过类型检查 / lint / 单测 / 构建。**U3 未开始，等待明确授权。**

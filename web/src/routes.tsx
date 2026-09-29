@@ -308,11 +308,58 @@ const routeConfigOptions = [
             Component: () => import('@/pages/user-setting/setting-model'),
           },
           {
+            path: `${Routes.UserSetting}/model/managed`,
+            Component: () =>
+              import('@/pages/user-setting/setting-model/provider-category'),
+          },
+          {
+            path: `${Routes.UserSetting}/model/private`,
+            Component: () =>
+              import('@/pages/user-setting/setting-model/provider-category'),
+          },
+          {
+            path: `${Routes.UserSetting}/model/unclassified`,
+            Component: () =>
+              import('@/pages/user-setting/setting-model/provider-category'),
+          },
+          {
             path: `${Routes.UserSetting}/team`,
+            Component: () => import('@/pages/user-setting/setting-team'),
+          },
+          // Members & roles, Usage policy and Department management are the Team
+          // section's second level. One component answers all three: the route
+          // selects the subsection, so the rail's active child and the rendered
+          // destination cannot drift apart.
+          {
+            path: `${Routes.UserSetting}/team/members`,
+            Component: () => import('@/pages/user-setting/setting-team'),
+          },
+          {
+            path: `${Routes.UserSetting}/team/usage-policy`,
+            Component: () => import('@/pages/user-setting/setting-team'),
+          },
+          {
+            path: `${Routes.UserSetting}/team/departments`,
             Component: () => import('@/pages/user-setting/setting-team'),
           },
           {
             path: `${Routes.UserSetting}${Routes.Usage}`,
+            Component: () => import('@/pages/user-setting/usage-operations'),
+          },
+          {
+            path: `${Routes.UserSetting}/usage/my`,
+            Component: () => import('@/pages/user-setting/usage-operations'),
+          },
+          {
+            path: `${Routes.UserSetting}/usage/workspace`,
+            Component: () => import('@/pages/user-setting/usage-operations'),
+          },
+          {
+            path: `${Routes.UserSetting}/usage/provider-health`,
+            Component: () => import('@/pages/user-setting/usage-operations'),
+          },
+          {
+            path: `${Routes.UserSetting}/usage/retrieval-health`,
             Component: () => import('@/pages/user-setting/usage-operations'),
           },
           {

@@ -29,18 +29,22 @@ export const WORKSPACE_USAGE_ENDPOINTS = [
 
 export type WorkspaceUsageEndpoint = (typeof WORKSPACE_USAGE_ENDPOINTS)[number];
 
-type UsageQuery = Record<string, string | number | undefined>;
+type UsageQuery = Record<string, string | number | boolean | undefined>;
 
 /**
  * Renders a query string, dropping absent values.
  *
  * The range bounds are validated on the server (a window longer than 92 days is
  * refused), so an unset bound is simply omitted and the server's default window
- * applies - this layer never invents one.
+ * applies - this layer never invents one. Only the endpoint's own whitelisted
+ * parameters are ever put here, because the server refuses an unknown one.
  */
 const withQuery = (path: string, query: UsageQuery = {}) => {
   const search = new URLSearchParams();
   Object.entries(query).forEach(([key, value]) => {
+    if (key === 'skipGlobalErrorNotification' || key === 'tenantId') {
+      return;
+    }
     if (value !== undefined && value !== null && value !== '') {
       search.set(key, String(value));
     }
@@ -59,14 +63,7 @@ const usagePath = (
     query,
   );
 
-/**
- * The U1 usage read model: seven GET endpoints, all read-only.
- *
- * They are the ONLY source the Usage & Operations pages read usage from. Nothing
- * here writes, and the server re-checks a live workspace membership on every
- * call, so a refusal arrives as HTTP 200 + `code: 108` rather than as a 403.
- */
-const workspaceUsageService = registerNextServer({
+const rawUsageService = registerNextServer({
   myUsage: {
     url: (config: { tenantId: string } & UsageQuery) =>
       usagePath(config.tenantId, 'my', config),
@@ -104,4 +101,55 @@ const workspaceUsageService = registerNextServer({
   },
 });
 
+/**
+ * Marks a usage call as owning its own error surface.
+ *
+ * Two consequences, both deliberate:
+ *
+ * 1. `skipGlobalErrorNotification` keeps a failing read model OUT of the global
+ *    toast. The error is NOT hidden - the Usage & Operations views render it in
+ *    place, with the reason and a retry, which is where a reader looking at an
+ *    empty figure will actually see it. What it stops is one transient toast per
+ *    endpoint per retry for a surface that has seven of them.
+ * 2. The native axios config is used, so the flag travels on the request CONFIG
+ *    (where the interceptor reads it) rather than inside the request body, which
+ *    is where `registerNextServer` puts a plain argument on a GET.
+ */
+const owningTheErrorSurface = (
+  call: (config: any, useAxiosNativeConfig?: boolean) => Promise<any>,
+) => {
+  return (config: Record<string, any>) =>
+    call({ ...config, skipGlobalErrorNotification: true }, true);
+};
+
+const workspaceUsageService = {
+  myUsage: owningTheErrorSurface(rawUsageService.myUsage),
+  workspaceSummary: owningTheErrorSurface(rawUsageService.workspaceSummary),
+  memberBreakdown: owningTheErrorSurface(rawUsageService.memberBreakdown),
+  dailySeries: owningTheErrorSurface(rawUsageService.dailySeries),
+  monthlySeries: owningTheErrorSurface(rawUsageService.monthlySeries),
+  recordedModelBreakdown: owningTheErrorSurface(
+    rawUsageService.recordedModelBreakdown,
+  ),
+  quotaStatus: owningTheErrorSurface(rawUsageService.quotaStatus),
+};
+
 export default workspaceUsageService;
+
+/**
+ * Retry policy for the usage reads.
+ *
+ * A usage read is an idempotent GET, but retrying a REFUSAL or a MISSING ROUTE
+ * cannot succeed and only multiplies the noise - React Query's default of three
+ * retries turns one unreachable read model into four requests per endpoint. A
+ * transient failure (a timeout, a 503, a dropped connection) is worth exactly one
+ * more attempt; after that the view reports the failure and offers a retry.
+ */
+export const USAGE_QUERY_OPTIONS = {
+  retry: (failureCount: number, error: unknown) => {
+    const status =
+      (error as { response?: { status?: number } })?.response?.status ?? 0;
+    const permanent = status >= 400 && status !== 503;
+    return !permanent && failureCount < 1;
+  },
+};

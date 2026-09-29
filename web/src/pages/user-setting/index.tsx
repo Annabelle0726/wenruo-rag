@@ -1,41 +1,41 @@
 import { usePublishBreadcrumbTrail } from '@/layouts/components/breadcrumb-context';
-import { Routes } from '@/routes';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router';
 import { SideBar } from './sidebar';
-
-/**
- * The settings rail's own tabs, in the order it lists them. Keyed by the route
- * constant the rail navigates to, so the crumb and the highlighted tab cannot
- * drift apart; the labels are the same keys the rail renders.
- */
-const SectionLabelKeys: Record<string, string> = {
-  [Routes.Model]: 'setting.model',
-  [Routes.DataSource]: 'setting.dataSources',
-  [Routes.Team]: 'setting.team',
-  [Routes.Usage]: 'setting.usageOperations',
-  [Routes.Profile]: 'setting.profile',
-  [Routes.Api]: 'setting.api',
-};
+import {
+  buildSettingsNav,
+  matchActiveChild,
+  matchActiveSection,
+} from './settings-nav';
 
 function UserSetting() {
   const { pathname } = useLocation();
   const { t } = useTranslation();
 
   /**
-   * 用户设置 > 当前 Tab.
+   * 用户设置 > 分区 > 子页面.
    *
-   * The tab is the second path segment — the same rule the rail uses to highlight
-   * one of its own entries, rather than a second copy of the state. A sub-page that
-   * is not a rail tab (a data-source detail, a chat channel) publishes nothing and
-   * leaves the crumb at 用户设置 on its own.
+   * The trail is derived from the SAME navigation model the rail renders, so a
+   * rename or a moved destination cannot leave the crumb pointing at a label the
+   * rail no longer uses. The parent is published as soon as the path names a
+   * section, and the child only when the path is one of its destinations - a
+   * section's own page shows the parent alone rather than repeating it.
    */
   const trail = useMemo(() => {
-    const section = `/${pathname.split('/')[2] ?? ''}`;
-    const labelKey = SectionLabelKeys[section];
+    const sections = buildSettingsNav();
+    const section = matchActiveSection(sections, pathname);
 
-    return labelKey ? [{ label: t(labelKey) }] : [];
+    if (!section) {
+      return [];
+    }
+
+    const child = matchActiveChild(section, pathname);
+    const items = [{ label: t(section.labelKey) }];
+    if (child) {
+      items.push({ label: t(child.labelKey) });
+    }
+    return items;
   }, [pathname, t]);
 
   usePublishBreadcrumbTrail(trail);
