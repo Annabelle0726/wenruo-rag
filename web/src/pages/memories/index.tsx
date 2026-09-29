@@ -110,7 +110,7 @@ export default function MemoryList() {
           className="size-full min-w-0 flex flex-col"
           data-testid="memory-list"
         >
-          <header className="page-gutter mb-4 min-w-0 pt-8">
+          <header className="page-gutter page-toolbar min-w-0">
             <ListFilterBar
               icon="memory"
               title={t('memory')}
@@ -146,7 +146,7 @@ export default function MemoryList() {
                 ))}
               </CardContainer>
 
-              <footer className="page-gutter mt-4 pb-5">
+              <footer className="page-gutter page-list-footer">
                 <RAGFlowPagination
                   {...pick(pagination, 'current', 'pageSize')}
                   total={list?.data.total_count}

@@ -112,7 +112,7 @@ export default function Files() {
       className="size-full min-w-0 flex flex-col"
       data-testid="files-list"
     >
-      <header className="page-gutter mb-4 min-w-0 pt-8">
+      <header className="page-gutter page-toolbar min-w-0">
         <ListFilterBar
           leftPanel={leftPanel}
           searchString={searchString}

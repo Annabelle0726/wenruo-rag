@@ -615,7 +615,7 @@ const SkillsPage: React.FC = () => {
           className="size-full flex flex-col"
           data-testid="skill-space-list"
         >
-          <header className="page-gutter mb-4 pt-8">
+          <header className="page-gutter page-toolbar min-w-0">
             <ListFilterBar
               searchVariant="capsule"
               leftPanel={hubListBreadcrumb}
@@ -911,7 +911,7 @@ const SkillsPage: React.FC = () => {
   // Inside a space (skills list page)
   return (
     <article className="size-full flex flex-col" data-testid="skills-list">
-      <header className="page-gutter mb-4 pt-8">
+      <header className="page-gutter page-toolbar min-w-0">
         <ListFilterBar
           searchVariant="capsule"
           leftPanel={skillsListBreadcrumb}

@@ -143,7 +143,7 @@ export default function Agents() {
         className="size-full min-w-0 flex flex-col"
         data-testid="agents-list"
       >
-        <header className="page-gutter mb-4 min-w-0 pt-8">
+        <header className="page-gutter page-toolbar min-w-0">
           <ListFilterBar
             searchVariant="capsule"
             title={t('flow.agents')}
@@ -216,7 +216,7 @@ export default function Agents() {
               )}
             </CardContainer>
 
-            <footer className="page-gutter mt-4 pb-5">
+            <footer className="page-gutter page-list-footer">
               <RAGFlowPagination
                 {...pick(pagination, 'current', 'pageSize')}
                 total={pagination.total}

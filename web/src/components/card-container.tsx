@@ -28,12 +28,33 @@ type CardContainerProps = { className?: string } & PropsWithChildren;
  * it — rather than from the grid, because sizing rows to the tallest card would
  * stretch every card in the grid as soon as one of them carried an extra line.
  * Cards that want a different size (compilation templates, skills) keep it.
+ *
+ * Columns follow the space the page gives the grid, not the window: `auto-fill`
+ * adds a track whenever another one fits, so a wide window shows more cards per
+ * row instead of the same three stretched ones. The 17rem floor is where the
+ * shared card still reads — a 32px identity icon, a three-line text column and an
+ * optional trailing pill — and at the 1280px `page-gutter` content cap it lands on
+ * 4 tracks of ~275-294px, which is the width the skills and MCP grids already
+ * render at their own `xl:grid-cols-4 2xl:grid-cols-5`. Below that cap it steps
+ * down to 3, then 2, then 1, on the same widths the old `md:`/`lg:` steps did.
+ * `min(17rem, 100%)` keeps the floor from pushing a track wider than the container
+ * itself, so a very narrow window scrolls rather than overflowing sideways.
  */
 export function CardContainer({ children, className }: CardContainerProps) {
   return (
     <div
+      // The page-size default is measured off this grid (`useFittingPageSize`),
+      // which is why the contract is a data attribute rather than a class name:
+      // it says "this is the grid the page size is derived from", and it survives
+      // any future restyling.
+      data-card-grid=""
       className={cn(
-        'grid auto-rows-auto grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 content-start',
+        'grid auto-rows-auto content-start',
+        'grid-cols-[repeat(auto-fill,minmax(min(17rem,100%),1fr))]',
+        // The row gap is tighter than the column gap: two rows of cards are one
+        // rhythm unit, while two descriptions side by side need the wider gutter
+        // to stop reading as one line.
+        'gap-x-6 gap-y-4',
         // The list pages scroll this grid, and paginating from a full page to a
         // short one removes the scrollbar: reserving its width keeps the columns
         // from jumping sideways between pages.
@@ -42,7 +63,6 @@ export function CardContainer({ children, className }: CardContainerProps) {
       )}
     >
       {children}
-      <div className="col-span-full h-6" aria-hidden="true" />
     </div>
   );
 }

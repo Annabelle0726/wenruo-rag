@@ -554,6 +554,24 @@
     padding-inline: 1rem;
   }
 
+  /* The vertical half of the page frame the card lists share: the toolbar row
+     sitting under the 32px breadcrumb bar, and the footer that closes the list on
+     its pagination. Both were written out per page as `mb-4 … pt-8` and
+     `mt-4 pb-5`, which is how a rhythm drifts — one of the six pages had already
+     dropped its `min-w-0`. `page-gutter` supplies the horizontal half, so a page
+     uses the two together. The gap under the breadcrumb is a section gap: the bar
+     is only 32px tall, and 32px of air below it pushed the first card row down by
+     more than the row is tall. */
+  .page-toolbar {
+    padding-top: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .page-list-footer {
+    margin-top: 0.75rem;
+    padding-bottom: 1rem;
+  }
+
   .glass-panel {
     background-color: var(--glass-bg);
     border: 1px solid var(--glass-border);

@@ -100,16 +100,24 @@ export default function AgentTemplates() {
   );
 
   return (
-    <section>
-      <div className="flex flex-1 h-dvh">
+    <section className="flex size-full min-h-0 flex-1">
+      {/* `h-dvh` here and on the grid below asked for a whole viewport inside a
+          region that is already only `100dvh` minus the header and breadcrumb
+          rows, and `max-h-[94vh]` capped the grid against the viewport instead of
+          against the space it was actually in. The result was a grid whose bottom
+          81px sat under the shell's `overflow-hidden`, so the last row of
+          templates was clipped rather than scrollable. `size-full` + `min-h-0`
+          makes the row fill the region it is given, and the grid scrolls inside
+          that. */}
+      <div className="flex size-full min-h-0 flex-1">
         <SideBar
           change={handleSiderBarChange}
           selected={selectMenuItem}
           categories={templateCategories}
         ></SideBar>
 
-        <main className="flex-1 bg-text-title-invert/50 h-dvh">
-          <CardContainer className="max-h-[94vh] overflow-auto px-8 pt-8 xl:grid-cols-4 2xl:grid-cols-5">
+        <main className="flex min-h-0 flex-1 flex-col bg-text-title-invert/50">
+          <CardContainer className="min-h-0 flex-1 overflow-auto px-8 pt-8 xl:grid-cols-4 2xl:grid-cols-5">
             {tempListFilter?.map((x) => {
               return (
                 <TemplateCard

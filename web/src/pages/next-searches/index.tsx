@@ -105,7 +105,7 @@ export default function SearchList() {
           className="size-full min-w-0 flex flex-col"
           data-testid="search-list"
         >
-          <header className="page-gutter mb-4 min-w-0 pt-8">
+          <header className="page-gutter page-toolbar min-w-0">
             <ListFilterBar
               searchVariant="capsule"
               icon="searches"
@@ -143,7 +143,7 @@ export default function SearchList() {
                 })}
               </CardContainer>
 
-              <footer className="page-gutter mt-4 pb-5">
+              <footer className="page-gutter page-list-footer">
                 <RAGFlowPagination
                   {...pick(pagination, 'current', 'pageSize')}
                   total={list?.data.total}
