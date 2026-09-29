@@ -182,8 +182,7 @@ export const useUploadDocument = () => {
 export const useFetchDocumentList = (loop = true) => {
   const { knowledgeId } = useGetKnowledgeSearchParams();
   const { searchString, handleInputChange } = useHandleSearchChange();
-  const { pagination, setPagination, capacityReady } =
-    useGetPaginationWithRouter();
+  const { pagination, setPagination } = useGetPaginationWithRouter();
   const { id } = useParams();
   const queryClient = useQueryClient();
   const debouncedSearchString = useDebounce(searchString, { wait: 500 });
@@ -203,11 +202,11 @@ export const useFetchDocumentList = (loop = true) => {
         !!query.state.data?.docs.some(isDocumentProcessing))
         ? 5000
         : false,
-    // The page size is how many complete rows the page's list region holds, so the
-    // request waits for that measurement instead of asking for a default page.
-    // `capacityReady` also becomes true when a page whose list has no marked
-    // region gives up waiting, so a list that cannot be measured still loads.
-    enabled: capacityReady && (!!knowledgeId || !!id),
+    // NOT gated on the capacity measurement. A list's page size may follow the
+    // region the page gives it, but permission to retrieve the records must never
+    // depend on a layout measurement: a measurement that fails, is delayed or
+    // oscillates would otherwise turn a non-empty dataset into "0 documents".
+    enabled: !!knowledgeId || !!id,
     queryFn: async () => {
       let run = [] as any;
       let returnEmptyMetadata = false;

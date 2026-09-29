@@ -178,8 +178,7 @@ const buildAgentListParams = ({
 export const useFetchAgentListByPage = () => {
   const { searchString, setSearchString, handleInputChange } =
     useHandleSearchChange();
-  const { pagination, setPagination, capacityReady } =
-    useGetPaginationWithRouter();
+  const { pagination, setPagination } = useGetPaginationWithRouter();
   const debouncedSearchString = useDebounce(searchString, { wait: 500 });
   const { filterValue, setFilterValue, handleFilterSubmit, checkValue } =
     useHandleFilterSubmit();
@@ -202,9 +201,6 @@ export const useFetchAgentListByPage = () => {
     canvas: AgentListItem[];
     total: number;
   }>({
-    // Wait for the card region's capacity: the page size is how many complete
-    // cards this viewport shows, not a default the grid then has to scroll.
-    enabled: capacityReady,
     queryKey: AgentKeys.list({
       debouncedSearchString,
       ...pagination,

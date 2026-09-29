@@ -112,7 +112,6 @@ export const useFetchSearchList = () => {
     setSearchString,
     pagination,
     setPagination,
-    capacityReady,
   } = useHandleSearchChange();
   const debouncedSearchString = useDebounce(searchString, { wait: 500 });
   const { filterValue, setFilterValue, handleFilterSubmit } =
@@ -121,9 +120,6 @@ export const useFetchSearchList = () => {
     SearchListResponse,
     Error
   >({
-    // Wait for the card region's capacity: the page size is how many complete
-    // cards this viewport shows, not a default the grid then has to scroll.
-    enabled: capacityReady,
     queryKey: [
       'searchList',
       {
