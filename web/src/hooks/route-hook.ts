@@ -21,6 +21,7 @@ import {
 import { Routes } from '@/routes';
 import { useCallback } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { useFittingPageSize } from './use-fitting-page-size';
 
 export enum SegmentIndex {
   Second = '2',
@@ -93,6 +94,9 @@ const getStoredPageSize = (pathname: string) =>
 export const useSetPaginationParams = () => {
   const [queryParameters, setSearchParams] = useSearchParams();
   const { pathname } = useLocation();
+  // How many cards fit the grid on this screen. `undefined` on a page with no
+  // card grid (the table pages), which keeps their 50-record default.
+  const fittingPageSize = useFittingPageSize();
 
   const setPaginationParams = useCallback(
     (page: number = 1, pageSize?: number) => {
@@ -114,7 +118,14 @@ export const useSetPaginationParams = () => {
   return {
     setPaginationParams,
     page: Number(queryParameters.get('page')) || 1,
+    // A size in the URL or one the user picked on this path before is an explicit
+    // choice and wins; otherwise the default is what the card grid can show, so
+    // the first page of a list does not arrive with a scrollbar (see
+    // `useFittingPageSize`). 50 is the fallback for a page with no card grid.
     size:
-      Number(queryParameters.get('size')) || getStoredPageSize(pathname) || 50,
+      Number(queryParameters.get('size')) ||
+      getStoredPageSize(pathname) ||
+      fittingPageSize ||
+      50,
   };
 };
