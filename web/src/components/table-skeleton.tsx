@@ -23,7 +23,10 @@ type IProps = { columnsLength: number };
 
 function Row({ children, columnsLength }: PropsWithChildren & IProps) {
   return (
-    <TableRow>
+    // `data-skeleton` marks a row that is NOT data. It is a deliberately different
+    // height from a real row (96px against a 38px document row), so the page-size
+    // measurement skips it rather than paging the table by it.
+    <TableRow data-skeleton="">
       <TableCell colSpan={columnsLength} className="h-24 text-center">
         {children}
       </TableCell>

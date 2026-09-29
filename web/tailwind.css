@@ -81,6 +81,13 @@
     /* design colors */
 
     --bg-base: #f0f2f5;
+    /* The shared card row's height. `HomeCard` builds its box from this token and
+       the page-size calculation reads it back (`useListCapacity`) to work out how
+       many complete card rows a region holds BEFORE any card has rendered - which
+       is what lets a list page ask the API for the right number on its first
+       request instead of fetching a default and correcting later. One value, two
+       readers, so the two cannot drift. */
+    --list-card-height: 112px;
     /* card color , dividing line */
     --bg-card: #ffffff;
     --bg-component: #ffffff;

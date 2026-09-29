@@ -96,10 +96,12 @@ export function HomeCard({
         // `items-center` centres the avatar and the text block in the row, which
         // is what makes a card with one line of content sit the same as a card
         // with three: the box is fixed, the content is centred inside it.
-        // `h-[112px]` + `overflow-hidden` is that contract — the card never grows
-        // its row (a taller card would stretch every card beside it), so every
-        // line below is truncated to one line and anything left over is clipped.
-        'card-interactive group flex h-[112px] w-full items-center gap-3 overflow-hidden rounded-xl px-4 py-3',
+        // `h-[var(--list-card-height)]` + `overflow-hidden` is that contract — the
+        // card never grows its row (a taller card would stretch every card beside
+        // it), so every line below is truncated to one line and anything left over
+        // is clipped. The height is a token because the page-size calculation
+        // measures a region before any card has rendered and needs the same value.
+        'card-interactive group flex h-[var(--list-card-height)] w-full items-center gap-3 overflow-hidden rounded-xl px-4 py-3',
         // Translucent glass tint, so the page's own glow reads through the card
         // instead of stopping dead at an opaque surface. The ceramic shell adds
         // the inner rim light and the drop shadow, in whichever theme is active.

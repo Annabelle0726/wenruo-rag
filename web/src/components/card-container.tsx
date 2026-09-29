@@ -43,11 +43,14 @@ type CardContainerProps = { className?: string } & PropsWithChildren;
 export function CardContainer({ children, className }: CardContainerProps) {
   return (
     <div
-      // The page-size default is measured off this grid (`useFittingPageSize`),
+      // The page-size default is measured off this grid (`useListCapacity`),
       // which is why the contract is a data attribute rather than a class name:
       // it says "this is the grid the page size is derived from", and it survives
-      // any future restyling.
+      // any future restyling. `data-list-region` marks the box whose height is
+      // the region a page of cards has to fit into - a table page marks its own
+      // scrolling wrapper the same way, so one measurement serves both layouts.
       data-card-grid=""
+      data-list-region=""
       className={cn(
         'grid auto-rows-auto content-start',
         'grid-cols-[repeat(auto-fill,minmax(min(17rem,100%),1fr))]',

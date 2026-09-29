@@ -313,6 +313,11 @@ export function FilesTable({
       {/* One glass shell for the whole table: a clean translucent pane so the
           rows stay the only thing to read. An earlier pass laid a CAD ruling
           under them, which fought the data instead of framing it. */}
+      {/* The scrolling region is this box, which is already `flex-1 min-h-0`
+          inside the page column: the table fills it and the page size is derived
+          from how many complete rows it holds, so the table body must not carry a
+          scroll cap of its own - a fixed `max-h-96` body scrolled internally even
+          when the region had room for every row. */}
       <div className="glass-surface flex-1 min-h-0 size-full overflow-hidden rounded-2xl border border-cable-hairline">
         <Table
           rootClassName="max-h-full overflow-auto rounded-2xl bg-transparent"
@@ -348,7 +353,7 @@ export function FilesTable({
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody className="max-h-96 overflow-y-auto">
+          <TableBody>
             {loading ? (
               <TableSkeleton columnsLength={columns.length}></TableSkeleton>
             ) : table.getRowModel().rows?.length ? (

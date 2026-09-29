@@ -11,6 +11,8 @@ import {
   SelectWithSearch,
   SelectWithSearchOptionType,
 } from '@/components/originui/select-with-search';
+import { currentListCapacity } from '@/hooks/use-list-capacity';
+import { pageSizeOptionsFor } from '@/utils/list-capacity';
 import { cn } from '@/lib/utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +24,14 @@ export type RAGFlowPaginationType = {
   current?: number;
   pageSize?: number;
   showSizeChanger?: boolean;
+  /**
+   * The sizes the control may offer. A list page passes the sizes its own region
+   * can honour (see `pageSizeOptionsFor`), so the control can never offer a size
+   * the layout would not use. Whatever `pageSize` is, it is always offered too:
+   * the control has to be able to show the size the page is really using, or the
+   * two disagree.
+   */
+  sizeOptions?: number[];
 };
 
 /**
@@ -50,17 +60,31 @@ export function RAGFlowPagination({
   total = 0,
   onChange,
   showSizeChanger = true,
+  sizeOptions,
 }: RAGFlowPaginationType) {
   const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState('10');
 
+  const offeredSizes = useMemo(() => {
+    const values = new Set(
+      sizeOptions?.length
+        ? sizeOptions
+        : pageSizeOptionsFor(currentListCapacity()),
+    );
+    // The effective size is always on the list, even when the page derived one
+    // that is not a preset: the trigger shows the selected option, so a size with
+    // no option would leave the control blank while the page paginated by it.
+    if (pageSize) values.add(pageSize);
+    return [...values].filter((value) => value > 0).sort((a, b) => a - b);
+  }, [sizeOptions, pageSize]);
+
   const sizeChangerOptions: SelectWithSearchOptionType[] = useMemo(() => {
-    return [10, 20, 50, 100].map((x) => ({
+    return offeredSizes.map((x) => ({
       label: <span>{t('pagination.page', { size: x })}</span>,
       value: x.toString(),
     }));
-  }, [t]);
+  }, [offeredSizes, t]);
 
   const pages = useMemo(() => {
     const num = Math.ceil(total / pageSize);

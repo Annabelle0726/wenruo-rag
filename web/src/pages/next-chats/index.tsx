@@ -1,11 +1,11 @@
 import { CardContainer } from '@/components/card-container';
+import { CardGridPlaceholder } from '@/components/card-grid-placeholder';
 import { EmptyCardType } from '@/components/empty/constant';
 import { EmptyAppCard } from '@/components/empty/empty';
 import ListFilterBar from '@/components/list-filter-bar';
 import { RenameDialog } from '@/components/rename-dialog';
 import { Button } from '@/components/ui/button';
 import { RAGFlowPagination } from '@/components/ui/ragflow-pagination';
-import { Spin } from '@/components/ui/spin';
 import { ListDeletionKey } from '@/constants/list-deletion';
 import { useGoToPreviousPageOnEmpty } from '@/hooks/logic-hooks';
 import { useFetchChatList } from '@/hooks/use-chat-request';
@@ -117,80 +117,71 @@ export default function ChatList() {
 
   return (
     <>
-      {loading && !chats.length ? (
-        <article
-          className="size-full flex items-center justify-center"
-          data-testid="chats-list"
-        >
-          <Spin size="large" />
-        </article>
-      ) : (
-        // One full-height column under the header: the filter bar keeps the page
-        // framed and the grid or the empty card fills the rest of the region, so
-        // an empty list reads as a page with nothing in it rather than a lone box
-        // floating in the window. `h-full` is the header-relative remainder of
-        // the viewport, because this article sits in the layout's `1fr` row.
-        <article
-          className="flex h-full w-full min-w-0 flex-col"
-          data-testid="chats-list"
-        >
-          <header className="page-gutter page-toolbar min-w-0">
-            <ListFilterBar
-              searchVariant="capsule"
-              title={t('chat.chatApps')}
-              icon="chats"
-              onSearchChange={handleInputChange}
-              searchString={searchString}
-              filters={owners}
-              value={filterValue}
-              onChange={handleFilterSubmit}
+      {/* The frame, the toolbar and the grid region are rendered whether or not
+          the list has arrived. The page size is the number of complete cards this
+          region holds, so the region has to exist before the request goes out
+          (`useListCapacity` measures it and holds the query until it knows), and
+          the list no longer jumps when the data lands in a different shape. */}
+      <article
+        className="flex h-full w-full min-w-0 flex-col"
+        data-testid="chats-list"
+      >
+        <header className="page-gutter page-toolbar min-w-0">
+          <ListFilterBar
+            searchVariant="capsule"
+            title={t('chat.chatApps')}
+            icon="chats"
+            onSearchChange={handleInputChange}
+            searchString={searchString}
+            filters={owners}
+            value={filterValue}
+            onChange={handleFilterSubmit}
+          >
+            <Button
+              className="ceramic-cta h-8 rounded-[2px] px-3 text-xs font-medium gap-1.5"
+              data-testid="create-chat"
+              onClick={handleShowCreateModal}
             >
-              <Button
-                className="ceramic-cta h-8 rounded-[2px] px-3 text-xs font-medium gap-1.5"
-                data-testid="create-chat"
-                onClick={handleShowCreateModal}
-              >
-                <Plus className="size-3.5" />
-                {t('chat.createChat')}
-              </Button>
-            </ListFilterBar>
-          </header>
+              <Plus className="size-3.5" />
+              {t('chat.createChat')}
+            </Button>
+          </ListFilterBar>
+        </header>
 
-          {chats.length ? (
-            <>
-              <CardContainer className="page-gutter flex-1 overflow-auto">
-                {chats.map((x) => (
-                  <ChatCard
-                    key={x.id}
-                    data={x}
-                    showChatRenameModal={showChatRenameModal}
-                  />
-                ))}
-              </CardContainer>
-
-              <footer className="page-gutter page-list-footer">
-                <RAGFlowPagination
-                  {...pick(pagination, 'current', 'pageSize')}
-                  total={pagination.total}
-                  onChange={handlePageChange}
-                />
-              </footer>
-            </>
+        <CardContainer className="page-gutter flex-1 overflow-auto">
+          {loading && !chats.length ? (
+            <CardGridPlaceholder />
+          ) : chats.length ? (
+            chats.map((x) => (
+              <ChatCard
+                key={x.id}
+                data={x}
+                showChatRenameModal={showChatRenameModal}
+              />
+            ))
           ) : (
             // A grid item in the same container the cards use: the create tile is
             // exactly as wide and as tall as a chat card.
-            <CardContainer className="page-gutter flex-1 overflow-auto">
-              <EmptyAppCard
-                showIcon
-                isSearch={Boolean(searchString)}
-                type={EmptyCardType.Chat}
-                onClick={() => handleShowCreateModal()}
-                testId="chats-empty-create"
-              />
-            </CardContainer>
+            <EmptyAppCard
+              showIcon
+              isSearch={Boolean(searchString)}
+              type={EmptyCardType.Chat}
+              onClick={() => handleShowCreateModal()}
+              testId="chats-empty-create"
+            />
           )}
-        </article>
-      )}
+        </CardContainer>
+
+        {chats.length ? (
+          <footer className="page-gutter page-list-footer">
+            <RAGFlowPagination
+              {...pick(pagination, 'current', 'pageSize')}
+              total={pagination.total}
+              onChange={handlePageChange}
+            />
+          </footer>
+        ) : null}
+      </article>
 
       {renameDialogProps && (
         <RenameDialog {...renameDialogProps}></RenameDialog>

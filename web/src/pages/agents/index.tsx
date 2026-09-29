@@ -1,4 +1,5 @@
 import { CardContainer } from '@/components/card-container';
+import { CardGridPlaceholder } from '@/components/card-grid-placeholder';
 import { EmptyCardType } from '@/components/empty/constant';
 import { EmptyAppCard } from '@/components/empty/empty';
 import ListFilterBar from '@/components/list-filter-bar';
@@ -195,58 +196,48 @@ export default function Agents() {
           </ListFilterBar>
         </header>
 
-        {data.length ? (
-          <>
-            <CardContainer className="page-gutter flex-1 overflow-auto">
-              {data.map((x) =>
-                x.type === CompilationGroupCategory ? (
-                  <CompilationTemplateCard
-                    key={x.id}
-                    data={x}
-                    onClick={handleEditCompilation(x.id)}
-                    onDelete={handleDeleteCompilation}
-                  />
-                ) : (
-                  <AgentCard
-                    key={x.id}
-                    data={x}
-                    showAgentRenameModal={showAgentRenameModal}
-                  />
-                ),
-              )}
-            </CardContainer>
-
-            <footer className="page-gutter page-list-footer">
-              <RAGFlowPagination
-                {...pick(pagination, 'current', 'pageSize')}
-                total={pagination.total}
-                onChange={handlePageChange}
-              />
-            </footer>
-          </>
-        ) : searchString ? (
-          <CardContainer className="page-gutter flex-1 overflow-auto">
+        <CardContainer className="page-gutter flex-1 overflow-auto">
+          {data.length ? (
+            data.map((x) =>
+              x.type === CompilationGroupCategory ? (
+                <CompilationTemplateCard
+                  key={x.id}
+                  data={x}
+                  onClick={handleEditCompilation(x.id)}
+                  onDelete={handleDeleteCompilation}
+                />
+              ) : (
+                <AgentCard
+                  key={x.id}
+                  data={x}
+                  showAgentRenameModal={showAgentRenameModal}
+                />
+              ),
+            )
+          ) : listLoading && !searchString ? (
+            // The region exists before the data does, so the page size can be
+            // measured from it and the first request already asks for a whole page.
+            <CardGridPlaceholder />
+          ) : (
             <EmptyAppCard
               showIcon
-              isSearch
-              type={EmptyCardType.Agent}
-              testId="agents-empty-create"
-            />
-          </CardContainer>
-        ) : listLoading ? null : (
-          // The standard create tile every other list page ends on: the agent
-          // icon, a plus and the prompt in a card-sized slot. It opens the menu
-          // the toolbar button opens — the same three options, no second list of
-          // them inside the tile.
-          <CardContainer className="page-gutter flex-1 overflow-auto">
-            <EmptyAppCard
-              showIcon
+              isSearch={Boolean(searchString)}
               type={EmptyCardType.Agent}
               onClick={handleOpenCreateMenu}
               testId="agents-empty-create"
             />
-          </CardContainer>
-        )}
+          )}
+        </CardContainer>
+
+        {data.length ? (
+          <footer className="page-gutter page-list-footer">
+            <RAGFlowPagination
+              {...pick(pagination, 'current', 'pageSize')}
+              total={pagination.total}
+              onChange={handlePageChange}
+            />
+          </footer>
+        ) : null}
       </article>
 
       {agentRenameVisible && (

@@ -118,18 +118,6 @@ export default function Datasets() {
     [filterValue],
   );
 
-  if (loading && !kbs?.length) {
-    return (
-      <article className="page-gutter py-4" data-testid="datasets-list">
-        <DatasetTable
-          datasets={[]}
-          loading
-          showDatasetRenameModal={showDatasetRenameModal}
-        />
-      </article>
-    );
-  }
-
   return (
     <article
       className="flex size-full min-w-0 flex-col overflow-auto"
@@ -184,9 +172,15 @@ export default function Datasets() {
         onReset={reset}
       />
 
-      {kbs.length || query.keyword ? (
+      {/* The list region exists before the rows do: the page size is how many
+          complete rows this region holds, so it has to be measurable from the
+          first render (and the table shows its own skeleton inside it). */}
+      {loading || kbs.length || query.keyword ? (
         <>
-          <div className="page-gutter min-h-0 flex-1 overflow-auto">
+          <div
+            className="page-gutter min-h-0 flex-1 overflow-auto"
+            data-list-region=""
+          >
             <DatasetTable
               datasets={pageDatasets}
               loading={loading}

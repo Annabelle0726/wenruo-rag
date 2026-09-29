@@ -148,7 +148,10 @@ export default function Files() {
         )}
       </header>
 
-      <div className="page-gutter flex flex-1 flex-col overflow-hidden">
+      <div
+        className="page-gutter flex flex-1 flex-col overflow-hidden"
+        data-list-region=""
+      >
         <FilesTable
           files={files}
           total={total}

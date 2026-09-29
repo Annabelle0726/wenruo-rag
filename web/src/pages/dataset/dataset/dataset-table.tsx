@@ -46,6 +46,12 @@ export type DatasetTableProps = Pick<
 > &
   Pick<UseRowSelectionType, 'rowSelection' | 'setRowSelection'> & {
     showManageMetadataModal: (config: ShowManageMetadataModalProps) => void;
+    /**
+     * The bulk bar used to change this table's maximum height (and so its own
+     * internal scrollbar). The table no longer caps its own height - the page's
+     * region does, and the page size is derived from that region - so the flag is
+     * kept only so callers keep compiling; it no longer affects the layout.
+     */
     bulkOperateBarVisible?: boolean;
   };
 
@@ -56,7 +62,6 @@ export function DatasetTable({
   rowSelection,
   setRowSelection,
   showManageMetadataModal,
-  bulkOperateBarVisible = false,
 }: DatasetTableProps) {
   const { isDocumentHidden } = useDocumentVisibility();
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -126,13 +131,13 @@ export function DatasetTable({
 
   return (
     <div className="w-full">
-      <Table
-        rootClassName={
-          bulkOperateBarVisible
-            ? 'max-h-[calc(100vh-320px)]'
-            : 'max-h-[calc(100vh-280px)]'
-        }
-      >
+      {/* No `max-h-[calc(100vh-…)]` here: the viewport is the shell's business
+          (`#root` is `100dvh` and `main` is the row under the breadcrumb), so a
+          second viewport-relative cap on the table guessed at space the page had
+          already accounted for and gave the body a scrollbar of its own - with
+          six rows on screen and room for all six. The page's own region holds the
+          table and pages it by complete rows instead. */}
+      <Table>
         <TableHeader className="bg-table-header [&_tr]:border-b [&_tr]:border-table-border">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow
