@@ -178,7 +178,6 @@ async def main() -> int:
     # counters, and the failure path additionally leaves a leg fact by attributing the caught exception.
     success_counters = out["success_path"]["route_counters"]
     failure_counters = out["failure_path"]["route_counters"]
-    success_legs = out["success_path"]["session_legs"]
     failure_legs = out["failure_path"]["session_legs"]
     reporter_success_executed = success_counters.get("succeeded", 0) >= 1
     reporter_failure_executed = failure_counters.get("failed", 0) >= 1 or any(

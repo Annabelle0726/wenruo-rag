@@ -192,8 +192,6 @@ from rag.retrieval.health_bridge import (
     begin_retrieval_health,
     mark_empty_window,
     mark_no_question,
-    report_route_failure,
-    report_route_success,
 )
 
 async def retrieve_multi_route(

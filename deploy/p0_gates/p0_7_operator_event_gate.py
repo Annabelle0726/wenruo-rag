@@ -13,7 +13,6 @@ Exit 0 = PASS, 1 = FAIL.
 from __future__ import annotations
 
 import asyncio
-import io
 import json
 import logging
 import sys
@@ -105,7 +104,6 @@ def main() -> int:
 
     rag_search = importlib.import_module("rag.nlp.search")
     health_bridge = importlib.import_module("rag.retrieval.health_bridge")
-    producers = importlib.import_module("rag.retrieval.health_producers")
     pipeline = importlib.import_module("rag.retrieval.pipeline")
 
     capture = Capture()

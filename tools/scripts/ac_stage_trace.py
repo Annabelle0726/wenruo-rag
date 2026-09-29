@@ -156,7 +156,7 @@ async def main() -> int:
             best = next((item for item in rows if item["part"] == ("第2部分" if tag == "A" else "第3部分")), None)
             add(f"  * highest-ranked {'Part 2' if tag == 'A' else 'Part 3'} chunk: {best['id'] if best else 'ABSENT FROM TOP 50'} (rank {best['rank'] if best else '-'}, score {best['score'] if best else '-'})")
 
-        add(f"\n### Stage 3 Top 10 detail (hybrid, production-equivalent)")
+        add("\n### Stage 3 Top 10 detail (hybrid, production-equivalent)")
         add("| rank | chunk | part | score | grade | type | snippet |")
         add("|---|---|---|---|---|---|---|")
         for item in legs["hybrid"][:10]:
@@ -170,7 +170,7 @@ async def main() -> int:
             policy = deployed_rerank.DiversityPolicy.for_question(question, pool)
             ordered = deployed_rerank.apply_rank_adjustments(pool, policy)
             selected = deployed_rerank.select_context(ordered, 8, policy)
-            add(f"\n### Stage 5 rank adjustments -> Stage 6 select_context (window 8)")
+            add("\n### Stage 5 rank adjustments -> Stage 6 select_context (window 8)")
             add(f"* pool {len(pool)} -> adjusted order top5: {[str(c.get('chunk_id'))[:12] for c in ordered[:5]]}")
             add(f"* selected {len(selected)}: {[str(c.get('chunk_id'))[:12] for c in selected]}")
             add(f"* selected family distribution: {distribution([row(rank, c) for rank, c in enumerate(selected, 1)])}")

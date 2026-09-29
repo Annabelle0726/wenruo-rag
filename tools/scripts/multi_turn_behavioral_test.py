@@ -126,13 +126,11 @@ async def main() -> int:
         return 1
     owner = str(getattr(kb, "tenant_id", "") or "")
     embd_mdl = LLMBundle(owner, resolve_model_config(owner, LLMType.EMBEDDING, kb.embd_id))
-    chat_config = resolve_model_config(owner, LLMType.CHAT, None) if "model_ref" not in inspect.signature(resolve_model_config).parameters else None
     try:
         chat_mdl = LLMBundle(owner, resolve_model_config(owner, LLMType.CHAT, getattr(kb, "llm_id", None) or None))
     except Exception:  # noqa: BLE001 - the synthesis layer is optional at this tier
         chat_mdl = None
     dealer = rag_search.Dealer(settings.docStoreConn)
-    accepted = set(inspect.signature(dealer.retrieval).parameters)
     params = {key: value for key, value in PARAMS.items() if key in inspect.signature(retrieve_multi_route).parameters}
 
     system_prompt = str(getattr(cable_defaults, "SYSTEM_PROMPT", "")) or "你是线缆行业标准助手，只依据给定资料回答。"

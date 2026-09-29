@@ -167,7 +167,6 @@ def check_search(baseline_text: str, candidate_text: str) -> dict:
         if name == "get_vector":
             continue
         base_body = body_dumps(base_fns[name])
-        cand_body = body_dumps(cand_fns[name])
         # candidate statements minus reporter statements must equal the baseline statements exactly
         stripped = [ast.dump(s) for s in strip_reporters(cand_fns[name].body, REPORTER_CALLS)]
         unchanged_bodies[name] = stripped == base_body

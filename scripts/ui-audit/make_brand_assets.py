@@ -15,8 +15,8 @@ from pathlib import Path
 
 from PIL import Image
 
-ASSETS = Path("web/src/assets/icon")
-PUBLIC = Path("web/public")
+ASSETS = Path("../../web/src/assets/icon")
+PUBLIC = Path("../../web/public")
 
 PAD = 0.04  # a little air around the ink, in fractions of the ink box
 
