@@ -12,6 +12,7 @@ a concurrent duplicate cannot charge twice; only the UNUSED part of the bound is
 released, so a call that reports no usage still costs its reservation.
 """
 
+import json
 import logging
 from contextlib import contextmanager
 from datetime import datetime, timezone as utc_timezone
@@ -114,12 +115,64 @@ def _serialize_limits(budget):
     return {field: int(getattr(budget, field) or 0) for field in BUDGET_FIELDS}
 
 
-def configure_budget(tenant_id, operator_id, values=None, now=None):
-    """Read or update every limit of a workspace; OWNER/ADMIN only, audited."""
+# The storage range of each numeric limit. `calls_*` live in an IntegerField and
+# `tokens_*` in a BigIntegerField, so the WRITE validation has to match the
+# column that will hold the value: accepting 10^10 for calls would be a database
+# error at insert time instead of a controlled refusal.
+CALL_MAX = 2_147_483_647
+TOKEN_MAX = 10_000_000_000
+
+
+class PolicyConflict(Exception):
+    """The caller's `If-Match` revision no longer describes the stored policy.
+
+    Raised INSIDE the same transaction that would have written the change, so a
+    conflict updates nothing and writes no success audit row.
+    """
+
+
+def policy_revision(tenant_id, budget=None):
+    """An opaque revision of the workspace's POLICY, not of its usage.
+
+    It covers exactly what a policy editor owns - the workspace id, whether a
+    budget row exists, the seven limits and the timezone - and deliberately NOTHING
+    from the counters or the ledger. Including usage would make every metered model
+    call produce a new revision, so two administrators could never save without a
+    spurious conflict.
+
+    It is a conflict DETECTOR, not a sequence number: reading A, changing to B and
+    back to A is not a conflict, and it makes no claim to notice every intermediate
+    write. It is also not a credential - the authorization check happens first and
+    is unaffected by it.
+    """
+    row = budget if budget is not None else WorkspaceBudget.get_or_none(WorkspaceBudget.tenant_id == tenant_id)
+    limits = _serialize_limits(row) if row is not None else {field: None for field in BUDGET_FIELDS}
+    payload = {
+        "tenant": tenant_id,
+        "present": row is not None,
+        "limits": limits,
+        "timezone": (row.timezone or DEFAULT_TIMEZONE) if row is not None else None,
+    }
+    return sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+
+
+def configure_budget(tenant_id, operator_id, values=None, now=None, expected_revision=None):
+    """Read or update every limit of a workspace; OWNER/ADMIN only, audited.
+
+    `expected_revision` is the optional `If-Match` contract a policy editor uses:
+    when it is supplied, the revision is recomputed INSIDE this transaction (under
+    the same tenant lock the write takes) and a mismatch raises `PolicyConflict`
+    with nothing written. A caller that supplies no revision keeps the original
+    last-committed-write-wins behaviour, so the pre-existing API is not broken by
+    the newer one.
+    """
     with DB.connection_context(), DB.atomic():
         Tenant.update(name=Tenant.name).where(Tenant.id == tenant_id).execute()
         if not UserTenant.select().where((UserTenant.tenant_id == tenant_id) & (UserTenant.user_id == operator_id) & (UserTenant.status == "1") & UserTenant.role.in_(LIMIT_EXEMPT_ROLES)).exists():
             raise WorkspaceAccessDenied("仅工作区管理员可以查看或配置使用额度")
+        stored = WorkspaceBudget.get_or_none(WorkspaceBudget.tenant_id == tenant_id)
+        if expected_revision is not None and str(expected_revision) != policy_revision(tenant_id, stored):
+            raise PolicyConflict("使用策略已被其他管理员修改，请刷新后重新提交")
         if values is not None:
             if not isinstance(values, dict) or not values:
                 raise WorkspaceAccessDenied("请填写需要更新的使用额度")
@@ -134,8 +187,12 @@ def configure_budget(tenant_id, operator_id, values=None, now=None):
                 if type(value) is not int:
                     raise WorkspaceAccessDenied("请为分钟、每日和每月额度填写整数")
                 low = 0 if field in FIELDS_ALLOWING_ZERO else 1
-                if not low <= value <= 10000000000:
-                    raise WorkspaceAccessDenied("请为分钟、每日和每月额度填写正整数")
+                high = CALL_MAX if field in CALL_FIELDS else TOKEN_MAX
+                # 0 on a token/cost dimension means "not enforced", never "zero
+                # allowance"; a call limit of 0 stays refused because a workspace
+                # with no calls at all is unreachable.
+                if not low <= value <= high:
+                    raise WorkspaceAccessDenied(f"请为 {field} 填写 {low} 至 {high} 之间的整数")
                 update[field] = value
             WorkspaceBudget.get_or_create(tenant_id=tenant_id)
             WorkspaceBudget.update(**update).where(WorkspaceBudget.tenant_id == tenant_id).execute()
@@ -150,6 +207,10 @@ def configure_budget(tenant_id, operator_id, values=None, now=None):
                 "cost_unit": "micro_usd",
                 "applies_to": "normal",
                 "zero_means_unlimited": list(FIELDS_ALLOWING_ZERO),
+                # The POST-write revision: the caller echoes this into the next
+                # `If-Match`, so returning the value it already sent would make its
+                # very next save conflict.
+                "policy_revision": policy_revision(tenant_id),
             }
         )
         payload["used"] = usage_snapshot(tenant_id, None, budget=budget, now=now)

@@ -1,6 +1,6 @@
 # U3 — Usage Policy & Pricing Foundation: Design / Implementation Readiness
 
-状态：**DESIGN READY；IMPLEMENTATION NOT AUTHORIZED / NOT STARTED**。
+状态：**DESIGN READY；IMPLEMENTATION PARTIAL（Usage Policy 后端已实施并测试；Pricing 未实施；详见 §9）**。
 基线提交：`3a22425f6`。本轮只读核对源码与封存报告，只更新本文和 AGENTS.md；不连接生产、不实施 U3。
 
 ## 1. 决策与接受基线
@@ -202,6 +202,54 @@ pricing GET返回opaque revision（workspace/model identity、model type、两�
 | G14 构建/真实浏览器/隔离 | type/lint/unit/build无新增问题；真实Chrome zh/en验证四字段和pricing流程；写验收必须隔离SQL/Redis/认证fixtures，绝不连共享生产库跑mutation；rolling Redis测试若skip必须明确，不冒充PASS |
 
 不要求为了U3调用真实付费provider：dispatch可用可观察stub，计量/权限仍使用真实service；也不需要生产DB/Redis mutation验证。U2.2已有read-only browser PASS不能代替新增U3写流程验收。
+
+## 9. U3 实施记录（本轮，部分交付并如实标注）
+
+基线 `3a22425f6`。本轮**只实现了 Usage Policy 的后端控制面**；Pricing Foundation 未实现，
+因此按用户预设的降级口径**单独报告 Usage Policy、Pricing 标 NOT ACCEPTED**。
+
+### 9.1 已实施（backend，18 个新测试）
+
+| 文件 | 变更 |
+|---|---|
+| `api/db/services/workspace_budget_service.py` | 新增 `policy_revision(tenant_id, budget=None)`：对 workspace ID、budget 行是否存在、七个 limits 与 timezone 做规范化 opaque hash，**不含 counters/ledger**；新增 `PolicyConflict`；`configure_budget` 新增可选 `expected_revision`（在既有 Tenant 锁与事务内重新计算并比较，不匹配即抛错且不写任何行/不写成功 audit）；写入范围改为与存储一致（Calls 1..2,147,483,647、Tokens 0..10^10），超范围变成受控拒绝而不是数据库异常 |
+| `api/db/services/workspace_usage_read_service.py` | `quota_status` 增加只读 `policy_revision` 投影（不改任何会计/coverage 语义） |
+| `api/apps/restful_apis/tenant_api.py` | PUT 读取 `If-Match: <policy_revision>` 并透传；冲突返回 HTTP200 + `code=101` + `error_type=POLICY_CONFLICT`；无 header 调用保留既有 last-committed-write-wins |
+
+实施中发现并修掉一个**真实缺陷**（由测试捕获，不是测试写错）：`configure_budget` 最初把**写前**读到的行用于响应里的 revision，
+于是调用者拿到的 `policy_revision` 是它刚提交的那个值，**下一次保存必然冲突**。现在响应返回写后 revision。
+
+### 9.2 Gate 状态（G1–G14，逐条如实）
+
+| Gate | 状态 | 证据 / 缺口 |
+|---|---|---|
+| G1 OWNER/ADMIN 写授权 + audit | **PASS** | `test_owner_and_admin_can_save_and_each_write_is_audited`（两个角色各写四字段子集，audit 的 operator/action/details 正确）；`test_authorization_is_rechecked_in_the_service_not_only_in_the_route` 证明降级为 normal 后服务层直接拒绝 |
+| G2 NORMAL 拒绝 | **PASS** | `test_g2_normal_member_cannot_write`：拒绝且 budget 行与 audit 均未产生 |
+| G3 workspace 隔离 | **PASS（policy 范围）** | `test_g3_a_personal_workspace_owner_cannot_write_another_workspace`：只拥有"自己"workspace 的 owner 对另两个 workspace 写入均拒绝、零行零 audit。**header/path mismatch 与 model→provider→instance 链未覆盖**（pricing 未实现） |
+| G4 partial PUT | **PASS** | `test_g4_a_partial_update_touches_only_the_given_field`（只改 calls_per_day，其余 calls/tokens/minute/timezone 全不变）、`test_g4_an_empty_or_unknown_patch_is_refused`（空/未知/字符串/bool/float）、`test_g4_calls_are_validated_against_the_storage_column`（边界恰好） |
+| G5 0 语义 | **PASS** | `test_g5_tokens_zero_means_not_enforced_and_calls_zero_is_refused` |
+| G6 audit 原子性 | **PASS** | `test_g6_a_failed_audit_write_rolls_the_limits_back`（模拟 audit 写失败 → 零行）；`test_a_refused_update_writes_no_success_audit` |
+| G7 并发更新 | **部分：SQLite 语义已证，生产同类型 SQL 未执行** | 已证：`test_a_matching_revision_saves_and_a_stale_one_conflicts`（第一个成功、第二个 conflict 且第一个的值未被覆盖、无成功 audit）、`test_a_caller_without_the_header_keeps_the_legacy_behaviour`、`test_saving_never_resets_counters_or_creates_a_second_row`、`test_the_revision_covers_policy_and_ignores_usage`（用量变化不产生 revision 变化）。**缺口**：设计明确要求用隔离的生产同类型 SQL（MySQL/GaussDB，含 InnoDB 行锁语义）验证锁行为；本机 SQLite 不能证明该语义，本轮**没有**取得隔离的 MySQL 写入环境（共享实例属于被禁止变更的生产型资源），因此**不宣称 G7 通过**。 |
+| G8–G11 | **NOT EXECUTED** | 全部属于 Pricing Foundation；该功能本轮未实现 |
+| G12 权威执行回归 | **PASS** | 预算/settlement/security/detached/read-model 五个套件共 `109 passed, 2 skipped`，无新增失败；policy 写入不触 counters/period/reservation |
+| G13 UI 状态 | **NOT IMPLEMENTED** | 前端 Edit/Save/Cancel 与 §3.4 状态机本轮未实施（见 9.3） |
+| G14 构建 / 真实浏览器 / 隔离 | **未完成** | 类型检查/lint/单测在本轮改动范围内通过；`npm run build` 与 **zh/en 真实浏览器写流程验收未执行**（没有 UI 可验），因此不宣称通过 |
+
+### 9.3 明确未交付（本轮如实标注）
+
+- **Pricing Foundation 完全未实施**（无 `model_pricing_service.py` / `model_pricing_api.py` / 前端 dialog / 旁路闭合 / cost-limit guard）。
+  因此 `PRICING_WRITE_PATHS_CLOSED: NO`（既有 `alter_model` 等任意 extra 写入路径**未收敛**，price key 仍可被旧入口改写）。
+  **不得**在本状态下启用任何定价 UI。
+- **Usage Policy 前端编辑器未实施**：`usage-policy.tsx` 仍是只读展示，因此 §3.4 的 drafting/conflict/timeout/切 workspace 语义尚未存在；
+  后端契约（If-Match、revision、冲突码）已就绪，UI 只是消费者。
+- 未改 U1 会计语义、未开 monetary cap、未加 Provider/Retrieval Health、未加通知、未做 schema migration、未部署、未 retag `:latest`。
+- API key 明文读取：本轮改动**只涉及** `workspace_budget`/`workspace_usage*` 与租户路由，**未新增任何 credential 读取**；
+  但在缺少 SQL 捕获证据的情况下，本轮**只声明“本轮的改动没有新增 secret 访问”，不冒充 G11 已通过**。
+
+### 9.4 结论
+
+`U3_USAGE_POLICY_IMPLEMENTED`：**后端契约 YES / 前端编辑器 NO**；`U3_PRICING_FOUNDATION_IMPLEMENTED: NO`；
+`U3_ACCEPTANCE_VERDICT: USAGE_POLICY_BACKEND_ACCEPTED_AT_CODE_LEVEL; PRICING_NOT_ACCEPTED; G7_PRODUCTION_TYPE_SQL_AND_G13/G14_OPEN`。
 
 ## 8. 状态板与停止点
 

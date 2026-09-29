@@ -368,13 +368,26 @@ async def usage_budget(tenant_id):
     its unit, and the usage of the current period(s) separated into day and
     month, because a single summed total would double count a call that
     increments both.
+
+    A PUT may also carry `If-Match: <policy_revision>` - the value the reader was
+    shown. The revision is recomputed inside the write transaction and a mismatch
+    answers HTTP 200 with code 101 and `error_type=POLICY_CONFLICT` without
+    changing anything, so two administrators editing one workspace cannot
+    silently overwrite each other. A PUT WITHOUT the header keeps the older
+    last-committed-write-wins behaviour, which is why the pre-existing API
+    contract is unchanged.
     """
     from quart import request
-    from api.db.services.workspace_budget_service import configure_budget
+    from api.db.services.workspace_budget_service import PolicyConflict, configure_budget
 
     try:
         values = await get_request_json() if request.method == "PUT" else None
-        return get_json_result(data=configure_budget(tenant_id, current_user.id, values))
+        expected = request.headers.get("If-Match") if request.method == "PUT" else None
+        return get_json_result(data=configure_budget(tenant_id, current_user.id, values, expected_revision=expected))
+    except PolicyConflict as exc:
+        # 101 rather than 108: this is not a permission denial, and the caller can
+        # act on it by re-reading. HTTP stays 200 per the project's error contract.
+        return get_json_result(code=101, message=str(exc), data={"error_type": "POLICY_CONFLICT"})
     except Exception as exc:
         return server_error_response(exc)
 

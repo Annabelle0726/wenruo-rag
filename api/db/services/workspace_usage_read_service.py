@@ -50,6 +50,7 @@ from api.db.services.workspace_budget_service import (
     LIMIT_EXEMPT_ROLES,
     MEMBER_ROLES,
     current_periods,
+    policy_revision,
     usage_snapshot,
 )
 from common.exceptions import WorkspaceAccessDenied
@@ -838,6 +839,10 @@ def quota_status(actor_user_id, workspace_id, member_user_id=None, now=None):
         "limits": limits,
         "limits_scope": "per_member",
         "limits_source": limits_source,
+        # The POLICY revision a write must echo back as `If-Match`. It covers the
+        # limits and timezone only - never the counters or the ledger - so every
+        # metered model call does not manufacture a conflict for a policy editor.
+        "policy_revision": policy_revision(workspace_id),
         "zero_means_unlimited": list(FIELDS_ALLOWING_ZERO),
         "unit": "model_calls",
         "token_unit": "tokens",
