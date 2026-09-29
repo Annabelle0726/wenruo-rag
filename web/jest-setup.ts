@@ -43,6 +43,16 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
   };
 }
 
+// jsdom implements no `CSS.supports` (it exposes `CSS` without it), while
+// src/utils/css-support.ts asks it about anchor positioning at module scope to
+// decide whether the anchored dropdowns may use it. Without an answer, every
+// suite that renders one of those components dies on import. "No support" is the
+// truthful answer in an environment that does not lay out CSS at all.
+const cssGlobal = globalThis as { CSS?: Record<string, unknown> };
+if (typeof cssGlobal.CSS?.supports !== 'function') {
+  cssGlobal.CSS = { ...(cssGlobal.CSS ?? {}), supports: () => false };
+}
+
 // Initialise a real i18next instance for tests. Without it react-i18next logs
 // "You will need to pass in an i18next instance by using initReactI18next" on
 // every render and `t()` returns the key, so a component that renders copy

@@ -67,6 +67,10 @@ import {
   useHandleSearchChange,
 } from './logic-hooks';
 import {
+  DocumentListRequestError,
+  documentListStateOf,
+} from './document-list-state';
+import {
   isPipelineParserConfig,
   normalizeParserConfig,
 } from './parser-config-utils';
@@ -85,6 +89,10 @@ export const enum DocumentStructureApiAction {
 }
 
 const documentIngestInFlight = new Map<string, Promise<unknown>>();
+
+// One shared empty list, so a caller that renders before the first answer gets
+// a stable identity instead of a fresh array on every render.
+const EMPTY_DOCUMENTS: IDocumentInfo[] = [];
 
 export const DocumentStructureKeys = {
   graph: (datasetId: string, documentId: string) =>
@@ -188,14 +196,25 @@ export const useFetchDocumentList = (loop = true) => {
   const debouncedSearchString = useDebounce(searchString, { wait: 500 });
   const { filterValue, handleFilterSubmit, checkValue } =
     useHandleFilterSubmit();
+  const datasetId = knowledgeId || id;
+  const enabled = !!datasetId;
 
-  const { data, isFetching: loading } = useQuery<{
+  const {
+    data,
+    isFetching: loading,
+    isError,
+    error,
+    refetch,
+  } = useQuery<{
     docs: IDocumentInfo[];
     total: number;
     has_active_tasks?: boolean;
   }>({
     queryKey: DocumentKeys.list(debouncedSearchString, pagination, filterValue),
-    initialData: { docs: [], total: 0, has_active_tasks: false },
+    // No `initialData`: a placeholder `{ docs: [], total: 0 }` makes the query
+    // report success before anything was requested, which is the same fabricated
+    // empty list the state model exists to prevent. A missing `data` means "no
+    // answer yet", and the state model reads it as such.
     refetchInterval: (query) =>
       loop &&
       (query.state.data?.has_active_tasks ||
@@ -206,7 +225,7 @@ export const useFetchDocumentList = (loop = true) => {
     // region the page gives it, but permission to retrieve the records must never
     // depend on a layout measurement: a measurement that fails, is delayed or
     // oscillates would otherwise turn a non-empty dataset into "0 documents".
-    enabled: !!knowledgeId || !!id,
+    enabled,
     queryFn: async () => {
       let run = [] as any;
       let returnEmptyMetadata = false;
@@ -224,7 +243,7 @@ export const useFetchDocumentList = (loop = true) => {
       }
       const ret = await listDocument(
         {
-          id: knowledgeId || id,
+          id: datasetId,
           keywords: debouncedSearchString,
           page_size: pagination.pageSize,
           page: pagination.current,
@@ -243,13 +262,26 @@ export const useFetchDocumentList = (loop = true) => {
         return ret.data.data;
       }
 
-      return {
-        docs: [],
-        total: 0,
-        has_active_tasks: false,
-      };
+      // A failing code is a failure, not an empty dataset. The response is HTTP
+      // 200, so raising it here is the only way the query can report it: the
+      // old `return { docs: [], total: 0 }` turned a refusal such as `code=108`
+      // into "暂无数据 / 共 0 条" over a dataset the caller may not read.
+      throw new DocumentListRequestError(ret.data.code, ret.data.message);
     },
   });
+
+  const documents = data?.docs ?? EMPTY_DOCUMENTS;
+  const state = documentListStateOf({
+    enabled,
+    isError,
+    error,
+    page: data ? { docs: data.docs, total: data.total } : undefined,
+  });
+
+  const retry = useCallback(() => {
+    void refetch();
+  }, [refetch]);
+
   const onInputChange: React.ChangeEventHandler<HTMLInputElement> = useCallback(
     (e) => {
       setPagination({ page: 1 });
@@ -262,12 +294,14 @@ export const useFetchDocumentList = (loop = true) => {
     queryClient.invalidateQueries({
       queryKey: [KnowledgeApiAction.FetchKnowledgeDetail],
     });
-  }, [data.docs, queryClient]);
+  }, [data?.docs, queryClient]);
 
   return {
     loading,
+    state,
+    retry,
     searchString,
-    documents: data.docs,
+    documents,
     pagination: { ...pagination, total: data?.total },
     handleInputChange: onInputChange,
     setPagination,

@@ -20,6 +20,7 @@ import {
   useRowSelection,
   useSelectedIds,
 } from '@/hooks/logic-hooks/use-row-selection';
+import { documentListIsSettled } from '@/hooks/document-list-state';
 import { useFetchDocumentList } from '@/hooks/use-document-request';
 import { LucidePlus } from 'lucide-react';
 import { useEffect } from 'react';
@@ -55,9 +56,17 @@ export default function Dataset() {
     handleFilterSubmit,
     loading,
     checkValue,
+    state,
+    retry,
   } = useFetchDocumentList();
 
-  useGoToPreviousPageOnEmpty(documents?.length, loading);
+  // Only a settled, successful read may move the page back. An empty *error* is
+  // not an empty page - treating it as one turned a refused read into a jump to
+  // the first page whose result was, of course, also never fetched.
+  useGoToPreviousPageOnEmpty(
+    documentListIsSettled(state) ? documents.length : undefined,
+    loading,
+  );
 
   const { filters, onOpenChange, filterGroup } = useSelectDatasetFilters();
 
@@ -203,10 +212,11 @@ export default function Dataset() {
           documents={documents}
           pagination={pagination}
           setPagination={setPagination}
+          state={state}
+          retry={retry}
           rowSelection={rowSelection}
           setRowSelection={setRowSelection}
           showManageMetadataModal={showManageMetadataModal}
-          loading={loading}
           bulkOperateBarVisible={!rowSelectionIsEmpty}
         />
 

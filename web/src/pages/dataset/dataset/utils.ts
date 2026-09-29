@@ -188,11 +188,18 @@ export const hasUnsupportedTypeGap = (gaps: ParserGap[]) =>
 
 // Modal copy keyed by gap kind: missing models steer to adding the model,
 // unsupported types to reselecting the parse method.
-export const pickByGapKind = <T>(
+//
+// A function declaration, not a generic arrow: `.ts` files are loaded with the
+// `tsx` loader (jest-esbuild-transformer.cjs), where `const f = <T>(...)` is
+// parsed as JSX and takes every suite that imports this module down with it.
+export function pickByGapKind<T>(
   gaps: ParserGap[],
   options: { missingModel: T; unsupportedType: T },
-): T =>
-  hasUnsupportedTypeGap(gaps) ? options.unsupportedType : options.missingModel;
+): T {
+  return hasUnsupportedTypeGap(gaps)
+    ? options.unsupportedType
+    : options.missingModel;
+}
 
 type ParserSetup = Record<string, any> & { fileFormat?: string };
 

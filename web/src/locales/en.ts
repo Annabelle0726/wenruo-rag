@@ -677,6 +677,9 @@ export default {
       doc: 'Docs',
       datasetDescription:
         'Please wait for your files to finish parsing before starting an AI-powered chat.',
+      filesLoading: 'Loading the file list…',
+      filesLoadFailed: 'Failed to load the file list',
+      filesForbidden: 'You do not have permission to view this dataset’s files',
       addFile: 'Add file',
       searchFiles: 'Search your files',
       localFiles: 'Local files',

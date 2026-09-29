@@ -16,7 +16,9 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { EmptyType } from '@/components/empty/constant';
 import Empty from '@/components/empty/empty';
+import { LoadingDots } from '@/components/loading-dots';
 import { RenameDialog } from '@/components/rename-dialog';
+import { Button } from '@/components/ui/button';
 import { RAGFlowPagination } from '@/components/ui/ragflow-pagination';
 import {
   Table,
@@ -27,6 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { UseRowSelectionType } from '@/hooks/logic-hooks/use-row-selection';
+import { documentListIsSettled } from '@/hooks/document-list-state';
 import { useFetchDocumentList } from '@/hooks/use-document-request';
 import { t } from 'i18next';
 import { pick } from 'lodash';
@@ -42,7 +45,7 @@ import { useRenameDocument } from './use-rename-document';
 
 export type DatasetTableProps = Pick<
   ReturnType<typeof useFetchDocumentList>,
-  'documents' | 'setPagination' | 'pagination' | 'loading'
+  'documents' | 'setPagination' | 'pagination' | 'state' | 'retry'
 > &
   Pick<UseRowSelectionType, 'rowSelection' | 'setRowSelection'> & {
     showManageMetadataModal: (config: ShowManageMetadataModalProps) => void;
@@ -59,6 +62,8 @@ export function DatasetTable({
   documents,
   pagination,
   setPagination,
+  state,
+  retry,
   rowSelection,
   setRowSelection,
   showManageMetadataModal,
@@ -105,6 +110,11 @@ export function DatasetTable({
       pageSize: pagination.pageSize || 10,
     };
   }, [pagination]);
+
+  // Only a settled, successful read may report on the list's contents. A read
+  // that is loading, refused or failed has no rows *and no count*: rendering
+  // "暂无数据 / 共 0 条" for it states a fact nobody established.
+  const settled = documentListIsSettled(state);
 
   const table = useReactTable({
     data: documents,
@@ -188,25 +198,51 @@ export function DatasetTable({
               </TableRow>
             ))
           ) : (
-            <TableRow>
+            <TableRow data-testid={`document-list-${state.status}`}>
               <TableCell colSpan={columns.length} className="h-24 text-center">
-                <Empty type={EmptyType.Data} />
+                {state.status === 'forbidden' ? (
+                  <Empty
+                    type={EmptyType.Data}
+                    text={t('knowledgeDetails.filesForbidden')}
+                  />
+                ) : state.status === 'error' ? (
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <span className="text-text-secondary text-sm">
+                      {t('knowledgeDetails.filesLoadFailed')}
+                      {state.code === undefined ? '' : ` (code ${state.code})`}
+                    </span>
+                    <Button variant="outline" size="sm" onClick={retry}>
+                      {t('common.retry')}
+                    </Button>
+                  </div>
+                ) : settled ? (
+                  <Empty type={EmptyType.Data} />
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    <LoadingDots />
+                    <span className="text-text-secondary text-sm">
+                      {t('knowledgeDetails.filesLoading')}
+                    </span>
+                  </div>
+                )}
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
-      <div className="flex items-center justify-end  py-4 absolute bottom-3 right-8">
-        <div className="space-x-2">
-          <RAGFlowPagination
-            {...pick(pagination, 'current', 'pageSize')}
-            total={pagination.total}
-            onChange={(page, pageSize) => {
-              setPagination({ page, pageSize });
-            }}
-          ></RAGFlowPagination>
+      {settled && (
+        <div className="flex items-center justify-end  py-4 absolute bottom-3 right-8">
+          <div className="space-x-2">
+            <RAGFlowPagination
+              {...pick(pagination, 'current', 'pageSize')}
+              total={pagination.total}
+              onChange={(page, pageSize) => {
+                setPagination({ page, pageSize });
+              }}
+            ></RAGFlowPagination>
+          </div>
         </div>
-      </div>
+      )}
       {changeParserVisible && (
         <ChangeParserDialog
           record={changeParserRecord}

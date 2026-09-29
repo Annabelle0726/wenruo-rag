@@ -1,0 +1,53 @@
+# P0 document-list state model — derived image.
+#
+# Base pinned by tag to the PRE-CHANGE production image (the one the running
+# container `wenruo-rag-cpu` was created from), snapshotted for rollback as
+# `my-wenruorag:rollback-pre-doclist-20260930`:
+#
+#   my-wenruorag:rollback-pre-doclist-20260930
+#   sha256:44a3e35359845e5e5ce58c297a53ab54eba3a6cdb95056acee70be86ed38c8f5
+#
+# The base is named by its immutable snapshot tag rather than by digest: a
+# digest FROM makes BuildKit issue a registry HEAD for this local-only
+# repository, and the configured mirror rejects it. The snapshot tag is never
+# moved.
+#
+# WHAT THIS LAYER SHIPS
+#   1. web/dist — the actual change. The document list no longer renders a
+#      failing `code` as empty data: the bundle is rebuilt from the source in
+#      this working tree (`cd web && VITE_BUILD_SOURCEMAP=false
+#      VITE_MINIFY=esbuild npm run build`) and the base's bundle is removed
+#      first, so no stale hashed asset survives the overlay.
+#   2. The two API files the live container already serves. They are overlaid
+#      for the record — the image, not a `docker cp`, is what must carry them
+#      across a container recreate. Both are byte-identical to the base image's
+#      own copies and to the running container's, checked by sha256 as part of
+#      the acceptance of this image.
+#
+# WHY NOT THE ROOT Dockerfile
+#   ./Dockerfile is the full build (apt, uv sync, deepdoc models, nginx) and
+#   needs `infiniflow/ragflow_deps:latest` as a bind-mount source for the base
+#   stage. That image is not present in this daemon, so the full build cannot
+#   run here; the derived layer is the deployment path this repository has used
+#   for every previous frontend release (see deploy/p0_build/Dockerfile.p0_6_ui).
+#
+# BUILD (context is the REPOSITORY ROOT: web/dist lives there, and
+# .dockerignore deliberately does not exclude it):
+#   docker build -f deploy/p0_build/Dockerfile.p0_document_list_state -t my-wenruorag:p0-doclist-state .
+#
+# DEPLOY (never `docker cp` — a recreate must not lose the frontend or the API):
+#   docker tag my-wenruorag:p0-doclist-state my-wenruorag:latest
+#   docker compose -f docker/docker-compose.yml up -d --force-recreate --no-deps wenruo-rag-cpu
+#
+# ROLLBACK:
+#   docker tag my-wenruorag:rollback-pre-doclist-20260930 my-wenruorag:latest
+#   docker compose -f docker/docker-compose.yml up -d --force-recreate --no-deps wenruo-rag-cpu
+FROM my-wenruorag:rollback-pre-doclist-20260930
+
+# The API the live deployment serves, baked in so a recreate cannot drop it.
+COPY rag/nlp/search.py /ragflow/rag/nlp/search.py
+COPY rag/utils/es_conn.py /ragflow/rag/utils/es_conn.py
+
+# The change: the rebuilt frontend bundle.
+RUN rm -rf /ragflow/web/dist
+COPY web/dist /ragflow/web/dist
