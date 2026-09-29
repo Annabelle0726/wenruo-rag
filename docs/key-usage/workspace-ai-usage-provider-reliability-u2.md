@@ -361,6 +361,70 @@ i18next 落到 `parseMissingKeyHandler`，把键名"人化"成 `Capability chat`
 
 
 
+## 13. U2.2 — 运行时对齐 + 真实浏览器验收（通过）
+
+U2.1 的浏览器门禁因"运行中的后端不含 U1"而卡住。本轮把它跑通：**用一个含 U1 的本地 checkout API**，
+不 retag `:latest`、不部署生产、不改生产 DB/Redis/配置。
+
+### 13.1 运行时对齐（可证明）
+
+启动器只 `import api.apps`（导入即注册全部 blueprint），**不调用 `init_database_tables()` / `migrate_db()`** ——
+后者在 `api/ragflow_server.py` 里，一个更新的 checkout 绝不该从验收进程去 ALTER/回填共享生产库。
+运行进程自报：
+
+```text
+USAGE_API_FILE: C:\Projects\RAG\wenruo-rag\api\apps\restful_apis\workspace_usage_api.py
+READ_SERVICE_FILE: C:\Projects\RAG\wenruo-rag\api\db\services\workspace_usage_read_service.py
+USAGE_ROUTE_COUNT: 8
+  /api/v1/tenants/<tenant_id>/usage-budget   （既有）
+  /api/v1/tenants/<tenant_id>/usage/daily
+  /api/v1/tenants/<tenant_id>/usage/members
+  /api/v1/tenants/<tenant_id>/usage/models
+  /api/v1/tenants/<tenant_id>/usage/monthly
+  /api/v1/tenants/<tenant_id>/usage/my
+  /api/v1/tenants/<tenant_id>/usage/quota
+  /api/v1/tenants/<tenant_id>/usage/summary
+```
+
+**7 条 U1 路由全部注册**，并且真实执行（非 fixture）：`GET .../usage/my` 与 `.../usage/quota` 返回 **HTTP 200** 并带真实 payload
+（该用户的 `attempted_calls = 0`、`cost_coverage = unavailable` —— 与 U0.6 实测的 0 PRICED 一致）。
+
+会话：本轮也修掉了 token 口径问题。之前用**容器内** settings 铸造的 token 被 401 拒绝，因为容器与 checkout 的
+`get_secret_key()` 不同源；改用 checkout 自己的 `User.get_id()` 铸造后，`/api/v1/users/me` 与 `/api/v1/tenants` 均 **200**。
+
+### 13.2 真实浏览器验收结果（中文 + 英文，全部通过）
+
+真实 Chrome（Playwright `channel="chrome"`），11 个目的地 × 2 语言，代理指向本地 U1 后端（**无任何 fixture**）：
+
+| 断言 | 中文 | 英文 |
+|------|------|------|
+| 失败请求（≥400，含 404/500） | **0** | **0** |
+| 错误 toast（`请求错误` 计数） | **0** | **0** |
+| 原始/人化 locale key | **0** | **0** |
+| 中文模式出现英文串 / 英文模式出现中文串 | **0** | **0** |
+
+**U1 端点确实被执行**（浏览器实际发出的 200 请求）：
+
+- `我的用量` → `usage/my` + `usage/quota`
+- `用量策略`（团队） → `usage/quota`
+- `工作区分析` → `usage/summary`、`usage/models`、`usage/members`、`usage/daily`、`usage/monthly`（六条全部 200）
+- `服务商健康` / `检索健康` → **不发出任何用量请求**（诚实占位，无编造数据）
+
+`托管 API` / `私有端点` / `成员与角色` / `部门管理` / `概要` 各目的地均 0 失败、标签命中。
+
+唯一一条口径提示：中文序列中 **第一个** 目的地（`/user-setting/model`）的"父标签在文本中出现"启发式未命中
+（英文序列命中）。该页失败数 0、无被禁英文串、无原始键，其余中文目的地的同一 rail 都渲染了父标签，
+因此判定为**冷启动时该页在 zh bundle 到位前完成截图**的探针假象，而不是漏译；不在报告中记为通过之外的问题。
+
+### 13.3 未做与边界
+
+未改 U1 会计语义、未加 Provider Health 后端、未加通知、未改生产 DB/Redis/配置、未部署、未 retag `:latest`。
+验收用的 Vite 配置与脚本均在仓库外并在提交前删除。
+`NORMAL/OWNER 可见性`：本工作区仅存在 owner/admin 成员计量数据（U0.6 已记录 live 无 NORMAL 计量行），
+因此本轮以 OWNER 身份验证了四个用量目的地全部可达；NORMAL 侧仍由单测 fixture 覆盖（U1 的 43 项测试 + 本轮 IA 测试）。
+
+**U2.2 结论：运行时对齐完成，中英文真实浏览器验收通过。U3 未开始。**
+
 ## 11. U2 停止点
 
 U2 骨架与 U1 接入完成并通过类型检查 / lint / 单测 / 构建。**U3 未开始，等待明确授权。**
