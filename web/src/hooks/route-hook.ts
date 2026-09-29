@@ -19,9 +19,14 @@ import {
   KnowledgeSearchParams,
 } from '@/constants/knowledge';
 import { Routes } from '@/routes';
-import { useCallback } from 'react';
+import {
+  effectivePageSize,
+  pageAfterResize,
+  pageSizeOptionsFor,
+} from '@/utils/list-capacity';
+import { useCallback, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
-import { useFittingPageSize } from './use-fitting-page-size';
+import { useListCapacity } from './use-list-capacity';
 
 export enum SegmentIndex {
   Second = '2',
@@ -89,14 +94,15 @@ export const useGetPaginationParams = () => {
 const PageSizeStorageKeyPrefix = 'RAGFlowPageSize:';
 
 const getStoredPageSize = (pathname: string) =>
-  Number(localStorage.getItem(`${PageSizeStorageKeyPrefix}${pathname}`));
+  Number(localStorage.getItem(`${PageSizeStorageKeyPrefix}${pathname}`)) || null;
 
 export const useSetPaginationParams = () => {
   const [queryParameters, setSearchParams] = useSearchParams();
   const { pathname } = useLocation();
-  // How many cards fit the grid on this screen. `undefined` on a page with no
-  // card grid (the table pages), which keeps their 50-record default.
-  const fittingPageSize = useFittingPageSize();
+  // What this page's list region can actually show. `null` on a page whose list
+  // has no region marked (or before it is measured), in which case the user cap
+  // and the application cap are all there is to go on.
+  const { capacity, ready: capacityReady } = useListCapacity();
 
   const setPaginationParams = useCallback(
     (page: number = 1, pageSize?: number) => {
@@ -115,17 +121,52 @@ export const useSetPaginationParams = () => {
     [setSearchParams, queryParameters, pathname],
   );
 
+  // Moving to the page that carries the same record after a resize. This is the
+  // page's own arithmetic, NOT a choice the user made, so it must never be
+  // persisted: writing the derived size into `size` or into localStorage would
+  // turn a measured number into a remembered preference, and a single
+  // mis-measurement would then pin the list to that size on every later visit.
+  const setPageOnly = useCallback(
+    (page: number) => {
+      queryParameters.set('page', page.toString());
+      setSearchParams(queryParameters);
+    },
+    [setSearchParams, queryParameters],
+  );
+
+  // The user's own selection, from the URL or remembered for this path - a
+  // MAXIMUM, never a mandate to overflow the viewport (see `effectivePageSize`).
+  const userCap =
+    Number(queryParameters.get('size')) || getStoredPageSize(pathname) || null;
+  const size = effectivePageSize({ capacity, userCap });
+  const requestedPage = Number(queryParameters.get('page')) || 1;
+  const previousSizeRef = useRef<number | null>(null);
+
+  // A resize changes how many records a page holds, so the page NUMBER that
+  // carries the same offset has to change with it: page 3 of 20 is record 41,
+  // which is page 4 of 12. Without this the window would jump backwards.
+  const page = pageAfterResize({
+    page: requestedPage,
+    fromSize: previousSizeRef.current ?? size,
+    toSize: size,
+  });
+
+  useEffect(() => {
+    const previous = previousSizeRef.current;
+    previousSizeRef.current = size;
+    if (previous === null || previous === size || page === requestedPage) return;
+    setPageOnly(page);
+  }, [page, requestedPage, size, setPageOnly]);
+
   return {
     setPaginationParams,
-    page: Number(queryParameters.get('page')) || 1,
-    // A size in the URL or one the user picked on this path before is an explicit
-    // choice and wins; otherwise the default is what the card grid can show, so
-    // the first page of a list does not arrive with a scrollbar (see
-    // `useFittingPageSize`). 50 is the fallback for a page with no card grid.
-    size:
-      Number(queryParameters.get('size')) ||
-      getStoredPageSize(pathname) ||
-      fittingPageSize ||
-      50,
+    page,
+    size,
+    /** How many complete items this page's region shows, once measured. */
+    capacity,
+    /** True once the capacity is known; list queries wait for it. */
+    capacityReady,
+    /** The sizes the pager may offer here: nothing it could not honour. */
+    sizeOptions: pageSizeOptionsFor(capacity),
   };
 };

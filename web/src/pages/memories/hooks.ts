@@ -57,6 +57,7 @@ export const useFetchMemoryList = () => {
     setSearchString,
     pagination,
     setPagination,
+    capacityReady,
   } = useHandleSearchChange();
   const { filterValue, setFilterValue, handleFilterSubmit } =
     useHandleFilterSubmit();
@@ -84,6 +85,9 @@ export const useFetchMemoryList = () => {
     MemoryListResponse,
     Error
   >({
+    // The page size is how many complete cards this viewport's grid holds, so the
+    // request waits for that measurement instead of fetching a default page.
+    enabled: capacityReady,
     queryKey: [
       'memoryList',
       {

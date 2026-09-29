@@ -89,7 +89,8 @@ export const useGetChatSearchParams = () => {
 export const useFetchChatList = () => {
   const { searchString, setSearchString, handleInputChange } =
     useHandleSearchChange();
-  const { pagination, setPagination } = useGetPaginationWithRouter();
+  const { pagination, setPagination, capacityReady } =
+    useGetPaginationWithRouter();
   const debouncedSearchString = useDebounce(searchString, { wait: 500 });
   const { filterValue, setFilterValue, handleFilterSubmit } =
     useHandleFilterSubmit();
@@ -99,6 +100,10 @@ export const useFetchChatList = () => {
     isFetching: loading,
     refetch,
   } = useQuery<{ chats: IDialog[]; total: number }>({
+    // The page size is the number of complete cards this viewport shows, so the
+    // request waits for that measurement rather than asking for a default page
+    // and rendering whatever comes back into a region that cannot hold it.
+    enabled: capacityReady,
     queryKey: [
       ChatApiAction.FetchChatList,
       {

@@ -91,6 +91,8 @@ export const useGetPaginationWithRouter = () => {
     setPaginationParams,
     page,
     size: pageSize,
+    sizeOptions,
+    capacityReady,
   } = useSetPaginationParams();
 
   const onPageChange: Pagination['onChange'] = useCallback(
@@ -121,15 +123,22 @@ export const useGetPaginationWithRouter = () => {
       showSizeChanger: true,
       current: page,
       pageSize: pageSize,
-      pageSizeOptions: [1, 2, 10, 20, 50, 100],
+      // Only sizes this viewport can actually show, plus the capacity itself.
+      pageSizeOptions: sizeOptions,
       onChange: onPageChange,
       showTotal: (total: number) => `${t('total')} ${total}`,
     };
-  }, [t, onPageChange, page, pageSize]);
+  }, [t, onPageChange, page, pageSize, sizeOptions]);
 
   return {
     pagination,
     setPagination: setCurrentPagination,
+    /**
+     * How many complete items this page's list region shows. List queries must
+     * wait for it (`enabled`), so the first request already asks for a number the
+     * viewport can hold instead of fetching a default and correcting afterwards.
+     */
+    capacityReady,
   };
 };
 
@@ -191,7 +200,8 @@ export const useGoToPreviousPageOnEmpty = (
 
 export const useHandleSearchChange = () => {
   const [searchString, setSearchString] = useState('');
-  const { pagination, setPagination } = useGetPaginationWithRouter();
+  const { pagination, setPagination, capacityReady } =
+    useGetPaginationWithRouter();
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const value = e.target.value;
@@ -207,6 +217,7 @@ export const useHandleSearchChange = () => {
     setSearchString,
     pagination,
     setPagination,
+    capacityReady,
   };
 };
 
