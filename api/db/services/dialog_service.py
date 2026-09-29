@@ -966,20 +966,6 @@ async def async_chat(dialog, messages, stream=True, **kwargs):
     gen_conf = dialog.llm_setting
 
     system_content = prompt_config["system"].format(**kwargs)
-    # A cross-part fallback means the mandatory baseline came from the GENERAL part of
-    # the standard, not from the part the question named (whose tables are a bidder
-    # template). The answer has to say so, or a correct figure reads as a contradiction
-    # of the question - and a template's empty cell reads as "no requirement".
-    cross_part = kbinfos.get("generic_fallback") if isinstance(kbinfos, dict) else None
-    if cross_part:
-        system_content += (
-            "\n\n注意：本次检索发现，提问所涉《专用技术规范》中的表格属于工程响应模版（部分数值需由投标人填写），"
-            "因此已回退到该标准的《通用技术规范》取其强制性基线条款。"
-            f"（来源：{cross_part.get('scope', '通用技术规范')}）"
-            "回答这类数值时必须明确标注，例如：\u201c专用规范表格为工程响应模版，上述数据基于"
-            f"{cross_part.get('designation') or '该标准第1部分'} 通用技术规范标准基线生成。\u201d"
-            "禁止因为专用规范表格中的单元格为空就回答\u201c未查到\u201d。"
-        )
     # If knowledge was retrieved but the template has no {knowledge}
     # placeholder, auto-append it so the LLM still sees the context.
     if knowledges and "{knowledge}" not in prompt_config.get("system", ""):
@@ -1098,6 +1084,15 @@ async def async_chat(dialog, messages, stream=True, **kwargs):
             )
             langfuse_generation.end()
 
+        # `retrieval_health` is retrieval OBSERVABILITY metadata, not citation content, so its survival
+        # must not depend on whether citation quotation is enabled. With quoting on, the reference is the
+        # whole retrieval dict (deepcopy(kbinfos) above) and already carries it; with quoting off nothing
+        # populated `refs`, so the health record was dropped on the floor and the degradation notice became
+        # invisible to the client. Carry the AUTHORITATIVE DTO forward in that case only: copied, never
+        # recomputed, never inferred from chunks, no default when it is absent, and the citation content
+        # stays exactly as built - `quote=False` keeps suppressing chunks and doc_aggs.
+        if not refs and isinstance(kbinfos, dict) and isinstance(kbinfos.get("retrieval_health"), dict):
+            refs = {"retrieval_health": deepcopy(kbinfos["retrieval_health"])}
         return {"answer": think + answer, "reference": refs, "prompt": re.sub(r"\n", "  \n", prompt), "created_at": time.time()}
 
     if langfuse_tracer:

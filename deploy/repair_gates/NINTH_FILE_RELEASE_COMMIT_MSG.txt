@@ -1,0 +1,42 @@
+release(ninth-file): clean reconstruction of dialog_service.py + merged-file audit
+
+The ninth runtime file carried two changes: the authorised quote-health preservation
+repair and an unrelated `generic_fallback` prompt-behaviour branch that does not exist
+in the production baseline (introduced by 98ffddcd5 and present in HEAD).
+
+- api/db/services/dialog_service.py is now the production baseline
+  (my-wenruorag:repair-798288f8, sha256:6e926b5d8ef6..., file 77aef9dc...) plus ONLY the
+  authorised repair inside async_chat.<locals>.decorate_answer.
+  New file hash: 91b8bfc6254e70e631065f3ed1bdc3ef1c11ba2a204b4c869fd9ae271171e726
+  Purity diff vs the baseline: one hunk `@@ -1084,6 +1084,15 @@`, 9 insertions
+  (7 comment lines + the guard + the assignment). Nothing else differs; the excluded
+  branch's 14 lines are gone. AST classification: the only function with a changed own
+  body is async_chat.decorate_answer, one added statement, none removed, module-level
+  statements and imports unchanged, no prompt literal changed
+  -> DIALOG_SERVICE_RELEASE_DIFF = QUOTE_HEALTH_ONLY,
+     GENERIC_FALLBACK_PROMPT_DELTA_PRESENT = NO.
+
+Harness and gate layer (no other runtime file touched):
+
+- rebuild_clean_ninth_file.py: byte-level splice with abort guards (unique anchor, unique
+  block, block absent from baseline, excluded marker absent), so the repair text is exactly
+  the one the RED/GREEN matrix validated.
+- ast_release_diff_classify.py: per-function own-body diff classification (nested closures
+  compared separately so an enclosing body is not flagged for a closure's change).
+- degradation_diff_diagnose.py: structural diff of the captured ES trace, used to locate
+  the healthy-path delta.
+- test_degradation.py: replaces the impossible whole-trace-equality expectation with the
+  adjudicated invariant - the ONLY permitted difference is the contiguous insertion of the
+  four provenance field names into the first ES call's `_source` at the approved position
+  (index 18, anchor mom_id), each exactly once, every pre-existing field unchanged in order
+  and content, later ES calls byte-identical; the quartet is then removed and the whole
+  remaining trace must deep-equal the frozen baseline. `_source` is not globally ignored.
+
+Evidence: quote-health RED on the baseline = FAIL_AS_EXPECTED (B/F/G/H), GREEN on the clean
+file = PASS 8/8 (aliasing contract and downstream serialization included); degradation gate
+26 passed / 0 failed (was 24/2 under the stale expectation); P0 healthy-path contract gate
+verdict=PASS; eight-file hash guard PASS; nine-file manifest recorded in
+phase/phase_b_nine_file_merge_audit.md.
+
+No build, no deploy, no retag, no production datastore access, no provider call,
+EXPECTED_PROJECTION_DELTA = 2 unchanged, PRODUCTION_MUTATED = NO.
