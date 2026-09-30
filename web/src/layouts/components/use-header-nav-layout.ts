@@ -1,6 +1,11 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 
-const LAYOUT_GAP = 48;
+/**
+ * The chrome between the three measured pieces: four 12px flex gaps inside the
+ * 56px bar, plus the 1px brand/nav rail, plus 3px of slack. Counting it here is
+ * what keeps the compact breakpoint from firing late and letting the nav clip.
+ */
+const LAYOUT_GAP = 52;
 const FIT_BUFFER = 16;
 
 export function useHeaderNavLayout(measureKey = '') {
@@ -21,12 +26,19 @@ export function useHeaderNavLayout(measureKey = '') {
         return;
       }
 
+      // `clientWidth` includes the bar's own `page-gutter` padding (16–48px per
+      // side depending on the breakpoint), and that padding is not space the nav
+      // can use. Reading it off the computed style is what makes the breakpoint
+      // correct at every width instead of ~96px late on a desktop viewport.
+      const styles = window.getComputedStyle(header);
+      const contentWidth =
+        header.clientWidth -
+        parseFloat(styles.paddingLeft) -
+        parseFloat(styles.paddingRight);
+
       const navWidth = nav.scrollWidth;
       const availableForDesktop =
-        header.clientWidth -
-        logo.offsetWidth -
-        expandedRight.offsetWidth -
-        LAYOUT_GAP;
+        contentWidth - logo.offsetWidth - expandedRight.offsetWidth - LAYOUT_GAP;
 
       setIsCompact(navWidth + FIT_BUFFER > availableForDesktop);
     };

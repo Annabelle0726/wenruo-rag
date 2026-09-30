@@ -35,16 +35,24 @@ import { supportedLanguages } from '@/locales/config';
 
 /**
  * One shared shape for every header control, so the right-hand cluster reads as a
- * single row of micro-components instead of a row of mixed buttons.
+ * single row of micro-components instead of a row of mixed buttons. The 32px box,
+ * the ink and the hover/focus states all live in `.shell-header-control`; the
+ * utilities here only win the merge against `Button`'s own size/padding.
  */
-const headerControlClass =
-  'size-8 shrink-0 p-0 text-white/85 hover:bg-gov-header-hover hover:text-white focus-visible:bg-gov-header-hover focus-visible:text-white';
+const headerControlClass = 'shell-header-control size-8 shrink-0 p-0';
 
 /**
  * Local override of the shared `--cable-nav-*` tokens.
+ *
+ * The bar is a solid green block in both themes, so the whole nav palette is
+ * replaced rather than tuned: idle is white at 86%, hover adds a 10% white wash,
+ * and the selected item adds a 16% wash plus the 2px brand-mint indicator. Mint
+ * (`#b6eeda` on `#007a53`) is the one place the shell uses a brand hue on the
+ * chrome itself, and it is what makes "where am I" readable at a glance without
+ * adding a second colour to the bar.
  */
 const headerNavTokens =
-  '[--cable-nav-text:rgba(255,255,255,0.85)] [--cable-nav-text-hover:#ffffff] [--cable-nav-active-text:#ffffff] [--cable-nav-active-bg:#005c3f] [--cable-nav-indicator:#ffffff]';
+  '[--cable-nav-text:var(--shell-header-ink)] [--cable-nav-text-hover:var(--shell-header-ink-strong)] [--cable-nav-hover-bg:var(--shell-header-wash)] [--cable-nav-active-text:var(--shell-header-ink-strong)] [--cable-nav-active-bg:var(--shell-header-active-bg)] [--cable-nav-indicator:var(--shell-header-indicator)]';
 
 export function Header({
   className,
@@ -83,17 +91,23 @@ export function Header({
 
   return (
     <>
+      {/*
+        顶栏三等分：品牌区 / 主导航 / 工具区。三区之间各有一条 24px 高的 1px
+        白线（`.shell-header-rail`），左区与右区因此各有一个明确的边界，导航
+        不会读作"从 logo 一路排到铃铛"的一串链接。56px 高度给 32px 控件上下
+        各留 12px，图标与文字共用一条中线。
+      */}
       <header
         ref={headerRef}
         key="app-navbar"
         className={cn(
-          'page-gutter flex h-12 min-w-0 items-center gap-2 sm:gap-4',
+          'page-gutter flex h-14 min-w-0 items-center gap-3',
           headerNavTokens,
           className,
         )}
         {...props}
       >
-        <div className="inline-flex shrink-0 items-center gap-2">
+        <div className="inline-flex shrink-0 items-center gap-2.5">
           {isCompact && (
             <MobileNavbar
               renderFooter={(close) => <MobileMenuFooter onClose={close} />}
@@ -107,26 +121,27 @@ export function Header({
               data-testid="brand-entry"
             >
               <BrandLockup />
-              <span className="text-[15px] font-semibold tracking-tight text-white">
+              <span className="shell-header-brand whitespace-nowrap">
                 {t('header.brandShort')}
               </span>
             </Link>
           </div>
         </div>
 
-        {!isCompact && (
+        {!isCompact && <span aria-hidden className="shell-header-rail" />}
+
+        {!isCompact ? (
           <div className="flex min-w-0 flex-1 items-center overflow-x-clip">
             <DesktopNavbar />
           </div>
+        ) : (
+          <div className="flex-1" aria-hidden />
         )}
 
-        {isCompact && <div className="flex-1" aria-hidden />}
-
+        {/* 工具区：语言/通知/主题共用一个 1px 描边容器（一块仪表板），
+            账号入口是它右侧独立的一格。 */}
         <div
-          className={cn(
-            'flex shrink-0 items-center justify-end',
-            isCompact ? 'gap-0.5' : 'gap-1',
-          )}
+          className="shell-header-instruments shrink-0"
           data-testid="auth-status"
         >
           {/* 单击直接切换中/英文 */}
@@ -146,27 +161,25 @@ export function Header({
 
           {/* Dark/light switch. */}
           <ThemeButton className={headerControlClass} />
-
-          <Link
-            to={Routes.UserSetting}
-            className={cn(
-              'relative flex size-8 shrink-0 items-center justify-center',
-              'ring-1 ring-white/40 transition-[box-shadow] hover:ring-white',
-              !isCompact && 'ms-2',
-            )}
-            data-testid="settings-entrypoint"
-          >
-            <CardIdentityIcon
-              kind="user"
-              avatar={avatar}
-              className="size-8"
-              data-testid="account-identity"
-            />
-          </Link>
         </div>
+
+        <Link
+          to={Routes.UserSetting}
+          className="shell-header-account"
+          aria-current={pathname.startsWith(Routes.UserSetting) ? 'page' : undefined}
+          data-testid="settings-entrypoint"
+        >
+          <CardIdentityIcon
+            kind="user"
+            avatar={avatar}
+            className="size-8"
+            data-testid="account-identity"
+          />
+        </Link>
       </header>
 
-      {/* 隐藏的测量节点（用于响应式计算） */}
+      {/* 隐藏的测量节点（用于响应式计算）。镜像必须和真实结构同宽：
+          仪器容器与账号方格的 class 同时出现在两边，否则紧凑断点会算错。 */}
       <div
         className="pointer-events-none invisible fixed -left-[9999px] top-0"
         aria-hidden
@@ -176,19 +189,21 @@ export function Header({
         </div>
         <div
           ref={expandedRightMeasureRef}
-          className="inline-flex shrink-0 items-center justify-end gap-1"
+          className="inline-flex shrink-0 items-center gap-3"
         >
-          <Button variant="ghost" className={headerControlClass}>
-            <LucideLanguages className="size-[1.05rem]" />
-          </Button>
-          <Button variant="ghost" className={headerControlClass}>
-            {/* The bell's own width comes from these classes, so measuring this
-                mirror keeps the compact breakpoint exact without mounting a second
-                dialog root off-screen. */}
-            <BellRing className="size-[1.05rem]" />
-          </Button>
-          <ThemeButton className={headerControlClass} />
-          <div className="relative ms-2 flex size-8 shrink-0 items-center justify-center">
+          <div className="shell-header-instruments shrink-0">
+            <Button variant="ghost" className={headerControlClass}>
+              <LucideLanguages className="size-[1.05rem]" />
+            </Button>
+            <Button variant="ghost" className={headerControlClass}>
+              {/* The bell's own width comes from these classes, so measuring this
+                  mirror keeps the compact breakpoint exact without mounting a second
+                  dialog root off-screen. */}
+              <BellRing className="size-[1.05rem]" />
+            </Button>
+            <ThemeButton className={headerControlClass} />
+          </div>
+          <div className="shell-header-account">
             <CardIdentityIcon kind="user" avatar={avatar} className="size-8" />
           </div>
         </div>

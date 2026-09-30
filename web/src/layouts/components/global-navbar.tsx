@@ -89,17 +89,22 @@ function useActivePath() {
 }
 
 /**
- * One shape for every tab: icon and label on one line, 36px tall, with an 8px
- * gap. The ink lives in the two component classes defined in `tailwind.css`, both
- * of which read the shared `--cable-nav-*` tokens: `gov-nav-link` is the idle
- * state with its hover wash, and `gov-nav-link-active` adds the rectangular
- * highlight plus the 2px indicator line along the bottom edge. The header scopes
- * those tokens to white, so the bar stays readable while the same tokens keep
- * their mid-grey values on the white pages below it.
+ * One shape for every tab: icon and label on one line, the FULL height of the
+ * 56px bar, with an 8px gap. Full-height tabs are what make the bar read as a tab
+ * strip rather than a row of links: the selected item's 2px mint indicator lands
+ * on the bar's own bottom edge instead of floating inside it, and the knowledge
+ * base's popover (opened at `sideOffset: 0`) attaches flush to that same edge.
+ *
+ * The ink lives in the two component classes defined in `tailwind.css`, both of
+ * which read the shared `--cable-nav-*` tokens: `gov-nav-link` is the idle state
+ * with its hover wash, and `gov-nav-link-active` adds the wash plus the 2px
+ * indicator line along the bottom edge. The header scopes those tokens to the
+ * white scale, so the bar stays readable while the same tokens keep their
+ * mid-grey values on the white pages below it.
  */
 const desktopNavLinkClass = (isActive: boolean) =>
   cn(
-    'gov-nav-link inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap px-3 text-sm',
+    'gov-nav-link inline-flex h-14 items-center justify-center gap-2 whitespace-nowrap px-3 text-sm',
     isActive && 'gov-nav-link-active',
   );
 

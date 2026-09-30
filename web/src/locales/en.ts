@@ -220,6 +220,7 @@ export default {
       artifact: 'Artifacts',
       messages: 'Messages',
       setting: 'Settings',
+      agentTemplates: 'Agent templates',
       newChat: 'New chat',
       newAgent: 'New agent',
     },

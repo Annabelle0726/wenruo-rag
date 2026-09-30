@@ -274,6 +274,33 @@
     --gov-header-fg: #ffffff;
     --gov-header-border: #005c3f;
 
+    /* ---- 系统外壳（顶栏分区 / 页面上下文栏 / 系统底栏）----
+       外壳是内容的框架，不是内容本身，所以它的“立体感”只有三种手段：1px 细线、
+       一级色阶、1–2px 的极浅投影。三者都写在这里，组件里不再出现任何字面色值。 */
+    --shell-header-ink: rgba(255, 255, 255, 0.86);
+    --shell-header-ink-strong: #ffffff;
+    /* 顶栏内部分区竖线与工具组描边：白线一档，够分组、不抢眼。 */
+    --shell-header-rail: rgba(255, 255, 255, 0.22);
+    --shell-header-wash: rgba(255, 255, 255, 0.1);
+    --shell-header-active-bg: rgba(255, 255, 255, 0.16);
+    /* 选中态底边：品牌亮绿，在 #007a53 上是 4.1:1，足以读作一条线。 */
+    --shell-header-indicator: #b6eeda;
+    /* 顶栏自身的上高光与落影：让绿色实心块压在页面之上，而不是与页面齐平。 */
+    --shell-header-topline: rgba(255, 255, 255, 0.12);
+    --shell-header-shadow: 0 1px 2px rgba(16, 24, 32, 0.12);
+
+    /* 页面上下文栏：比页面底色高一级的白带，用 1px 细线与 2px 落影分层。 */
+    --shell-context-bg: #ffffff;
+    --shell-context-shadow: 0 1px 2px rgba(16, 24, 32, 0.06);
+    --shell-context-marker: #007a53;
+
+    /* 系统底栏：它是工作区画布的收尾，不是一个“面板”。所以底栏没有任何实色底，
+       只有一条从画布本色出发、向下加深 3.5% 的极浅渐变 —— 工作区因此自然过渡到
+       底边，页面底部不会突然多出一块亮色矩形。 */
+    --shell-footer-tint-from: rgba(16, 24, 32, 0);
+    --shell-footer-tint-to: rgba(16, 24, 32, 0.035);
+    --shell-footer-rule: #dcdfe6;
+
     /* 数据表格：表头 #F5F7FA / 行高 38px / 行分隔线 */
     --panel-border: #dcdfe6;
     --table-border: #d5e5dc;
@@ -291,6 +318,7 @@
        绿底顶栏是半透明白字，在白底页面仍是 #606266。 */
     --cable-nav-text: #606266;
     --cable-nav-text-hover: #303133;
+    --cable-nav-hover-bg: #f5f7fa;
     --cable-nav-active-text: #007a53;
     --cable-nav-active-bg: #e6f2ef;
     --cable-nav-indicator: #007a53;
@@ -479,6 +507,28 @@
     --gov-header-fg: #c5cbd3;
     --gov-header-border: #1d4d3d;
 
+    /* 暗色外壳：同一套结构，投影换成黑色（暗色下的“浅色投影”看不见），
+       上下文栏抬到卡片那一级（#2a2e37）与页面 #23272f 分开；底栏不抬级，只用
+       一道极浅的提亮渐变收尾。 */
+    --shell-header-ink: rgba(255, 255, 255, 0.84);
+    --shell-header-ink-strong: #ffffff;
+    --shell-header-rail: rgba(255, 255, 255, 0.16);
+    --shell-header-wash: rgba(255, 255, 255, 0.09);
+    --shell-header-active-bg: rgba(255, 255, 255, 0.15);
+    --shell-header-indicator: #4ecfa4;
+    --shell-header-topline: rgba(255, 255, 255, 0.06);
+    --shell-header-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+
+    --shell-context-bg: #2a2e37;
+    --shell-context-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
+    --shell-context-marker: #26a67b;
+
+    /* 暗色底栏同样是“提亮 3.5%”的渐变而不是一块浅色面板，暗色模式下不会在页面
+       底部出现一块突兀的亮矩形。 */
+    --shell-footer-tint-from: rgba(255, 255, 255, 0);
+    --shell-footer-tint-to: rgba(255, 255, 255, 0.035);
+    --shell-footer-rule: #3c424e;
+
     --panel-border: #3c424e;
     --table-border: #3a5146;
     --table-head-ink: #d0d4dc;
@@ -489,6 +539,7 @@
 
     --cable-nav-text: #98a0ae;
     --cable-nav-text-hover: #d0d4dc;
+    --cable-nav-hover-bg: rgba(255, 255, 255, 0.06);
     --cable-nav-active-text: #26a67b;
     --cable-nav-active-bg: rgba(38, 166, 123, 0.12);
     --cable-nav-indicator: #26a67b;
@@ -702,13 +753,183 @@
     color: var(--category-ink);
   }
 
-  /* 全宽实心深绿顶栏 */
+  /* 全宽实心深绿顶栏。上沿 1px 内高光 + 2px 落影：绿块因此压在页面之上，
+     而不是与页面齐平；两者都不改变高度（内高光在里面，落影不占布局），
+     所以页面不会因为外壳加厚而抖动。
+     `position/z-index` 只为一个目的：这一行的落影要落在它下面那一行（上下文栏）
+     上面，否则会被后绘制的兄弟节点背景盖掉。z-index 2 让整个顶栏（含它内部的
+     知识库弹出面板）作为一个整体参与层级，仍低于任何模态层（z-50）。 */
   .glass-header {
+    position: relative;
+    z-index: 2;
     background-color: var(--gov-header-bg);
     border-bottom: 1px solid var(--gov-header-border);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    box-shadow: none;
+    box-shadow:
+      inset 0 1px 0 var(--shell-header-topline),
+      var(--shell-header-shadow);
+  }
+
+  /* 顶栏分区竖线：品牌区 / 主导航 / 工具区之间的一条 1px 白线。只有 24px 高、
+     两端不顶格，所以它读作“分组”，而不是表格的一列。 */
+  .shell-header-rail {
+    width: 1px;
+    height: 1.5rem;
+    flex: none;
+    background-color: var(--shell-header-rail);
+  }
+
+  /* 顶栏工具区：三个 32px 图标按钮共用一个 1px 描边容器，读作一块仪表板，
+     而不是散落的三个按钮。总高 38px，在 56px 栏里上下各留 9px。 */
+  .shell-header-instruments {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    border: 1px solid var(--shell-header-rail);
+    border-radius: 2px;
+  }
+
+  /* 顶栏控件（语言 / 通知 / 主题 / 账号）：32px 方阵、图标居中，hover 与
+     focus-visible 用同一层白色蒙层，focus-visible 另加 2px 内描边 —— 焦点可见，
+     且不产生任何位移。Button 的 ghost hover 工具类在 utilities 层，会压过单类
+     选择器，所以这里写双类（理由同 .ceramic-relief）。 */
+  .shell-header-control.shell-header-control {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    color: var(--shell-header-ink);
+    border-radius: 2px;
+    background-color: transparent;
+    transition:
+      background-color 160ms ease-in-out,
+      color 160ms ease-in-out,
+      box-shadow 160ms ease-in-out;
+  }
+
+  .shell-header-control.shell-header-control:hover,
+  .shell-header-control.shell-header-control:focus-visible {
+    background-color: var(--shell-header-wash);
+    color: var(--shell-header-ink-strong);
+  }
+
+  .shell-header-control.shell-header-control:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--shell-header-ink-strong);
+  }
+
+  /* 账号入口：与仪表板分开的一格。描边画在盒子外面（outline 不占布局、也不吃
+     头像边上的一个像素），hover/focus 时由 1px 收到 2px，位置与尺寸都不变。 */
+  .shell-header-account.shell-header-account {
+    position: relative;
+    display: inline-flex;
+    width: 2rem;
+    height: 2rem;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    outline: 1px solid var(--shell-header-rail);
+    outline-offset: 0;
+    transition:
+      outline-color 160ms ease-in-out,
+      outline-width 160ms ease-in-out;
+  }
+
+  .shell-header-account.shell-header-account:hover,
+  .shell-header-account.shell-header-account:focus-visible {
+    outline: 2px solid var(--shell-header-ink-strong);
+  }
+
+  /* 顶栏机构名：与图标同基线，字距收紧一档，让它读作机构名而不是页面标题。 */
+  .shell-header-brand {
+    color: var(--shell-header-ink-strong);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  /* 页面上下文栏：贴顶栏下沿的一条 32px 页眉带（暗色模式抬到卡片那一级），只用
+     1px 下边线与 2px 落影与主内容分层，因此路径读作外壳的一部分，又不占用主内容的
+     高度。z-index 1 让这条 2px 落影落在主内容之上。 */
+  .shell-context-bar {
+    position: relative;
+    z-index: 1;
+    background-color: var(--shell-context-bg);
+    border-bottom: 1px solid var(--panel-border);
+    box-shadow: var(--shell-context-shadow);
+  }
+
+  /* 上下文栏最左侧的 2px 品牌竖条：把路径锚在内容列的左边缘上。 */
+  .shell-context-marker {
+    width: 2px;
+    height: 0.875rem;
+    flex: none;
+    background-color: var(--shell-context-marker);
+  }
+
+  /* 路径上的父级：次级灰，hover 转品牌色。左右各 2px 内衬（用负外边距补偿）
+     只为 focus 描边留出一点空隙，不改变文本起始位置。 */
+  .shell-context-link {
+    padding-inline: 2px;
+    margin-inline: -2px;
+    color: var(--content-secondary);
+    border-radius: 2px;
+    transition:
+      color 160ms ease-in-out,
+      background-color 160ms ease-in-out;
+  }
+
+  .shell-context-link:hover {
+    color: var(--cable-brand);
+  }
+
+  .shell-context-link:focus-visible {
+    outline: none;
+    color: var(--cable-brand);
+    box-shadow: inset 0 0 0 1px var(--cable-brand);
+  }
+
+  /* 当前层级：这一行里唯一带底色的元素。浅绿底 + 品牌色文字，父级与当前页
+     因此不靠颜色深浅去猜，中英文、明暗两种主题下都成立。 */
+  .shell-context-current {
+    background-color: var(--cable-brand-soft);
+    color: var(--cable-brand);
+    padding: 1px 7px;
+    margin-inline: -2px;
+    border-radius: 2px;
+    font-weight: 600;
+  }
+
+  /* 系统底栏：页面的收尾，不是一块面板 —— 没有实色底、没有投影，只有一条向下加深
+     3.5% 的极浅渐变（暗色模式反向提亮 3.5%）。渐变从透明出发，所以底栏上沿与工作区
+     之间不存在硬边，两种主题下都不会在底部多出一块亮/暗矩形。上边线自身两端渐隐，
+     只留作一条结构提示，而不是把页面切成两块的横线。 */
+  .shell-footer {
+    position: relative;
+    background-color: transparent;
+    background-image: linear-gradient(
+      to bottom,
+      var(--shell-footer-tint-from),
+      var(--shell-footer-tint-to)
+    );
+  }
+
+  .shell-footer::before {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    inset-inline: 0;
+    height: 1px;
+    background-image: linear-gradient(
+      to right,
+      transparent 0%,
+      var(--shell-footer-rule) 14%,
+      var(--shell-footer-rule) 86%,
+      transparent 100%
+    );
   }
 
   .card-interactive {
@@ -747,30 +968,45 @@
     background-color: var(--accent-color-strong);
   }
 
-  /* 顶栏导航项。三个颜色都走 --cable-nav-* token，而顶栏容器把这组 token 局部
-     覆盖成白色系（见 header.tsx 的 headerNavTokens），所以页面内的 Segmented /
-     分页沿用同一组 class 时仍然是白底上的中灰字，不会跟着顶栏变白。 */
+  /* 顶栏导航项。颜色走 --cable-nav-* token，而顶栏容器把这组 token 局部覆盖成
+     白色系（见 header.tsx 的 headerNavTokens），所以页面内的 Segmented / 分页
+     沿用同一组 class 时仍然是白底上的中灰字，不会跟着顶栏变白。
+     三个状态是一条色阶：静止（无底）→ hover（一层 10% 白）→ 选中（16% 白 +
+     2px 品牌亮绿底边 + 加粗）。底边在 hover/focus 时也画出来，切换状态时不跳动。 */
   .gov-nav-link {
     color: var(--cable-nav-text);
     border-radius: 2px;
     transition:
-      background-color 200ms ease-in-out,
-      color 200ms ease-in-out;
+      background-color 160ms ease-in-out,
+      color 160ms ease-in-out,
+      box-shadow 160ms ease-in-out;
   }
 
   .gov-nav-link:hover,
   .gov-nav-link:focus-visible {
-    background-color: rgba(255, 255, 255, 0.14);
+    background-color: var(--cable-nav-hover-bg);
     color: var(--cable-nav-text-hover);
     outline: none;
   }
 
-  /* 选中态：实色深绿矩形高亮 + 底部白线，与 Hover 的浅色蒙层区分开。 */
+  /* 焦点必须看得见，且不能位移：内描边画在盒子里，尺寸仍是 36x36。 */
+  .gov-nav-link:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--cable-nav-indicator);
+  }
+
+  /* 选中态：比 hover 深一档的蒙层 + 2px 品牌亮绿底边 + 加粗。 */
   .gov-nav-link-active.gov-nav-link-active {
-    background-color: var(--gov-header-hover);
+    background-color: var(--cable-nav-active-bg);
     color: var(--cable-nav-active-text);
     font-weight: 700;
-    box-shadow: inset 0 -2px 0 var(--gov-header-fg);
+    box-shadow: inset 0 -2px 0 var(--cable-nav-indicator);
+  }
+
+  .gov-nav-link-active.gov-nav-link-active:hover,
+  .gov-nav-link-active.gov-nav-link-active:focus-visible {
+    background-color: var(--cable-nav-active-bg);
+    color: var(--cable-nav-active-text);
+    box-shadow: inset 0 -2px 0 var(--cable-nav-indicator);
   }
 }
 

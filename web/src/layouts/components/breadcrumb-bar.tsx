@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { Routes } from '@/routes';
+import { ChevronRight } from 'lucide-react';
 import { Fragment, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router';
@@ -105,6 +106,17 @@ const resolvePath = (pathname: string): Trail => {
     return { module: [Key('header.chat', Routes.Chats)] };
   }
 
+  if (isUnder(pathname, Routes.AgentTemplates)) {
+    // The template gallery is a page of the agent module whose path carries no
+    // `/agent` prefix, so it has to be named explicitly: without this entry the
+    // bar read 首页 while the agent tab was the selected one, two parts of the
+    // shell disagreeing about where the operator was.
+    return {
+      module: [Key('header.flow', Routes.Agents)],
+      leaf: Key('breadcrumb.agentTemplates'),
+    };
+  }
+
   if (isUnder(pathname, Routes.Agents) || isUnder(pathname, Routes.Agent)) {
     return { module: [Key('header.flow', Routes.Agents)] };
   }
@@ -149,9 +161,19 @@ function useTrail(): Level[] {
 }
 
 /**
- * Breadcrumb rail under the header. A plain white strip closed by a 1px hairline,
- * 12px secondary ink: it says where in the console the operator is without
- * competing with the page title.
+ * Page context rail under the header.
+ *
+ * It is a band, not a line of loose text: the bar shares the `page-gutter` column
+ * with the page below it, opens with a 2px brand marker at that column's left
+ * edge, closes each level with a chevron, and puts the page the operator is
+ * standing on in the only filled element of the row. It stays SHORT — 32px, the
+ * same row it has always occupied — so it frames the content without pushing the
+ * content's own top edge around, and nothing decorative runs off to the right
+ * edge: a hairline across the whole row read as a hard rule across the page, so
+ * the band carries its structure in the marker, the chevrons and the chip
+ * instead. Light and dark both resolve from `--shell-context-*` plus the theme's
+ * own content scale, and every level truncates inside its own box, so the English
+ * labels and the narrow viewports both stay on one line.
  *
  * Every level above the last is a link to its parent route; the last is the page
  * itself and is not clickable, so the rail can never offer a jump to a parent that
@@ -174,48 +196,51 @@ export function BreadcrumbBar({ className }: { className?: string }) {
     <nav
       aria-label="breadcrumb"
       className={cn(
-        'page-gutter flex h-8 shrink-0 items-center border-b border-panel-border bg-bg-component text-xs text-content-secondary',
+        'page-gutter shell-context-bar flex h-8 shrink-0 items-center gap-2.5 text-xs text-content-secondary',
         className,
       )}
     >
-      <ol className="flex min-w-0 items-center gap-2">
+      <span aria-hidden className="shell-context-marker" />
+
+      <ol className="flex min-w-0 items-center gap-1.5">
         {levels.map((level, index) => {
           // The last level is the page the operator is standing on: it is the only
-          // one that is not a link, and the only one that is highlighted.
+          // one that is not a link, and the only one that carries a fill.
           const isCurrent = index === levels.length - 1;
           const label = labelOf(level);
 
           return (
             <Fragment key={`${level.kind}-${label}-${index}`}>
               {index > 0 && (
-                /* A pale separator that keeps its own ink, so it never reads as
-                   part of the level beside it. */
-                <li aria-hidden className="shrink-0 text-content-tertiary">
-                  &gt;
+                /* A chevron rather than a `>` glyph: it is the same mark in both
+                   languages and it cannot be mistaken for punctuation. */
+                <li
+                  aria-hidden
+                  className="flex shrink-0 items-center text-content-tertiary"
+                >
+                  <ChevronRight className="size-3" strokeWidth={2} />
                 </li>
               )}
               <li className="flex min-w-0 items-center">
-                {isCurrent || !level.to ? (
+                {isCurrent ? (
                   <span
-                    aria-current={isCurrent ? 'page' : undefined}
-                    className={cn(
-                      'truncate',
-                      // 当前页：主题主色 + 加粗。父级：次级灰，指针移上去转主色。
-                      isCurrent
-                        ? 'font-semibold text-text-primary'
-                        : 'text-text-secondary',
-                    )}
+                    aria-current="page"
+                    className="shell-context-current truncate"
                   >
                     {label}
                   </span>
-                ) : (
+                ) : level.to ? (
                   <Link
                     to={level.to}
                     title={label}
-                    className="truncate text-text-secondary transition-colors hover:text-text-primary"
+                    className="shell-context-link truncate"
                   >
                     {label}
                   </Link>
+                ) : (
+                  <span className="truncate text-content-secondary">
+                    {label}
+                  </span>
                 )}
               </li>
             </Fragment>

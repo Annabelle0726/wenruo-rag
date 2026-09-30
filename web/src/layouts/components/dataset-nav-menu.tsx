@@ -99,7 +99,10 @@ export function DatasetNavMenu({
           aria-expanded={open}
           className={cn(
             className,
-            'relative duration-150 data-[state=open]:bg-gov-header-hover data-[state=open]:text-gov-header-fg',
+            /* The open trigger keeps the selected item's own wash and ink, so the
+               popover below it reads as that item's panel rather than as a fourth
+               state of the bar. */
+            'relative duration-150 data-[state=open]:bg-cable-nav-active-bg data-[state=open]:text-cable-nav-active-text',
           )}
           onMouseEnter={handleOpen}
           onMouseLeave={scheduleClose}

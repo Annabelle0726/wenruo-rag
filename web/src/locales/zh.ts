@@ -199,6 +199,7 @@ export default {
       artifact: 'Artifacts',
       messages: '消息',
       setting: '设置',
+      agentTemplates: '智能体模板',
       newChat: '新建聊天',
       newAgent: '新建智能体',
     },
