@@ -5,8 +5,10 @@
 # list, so its `image:` wins over the P0-7 override, the repair override, the nine-file override,
 # the fusion override and `RAGFLOW_IMAGE` in docker/.env.
 #
-# Candidate: my-wenruorag:candidate-rerankD-4498c2ed
+# Candidate: my-wenruorag:rollback-pre-doclist-20260930
 #            sha256:44a3e35359845e5e5ce58c297a53ab54eba3a6cdb95056acee70be86ed38c8f5
+#            (the Variant D image; the former duplicate tag
+#             `candidate-rerankD-4498c2ed` was removed, this stable tag carries the same digest)
 # Base:      production sha256:26a44ae5749dbb2e666ede8e8a3ddce323a5b2c2526cc4ae355fd2e502200ee5
 # Overlay:   EXACTLY rag/retrieval/rerank.py
 #            in-image sha256 4498c2ed2b2ce64d11af05106e4b85815c9dc4249e974329500467b4e42de96d
@@ -24,4 +26,4 @@
 # also available as my-wenruorag:rollback-pre-rerankD-20260929.
 services:
   wenruo-rag-cpu:
-    image: my-wenruorag:candidate-rerankD-4498c2ed
+    image: my-wenruorag:rollback-pre-doclist-20260930

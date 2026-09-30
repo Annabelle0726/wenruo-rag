@@ -4,7 +4,7 @@ $repo = "C:\Projects\RAG\wenruo-rag"
 Set-Location $repo
 
 $PROD = "my-wenruorag:candidate-fusionfix-2daccc2f"
-$CAND = "my-wenruorag:candidate-rerankD-4498c2ed"
+$CAND = "my-wenruorag:rollback-pre-doclist-20260930"
 $SANITY_B64 = "MjIwa1Yg5LiJ6Iqv5rW357yG55qE5Li76KaB57uT5p6E5pyJ5ZOq5Lqb77yf"
 
 New-Item -ItemType Directory -Force -Path deploy\repair_gates\candD_agentic | Out-Null
