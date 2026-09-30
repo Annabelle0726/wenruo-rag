@@ -177,11 +177,11 @@ export default function DatasetSetting() {
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(handleSubmit, handleInvalidSubmit)}
-              className="flex min-w-0 flex-1 flex-col"
+              className="flex w-full max-w-[960px] min-w-0 flex-col"
             >
               <div
                 ref={scrollContainerRef}
-                className="flex-1 h-0 w-full max-w-[1200px] px-5 pt-5 overflow-y-auto scrollbar-auto"
+                className="flex-1 h-0 w-full max-w-[960px] px-5 pt-5 overflow-y-auto scrollbar-auto"
               >
                 <section className="space-y-5 text-text-secondary">
                   <div className="text-base font-medium text-text-primary">
@@ -190,26 +190,32 @@ export default function DatasetSetting() {
                   <GeneralForm></GeneralForm>
 
                   <Divider />
-                  <div className="text-base font-medium text-text-primary">
-                    {t('knowledgeConfiguration.dataPipeline')}
-                  </div>
-                  <ParseTypeItem line={1} name="parse_type" />
-                  {parseType === ParseType.BuiltIn && (
-                    <>
+                  <section className="space-y-4 rounded-xl border border-border-button bg-card/50 p-4 shadow-sm">
+                    <div className="text-base font-medium text-text-primary">
+                      {t('knowledgeConfiguration.dataPipeline')}
+                    </div>
+                    <ParseTypeItem line={1} name="parse_type" />
+                    {parseType === ParseType.BuiltIn && (
                       <BuiltinPipelineItem line={1} name="parser_id" />
-                      {builtinPipelineId && (
-                        <ChunkMethodLearnMore parserId={builtinPipelineId} />
-                      )}
-                    </>
-                  )}
-                  {parseType === ParseType.Pipeline && (
-                    <DataFlowSelect
-                      isMult={false}
-                      showToDataPipeline={true}
-                      formFieldName="pipeline_id"
-                      layout={FormLayout.Horizontal}
-                    />
-                  )}
+                    )}
+                    {parseType === ParseType.Pipeline && (
+                      <>
+                        <DataFlowSelect
+                          isMult={false}
+                          showToDataPipeline={true}
+                          formFieldName="pipeline_id"
+                          layout={FormLayout.Horizontal}
+                        />
+                        {pipelineId && (
+                          <div className="pl-[25%]">
+                            <ChunkMethodLearnMore
+                              parserId={builtinPipelineId || 'naive'}
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </section>
                   {showOperatorTabs && (
                     <PipelineOperatorTabs
                       nodes={operatorNodes}
@@ -228,7 +234,7 @@ export default function DatasetSetting() {
                 </section>
               </div>
 
-              <div className="p-5 text-right items-center flex justify-end gap-3 w-full max-w-[1200px]">
+              <div className="p-5 text-right items-center flex justify-end gap-3 w-full max-w-[960px]">
                 <Button
                   type="reset"
                   variant="transparent"
