@@ -31,8 +31,8 @@ function RetrievalHealth() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <h3 className="text-sm text-text-primary">
+    <div className="settings-body">
+      <h3 className="settings-section-title">
         {t('usage.retrievalHealth')}
       </h3>
 
@@ -48,11 +48,11 @@ function RetrievalHealth() {
         ]}
       />
 
-      <div className="ceramic-relief flex flex-col gap-1 rounded-[2px] p-3">
-        <span className="text-xs text-text-secondary">
+      <div className="settings-tile">
+        <span className="settings-tile-label">
           {t('usage.retrievalHealthNotClaimedTitle')}
         </span>
-        <p className="text-xs text-text-disabled">
+        <p className="settings-tile-hint">
           {t('usage.retrievalHealthNotClaimedDescription')}
         </p>
       </div>

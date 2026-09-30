@@ -90,15 +90,19 @@ export function UsagePolicySection({
   useEffect(() => {
     const next = draftFromLimits(confirmedLimits);
     setBaseline(next);
-    setDraft((previous) =>
-      editing ? previous : next,
-    );
+    setDraft((previous) => (editing ? previous : next));
     setStaleRevision((previous) => revision ?? previous);
   }, [revision, editing, quota]);
 
-  const errors = useMemo(() => collectPolicyErrors(draft, baseline), [draft, baseline]);
+  const errors = useMemo(
+    () => collectPolicyErrors(draft, baseline),
+    [draft, baseline],
+  );
   const dirty = isDraftDirty(baseline, draft);
-  const patch = useMemo(() => buildPolicyPatch(baseline, draft), [baseline, draft]);
+  const patch = useMemo(
+    () => buildPolicyPatch(baseline, draft),
+    [baseline, draft],
+  );
   const hasErrors = Object.keys(errors).length > 0;
   // A save is possible only on a resolved workspace with a known revision, a real
   // change, and values the STORAGE will accept.
@@ -112,11 +116,14 @@ export function UsagePolicySection({
     Object.keys(patch).length > 0 &&
     !saving;
 
-  const handleChange = useCallback((field: keyof PolicyDraft) => (event: any) => {
-    const value = event?.target?.value ?? '';
-    setDraft((previous) => ({ ...previous, [field]: value }));
-    setOutcome('idle');
-  }, []);
+  const handleChange = useCallback(
+    (field: keyof PolicyDraft) => (event: any) => {
+      const value = event?.target?.value ?? '';
+      setDraft((previous) => ({ ...previous, [field]: value }));
+      setOutcome('idle');
+    },
+    [],
+  );
 
   const handleEdit = useCallback(() => {
     setEditing(true);
@@ -165,7 +172,7 @@ export function UsagePolicySection({
 
   if (!roleResolved) {
     return (
-      <div className="p-4">
+      <div className="settings-body">
         <CardSkeleton />
       </div>
     );
@@ -173,7 +180,7 @@ export function UsagePolicySection({
 
   if (readOnly) {
     return (
-      <div className="p-4">
+      <div className="settings-body">
         <ComingDataPanel
           testId="usage-policy-not-authorized"
           tone="unavailable"
@@ -185,168 +192,189 @@ export function UsagePolicySection({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4" data-testid="team-usage-policy">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h3 className="text-sm text-text-primary">{t('usage.policyTitle')}</h3>
-          <p className="text-xs text-text-secondary">
-            {t('usage.policyDescription')}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {!editing ? (
-            <Button
-              size="sm"
-              className="h-8 rounded-[2px] px-3 text-xs"
-              disabled={loading || !quota?.data}
-              onClick={handleEdit}
-              data-testid="usage-policy-edit"
-            >
-              {t('usage.policyEdit')}
-            </Button>
-          ) : (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 rounded-[2px] px-3 text-xs"
-                disabled={saving}
-                onClick={handleCancel}
-                data-testid="usage-policy-cancel"
-              >
-                {t('usage.policyCancel')}
-              </Button>
-              <Button
-                size="sm"
-                className="h-8 rounded-[2px] px-3 text-xs"
-                disabled={!canSave}
-                onClick={handleSave}
-                data-testid="usage-policy-save"
-              >
-                {saving ? t('usage.policySaving') : t('usage.policySave')}
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {outcome !== 'idle' && (
-        <div
-          className={cn(
-            'ceramic-relief flex flex-col gap-2 rounded-[2px] p-3',
-            outcome === 'conflict' && 'border border-state-warning',
-          )}
-          data-testid={`usage-policy-outcome-${outcome}`}
-        >
-          <p className="text-sm text-text-primary">
-            {t(`usage.policyOutcome_${outcome}Title`)}
-          </p>
-          <p className="text-xs text-text-secondary">
-            {t(`usage.policyOutcome_${outcome}Description`)}
-          </p>
-          {(outcome === 'conflict' || outcome === 'stale-after-save') && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={handleReload}
-                data-testid="usage-policy-reload"
-              >
-                {t('usage.policyReload')}
-              </Button>
-              {outcome === 'conflict' && (
-                <span className="text-xs text-text-disabled">
-                  {t('usage.policyConflictReview', {
-                    fields: Object.keys(patch)
-                      .map((field) => t(POLICY_FIELD_LABEL_KEYS[field as never]))
-                      .join(', '),
-                  })}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {loading && !quota ? (
-        <CardSkeleton />
-      ) : quota?.data ? (
-        <>
-          <div className="ceramic-relief flex flex-col rounded-[2px] p-3">
-            <span className="pb-2 text-sm text-text-primary">
-              {t('usage.policyPerMemberTitle')}
-            </span>
-            <LimitStandingList quota={quota} />
-            {/* The exemption is the server's answer and is shown even while
-                editing: an exempt manager must never be shown a limit they can
-                fail to meet. */}
-            {quota.data.subject?.exempt === true && (
-              <p className="pt-2 text-xs text-state-warning" data-testid="usage-policy-exempt">
-                {t('usage.policyExemptNotice')}
-              </p>
-            )}
+    <div className="settings-body" data-testid="team-usage-policy">
+      {/* One section frame for the whole policy: the title and its edit controls on
+          the header line, the standing figures and the editor as two stacked blocks
+          separated by a hairline. The previous shape put each block in its own
+          raised card, which made three frames where one object exists. */}
+      <section className="settings-section">
+        <div className="settings-section-head">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <h3 className="settings-section-title">
+              {t('usage.policyTitle')}
+            </h3>
+            <p className="settings-section-hint">
+              {t('usage.policyDescription')}
+            </p>
           </div>
 
-          {editing && (
-            <div
-              className="ceramic-relief flex flex-col gap-3 rounded-[2px] p-3"
-              data-testid="usage-policy-form"
-            >
-              <span className="text-sm text-text-primary">
-                {t('usage.policyFormTitle')}
-              </span>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {POLICY_LIMIT_FIELDS.map((field) => (
-                  <label key={field} className="flex flex-col gap-1">
-                    <span className="text-xs text-text-secondary">
-                      {t(POLICY_FIELD_LABEL_KEYS[field])}
-                    </span>
-                    <Input
-                      inputMode="numeric"
-                      value={draft[field]}
-                      onChange={handleChange(field)}
-                      disabled={saving}
-                      aria-invalid={Boolean(errors[field])}
-                      data-testid={`usage-policy-input-${field}`}
-                    />
-                    {errors[field] ? (
-                      <span className="text-xs text-state-error">
-                        {t(`usage.policyFieldError_${errors[field]}`)}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-text-disabled">
-                        {field.startsWith('calls')
-                          ? t('usage.policyFieldHintCalls')
-                          : t('usage.policyFieldHintTokens')}
-                      </span>
-                    )}
-                  </label>
-                ))}
+          <div className="ms-auto flex shrink-0 items-center gap-2">
+            {!editing ? (
+              <Button
+                size="sm"
+                className="h-8 px-3 text-xs"
+                disabled={loading || !quota?.data}
+                onClick={handleEdit}
+                data-testid="usage-policy-edit"
+              >
+                {t('usage.policyEdit')}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-3 text-xs"
+                  disabled={saving}
+                  onClick={handleCancel}
+                  data-testid="usage-policy-cancel"
+                >
+                  {t('usage.policyCancel')}
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-8 px-3 text-xs"
+                  disabled={!canSave}
+                  onClick={handleSave}
+                  data-testid="usage-policy-save"
+                >
+                  {saving ? t('usage.policySaving') : t('usage.policySave')}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {outcome !== 'idle' && (
+          <div
+            className={cn(
+              'settings-notice flex-col rounded-none border-0 border-b border-cable-hairline',
+              outcome === 'conflict' && 'bg-state-warning-5',
+            )}
+            data-testid={`usage-policy-outcome-${outcome}`}
+          >
+            <p className="settings-notice-title">
+              {t(`usage.policyOutcome_${outcome}Title`)}
+            </p>
+            <p className="settings-notice-body">
+              {t(`usage.policyOutcome_${outcome}Description`)}
+            </p>
+            {(outcome === 'conflict' || outcome === 'stale-after-save') && (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 text-xs"
+                  onClick={handleReload}
+                  data-testid="usage-policy-reload"
+                >
+                  {t('usage.policyReload')}
+                </Button>
+                {outcome === 'conflict' && (
+                  <span className="settings-field-hint">
+                    {t('usage.policyConflictReview', {
+                      fields: Object.keys(patch)
+                        .map((field) =>
+                          t(POLICY_FIELD_LABEL_KEYS[field as never]),
+                        )
+                        .join(', '),
+                    })}
+                  </span>
+                )}
               </div>
-              {!dirty && (
-                <p className="text-xs text-text-disabled">
-                  {t('usage.policyNoChanges')}
-                </p>
-              )}
-              {outcome === 'conflict' && (
-                <p className="text-xs text-state-warning">
-                  {t('usage.policyConflictNeedsReload', {
-                    revision: staleRevision ?? '',
-                  })}
+            )}
+          </div>
+        )}
+
+        {loading && !quota ? (
+          <div className="settings-section-body">
+            <CardSkeleton />
+          </div>
+        ) : quota?.data ? (
+          <div className="flex flex-col divide-y divide-cable-hairline">
+            <div className="flex flex-col px-3.5 py-3">
+              <span className="settings-section-title pb-1">
+                {t('usage.policyPerMemberTitle')}
+              </span>
+              <LimitStandingList quota={quota} />
+              {/* The exemption is the server's answer and is shown even while
+                  editing: an exempt manager must never be shown a limit they can
+                  fail to meet. */}
+              {quota.data.subject?.exempt === true && (
+                <p
+                  className="pt-2 text-xs text-state-warning"
+                  data-testid="usage-policy-exempt"
+                >
+                  {t('usage.policyExemptNotice')}
                 </p>
               )}
             </div>
-          )}
-        </>
-      ) : (
-        <ReadModelNotice
-          testId="usage-policy-unavailable"
-          failed={Boolean(error)}
-          onRetry={refetch}
-        />
-      )}
+
+            {editing && (
+              <div
+                className="flex flex-col gap-3 px-3.5 py-3"
+                data-testid="usage-policy-form"
+              >
+                <span className="settings-section-title">
+                  {t('usage.policyFormTitle')}
+                </span>
+                {/* Two columns of the same field shape: label, control, then either
+                    the error or the hint, so the controls share a baseline and a
+                    message never resizes the row above it. */}
+                <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
+                  {POLICY_LIMIT_FIELDS.map((field) => (
+                    <label key={field} className="settings-field">
+                      <span className="settings-field-label">
+                        {t(POLICY_FIELD_LABEL_KEYS[field])}
+                      </span>
+                      <Input
+                        inputMode="numeric"
+                        className="ceramic-field h-10 tabular-nums"
+                        value={draft[field]}
+                        onChange={handleChange(field)}
+                        disabled={saving}
+                        aria-invalid={Boolean(errors[field])}
+                        data-testid={`usage-policy-input-${field}`}
+                      />
+                      {errors[field] ? (
+                        <span className="settings-field-hint text-state-error">
+                          {t(`usage.policyFieldError_${errors[field]}`)}
+                        </span>
+                      ) : (
+                        <span className="settings-field-hint">
+                          {field.startsWith('calls')
+                            ? t('usage.policyFieldHintCalls')
+                            : t('usage.policyFieldHintTokens')}
+                        </span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+                {!dirty && (
+                  <p className="settings-field-hint">
+                    {t('usage.policyNoChanges')}
+                  </p>
+                )}
+                {outcome === 'conflict' && (
+                  <p className="settings-field-hint text-state-warning">
+                    {t('usage.policyConflictNeedsReload', {
+                      revision: staleRevision ?? '',
+                    })}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="settings-section-body">
+            <ReadModelNotice
+              testId="usage-policy-unavailable"
+              failed={Boolean(error)}
+              onRetry={refetch}
+            />
+          </div>
+        )}
+      </section>
     </div>
   );
 }

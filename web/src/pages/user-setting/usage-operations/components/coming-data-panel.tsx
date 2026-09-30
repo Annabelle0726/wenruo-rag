@@ -48,36 +48,29 @@ export function ComingDataPanel({
 
   return (
     <div
-      className={cn(
-        'ceramic-relief flex flex-col gap-3 rounded-[2px] p-4',
-        className,
-      )}
+      className={cn('settings-notice', className)}
       data-testid={testId}
     >
-      <div className="flex items-start gap-2">
-        <Icon
-          className={cn(
-            'mt-0.5 size-4 shrink-0',
-            tone === 'unavailable'
-              ? 'text-text-disabled'
-              : 'text-accent-primary',
-          )}
-        />
-        <div className="flex min-w-0 flex-col gap-1">
-          <p className="text-sm text-text-primary">{t(titleKey)}</p>
-          <p className="text-xs text-text-secondary">{t(descriptionKey)}</p>
-        </div>
-      </div>
+      <Icon
+        className={cn(
+          'mt-0.5 size-4 shrink-0',
+          tone === 'unavailable' ? 'text-text-disabled' : 'text-accent-primary',
+        )}
+      />
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <p className="settings-notice-title">{t(titleKey)}</p>
+        <p className="settings-notice-body">{t(descriptionKey)}</p>
 
-      {pendingKeys.length > 0 && (
-        <ul className="flex flex-col gap-1 ps-6 text-xs text-text-secondary">
-          {pendingKeys.map((key) => (
-            <li key={key} className="list-disc">
-              {t(key)}
-            </li>
-          ))}
-        </ul>
-      )}
+        {pendingKeys.length > 0 && (
+          <ul className="flex flex-col gap-1 pt-1 text-xs text-text-secondary">
+            {pendingKeys.map((key) => (
+              <li key={key} className="list-disc ps-4">
+                {t(key)}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

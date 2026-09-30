@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   useFetchTenantInfo,
   useFetchUserInfo,
@@ -95,30 +94,39 @@ const UserSettingTeam = () => {
 
   const renderSubsection = () => {
     if (subsection === 'usage-policy') {
-      return <UsagePolicySection readOnly={readOnly} roleResolved={roleResolved} />;
+      return (
+        <UsagePolicySection readOnly={readOnly} roleResolved={roleResolved} />
+      );
     }
 
     if (subsection === 'departments') {
       return (
-        <Card className="bg-transparent border-none rounded-none shadow-none">
-          <CardContent className="p-4 pt-0">
-            <DepartmentTable readOnly={readOnly} />
-          </CardContent>
-        </Card>
+        <div className="settings-body">
+          <section className="settings-section">
+            <div className="settings-section-head">
+              <h3 className="settings-section-title">
+                {t('setting.teamDepartments')}
+              </h3>
+            </div>
+            <div className="settings-section-body">
+              <DepartmentTable readOnly={readOnly} />
+            </div>
+          </section>
+        </div>
       );
     }
 
     return (
-      <>
-        <Card className="bg-transparent border-none rounded-none shadow-none">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
-            <CardTitle className="text-base">
+      <div className="settings-body">
+        <section className="settings-section" data-testid="members-section">
+          <div className="settings-section-head">
+            <h3 className="settings-section-title">
               {t('setting.teamMembers')}
-            </CardTitle>
+            </h3>
 
-            <section className="flex gap-4 items-center">
+            <div className="ms-auto flex items-center gap-2">
               <SearchInput
-                className={cn(ceramicSearchFieldClassName, 'w-32')}
+                className={cn(ceramicSearchFieldClassName, 'w-40')}
                 rootClassName={cn(ceramicSearchFieldRootClassName)}
                 placeholder={t('common.search')}
                 value={searchUser}
@@ -127,51 +135,47 @@ const UserSettingTeam = () => {
               {/* Only a workspace manager may change the roster. */}
               {!readOnly && (
                 <Button
-                  className="ceramic-cta h-8 shrink-0 rounded-[2px] px-3 text-xs font-medium gap-1.5 whitespace-nowrap"
+                  className="ceramic-cta h-8 shrink-0 gap-1.5 whitespace-nowrap px-3 text-xs font-medium"
                   onClick={showAddingTenantModal}
                 >
                   {t('setting.invite')}
                 </Button>
               )}
-            </section>
-          </CardHeader>
+            </div>
+          </div>
 
-          <CardContent className="p-4 pt-0">
-            <UserTable searchUser={searchUser} />
-          </CardContent>
-        </Card>
+          <UserTable searchUser={searchUser} />
+        </section>
 
         {/* The workspaces the caller belongs to. It stays under Members & roles
             because it is the same roster question read from the other side. */}
-        <Card className="bg-transparent border-none mt-8 rounded-none shadow-none">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
-            <CardTitle className="text-base w-fit">
+        <section className="settings-section" data-testid="joined-workspaces-section">
+          <div className="settings-section-head">
+            <h3 className="settings-section-title">
               {t('setting.joinedTeams')}
-            </CardTitle>
+            </h3>
             <SearchInput
-              className={cn(ceramicSearchFieldClassName, 'w-32')}
+              className={cn(ceramicSearchFieldClassName, 'ms-auto w-40')}
               rootClassName={cn(ceramicSearchFieldRootClassName)}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={t('common.search')}
             />
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <TenantTable searchTerm={searchTerm} />
-          </CardContent>
-        </Card>
-      </>
+          </div>
+          <TenantTable searchTerm={searchTerm} />
+        </section>
+      </div>
     );
   };
 
   return (
     <ProfileSettingWrapperCard
       header={
-        <header className="flex flex-col gap-1">
-          <h2 className="text-2xl font-medium text-text-primary">
+        <header className="flex min-w-0 flex-col gap-0.5">
+          <h2 className="settings-title truncate">
             {t(SUBSECTION_TITLE_KEY[subsection])}
           </h2>
-          <p className="text-xs text-text-secondary">
+          <p className="settings-description truncate">
             {workspaceName
               ? `${workspaceName} ${t('setting.workspace')}`
               : t('setting.workspace')}
@@ -179,9 +183,7 @@ const UserSettingTeam = () => {
         </header>
       }
     >
-      <div className="h-full overflow-x-hidden overflow-y-auto">
-        {renderSubsection()}
-      </div>
+      {renderSubsection()}
 
       {addingTenantModalVisible && (
         <AddingUserModal

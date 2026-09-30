@@ -83,23 +83,31 @@ export function Sidebar({ selection, onSelect }: SidebarProps) {
 
   return (
     <div className="flex flex-col gap-3 py-4 text-text-primary">
+      {/* The default-models entry is a row of the same list as the providers, not a
+          button above it: one selection idiom, one row height, and the selected
+          row carries the same brand marker the settings rail uses. */}
       <button
         type="button"
         className={cn(
-          'flex items-center justify-between px-3 py-2 rounded-xl text-sm',
+          'flex h-10 items-center justify-between gap-2 px-3 text-left text-sm',
           selection === 'default'
-            ? 'ceramic-list-row ceramic-list-row-active'
-            : 'ceramic-list-row',
+            ? 'bg-cable-surface-muted font-semibold text-content-primary shadow-[inset_2px_0_0_var(--accent-color)]'
+            : 'text-content-secondary hover:bg-surface-hover hover:text-content-primary',
         )}
         onClick={() => onSelect('default')}
         data-testid="sidebar-default-models"
       >
-        <span className="font-medium">{t('setting.systemModelSettings')}</span>
-        <ChevronRight className="size-4" />
+        <span className="truncate">{t('setting.systemModelSettings')}</span>
+        <ChevronRight className="size-4 shrink-0" />
       </button>
 
-      <div className="text-base font-medium text-text-primary px-1">
-        {t('setting.availableModels')}
+      <div className="mt-1 flex items-center justify-between gap-2 px-1">
+        <span className="settings-section-title">
+          {t('setting.availableModels')}
+        </span>
+        <span className="settings-field-hint tabular-nums">
+          {filteredProviders.length}
+        </span>
       </div>
 
       <SearchInput
@@ -111,7 +119,7 @@ export function Sidebar({ selection, onSelect }: SidebarProps) {
         rootClassName={ceramicSearchFieldRootClassName}
       />
 
-      <div className="flex flex-col gap-1 overflow-auto scrollbar-auto">
+      <div className="flex flex-col overflow-auto scrollbar-auto">
         {filteredProviders.map((provider) => {
           const isActive = selection === provider.name;
           const isAdded = addedSet.has(provider.name);
@@ -122,21 +130,24 @@ export function Sidebar({ selection, onSelect }: SidebarProps) {
               onClick={() => onSelect(provider.name)}
               data-testid={`sidebar-provider-${provider.name}`}
               className={cn(
-                'ceramic-list-row flex items-center gap-3 px-3 py-2 rounded-xl text-left',
-                isActive && 'ceramic-list-row-active',
+                'flex h-10 items-center gap-3 px-3 text-left text-sm',
+                isActive
+                  ? 'bg-cable-surface-muted font-medium text-content-primary shadow-[inset_2px_0_0_var(--accent-color)]'
+                  : 'text-content-secondary hover:bg-surface-hover hover:text-content-primary',
               )}
+              aria-current={isActive ? 'true' : undefined}
             >
               <LlmIcon
                 name={provider.name}
                 width={24}
                 height={24}
-                imgClass="size-6 text-text-primary"
+                imgClass="size-5 shrink-0 text-text-primary"
               />
-              <span className="truncate text-sm flex-1">{provider.name}</span>
+              <span className="min-w-0 flex-1 truncate">{provider.name}</span>
               {isAdded && (
                 <span
                   aria-label="configured"
-                  className="ceramic-dot-live size-2 rounded-full shrink-0"
+                  className="ceramic-dot-live size-2 shrink-0 rounded-[50%]"
                   data-testid={`sidebar-provider-dot-${provider.name}`}
                 />
               )}
@@ -144,7 +155,7 @@ export function Sidebar({ selection, onSelect }: SidebarProps) {
           );
         })}
         {filteredProviders.length === 0 && (
-          <div className="text-xs text-text-secondary px-3 py-2">
+          <div className="px-3 py-6 text-center text-xs text-content-tertiary">
             {t('setting.empty')}
           </div>
         )}

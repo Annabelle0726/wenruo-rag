@@ -91,15 +91,19 @@ function LimitRow({
 
   return (
     <div
-      className="flex flex-col gap-1.5 py-2"
+      className="flex flex-col gap-1.5 py-2.5"
       data-testid={`usage-limit-${dimension}`}
     >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="text-sm text-text-primary">{t(labelKey)}</span>
-        <span className="flex items-baseline gap-2 text-xs text-text-secondary">
-          <span>{formatLimitValue(dimension, standing.limit)}</span>
+      {/* Label left, configured value right: the two ends of one row, so a column
+          of figures lines up on its last digit (`.tabular-nums` on the value). */}
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <span className="text-[13px] text-text-primary">{t(labelKey)}</span>
+        <span className="flex items-baseline gap-2 text-xs text-text-secondary tabular-nums">
+          <span className="font-medium">
+            {formatLimitValue(dimension, standing.limit)}
+          </span>
           {notEnforced && (
-            <span className="text-text-disabled">
+            <span className="settings-tag text-content-tertiary">
               {/* One message for both cases: whether the dimension is allowed to
                   be zero or the stored value is a legacy zero, it is not enforced
                   and it is never "zero remaining". */}
@@ -107,7 +111,7 @@ function LimitRow({
             </span>
           )}
           {standing.exempt === true && (
-            <span className="text-state-warning">
+            <span className="settings-tag border-state-warning text-state-warning">
               {t('usage.limitExempt')}
             </span>
           )}
@@ -115,10 +119,10 @@ function LimitRow({
       </div>
 
       {measurable && (
-        <div className="h-1 w-full overflow-hidden rounded-full bg-bg-input">
+        <div className="h-1 w-full overflow-hidden rounded-[2px] bg-bg-input">
           <div
             className={cn(
-              'h-full rounded-full',
+              'h-full rounded-[2px]',
               overLimit ? 'bg-state-error' : 'bg-accent-primary',
             )}
             style={{ width: `${Math.round(ratio * 100)}%` }}
@@ -126,7 +130,7 @@ function LimitRow({
         </div>
       )}
 
-      <div className="flex flex-wrap items-baseline gap-3 text-xs text-text-disabled">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-xs text-text-disabled tabular-nums">
         <span>{t('usage.limitUsed', { value: usedText })}</span>
         {remainingText !== null && (
           <span
@@ -175,17 +179,17 @@ export function LimitStandingList({ quota }: { quota: IUsageEnvelope }) {
   return (
     <div className="flex flex-col">
       <div className="flex flex-wrap items-baseline gap-2 pb-1">
-        <span className="text-xs text-text-secondary">
+        <span className="settings-section-hint">
           {data?.limits_source === 'backend_defaults'
             ? t('usage.limitsSourceDefaults')
             : t('usage.limitsSourceConfigured')}
         </span>
-        <span className="text-xs text-text-disabled">
+        <span className="settings-tag text-content-tertiary">
           {t('usage.limitsScopePerMember')}
         </span>
       </div>
 
-      <div className="divide-y divide-border-default">
+      <div className="divide-y divide-cable-hairline">
         {DIMENSION_LABEL_KEYS.map(([dimension, labelKey]) => (
           <LimitRow
             key={dimension}
@@ -199,13 +203,14 @@ export function LimitStandingList({ quota }: { quota: IUsageEnvelope }) {
       {/* Which dimensions treat 0 as "not enforced" is a property of the rules,
           not of one row, so it is stated once instead of per dimension. */}
       {zeroMeansUnlimited.size > 0 && (
-        <p className="pt-2 text-xs text-text-disabled">
+        <p className="settings-field-hint pt-2">
           {t('usage.zeroMeansNotEnforcedNote', {
             dimensions: Array.from(zeroMeansUnlimited)
               .map(
                 (dimension) =>
-                  DIMENSION_LABEL_KEYS.find(([key]) => key === dimension)?.[1] ??
-                  dimension,
+                  DIMENSION_LABEL_KEYS.find(
+                    ([key]) => key === dimension,
+                  )?.[1] ?? dimension,
               )
               .map((labelKey) => t(labelKey))
               .join(', '),
@@ -218,11 +223,11 @@ export function LimitStandingList({ quota }: { quota: IUsageEnvelope }) {
           English paragraph. The statement below says the same things in the
           reader's language, so it is translatable and cannot drift into a
           different claim. */}
-      <p className="pt-2 text-xs text-text-disabled">
+      <p className="settings-field-hint pt-2">
         {t('usage.limitsPerMemberCaveat')}
       </p>
       {liveMemberFalse && (
-        <p className="pt-1 text-xs text-text-disabled">
+        <p className="settings-field-hint pt-1">
           {t('usage.memberNoLongerActive')}
         </p>
       )}

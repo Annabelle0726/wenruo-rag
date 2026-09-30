@@ -166,10 +166,10 @@ const ProfilePage: FC = () => {
     <ProfileSettingWrapperCard
       header={
         <header>
-          <h2 className="text-2xl font-medium text-text-primary">
+          <h2 className="settings-title">
             {t('profile')}
           </h2>
-          <p className="mt-1 text-sm text-text-secondary ">
+          <p className="mt-1 settings-description">
             {t('profileDescription')}
           </p>
         </header>

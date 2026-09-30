@@ -41,10 +41,7 @@ export type UsageRangeDays = (typeof USAGE_RANGE_PRESETS)[number];
  * reader's request, not an assertion about the workspace's calendar.
  */
 export const useUsageDayWindow = (days: UsageRangeDays) =>
-  useMemo(
-    () => resolveDayWindow(days, dayjs().format('YYYY-MM-DD')),
-    [days],
-  );
+  useMemo(() => resolveDayWindow(days, dayjs().format('YYYY-MM-DD')), [days]);
 
 export function UsageRangeFilter({
   value,
@@ -61,8 +58,11 @@ export function UsageRangeFilter({
   };
 
   return (
+    // A segmented control on the 32px control rail the rest of Settings uses: one
+    // hairline track, the selected window filled with the brand's soft tint. The
+    // three options are one control, so they must not read as three loose buttons.
     <div
-      className="flex items-center gap-1"
+      className="ceramic-segmented flex shrink-0 items-center p-0.5"
       role="group"
       aria-label={t('usage.rangeLabel')}
       data-testid="usage-range-filter"
@@ -74,8 +74,10 @@ export function UsageRangeFilter({
           size="sm"
           aria-pressed={value === days}
           className={cn(
-            'h-7 rounded-[2px] px-2 text-xs',
-            value === days && 'ceramic-nav-item-active',
+            'h-7 rounded-[2px] px-2.5 text-xs',
+            value === days
+              ? 'bg-accent-primary-5 font-medium text-accent-primary hover:bg-accent-primary-5 hover:text-accent-primary'
+              : 'text-content-secondary hover:bg-cable-surface-muted hover:text-content-primary',
           )}
           onClick={() => onChange(days)}
         >

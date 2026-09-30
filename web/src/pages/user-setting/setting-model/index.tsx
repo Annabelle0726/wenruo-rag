@@ -304,13 +304,13 @@ const SettingModelV2: FC = () => {
       <div className="glass-surface relative flex h-full min-h-0 w-full overflow-hidden">
         {/* The provider list is its own rail: the glass tint, then the ceramic seam
             that separates it from the configuration panel. */}
-        <section className="ceramic-rail ceramic-seam-r flex flex-col gap-4 w-[320px] shrink-0 px-5 overflow-auto scrollbar-auto">
+        <section className="ceramic-rail ceramic-seam-r flex w-[320px] shrink-0 flex-col gap-4 overflow-auto px-5 scrollbar-auto">
           <Sidebar selection={selection} onSelect={setSelection} />
         </section>
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {readOnly && (
             <div
-              className="flex items-start gap-2 border-b border-border-default bg-accent-primary-5 px-4 py-3 text-sm text-text-secondary"
+              className="flex items-start gap-2 border-b border-cable-hairline bg-accent-primary-5 px-5 py-3 text-sm text-content-secondary"
               data-testid="model-settings-readonly-notice"
             >
               <Info className="mt-0.5 size-4 shrink-0" />
@@ -331,11 +331,16 @@ const SettingModelV2: FC = () => {
                 canSave={canSave}
               />
 
-              {/* Scrollable middle: instance cards + optional draft cards */}
-              <div className="flex-1 min-h-0 overflow-auto scrollbar-auto p-4 flex flex-col gap-4">
+              {/* Scrollable middle: instance cards + optional draft cards. The
+                  gutter matches the panel header's, and the add-instance row sits
+                  on the same 32px rail as every other control in Settings. */}
+              <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-5 scrollbar-auto">
                 {instances.length === 0 && draftIds.length === 0 && (
-                  <div className="text-text-secondary text-sm py-6 text-center">
-                    {tSetting('noInstancesConfigured')}
+                  <div className="settings-notice">
+                    <Info className="mt-0.5 size-4 shrink-0 text-text-disabled" />
+                    <p className="settings-notice-body">
+                      {tSetting('noInstancesConfigured')}
+                    </p>
                   </div>
                 )}
                 {instances.map((instance, index) => (
@@ -361,15 +366,15 @@ const SettingModelV2: FC = () => {
                   />
                 ))}
                 {!readOnly && (
-                  <div className="z-10 border-border-button py-4">
+                  <div className="z-10">
                     <button
                       type="button"
-                      className="w-full flex items-center justify-center gap-2 px-3 py-1 rounded-md border border-dashed border-border-button text-text-secondary hover:bg-bg-input hover:text-text-primary transition-colors"
+                      className="flex h-8 w-full items-center justify-center gap-2 rounded-[2px] border border-dashed border-border-button px-3 text-content-secondary transition-colors hover:border-accent-color hover:bg-accent-primary-5 hover:text-accent-primary"
                       onClick={addDraft}
                       data-testid="add-instance-bottom"
                     >
                       <Plus className="size-4" />
-                      <span className="text-sm">
+                      <span className="text-xs font-medium">
                         {tSetting('addInstanceText')}
                       </span>
                     </button>

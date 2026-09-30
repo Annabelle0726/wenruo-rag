@@ -932,6 +932,303 @@
     );
   }
 
+  /* ==========================================================================
+     Settings · 设置模块的共用外壳
+
+     设置页此前把同一个 `ceramic-relief` 用在了从指标格子到导航行的所有元素上，
+     于是"表面"不再表示任何层级：每一块都是同一张卡，边界反而看不清，整页读作
+     一大片灰白。这里把设置模块的表面收敛成四种，并且只用两种手段——1px 细线
+     和一个中性色阶：
+       section  分区：细线框、无填充（表格、表单组、用量块）
+       tile     安静的表面：细线 + 一档中性底（指标格、空态、说明）
+       notice   空态/失败态：与 tile 同底，带图标位
+       table    数据表：细线框 + 表头带 + 斑马行 + 统一行高
+     颜色全部取自既有 token（--cable-hairline / --cable-surface-muted /
+     --table-* / --accent-color-soft），因此明暗两套主题不需要第二份定义，
+     也不会出现"暗色下比页面更亮的一块砖"。 */
+  .settings-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-height: 0;
+    padding: 1rem 1.25rem 1.25rem;
+  }
+
+  /* 目的页标题：与外壳的 56px 顶栏、32px 上下文栏同一套克制关系 —— 18px/600
+     足够作为面板内的第一层，又不会在已经有两级外壳的情况下变成第二个页头。 */
+  .settings-title {
+    color: var(--content-primary);
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .settings-description {
+    color: var(--content-secondary);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  /* 分区：只有一条 1px 细线，没有填充，所以它划出的是"范围"而不是"又一张卡"。 */
+  .settings-section {
+    overflow: hidden;
+    border: 1px solid var(--cable-hairline);
+    border-radius: 2px;
+    background-color: transparent;
+  }
+
+  .settings-section-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    border-bottom: 1px solid var(--cable-hairline);
+  }
+
+  .settings-section-title {
+    color: var(--content-primary);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .settings-section-hint {
+    color: var(--content-secondary);
+    font-size: 12px;
+  }
+
+  .settings-section-body {
+    padding: 0.875rem;
+  }
+
+  /* 安静的表面：一档中性底 + 细线。指标格、设置说明、空态都用它，所以它们之间
+     不存在"哪个更重要"的颜色暗示，重要性由文字层级和位置表达。 */
+  .settings-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    border: 1px solid var(--cable-hairline);
+    border-radius: 2px;
+    background-color: var(--cable-surface-muted);
+    padding: 0.75rem;
+  }
+
+  .settings-tile-label {
+    color: var(--content-secondary);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .settings-tile-value {
+    color: var(--content-primary);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .settings-tile-hint {
+    color: var(--content-tertiary);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .settings-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    border: 1px solid var(--cable-hairline);
+    border-radius: 2px;
+    background-color: var(--cable-surface-muted);
+    padding: 0.875rem;
+  }
+
+  .settings-notice-title {
+    color: var(--content-primary);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .settings-notice-body {
+    color: var(--content-secondary);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  /* 数据表：一条细线划定表格，表头带 + 斑马行 + 固定行高承担可读性。行高固定
+     也是角色标签与角色选择器能对齐的前提——两者都是 32px 的控件。
+     这三个类写成双类：`Table` 原语自己带了 `bg-bg-card` / `h-14` / `px-4 py-3`
+     等工具类，而 twMerge 不认识自定义类名、不会替我们摘掉它们，只有提高选择器
+     权重才能让表格的统一几何真正生效（行高、内衬、表头文字色）。 */
+  .settings-table.settings-table {
+    position: relative;
+    width: 100%;
+    overflow: auto;
+    border: 1px solid var(--table-border);
+    border-radius: 2px;
+    background-color: var(--table-row-base);
+    scrollbar-width: thin;
+  }
+
+  .settings-table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.5rem 0.875rem;
+    border-bottom: 1px solid var(--table-border);
+    background-color: var(--cable-surface-muted);
+  }
+
+  .settings-table-head-cell.settings-table-head-cell {
+    height: 2.5rem;
+    padding: 0 0.875rem;
+    color: var(--table-head-ink);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+
+  .settings-table-row.settings-table-row {
+    height: 2.75rem;
+    border-bottom: 1px solid var(--table-border);
+    background-color: var(--table-row-base);
+  }
+
+  .settings-table-row.settings-table-row:nth-child(even) {
+    background-color: var(--table-row-alternate);
+  }
+
+  .settings-table-row.settings-table-row:hover {
+    background-color: var(--table-row-hover);
+  }
+
+  .settings-table-cell.settings-table-cell {
+    height: 2.75rem;
+    padding: 0 0.875rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+  }
+
+  /* `Table` 原语给首列 24px、末列 24px 的内衬（`first-of-type:pl-6`），而设置表格的
+     格子统一 14px —— 与分区标题同一条竖线。原语那两条也是 0,2,0 权重且在后，所以
+     这里必须再高一级（0,3,0）才能把内衬收回到同一条网格线上。 */
+  .settings-table-head-cell.settings-table-head-cell:first-of-type,
+  .settings-table-cell.settings-table-cell:first-of-type {
+    padding-inline-start: 0.875rem;
+  }
+
+  .settings-table-head-cell.settings-table-head-cell:last-of-type,
+  .settings-table-cell.settings-table-cell:last-of-type {
+    padding-inline-end: 0.875rem;
+  }
+
+  /* 表单节奏：标签、控件、说明三段固定间距；横向字段的标签列宽度固定，所以一行
+     里所有控件左边缘对齐，中英文标签都不会把控件推来推去。 */
+  .settings-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    min-width: 0;
+  }
+
+  .settings-field-row {
+    display: grid;
+    grid-template-columns: 9.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .settings-field-label {
+    color: var(--content-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .settings-field-hint {
+    color: var(--content-tertiary);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  /* 必填标记固定在标签右上角，因此有它没它都不移动标签本身。 */
+  .settings-required {
+    color: rgb(var(--state-error));
+    margin-inline-end: 0.125rem;
+  }
+
+  /* 小方标签：角色、能力、维度共用一种形状与高度，表格里因此不会出现三种
+     高度不同的"胶囊"。 */
+  .settings-tag {
+    display: inline-flex;
+    align-items: center;
+    height: 1.25rem;
+    padding-inline: 0.375rem;
+    border: 1px solid var(--cable-hairline);
+    border-radius: 2px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  /* 设置侧栏：一级项、二级项、选中态各只有一种表达，并且选中态在两级上用同一种
+     语言——左侧 2px 品牌色竖标 + 一档中性底，因此层级靠缩进读，不靠颜色猜。
+     一级项的水平内衬与对齐由调用方给出（紧凑屏幕上要摘掉它们），这里只固定
+     高度、墨色、圆角与选中态。 */
+  .settings-rail-item.settings-rail-item {
+    position: relative;
+    gap: 0.625rem;
+    height: 2.25rem;
+    border-radius: 2px;
+    color: var(--content-secondary);
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .settings-rail-item.settings-rail-item:hover {
+    background-color: var(--surface-hover-bg);
+    color: var(--content-primary);
+  }
+
+  .settings-rail-item.settings-rail-item:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--accent-color);
+  }
+
+  .settings-rail-item-active.settings-rail-item-active {
+    background-color: var(--cable-surface-muted);
+    color: var(--content-primary);
+    font-weight: 600;
+    box-shadow: inset 2px 0 0 var(--accent-color);
+  }
+
+  .settings-rail-child.settings-rail-child {
+    justify-content: flex-start;
+    height: 1.75rem;
+    padding-inline: 0.5rem;
+    border-radius: 2px;
+    color: var(--content-secondary);
+    font-size: 13px;
+    font-weight: 400;
+  }
+
+  .settings-rail-child.settings-rail-child:hover {
+    background-color: var(--surface-hover-bg);
+    color: var(--content-primary);
+  }
+
+  .settings-rail-child-active.settings-rail-child-active {
+    background-color: var(--accent-color-soft);
+    color: var(--accent-color);
+    font-weight: 500;
+  }
+
   .card-interactive {
     cursor: pointer;
     transition:

@@ -41,37 +41,37 @@ export function ReadModelNotice({
   const { t } = useTranslation();
 
   return (
-    <div
-      className="ceramic-relief flex flex-col gap-3 rounded-[2px] p-4"
-      data-testid={testId}
-    >
-      <div className="flex items-start gap-2">
-        <LucideCircleDashed className="mt-0.5 size-4 shrink-0 text-text-disabled" />
-        <div className="flex min-w-0 flex-col gap-1">
-          <p className="text-sm text-text-primary">
-            {t(
-              failed
-                ? 'usage.readModelUnavailableTitle'
-                : 'usage.readModelEmptyTitle',
-            )}
-          </p>
-          <p className="text-xs text-text-secondary">
-            {t(
-              failed
-                ? 'usage.readModelUnavailableDescription'
-                : 'usage.readModelEmptyDescription',
-            )}
-          </p>
-        </div>
-      </div>
+    <div className="settings-notice" data-testid={testId}>
+      <LucideCircleDashed className="mt-0.5 size-4 shrink-0 text-text-disabled" />
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <p className="settings-notice-title">
+          {t(
+            failed
+              ? 'usage.readModelUnavailableTitle'
+              : 'usage.readModelEmptyTitle',
+          )}
+        </p>
+        <p className="settings-notice-body">
+          {t(
+            failed
+              ? 'usage.readModelUnavailableDescription'
+              : 'usage.readModelEmptyDescription',
+          )}
+        </p>
 
-      {failed && (
-        <div>
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={onRetry}>
-            {t('common.retry')}
-          </Button>
-        </div>
-      )}
+        {failed && (
+          <div className="pt-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 text-xs"
+              onClick={onRetry}
+            >
+              {t('common.retry')}
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

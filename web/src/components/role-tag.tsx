@@ -13,8 +13,11 @@ interface RoleTagProps {
  * Read-only tag showing a tenant role.
  *
  * Styling comes from `getRoleDisplayConfig` so every role render in the app
- * shares one mapping. `rounded-[2px]` follows the industrial squared-corner
- * token (`--radius: 2px`) rather than the shared Badge's `rounded-full`.
+ * shares one mapping. The SHAPE comes from `.settings-tag` — the settings
+ * module's one tag geometry — plus that mapping's own tint, so a role tag, a
+ * capability tag and a filter chip are the same object in three colours and a
+ * column of roles cannot be three different heights. Every consumer of this
+ * component is a settings surface.
  */
 const RoleTag = ({ role, className }: RoleTagProps) => {
   const { t } = useTranslation();
@@ -24,11 +27,7 @@ const RoleTag = ({ role, className }: RoleTagProps) => {
     <span
       data-testid="role-tag"
       data-role={role ?? ''}
-      className={cn(
-        'inline-flex items-center rounded-[2px] border px-2 py-0.5 text-xs font-medium transition-colors',
-        badgeClass,
-        className,
-      )}
+      className={cn('settings-tag', badgeClass, className)}
     >
       {t(labelKey)}
     </span>

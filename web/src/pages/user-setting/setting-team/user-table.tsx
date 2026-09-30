@@ -66,7 +66,7 @@ const UserTable = ({ searchUser }: { searchUser: string }) => {
   const { deleteTenantUser } = useHandleDeleteUser();
   // Only a workspace manager may change the roster, and the owner is never
   // removable. Showing the control to anyone else invites a click that the
-  // server refuses with 108 â€” including the window before `/users/me` reports the
+  // server refuses with 108 â€?including the window before `/users/me` reports the
   // caller's role, which is why the controls wait for a known one.
   const readOnly = !canRenderTenantControls(userInfo?.role);
   const { updateTenantUserRole } = useUpdateTenantUserRole();
@@ -125,66 +125,85 @@ const UserTable = ({ searchUser }: { searchUser: string }) => {
     }
   };
   return (
-    <div className="glass-panel rounded-2xl border-cable-hairline">
-      <div className="flex items-center gap-2 px-4 pt-4">
-        <span className="text-sm text-text-secondary">
-          {t('setting.department')}
-        </span>
-        <Select
-          value={departmentFilter || undefined}
-          onValueChange={(value) =>
-            setDepartmentFilter(value === ALL_DEPARTMENTS ? '' : value)
-          }
-        >
-          <SelectTrigger
-            className="ceramic-field h-8 w-40"
-            data-testid="department-filter"
+    <div>
+      {/* The filter row belongs to the table, not to a card around it: it sits on
+          the table's own top edge, so "these rows, filtered this way" is one
+          object instead of a framed control above a framed table. */}
+      <div className="settings-table-toolbar">
+        <label className="flex items-center gap-2">
+          <span className="settings-field-label">
+            {t('setting.department')}
+          </span>
+          <Select
+            value={departmentFilter || undefined}
+            onValueChange={(value) =>
+              setDepartmentFilter(value === ALL_DEPARTMENTS ? '' : value)
+            }
           >
-            <SelectValue placeholder={t('setting.allDepartments')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_DEPARTMENTS}>
-              {t('setting.allDepartments')}
-            </SelectItem>
-            {departments.map((department) => (
-              <SelectItem key={department.id} value={department.id}>
-                {department.name}
+            <SelectTrigger
+              className="ceramic-field h-8 w-40"
+              data-testid="department-filter"
+            >
+              <SelectValue placeholder={t('setting.allDepartments')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_DEPARTMENTS}>
+                {t('setting.allDepartments')}
               </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+              {departments.map((department) => (
+                <SelectItem key={department.id} value={department.id}>
+                  {department.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
       </div>
-      <Table rootClassName="bg-transparent">
+      <Table
+        rootClassName="settings-table [&_td]:py-0 [&_th]:py-0 [&_th]:whitespace-nowrap"
+        className="table-fixed [&_td]:overflow-hidden"
+      >
         <TableHeader className="bg-table-header">
-          <TableRow className="border-cable-hairline hover:bg-transparent">
-            <TableHead className="h-12 px-4">{t('common.name')}</TableHead>
-            <TableHead className="h-12 px-4">
+          <TableRow className="border-b border-table-border hover:bg-table-header">
+            <TableHead className="settings-table-head-cell">
+              {t('common.name')}
+            </TableHead>
+            <TableHead className="settings-table-head-cell">
               <div className="flex items-center gap-1">
                 {t('setting.updateDate')}
                 <Button
                   variant="ghost"
                   size="icon-xs"
                   onClick={toggleSortOrder}
+                  aria-label={t('setting.updateDate')}
                 >
                   {renderSortIcon()}
                 </Button>
               </div>
             </TableHead>
-            <TableHead className="h-12 px-4">{t('setting.email')}</TableHead>
-            <TableHead className="h-12 px-4">
+            <TableHead className="settings-table-head-cell">
+              {t('setting.email')}
+            </TableHead>
+            <TableHead className="settings-table-head-cell">
               {t('setting.department')}
             </TableHead>
-            <TableHead className="h-12 px-4">{t('setting.title')}</TableHead>
-            <TableHead className="h-12 px-4">{t('setting.role')}</TableHead>
-            <TableHead className="h-12 px-4">{t('common.action')}</TableHead>
+            <TableHead className="settings-table-head-cell">
+              {t('setting.title')}
+            </TableHead>
+            <TableHead className="settings-table-head-cell">
+              {t('setting.role')}
+            </TableHead>
+            <TableHead className="settings-table-head-cell">
+              {t('common.action')}
+            </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className="bg-transparent">
+        <TableBody>
           {loading ? (
-            <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center">
-                <div className="flex items-center justify-center">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+            <TableRow className="settings-table-row border-0 hover:bg-transparent">
+              <TableCell colSpan={7} className="settings-table-cell">
+                <div className="flex items-center justify-center py-6">
+                  <div className="size-4 animate-spin rounded-[50%] border-2 border-solid border-content-tertiary border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
                 </div>
               </TableCell>
             </TableRow>
@@ -192,10 +211,10 @@ const UserTable = ({ searchUser }: { searchUser: string }) => {
             sortedData.map((record) => (
               <TableRow
                 key={record.user_id}
-                className="ceramic-list-row border-cable-hairline"
+                className="settings-table-row"
               >
-                <TableCell className="p-4">
-                  <div className="flex gap-1 items-center">
+                <TableCell className="settings-table-cell">
+                  <div className="flex items-center gap-1.5">
                     {/* A person's mark, never the first letter of the nickname:
                         the name is printed right beside it. */}
                     <CardIdentityIcon
@@ -204,21 +223,25 @@ const UserTable = ({ searchUser }: { searchUser: string }) => {
                       className="size-4"
                       iconClassName="size-3"
                     />
-                    <SearchHighlight
-                      text={record.nickname}
-                      query={searchUser}
-                    />
+                    <span className="truncate">
+                      <SearchHighlight
+                        text={record.nickname}
+                        query={searchUser}
+                      />
+                    </span>
                   </div>
                 </TableCell>
-                <TableCell className="p-4">
+                <TableCell className="settings-table-cell font-mono text-xs text-content-secondary">
                   {formatDate(record.update_date)}
                 </TableCell>
-                <TableCell className="p-4">
-                  <SearchHighlight text={record.email} query={searchUser} />
+                <TableCell className="settings-table-cell text-content-secondary">
+                  <span className="block truncate">
+                    <SearchHighlight text={record.email} query={searchUser} />
+                  </span>
                 </TableCell>
-                <TableCell className="p-4">
+                <TableCell className="settings-table-cell">
                   {readOnly || record.is_owner ? (
-                    <span className="text-sm text-text-secondary">
+                    <span className="text-sm text-content-secondary">
                       {record.department_name ?? '-'}
                     </span>
                   ) : (
@@ -236,12 +259,10 @@ const UserTable = ({ searchUser }: { searchUser: string }) => {
                     </div>
                   )}
                 </TableCell>
-                <TableCell className="p-4">
-                  <span className="text-sm text-text-secondary">
-                    {record.title ?? '-'}
-                  </span>
+                <TableCell className="settings-table-cell text-content-secondary">
+                  <span className="block truncate">{record.title ?? '-'}</span>
                 </TableCell>
-                <TableCell className="p-4">
+                <TableCell className="settings-table-cell">
                   {/*
                     The role picker belongs to rows the server will actually
                     reassign: never the caller's own row (`PUT .../role` refuses
@@ -261,8 +282,10 @@ const UserTable = ({ searchUser }: { searchUser: string }) => {
                         updateTenantUserRole({ userId: record.user_id, role })
                       }
                     >
+                      {/* Same 32px control as the tag beside it, so the column
+                          reads as one line whether or not the row is editable. */}
                       <SelectTrigger
-                        className="h-8 w-28"
+                        className="ceramic-field h-8 w-28"
                         data-testid={`member-role-${record.user_id}`}
                       >
                         <SelectValue />
@@ -278,40 +301,42 @@ const UserTable = ({ searchUser }: { searchUser: string }) => {
                     </Select>
                   )}
                 </TableCell>
-                <TableCell className="p-4">
-                  {readOnly ||
-                  record.is_owner ||
-                  record.user_id === userInfo?.id ? null : (
-                    <ConfirmDeleteDialog
-                      title={t('deleteModal.delMember')}
-                      onOk={async () => {
-                        await deleteTenantUser({
-                          userId: record.user_id,
-                        });
-                        return;
-                      }}
-                      content={{
-                        node: (
-                          <ConfirmDeleteDialogNode
-                            avatar={{
-                              avatar: record.avatar,
-                              name: record.nickname,
-                              isPerson: true,
-                            }}
-                            name={record.email}
-                          ></ConfirmDeleteDialogNode>
-                        ),
-                      }}
-                    >
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 p-0 hover:bg-state-error-5 hover:text-state-error"
+                <TableCell className="settings-table-cell">
+                  <div className="flex justify-end">
+                    {readOnly ||
+                    record.is_owner ||
+                    record.user_id === userInfo?.id ? null : (
+                      <ConfirmDeleteDialog
+                        title={t('deleteModal.delMember')}
+                        onOk={async () => {
+                          await deleteTenantUser({
+                            userId: record.user_id,
+                          });
+                          return;
+                        }}
+                        content={{
+                          node: (
+                            <ConfirmDeleteDialogNode
+                              avatar={{
+                                avatar: record.avatar,
+                                name: record.nickname,
+                                isPerson: true,
+                              }}
+                              name={record.email}
+                            ></ConfirmDeleteDialogNode>
+                          ),
+                        }}
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </ConfirmDeleteDialog>
-                  )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 p-0 text-content-tertiary hover:bg-state-error-5 hover:text-state-error"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </ConfirmDeleteDialog>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))

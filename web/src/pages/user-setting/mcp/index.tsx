@@ -101,7 +101,7 @@ export default function McpServer() {
       header={
         <header className="flex flex-row gap-1.5 justify-between items-end">
           <div>
-            <h2 className="text-text-primary text-2xl font-medium">
+            <h2 className="settings-title">
               {t('mcp.mcpServers')}
             </h2>
 

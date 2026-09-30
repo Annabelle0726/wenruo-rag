@@ -44,9 +44,11 @@ export function ModelRow({
     <button
       type="button"
       className={cn(
-        'size-6 flex items-center justify-center rounded-full transition-colors text-text-secondary',
+        'flex size-7 items-center justify-center rounded-[2px] border border-cable-hairline text-content-secondary transition-colors',
         // Removing a model: the ink turns to the error colour under the pointer.
-        isAdded && 'hover:bg-state-error-5 hover:text-state-error',
+        isAdded
+          ? 'hover:border-state-error hover:bg-state-error-5 hover:text-state-error'
+          : 'hover:border-accent-color hover:bg-accent-primary-5 hover:text-accent-primary',
       )}
       onClick={isAdded ? undefined : onAdd}
       aria-label={isAdded ? `Remove ${model.name}` : `Add ${model.name}`}
@@ -56,18 +58,18 @@ export function ModelRow({
   );
 
   return (
+    // A catalog row: fixed height so a column of them is a table without being
+    // one, the name on the left, the model types after it and the row's own
+    // actions on the right — where the batch controls above them also sit.
     <li
-      key={model.name}
-      className="ceramic-list-row group flex items-center justify-between gap-3 p-3 border-b border-cable-hairline last:border-b-0"
+      className="group flex h-11 items-center justify-between gap-3 px-3.5 transition-colors hover:bg-cable-surface-muted"
       data-testid={`models-row-${model.name}`}
     >
-      <div className="flex gap-1 min-w-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="font-medium text-sm text-text-primary truncate">
-            {model.name}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-1">
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="truncate text-[13px] font-medium text-content-primary">
+          {model.name}
+        </span>
+        <div className="flex min-w-0 flex-wrap items-center gap-1">
           <ModelTypeBadges
             types={model.model_types ?? []}
             showEdit={!hideActions}
@@ -78,7 +80,7 @@ export function ModelRow({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex shrink-0 items-center gap-1.5">
         {/* Verification calls the admin-only connection endpoint, so it goes
             with the rest of the actions. */}
         {!hideActions && (

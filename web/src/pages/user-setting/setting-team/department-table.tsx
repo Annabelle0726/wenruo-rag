@@ -63,78 +63,83 @@ const DepartmentTable = ({ readOnly }: { readOnly: boolean }) => {
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      {departments.map((department) => (
-        <div
-          key={department.id}
-          className="ceramic-list-row flex items-center gap-2 rounded-md px-3 py-2"
-          data-testid={`department-row-${department.id}`}
-        >
-          {editingId === department.id ? (
-            <>
-              <Input
-                value={editingName}
-                onChange={(e) => setEditingName(e.target.value)}
-                className="ceramic-field h-8 flex-1"
-                autoFocus
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                aria-label={t('common.ok')}
-                onClick={handleRename}
-              >
-                <Check className="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                aria-label={t('common.cancel')}
-                onClick={() => setEditingId(null)}
-              >
-                <X className="size-4" />
-              </Button>
-            </>
-          ) : (
-            <>
-              <span className="flex-1 text-sm text-text-primary">
-                {department.name}
-              </span>
-              {!readOnly && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8"
-                    aria-label={t('setting.renameDepartment')}
-                    onClick={() => {
-                      setEditingId(department.id);
-                      setEditingName(department.name);
-                    }}
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
-                  <ConfirmDeleteDialog onOk={() => remove(department.id)}>
+    // The same row geometry the roster tables use (44px rows, a hairline between
+    // them, actions on the right), so a department list and a member list read as
+    // two views of one settings module rather than two different products.
+    <div className="flex flex-col">
+      <ul className="divide-y divide-cable-hairline">
+        {departments.map((department) => (
+          <li
+            key={department.id}
+            className="flex h-11 items-center gap-2 px-3.5"
+            data-testid={`department-row-${department.id}`}
+          >
+            {editingId === department.id ? (
+              <>
+                <Input
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  className="ceramic-field h-8 flex-1"
+                  autoFocus
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-content-tertiary hover:text-text-primary"
+                  aria-label={t('common.ok')}
+                  onClick={handleRename}
+                >
+                  <Check className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-content-tertiary hover:text-text-primary"
+                  aria-label={t('common.cancel')}
+                  onClick={() => setEditingId(null)}
+                >
+                  <X className="size-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <span className="flex-1 truncate text-sm text-text-primary">
+                  {department.name}
+                </span>
+                {!readOnly && (
+                  <>
                     <Button
-                      variant="delete"
+                      variant="ghost"
                       size="icon"
-                      className="size-8"
-                      aria-label={t('setting.deleteDepartment')}
+                      className="size-8 text-content-tertiary hover:text-text-primary"
+                      aria-label={t('setting.renameDepartment')}
+                      onClick={() => {
+                        setEditingId(department.id);
+                        setEditingName(department.name);
+                      }}
                     >
-                      <Trash2 className="size-4" />
+                      <Pencil className="size-4" />
                     </Button>
-                  </ConfirmDeleteDialog>
-                </>
-              )}
-            </>
-          )}
-        </div>
-      ))}
+                    <ConfirmDeleteDialog onOk={() => remove(department.id)}>
+                      <Button
+                        variant="delete"
+                        size="icon"
+                        className="size-8"
+                        aria-label={t('setting.deleteDepartment')}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </ConfirmDeleteDialog>
+                  </>
+                )}
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
 
       {readOnly ? null : (
-        <div className="flex items-center gap-2 px-3 py-2">
+        <div className="flex items-center gap-2 border-t border-cable-hairline bg-cable-surface-muted px-3.5 py-2">
           <Input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
@@ -145,7 +150,7 @@ const DepartmentTable = ({ readOnly }: { readOnly: boolean }) => {
           <Button
             variant="outline"
             size="sm"
-            className="shrink-0"
+            className="h-8 shrink-0"
             data-testid="add-department"
             onClick={handleCreate}
           >

@@ -11,33 +11,52 @@ jest.mock('@/hooks/use-llm-request', () => ({
   useFetchAvailableProviders: () => ({ data: [] }),
 }));
 
-// The chips on this page were flat grey blocks, and the active tag filter painted
-// the theme's ink (black in light mode) — both of which read as a different
-// material from the toolbars around them.
+// Every chip on this surface is the settings module's own tag: one squared shape,
+// one hairline, and the brand tint reserved for the SELECTED filter. The previous
+// chips were flat grey blocks in one state and the theme's ink in the other, which
+// read as a different material from the toolbars around them.
 describe('model settings chips', () => {
-  it('renders a model type as a mini ceramic badge', () => {
+  it('renders a model type as a settings tag', () => {
     const { container } = render(
       <ModelTypeBadges types={['chat']} showEdit={false} />,
     );
 
-    const badge = container.querySelector('.ceramic-badge');
+    const badge = container.querySelector('.settings-tag');
 
     expect(badge).not.toBeNull();
-    expect(badge?.className).not.toMatch(/bg-bg-card|bg-text-primary/);
+    expect(badge?.className).not.toMatch(
+      /bg-bg-card|bg-text-primary|rounded-full/,
+    );
   });
 
-  it('marks the active tag filter with the brand fill and idles the rest', () => {
+  it('marks the active tag filter with the brand tint and idles the rest', () => {
     const { rerender } = render(
-      <TagFilterButton label="All" count={3} active />,
+      <TagFilterButton label="All" count={3} active onClick={jest.fn()} />,
     );
 
-    expect(screen.getByRole('button').className).toMatch(/ceramic-cta/);
+    const active = screen.getByRole('button');
 
-    rerender(<TagFilterButton label="All" count={3} active={false} />);
+    expect(active.className).toMatch(/settings-tag/);
+    expect(active.className).toMatch(/bg-accent-primary-5/);
+    expect(active.className).toMatch(/text-accent-primary/);
+    expect(active).toHaveAttribute('aria-pressed', 'true');
 
-    expect(screen.getByRole('button').className).toMatch(/ceramic-badge/);
-    expect(screen.getByRole('button').className).not.toMatch(
-      /bg-text-primary|bg-bg-card/,
+    rerender(
+      <TagFilterButton
+        label="All"
+        count={3}
+        active={false}
+        onClick={jest.fn()}
+      />,
     );
+
+    const idle = screen.getByRole('button');
+
+    expect(idle.className).toMatch(/settings-tag/);
+    // The idle chip may carry the brand tint on HOVER only: an unprefixed fill
+    // would make "not selected" look selected.
+    expect(idle.className).not.toMatch(/(^|\s)bg-accent-primary-5/);
+    expect(idle.className).not.toMatch(/bg-text-primary/);
+    expect(idle).toHaveAttribute('aria-pressed', 'false');
   });
 });

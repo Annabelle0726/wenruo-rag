@@ -61,7 +61,9 @@ const TenantTable = ({ searchTerm }: { searchTerm: string }) => {
     if (searchTerm) {
       filtered = data.filter(
         (tenant) =>
-          (tenant.name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (tenant.name ?? '')
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
           tenant.nickname.toLowerCase().includes(searchTerm.toLowerCase()) ||
           tenant.email.toLowerCase().includes(searchTerm.toLowerCase()),
       );
@@ -103,44 +105,53 @@ const TenantTable = ({ searchTerm }: { searchTerm: string }) => {
   };
 
   return (
-    <div className="glass-panel rounded-2xl border-cable-hairline">
-      <Table rootClassName="bg-transparent">
-        <TableHeader className="bg-table-header">
-          <TableRow className="border-cable-hairline hover:bg-transparent">
-            <TableHead className="h-12 px-4">{t('common.name')}</TableHead>
-            <TableHead className="h-12 px-4">
-              <div className="flex items-center gap-1">
-                {t('setting.updateDate')}
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={toggleSortOrder}
-                >
-                  {renderSortIcon()}
-                </Button>
-              </div>
-            </TableHead>
-            <TableHead className="h-12 px-4">{t('setting.email')}</TableHead>
-            <TableHead className="h-12 px-4">{t('setting.role')}</TableHead>
-            <TableHead className="h-12 px-4">{t('common.action')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody className="bg-transparent">
-          {loading ? (
-            <TableRow>
-              <TableCell colSpan={5} className="h-24 text-center">
-                <div className="flex items-center justify-center">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-                </div>
-              </TableCell>
-            </TableRow>
-          ) : sortedData && sortedData.length > 0 ? (
-            sortedData.map((tenant) => (
-              <TableRow
-                key={tenant.tenant_id}
-                className="ceramic-list-row border-cable-hairline"
+    <Table
+      rootClassName="settings-table [&_td]:py-0 [&_th]:py-0 [&_th]:whitespace-nowrap"
+      className="table-fixed [&_td]:overflow-hidden"
+    >
+      <TableHeader className="bg-table-header">
+        <TableRow className="border-b border-table-border hover:bg-table-header">
+          <TableHead className="settings-table-head-cell">
+            {t('common.name')}
+          </TableHead>
+          <TableHead className="settings-table-head-cell">
+            <div className="flex items-center gap-1">
+              {t('setting.updateDate')}
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={toggleSortOrder}
+                aria-label={t('setting.updateDate')}
               >
-                <TableCell className="p-4 flex gap-1 items-center">
+                {renderSortIcon()}
+              </Button>
+            </div>
+          </TableHead>
+          <TableHead className="settings-table-head-cell">
+            {t('setting.email')}
+          </TableHead>
+          <TableHead className="settings-table-head-cell">
+            {t('setting.role')}
+          </TableHead>
+          <TableHead className="settings-table-head-cell">
+            {t('common.action')}
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {loading ? (
+          <TableRow className="settings-table-row border-0 hover:bg-transparent">
+            <TableCell colSpan={5} className="settings-table-cell">
+              <div className="flex items-center justify-center py-6">
+                <div className="size-4 animate-spin rounded-[50%] border-2 border-solid border-content-tertiary border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+              </div>
+            </TableCell>
+          </TableRow>
+        ) : sortedData && sortedData.length > 0 ? (
+          sortedData.map((tenant) => (
+            <TableRow key={tenant.tenant_id} className="settings-table-row">
+              <TableCell className="settings-table-cell">
+                <div className="flex items-center gap-1.5">
                   {/* The workspace's own name, and the owner's mark beside it:
                       the row names a TEAM, so the owner's nickname is only the
                       fallback for a payload that carries no name. */}
@@ -150,86 +161,90 @@ const TenantTable = ({ searchTerm }: { searchTerm: string }) => {
                     className="size-4"
                     iconClassName="size-3"
                   />
-                  <SearchHighlight
-                    text={tenant.name || tenant.nickname}
-                    query={searchTerm}
-                  />
-                </TableCell>
-                <TableCell className="p-4">
-                  {formatDate(tenant.update_date)}
-                </TableCell>
-                <TableCell className="p-4">
+                  <span className="truncate">
+                    <SearchHighlight
+                      text={tenant.name || tenant.nickname}
+                      query={searchTerm}
+                    />
+                  </span>
+                </div>
+              </TableCell>
+              <TableCell className="settings-table-cell font-mono text-xs text-content-secondary">
+                {formatDate(tenant.update_date)}
+              </TableCell>
+              <TableCell className="settings-table-cell text-content-secondary">
+                <span className="block truncate">
                   <SearchHighlight text={tenant.email} query={searchTerm} />
-                </TableCell>
-                <TableCell className="p-4">
-                  <RoleTag role={tenant.role} />
-                </TableCell>
-                <TableCell className="p-4">
-                  {tenant.role === TenantRole.Invite ? (
-                    <div className="flex gap-2">
+                </span>
+              </TableCell>
+              <TableCell className="settings-table-cell">
+                <RoleTag role={tenant.role} />
+              </TableCell>
+              <TableCell className="settings-table-cell">
+                {tenant.role === TenantRole.Invite ? (
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="link"
+                      className="h-8 p-0 text-xs"
+                      onClick={handleAgree(tenant.tenant_id, true)}
+                    >
+                      {t(`setting.agree`)}
+                    </Button>
+                    <Button
+                      variant="link"
+                      className="h-8 p-0 text-xs"
+                      onClick={handleAgree(tenant.tenant_id, false)}
+                    >
+                      {t(`setting.refuse`)}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-end gap-3">
+                    {tenant.is_active ? (
+                      <span className="settings-tag border-status-available-border text-status-available-ink">
+                        {t('setting.currentWorkspace')}
+                      </span>
+                    ) : (
                       <Button
                         variant="link"
-                        className="p-0 h-auto"
-                        onClick={handleAgree(tenant.tenant_id, true)}
+                        className="h-8 p-0 text-xs"
+                        disabled={switching}
+                        onClick={() => setActiveTenant(tenant.tenant_id)}
                       >
-                        {t(`setting.agree`)}
+                        {t('setting.switchWorkspace')}
                       </Button>
+                    )}
+                    {/*
+                      Leaving is offered on the workspace you are in as well as
+                      on the others - otherwise a member could never quit the
+                      one they are stuck in - but never on a workspace the
+                      caller owns, which the server refuses to remove.
+                    */}
+                    {tenant.role === TenantRole.Owner ? null : (
                       <Button
-                        variant="link"
-                        className="p-0 h-auto"
-                        onClick={handleAgree(tenant.tenant_id, false)}
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 p-0 text-content-tertiary hover:text-text-primary"
+                        aria-label={t('setting.quit')}
+                        disabled={!user?.id}
+                        onClick={handleQuitTenantUser(
+                          user?.id,
+                          tenant.tenant_id,
+                        )}
                       >
-                        {t(`setting.refuse`)}
+                        <LogOut className="size-4" />
                       </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      {tenant.is_active ? (
-                        <span className="text-xs text-text-secondary">
-                          {t('setting.currentWorkspace')}
-                        </span>
-                      ) : (
-                        <Button
-                          variant="link"
-                          className="p-0 h-auto"
-                          disabled={switching}
-                          onClick={() => setActiveTenant(tenant.tenant_id)}
-                        >
-                          {t('setting.switchWorkspace')}
-                        </Button>
-                      )}
-                      {/*
-                        Leaving is offered on the workspace you are in as well as
-                        on the others - otherwise a member could never quit the
-                        one they are stuck in - but never on a workspace the
-                        caller owns, which the server refuses to remove.
-                      */}
-                      {tenant.role === TenantRole.Owner ? null : (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 p-0"
-                          aria-label={t('setting.quit')}
-                          disabled={!user?.id}
-                          onClick={handleQuitTenantUser(
-                            user?.id,
-                            tenant.tenant_id,
-                          )}
-                        >
-                          <LogOut />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))
-          ) : (
-            <EmptyTableRow colSpan={5} label={t('common.noData')} />
-          )}
-        </TableBody>
-      </Table>
-    </div>
+                    )}
+                  </div>
+                )}
+              </TableCell>
+            </TableRow>
+          ))
+        ) : (
+          <EmptyTableRow colSpan={5} label={t('common.noData')} />
+        )}
+      </TableBody>
+    </Table>
   );
 };
 

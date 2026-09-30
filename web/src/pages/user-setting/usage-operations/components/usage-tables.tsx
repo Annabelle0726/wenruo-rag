@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -34,7 +33,10 @@ import { getRoleDisplayConfig } from '@/utils/tenant-role';
 import { useTranslation } from 'react-i18next';
 import { formatCount, resolveCostDisplay } from './usage-format';
 
-const zebraRow = 'odd:bg-bg-list';
+/* One row language for every settings table: 44px rows, a hairline between them
+   and the house zebra pair, so a usage table and a roster table are the same
+   object instead of two dialects of a table. */
+const settingsRow = 'settings-table-row';
 
 /** A cost cell: the sum, or "Not available" - never `$0.00` without a price. */
 function CostCell({
@@ -68,13 +70,13 @@ function CostCell({
 function AccountingCells({ accounting }: { accounting: IUsageAccounting }) {
   return (
     <>
-      <TableCell className="text-end tabular-nums">
+      <TableCell className="settings-table-cell text-end tabular-nums">
         {formatCount(accounting.settled_tokens)}
       </TableCell>
-      <TableCell className="text-end tabular-nums">
+      <TableCell className="settings-table-cell text-end tabular-nums">
         {formatCount(accounting.outstanding_reserved_tokens)}
       </TableCell>
-      <TableCell className="text-end tabular-nums">
+      <TableCell className="settings-table-cell text-end tabular-nums">
         <CostCell
           micros={accounting.settled_estimated_cost_micros}
           coverage={accounting.settled_cost_coverage}
@@ -95,27 +97,32 @@ export function UsageSeriesTable({
   const { t } = useTranslation();
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>
+    <Table
+      rootClassName="settings-table [&_td]:py-0 [&_th]:py-0 [&_th]:whitespace-nowrap"
+      className="table-fixed [&_td]:overflow-hidden"
+    >
+      <TableHeader className="bg-table-header">
+        <TableRow className="border-b border-table-border hover:bg-table-header">
+          <TableHead className="settings-table-head-cell">
             {granularity === 'day' ? t('usage.day') : t('usage.month')}
           </TableHead>
-          <TableHead className="text-end">{t('usage.attemptedCalls')}</TableHead>
-          <TableHead className="text-end">{t('usage.settledTokens')}</TableHead>
-          <TableHead className="text-end">
+          <TableHead className="settings-table-head-cell text-end">
+            {t('usage.attemptedCalls')}
+          </TableHead>
+          <TableHead className="settings-table-head-cell text-end">{t('usage.settledTokens')}</TableHead>
+          <TableHead className="settings-table-head-cell text-end">
             {t('usage.outstandingTokens')}
           </TableHead>
-          <TableHead className="text-end">
+          <TableHead className="settings-table-head-cell text-end">
             {t('usage.settledEstimatedCost')}
           </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {buckets.map((bucket) => (
-          <TableRow key={bucket.period} className={zebraRow}>
-            <TableCell className="tabular-nums">{bucket.period}</TableCell>
-            <TableCell className="text-end tabular-nums">
+          <TableRow key={bucket.period} className={settingsRow}>
+            <TableCell className="settings-table-cell tabular-nums">{bucket.period}</TableCell>
+            <TableCell className="settings-table-cell text-end tabular-nums">
               {formatCount(bucket.attempted_calls)}
             </TableCell>
             <AccountingCells accounting={bucket.accounting} />
@@ -137,42 +144,49 @@ export function MemberUsageTable({ members }: { members: IMemberUsageRow[] }) {
   const { t } = useTranslation();
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>{t('usage.member')}</TableHead>
-          <TableHead>{t('setting.role')}</TableHead>
-          <TableHead className="text-end">{t('usage.attemptedCalls')}</TableHead>
-          <TableHead className="text-end">{t('usage.settledTokens')}</TableHead>
-          <TableHead className="text-end">
+    <Table
+      rootClassName="settings-table [&_td]:py-0 [&_th]:py-0 [&_th]:whitespace-nowrap"
+      className="table-fixed [&_td]:overflow-hidden"
+    >
+      <TableHeader className="bg-table-header">
+        <TableRow className="border-b border-table-border hover:bg-table-header">
+          <TableHead className="settings-table-head-cell">{t('usage.member')}</TableHead>
+          <TableHead className="settings-table-head-cell">{t('setting.role')}</TableHead>
+          <TableHead className="settings-table-head-cell text-end">
+            {t('usage.attemptedCalls')}
+          </TableHead>
+          <TableHead className="settings-table-head-cell text-end">{t('usage.settledTokens')}</TableHead>
+          <TableHead className="settings-table-head-cell text-end">
             {t('usage.outstandingTokens')}
           </TableHead>
-          <TableHead className="text-end">
+          <TableHead className="settings-table-head-cell text-end">
             {t('usage.settledEstimatedCost')}
           </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {members.map((member) => (
-          <TableRow key={member.user_id} className={zebraRow}>
-            <TableCell className="max-w-[220px] truncate">
+          <TableRow key={member.user_id} className={settingsRow}>
+            <TableCell className="settings-table-cell">
               {member.nickname || member.user_id}
             </TableCell>
-            <TableCell>
+            <TableCell className="settings-table-cell">
               <span className="flex items-center gap-2">
-                <Badge className="rounded-[2px]">
+                {/* The same tag the roster uses for a role, so a role reads the
+                    same in a settings table and in a usage table. */}
+                <span className="settings-tag text-content-secondary">
                   {/* A removed member has no role any more; the shared role helper
                       renders its neutral label rather than inventing one. */}
                   {t(getRoleDisplayConfig(member.role ?? undefined).labelKey)}
-                </Badge>
+                </span>
                 {!member.live_member && (
-                  <span className="text-xs text-text-disabled">
+                  <span className="settings-field-hint">
                     {t('usage.memberRemoved')}
                   </span>
                 )}
               </span>
             </TableCell>
-            <TableCell className="text-end tabular-nums">
+            <TableCell className="settings-table-cell text-end tabular-nums">
               {formatCount(member.accounting.attempted_calls)}
             </TableCell>
             <AccountingCells accounting={member.accounting} />
@@ -198,32 +212,37 @@ export function RecordedModelUsageTable({
   const { t } = useTranslation();
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>{t('usage.recordedModel')}</TableHead>
-          <TableHead className="text-end">{t('usage.attemptedCalls')}</TableHead>
-          <TableHead className="text-end">{t('usage.settledTokens')}</TableHead>
-          <TableHead className="text-end">
+    <Table
+      rootClassName="settings-table [&_td]:py-0 [&_th]:py-0 [&_th]:whitespace-nowrap"
+      className="table-fixed [&_td]:overflow-hidden"
+    >
+      <TableHeader className="bg-table-header">
+        <TableRow className="border-b border-table-border hover:bg-table-header">
+          <TableHead className="settings-table-head-cell">{t('usage.recordedModel')}</TableHead>
+          <TableHead className="settings-table-head-cell text-end">
+            {t('usage.attemptedCalls')}
+          </TableHead>
+          <TableHead className="settings-table-head-cell text-end">{t('usage.settledTokens')}</TableHead>
+          <TableHead className="settings-table-head-cell text-end">
             {t('usage.outstandingTokens')}
           </TableHead>
-          <TableHead className="text-end">
+          <TableHead className="settings-table-head-cell text-end">
             {t('usage.settledEstimatedCost')}
           </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {models.map((model) => (
-          <TableRow key={model.bucket} className={zebraRow}>
+          <TableRow key={model.bucket} className={settingsRow}>
             <TableCell
               className={cn(
-                'max-w-[260px] truncate',
+                'settings-table-cell',
                 model.recorded_model_name ? undefined : 'text-text-disabled',
               )}
             >
               {model.recorded_model_name ?? t('usage.modelUnrecorded')}
             </TableCell>
-            <TableCell className="text-end tabular-nums">
+            <TableCell className="settings-table-cell text-end tabular-nums">
               {formatCount(model.accounting.attempted_calls)}
             </TableCell>
             <AccountingCells accounting={model.accounting} />

@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-import { Badge } from '@/components/ui/badge';
 import { CardSkeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import {
@@ -97,23 +96,25 @@ function CapabilityTag({ capability }: { capability: string }) {
   const labelKey = CAPABILITY_LABEL_KEY[capability];
 
   return (
-    <Badge
-      className="rounded-[2px] px-1.5 py-0 text-[10px] font-normal leading-4"
+    <span
+      className="settings-tag text-content-secondary"
       data-testid="provider-capability"
     >
       {/* An unmapped capability keeps its RAW name rather than disappearing. */}
       {labelKey ? t(labelKey) : capability}
-    </Badge>
+    </span>
   );
 }
 
 /**
  * One provider, collapsed to a single row until a reader opens it.
  *
- * A collapsed card carries everything needed to choose: the provider, its type,
+ * A collapsed row carries everything needed to choose: the provider, its type,
  * its capabilities and how many models it serves. The connection detail and the
  * model list unfold underneath, which is what keeps a section with a dozen
- * providers readable.
+ * providers readable. Rows are rows, not cards: the list owns one hairline frame
+ * and the rows are separated by a hairline, so a dozen providers do not become a
+ * dozen outlined boxes.
  */
 function ProviderCard({ group }: { group: IProviderGroup }) {
   const { t } = useTranslation();
@@ -121,15 +122,12 @@ function ProviderCard({ group }: { group: IProviderGroup }) {
   const modelNames = group.models.map((model) => model.name).filter(Boolean);
 
   return (
-    <li
-      className="ceramic-relief rounded-[2px]"
-      data-testid={`provider-row-${group.providerName}`}
-    >
-      <div className="flex items-center gap-2 p-2.5">
+    <li data-testid={`provider-row-${group.providerName}`}>
+      <div className="flex items-center gap-2 px-3.5 py-3">
         <Button
           variant="ghost"
           size="icon"
-          className="size-6 shrink-0 p-0 text-text-secondary hover:text-text-primary"
+          className="size-6 shrink-0 p-0 text-content-tertiary hover:text-content-primary"
           aria-expanded={open}
           aria-label={t('usage.providerToggleDetails', {
             provider: group.providerName || t('usage.providerNameUnknown'),
@@ -142,18 +140,18 @@ function ProviderCard({ group }: { group: IProviderGroup }) {
           />
         </Button>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <span className="truncate text-sm text-text-primary">
+            <span className="truncate text-[13px] font-medium text-content-primary">
               {group.providerName || t('usage.providerNameUnknown')}
             </span>
-            <Badge className="shrink-0 rounded-[2px] px-1.5 py-0 text-[10px] font-normal leading-4">
+            <span className="settings-tag shrink-0 border-accent-color-soft bg-accent-primary-5 text-accent-primary">
               {t(KIND_TITLE_KEY[group.kind])}
-            </Badge>
+            </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1">
-            <span className="text-[11px] text-text-secondary">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="settings-field-hint">
               {t('setting.capabilities')}
             </span>
             {group.capabilities.length > 0 ? (
@@ -161,27 +159,27 @@ function ProviderCard({ group }: { group: IProviderGroup }) {
                 <CapabilityTag key={capability} capability={capability} />
               ))
             ) : (
-              <span className="text-[11px] text-text-disabled">
+              <span className="settings-field-hint">
                 {t('usage.providerCapabilityUnknown')}
               </span>
             )}
           </div>
         </div>
 
-        <span className="shrink-0 text-[11px] text-text-disabled">
+        <span className="settings-field-hint shrink-0 tabular-nums">
           {t('usage.providerModelCount', { count: group.models.length })}
         </span>
       </div>
 
       {open && (
-        <div className="flex flex-col gap-1.5 border-t border-cable-hairline px-3 py-2">
-          <p className="text-xs text-text-secondary">
+        <div className="flex flex-col gap-1 border-t border-cable-hairline px-3 py-2.5">
+          <p className="settings-field-hint">
             {t('usage.providerConfiguredModels', {
               count: group.models.length,
               models: modelNames.join(', ') || '-',
             })}
           </p>
-          <p className="text-xs text-text-disabled">
+          <p className="settings-field-hint">
             {t('usage.providerConnection', {
               instances: group.instances.join(', ') || '-',
             })}
@@ -189,7 +187,7 @@ function ProviderCard({ group }: { group: IProviderGroup }) {
           {/* A PLACEHOLDER, never a status: no health observation exists yet, so
               the row says so instead of showing an assumed "healthy". */}
           <p
-            className="text-[11px] text-text-disabled"
+            className="settings-field-hint"
             data-testid="provider-status-placeholder"
           >
             {t('usage.providerStatusNotObserved')}
@@ -225,23 +223,22 @@ function ProviderCategory() {
   }, [pathname]);
 
   const groups = useMemo(
-    () =>
-      groupByProvider(models).filter((group) => group.kind === kind),
+    () => groupByProvider(models).filter((group) => group.kind === kind),
     [kind, models],
   );
 
   return (
     <ProfileSettingWrapperCard
       header={
-        <header className="flex flex-col gap-1">
-          <h2 className="text-2xl font-medium text-text-primary">
-            {t(KIND_TITLE_KEY[kind])}
-          </h2>
-          <p className="text-xs text-text-secondary">{t(KIND_HINT_KEY[kind])}</p>
+        <header className="flex min-w-0 flex-col gap-0.5">
+          <h2 className="settings-title truncate">{t(KIND_TITLE_KEY[kind])}</h2>
+          <p className="settings-description truncate">
+            {t(KIND_HINT_KEY[kind])}
+          </p>
         </header>
       }
     >
-      <div className="flex flex-col gap-3 p-4">
+      <div className="settings-body">
         {loading && models.length === 0 ? (
           <CardSkeleton />
         ) : groups.length === 0 ? (
@@ -253,7 +250,7 @@ function ProviderCategory() {
           />
         ) : (
           <ul
-            className="flex flex-col gap-2"
+            className="settings-section divide-y divide-cable-hairline"
             data-testid={`provider-category-${kind}`}
           >
             {groups.map((group) => (
@@ -264,7 +261,7 @@ function ProviderCategory() {
 
         {/* What this category does NOT claim, stated where a reader would look for
             a health or balance column. */}
-        <p className="text-xs text-text-disabled">
+        <p className="settings-field-hint">
           {t('usage.providerCategoryCaveat')}
         </p>
       </div>

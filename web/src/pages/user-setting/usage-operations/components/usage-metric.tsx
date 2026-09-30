@@ -52,20 +52,17 @@ export function UsageMetricTile({
   testId?: string;
 }) {
   return (
-    <div
-      className="ceramic-relief flex flex-col gap-1 rounded-[2px] p-3"
-      data-testid={testId}
-    >
-      <span className="text-xs text-text-secondary">{label}</span>
+    <div className="settings-tile" data-testid={testId}>
+      <span className="settings-tile-label">{label}</span>
       <span
         className={cn(
-          'text-xl font-medium',
-          tone === 'outstanding' ? 'text-state-warning' : 'text-text-primary',
+          'settings-tile-value',
+          tone === 'outstanding' && 'text-state-warning',
         )}
       >
         {value}
       </span>
-      {hint && <span className="text-xs text-text-disabled">{hint}</span>}
+      {hint && <span className="settings-tile-hint">{hint}</span>}
     </div>
   );
 }
@@ -97,14 +94,14 @@ export function EstimatedCostTile({
       testId={testId}
       value={
         display.kind === 'unavailable' ? (
-          <span className="text-base text-text-disabled">
+          <span className="text-base font-medium text-text-disabled">
             {t('usage.costNotAvailable')}
           </span>
         ) : (
           <span className="flex items-baseline gap-1.5">
             {display.usd}
             {display.kind === 'partial' && (
-              <span className="text-xs text-state-warning">
+              <span className="text-xs font-medium text-state-warning">
                 {t('usage.costPartial')}
               </span>
             )}

@@ -100,8 +100,8 @@ export function SideBar() {
         </h1>
       </header>
 
-      <nav className="min-h-0 flex-1 overflow-auto mt-4 py-1">
-        <ul className="flex flex-col gap-1 px-2 md:px-4 md:gap-2">
+      <nav className="min-h-0 flex-1 overflow-auto py-1 mt-3">
+        <ul className="flex flex-col gap-0.5 px-2 md:px-3 md:gap-1">
           {sections.map((section) => {
             const isActiveSection = activeSection?.path === section.path;
             const expanded = isExpanded(section.path);
@@ -122,7 +122,7 @@ export function SideBar() {
                         section: sectionLabel(t, section.labelKey),
                       })}
                       aria-expanded={expanded}
-                      className="hidden size-6 shrink-0 p-0 text-text-secondary hover:text-text-primary md:flex"
+                      className="hidden size-6 shrink-0 p-0 text-content-tertiary hover:text-content-primary md:flex"
                       onClick={() => toggleSection(section.path)}
                       data-testid={`${section.testId}-toggle`}
                     >
@@ -134,17 +134,25 @@ export function SideBar() {
                       />
                     </Button>
                   ) : (
-                    <span className="hidden size-6 shrink-0 md:block" aria-hidden />
+                    <span
+                      className="hidden size-6 shrink-0 md:block"
+                      aria-hidden
+                    />
                   )}
 
+                  {/* One row height, one ink, one selected idiom for both levels:
+                      the section label is 14px (not 16px, which made the rail
+                      louder than the page it opens) and its selected state is the
+                      same 2px brand marker the child uses. */}
                   <Button
                     block
                     variant="ghost"
                     aria-label={sectionLabel(t, section.labelKey)}
                     aria-current={isActiveSection ? 'page' : undefined}
                     className={cn(
-                      'ceramic-nav-item relative h-10 min-w-0 flex-1 text-base max-md:size-10 max-md:p-0 max-md:justify-center justify-start gap-2.5 px-2 md:px-3',
-                      isActiveSection && 'ceramic-nav-item-active',
+                      'settings-rail-item justify-start px-2.5 max-md:size-9 max-md:justify-center max-md:p-0 md:px-3',
+                      'min-w-0 flex-1',
+                      isActiveSection && 'settings-rail-item-active',
                     )}
                     onClick={() => goTo(section.path)}
                     data-testid={section.testId}
@@ -162,7 +170,7 @@ export function SideBar() {
                     reads as belonging to the section above it. */}
                 {hasChildren && expanded && (
                   <ul
-                    className="ms-3 mt-1 hidden flex-col gap-0.5 border-s border-border-default ps-2 md:flex"
+                    className="ms-3.5 mt-0.5 hidden flex-col gap-0.5 border-s border-cable-hairline ps-2 md:flex"
                     data-testid={`${section.testId}-children`}
                   >
                     {section.children.map((child) => {
@@ -174,10 +182,8 @@ export function SideBar() {
                             variant="ghost"
                             aria-current={isActiveChild ? 'page' : undefined}
                             className={cn(
-                              'h-8 justify-start gap-2 rounded-[2px] px-2 text-sm font-normal text-text-secondary',
-                              'hover:bg-bg-input hover:text-text-primary',
-                              isActiveChild &&
-                                'bg-accent-primary-5 text-accent-primary',
+                              'settings-rail-child w-full',
+                              isActiveChild && 'settings-rail-child-active',
                             )}
                             onClick={() => goTo(child.path)}
                             data-testid={child.testId}
@@ -201,9 +207,9 @@ export function SideBar() {
         </ul>
       </nav>
 
-      <footer className="p-2 md:p-6 mt-auto">
-        <div className="hidden md:flex items-center gap-2 mb-6 justify-between">
-          <span className="text-xs text-accent-primary">{version}</span>
+      <footer className="mt-auto p-2 md:p-4">
+        <div className="mb-4 hidden items-center justify-between gap-2 md:flex">
+          <span className="settings-field-hint font-mono">{version}</span>
 
           <ThemeSwitch />
         </div>
@@ -213,7 +219,7 @@ export function SideBar() {
           size="lg"
           variant="transparent"
           aria-label={t('setting.logout')}
-          className="ceramic-relief h-10 rounded-full text-text-secondary hover:text-state-error max-md:size-10 max-md:p-0 max-md:mx-auto max-md:justify-center"
+          className="ceramic-relief h-9 text-content-secondary hover:text-state-error max-md:mx-auto max-md:size-9 max-md:justify-center max-md:p-0"
           onClick={() => logout()}
         >
           <LucideLogOut className="size-[1em] md:hidden" />

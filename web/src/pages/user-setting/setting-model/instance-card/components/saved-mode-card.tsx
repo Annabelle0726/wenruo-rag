@@ -135,14 +135,19 @@ export function SavedModeCard({
   const displayName = editedInstanceName || instanceName;
 
   return (
+    // One instance is one settings section: a hairline frame, a header row at the
+    // same gutter as every other settings head, and the editable body below it.
+    // The previous frame was a borderless `bg-bg-card` block, which is the same
+    // colour as the panel behind it in both themes, so a column of instances had
+    // no visible edges at all.
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="bg-bg-card px-5 py-3"
+      className="settings-section bg-cable-surface"
     >
       <CollapsibleTrigger asChild>
         <div
-          className={cn('flex items-center gap-1 w-full ', open ? 'mb-5' : '')}
+          className={cn('flex w-full items-center gap-1 px-4 py-3', open && 'pb-1')}
         >
           <div
             className="group w-[calc(100%-40px)] flex items-center flex-1 gap-2 cursor-pointer rounded-md"
@@ -207,7 +212,7 @@ export function SavedModeCard({
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent forceMount className="data-[state=closed]:hidden">
-        <div className="pb-4 flex flex-col gap-4">
+        <div className="flex flex-col gap-4 px-4 pb-4">
           <DynamicForm.Root
             key={`${providerName}-${instanceName}-false`}
             ref={formRef as RefObject<DynamicFormRef>}

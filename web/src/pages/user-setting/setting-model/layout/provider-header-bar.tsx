@@ -66,8 +66,10 @@ export function ProviderHeaderBar({
     // No background of its own: the panel it sits on is the surface now, and an
     // opaque strip across the top of it read as a second header. The bar is a
     // sibling of the scrolling list, not inside it, so nothing passes under it.
+    // Its height and ink match the settings panel header, so the provider name
+    // sits exactly where a destination's title sits on every other settings page.
     <div
-      className="flex items-center gap-2 px-4 py-3 border-b border-cable-hairline"
+      className="flex min-w-0 items-center gap-2 border-b border-cable-hairline px-5 py-3"
       data-testid={`provider-header-${providerName}`}
     >
       <LlmIcon
@@ -76,27 +78,29 @@ export function ProviderHeaderBar({
         height={24}
         imgClass="size-6 text-text-primary"
       />
-      <span className="font-medium text-text-primary">{providerName}</span>
+      <span className="truncate text-[15px] font-semibold text-content-primary">
+        {providerName}
+      </span>
       {apiLink && (
         <a
           href={apiLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-text-secondary hover:text-text-primary"
+          className="text-content-tertiary transition-colors hover:text-content-primary"
           aria-label={tSetting('docLink')}
         >
           <ArrowUpRight className="size-4" />
         </a>
       )}
-      <div className="w-5" />
+      <div className="w-3" />
       {docLink && docLinkText && (
         <a
           href={docLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-end self-end gap-1 text-xs text-text-secondary hover:text-text-primary"
+          className="inline-flex max-w-[18rem] items-center gap-1 truncate text-xs text-content-secondary transition-colors hover:text-content-primary"
         >
-          <span>{docLinkText}</span>
+          <span className="truncate">{docLinkText}</span>
         </a>
       )}
       <div className="flex-1" />
@@ -107,7 +111,7 @@ export function ProviderHeaderBar({
           onClick={onSave}
           disabled={saving || !canSave}
           data-testid="provider-save-all"
-          className="gap-1.5"
+          className="h-8 shrink-0 gap-1.5 px-3 text-xs"
         >
           {saving ? (
             <Loader2 className="size-4 animate-spin" />

@@ -41,7 +41,7 @@ export function ModelTypeBadges({
       {visible.map((mt) => (
         <span
           key={mt}
-          className="ceramic-badge px-2 py-0.5 text-[10px] rounded-full"
+          className="settings-tag text-content-secondary"
         >
           {mapModelKey[mt as keyof typeof mapModelKey] || mt}
         </span>
@@ -50,7 +50,7 @@ export function ModelTypeBadges({
         <Tooltip>
           <TooltipTrigger asChild>
             <span
-              className="ceramic-badge px-2 py-0.5 text-[10px] rounded-full cursor-default"
+              className="settings-tag cursor-default text-content-secondary"
               data-testid={`models-types-overflow-${editTestSuffix}`}
             >
               +{hidden.length}
@@ -61,7 +61,7 @@ export function ModelTypeBadges({
               {hidden.map((mt) => (
                 <span
                   key={mt}
-                  className="ceramic-badge px-2 py-0.5 text-[10px] rounded-full"
+                  className="settings-tag text-content-secondary"
                 >
                   {mapModelKey[mt as keyof typeof mapModelKey] || mt}
                 </span>
@@ -73,7 +73,7 @@ export function ModelTypeBadges({
       {showEdit && (
         <button
           type="button"
-          className="ml-1 size-5 flex items-center justify-center rounded-full text-text-secondary opacity-0 transition-all hover:bg-accent-color-soft hover:text-accent-color group-hover:opacity-100 focus-visible:opacity-100"
+          className="ml-0.5 flex size-5 items-center justify-center rounded-[2px] text-content-tertiary opacity-0 transition-all hover:bg-accent-color-soft hover:text-accent-color group-hover:opacity-100 focus-visible:opacity-100"
           onClick={(e) => {
             e.stopPropagation();
             onEdit?.();

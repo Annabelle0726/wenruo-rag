@@ -65,10 +65,10 @@ function ReconciliationStrip({ payload }: { payload: IUsageEnvelope }) {
 
   return (
     <div
-      className="ceramic-relief flex flex-col gap-1 rounded-[2px] p-3"
+      className="settings-tile"
       data-testid="usage-reconciliation"
     >
-      <span className="text-xs text-text-secondary">
+      <span className="settings-tile-label">
         {t('usage.reconciliationTitle')}
       </span>
       <span
@@ -84,7 +84,7 @@ function ReconciliationStrip({ payload }: { payload: IUsageEnvelope }) {
               counter: reconciliation.counter_calls,
             })}
       </span>
-      <span className="text-xs text-text-disabled">
+      <span className="settings-tile-hint">
         {t('usage.reconciliationSemantics')}
       </span>
     </div>
@@ -115,16 +115,20 @@ function AnalyticsSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-2">
-      <h4 className="text-sm text-text-primary">{title}</h4>
-      {hint && <p className="text-xs text-text-disabled">{hint}</p>}
-      {loading ? (
-        <CardSkeleton />
-      ) : failed || empty ? (
-        <ReadModelNotice failed={failed} onRetry={onRetry} testId={testId} />
-      ) : (
-        children
-      )}
+    <section className="settings-section">
+      <div className="settings-section-head">
+        <h3 className="settings-section-title">{title}</h3>
+        {hint && <p className="settings-section-hint">{hint}</p>}
+      </div>
+      <div className="settings-section-body">
+        {loading ? (
+          <CardSkeleton />
+        ) : failed || empty ? (
+          <ReadModelNotice failed={failed} onRetry={onRetry} testId={testId} />
+        ) : (
+          children
+        )}
+      </div>
     </section>
   );
 }
@@ -150,14 +154,16 @@ function WorkspaceAnalytics() {
 
   const accounting = summary.data?.accounting;
   const memberData = members.data?.data as IMemberBreakdownData | undefined;
-  const modelData = models.data?.data as IRecordedModelBreakdownData | undefined;
+  const modelData = models.data?.data as
+    | IRecordedModelBreakdownData
+    | undefined;
   const dailyData = daily.data?.data as ISeriesData | undefined;
   const monthlyData = monthly.data?.data as ISeriesData | undefined;
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="settings-body">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs text-text-secondary">
+        <span className="settings-section-hint tabular-nums">
           {t('usage.windowLabel', {
             start: window.start_day,
             end: window.end_day,
@@ -245,7 +251,10 @@ function WorkspaceAnalytics() {
             empty={!dailyData?.buckets?.length}
             testId="daily-series-unavailable"
           >
-            <UsageSeriesTable granularity="day" buckets={dailyData?.buckets ?? []} />
+            <UsageSeriesTable
+              granularity="day"
+              buckets={dailyData?.buckets ?? []}
+            />
           </AnalyticsSection>
 
           <AnalyticsSection

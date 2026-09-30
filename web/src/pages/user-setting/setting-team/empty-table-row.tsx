@@ -24,7 +24,8 @@ import { Users } from 'lucide-react';
  * an empty team and a broken table looked the same. The placeholder marks the
  * column span with a quiet icon above the muted line instead, and it neither
  * tints nor draws a separator under the pointer, because there is nothing there
- * to point at.
+ * to point at. Its column span and wording are the table's own, so it is the same
+ * row whether the roster is empty or the search matched nothing.
  */
 const EmptyTableRow = ({
   colSpan,
@@ -34,8 +35,8 @@ const EmptyTableRow = ({
   label: string;
 }) => {
   return (
-    <TableRow className="hover:bg-transparent">
-      <TableCell colSpan={colSpan} className="py-10 text-center">
+    <TableRow className="border-0 hover:bg-transparent">
+      <TableCell colSpan={colSpan} className="py-12">
         <div className="flex flex-col items-center justify-center gap-2">
           <Users className="size-5 text-content-tertiary" aria-hidden="true" />
           <span className="text-sm text-content-secondary">{label}</span>

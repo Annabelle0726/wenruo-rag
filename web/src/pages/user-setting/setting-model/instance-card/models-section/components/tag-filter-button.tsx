@@ -27,16 +27,20 @@ export function TagFilterButton({
   return (
     <button
       type="button"
+      aria-pressed={active}
       className={cn(
-        'px-2.5 py-1 text-xs rounded-full',
-        // The selected tag is the page's brand fill, the rest are mini ceramic
-        // badges: neither state paints the ink or a flat grey chip any more.
-        active ? 'ceramic-cta' : 'ceramic-badge hover:text-text-primary',
+        // One tag shape for the whole settings module: idle is the quiet hairline
+        // tag, the selected filter is the brand's soft tint. A solid brand fill
+        // here competed with the primary action beside it.
+        'settings-tag gap-1 px-2 transition-colors',
+        active
+          ? 'border-accent-color-soft bg-accent-primary-5 font-medium text-accent-primary'
+          : 'text-content-secondary hover:border-accent-color-soft hover:bg-accent-primary-5 hover:text-content-primary',
       )}
       onClick={onClick}
     >
       {label}
-      <span className="ml-1 opacity-60">{count}</span>
+      <span className="tabular-nums opacity-60">{count}</span>
     </button>
   );
 }

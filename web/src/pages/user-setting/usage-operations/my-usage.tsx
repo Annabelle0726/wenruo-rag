@@ -57,9 +57,9 @@ function MyUsage() {
   const accounting = data?.accounting;
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="settings-body">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs text-text-secondary">
+        <span className="settings-section-hint tabular-nums">
           {t('usage.windowLabel', {
             start: window.start_day,
             end: window.end_day,
@@ -99,34 +99,42 @@ function MyUsage() {
               testId="my-usage-outstanding-cost"
             />
           </div>
-
-          <div className="ceramic-relief flex flex-col gap-1 rounded-[2px] p-3">
-            <span className="text-xs text-text-secondary">
-              {t('usage.estimatedCostTerm', { term: data.cost.term })}
-            </span>
-            <span className="text-xs text-text-disabled">
-              {t('usage.estimatedCostCaveat')}
-            </span>
-          </div>
         </>
       )}
 
-      <section className="ceramic-relief flex flex-col rounded-[2px] p-3">
-        <span className="pb-2 text-sm text-text-primary">
-          {t('usage.myQuotaTitle')}
-        </span>
-        {quotaLoading && !quota ? (
-          <CardSkeleton />
-        ) : quota?.data ? (
-          <LimitStandingList quota={quota} />
-        ) : (
-          <ReadModelNotice
-            testId="my-quota-unavailable"
-            failed={Boolean(quotaError)}
-            onRetry={refetchQuota}
-          />
-        )}
+      {/* The quota standing is a section of its own: a hairline heading, the seven
+          dimensions and the caveats, with no card of its own. */}
+      <section className="settings-section">
+        <div className="settings-section-head">
+          <h3 className="settings-section-title">
+            {t('usage.myQuotaTitle')}
+          </h3>
+        </div>
+        <div className="settings-section-body">
+          {quotaLoading && !quota ? (
+            <CardSkeleton />
+          ) : quota?.data ? (
+            <LimitStandingList quota={quota} />
+          ) : (
+            <ReadModelNotice
+              testId="my-quota-unavailable"
+              failed={Boolean(quotaError)}
+              onRetry={refetchQuota}
+            />
+          )}
+        </div>
       </section>
+
+      {accounting && data && (
+        <div className="flex flex-col gap-0.5">
+          <span className="settings-field-hint">
+            {t('usage.estimatedCostTerm', { term: data.cost.term })}
+          </span>
+          <span className="settings-field-hint">
+            {t('usage.estimatedCostCaveat')}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

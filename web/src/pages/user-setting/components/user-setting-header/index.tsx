@@ -26,8 +26,13 @@ type ProfileSettingWrapperCardProps = {
  * It is deliberately not a card: no radius and no gutter of its own, it takes
  * the whole height of the settings column and reaches the right and bottom
  * edges of the viewport, so it reads as the page's content area rather than a
- * tile floating on top of it. The translucent surface and the backdrop blur
- * keep it visually separate from the rail beside it; the rail draws the seam.
+ * tile floating on top of it. The surface and the seam keep it separate from
+ * the rail beside it; the rail draws the edge.
+ *
+ * The header is the ONE page header every settings destination shares: same
+ * height, same 20px gutter as the body below it (`.settings-body`), and a single
+ * hairline between them — so switching destinations does not move the title, the
+ * description or the first row of content.
  */
 export function ProfileSettingWrapperCard({
   header,
@@ -35,11 +40,13 @@ export function ProfileSettingWrapperCard({
 }: ProfileSettingWrapperCardProps) {
   return (
     <article className="glass-surface relative flex h-full min-h-0 w-full flex-col">
-      <header className="shrink-0 border-b border-cable-hairline p-5">
+      <header className="flex shrink-0 items-center border-b border-cable-hairline px-5 py-4">
         {header}
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-auto p-1">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-auto">
+        {children}
+      </div>
     </article>
   );
 }

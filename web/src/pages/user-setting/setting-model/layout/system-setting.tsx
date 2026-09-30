@@ -55,9 +55,16 @@ function ModelFieldItem({
   const readOnly = useModelSettingsReadOnly();
 
   return (
-    <div className="flex gap-3 items-center">
-      <label className="block text-sm font-normal text-text-secondary w-1/4 max-w-[150px]">
-        {isRequired && <span className="text-state-error">*</span>}
+    // One field row: a fixed-width label column, then the control. Six of them
+    // stack, so every select in the list starts on the same x — a label that
+    // grows in English moves nothing.
+    <div className="flex items-center gap-4">
+      <label className="settings-field-label w-[9.5rem] shrink-0 leading-snug">
+        {isRequired && (
+          <span className="settings-required" aria-hidden>
+            *
+          </span>
+        )}
         {label}
         {tooltip && (
           <Tooltip>
@@ -65,13 +72,13 @@ function ModelFieldItem({
             <TooltipTrigger>
               <CircleQuestionMark
                 size={12}
-                className="ml-1 text-text-secondary text-xs"
+                className="ms-1 inline-block align-[-1px] text-content-tertiary"
               />
             </TooltipTrigger>
           </Tooltip>
         )}
       </label>
-      <div className="w-3/4 flex-1">
+      <div className="min-w-0 flex-1">
         <ModelTreeSelect
           modelTypes={ModelTypeMap[id as keyof typeof ModelTypeMap] ?? ['chat']}
           value={value}
@@ -82,7 +89,7 @@ function ModelFieldItem({
           allowClear={id !== 'llm_id'}
           // Glass well with the shared hairline: the accent ring on focus comes
           // with the class, so the select matches the search fields.
-          className="ceramic-field h-10"
+          className="ceramic-field h-10 w-full"
         />
       </div>
     </div>
@@ -151,26 +158,32 @@ function SystemSetting() {
   }, [defaultModelDictionary, t]);
 
   return (
-    <article className="w-full">
-      <header className="py-5 px-10">
-        <h2 className="text-2xl font-medium text-text-primary">
+    // The same header bar and gutters the provider destination uses, so switching
+    // between "default models" and a provider does not move the title or the
+    // content's left edge by 20px.
+    <article className="flex w-full flex-col">
+      <header className="flex min-w-0 flex-col gap-0.5 border-b border-cable-hairline px-5 py-3">
+        <h2 className="settings-title truncate">
           {t('systemModelSettings')}
         </h2>
-        <p className="mt-1 text-sm text-text-secondary ">
+        <p className="settings-description truncate">
           {t('systemModelDescription')}
         </p>
       </header>
 
       {/* The panel's own scroll container does the scrolling; a second, capped
           scroller here produced two nested scrollbars for one list. */}
-      <div className="px-10 py-6 space-y-6">
-        {llmList.map((item) => (
-          <ModelFieldItem
-            key={item.id}
-            {...item}
-            onChange={handleFieldChange}
-          />
-        ))}
+      <div className="settings-body">
+        {/* One hairline frame around the six defaults, a hairline between them:
+            the list reads as one object and the required field keeps the only
+            brand-coloured mark on the page. */}
+        <section className="settings-section divide-y divide-cable-hairline">
+          {llmList.map((item) => (
+            <div key={item.id} className="px-4 py-3.5">
+              <ModelFieldItem {...item} onChange={handleFieldChange} />
+            </div>
+          ))}
+        </section>
       </div>
     </article>
   );

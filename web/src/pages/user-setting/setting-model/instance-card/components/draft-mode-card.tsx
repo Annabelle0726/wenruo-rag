@@ -59,7 +59,10 @@ export function DraftModeCard({
   );
 
   return (
-    <div className="px-5 py-3 flex flex-col gap-4 bg-bg-card ">
+    // A draft instance is a settings section like a saved one: one hairline frame,
+    // not a borderless `bg-bg-card` block that was the same colour as the panel
+    // behind it in BOTH themes (white on white in light, slate on slate in dark).
+    <div className="settings-section flex flex-col gap-4 px-4 py-3">
       <InstanceNameSection
         draftName={draftName}
         setDraftName={setDraftName}

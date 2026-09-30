@@ -35,7 +35,12 @@ import WorkspaceAnalytics from './workspace-analytics';
  * information. A path with no subsection lands on My Usage, which is the one
  * destination every member has.
  */
-const SUBSECTIONS = ['my', 'workspace', 'provider-health', 'retrieval-health'] as const;
+const SUBSECTIONS = [
+  'my',
+  'workspace',
+  'provider-health',
+  'retrieval-health',
+] as const;
 
 type UsageSubsection = (typeof SUBSECTIONS)[number];
 
@@ -85,7 +90,7 @@ function UsageOperations() {
   const renderSubsection = () => {
     if (ADMIN_ONLY.has(subsection) && !isManager) {
       return (
-        <div className="p-4">
+        <div className="settings-body">
           <ComingDataPanel
             testId="usage-subsection-not-authorized"
             tone="unavailable"
@@ -111,11 +116,11 @@ function UsageOperations() {
   return (
     <ProfileSettingWrapperCard
       header={
-        <header className="flex flex-col gap-1">
-          <h2 className="text-2xl font-medium text-text-primary">
+        <header className="flex min-w-0 flex-col gap-0.5">
+          <h2 className="settings-title truncate">
             {t(SUBSECTION_TITLE_KEY[subsection])}
           </h2>
-          <p className="text-xs text-text-secondary">
+          <p className="settings-description truncate">
             {t('usage.pageDescription')}
           </p>
         </header>
@@ -125,7 +130,7 @@ function UsageOperations() {
           instead of rendering an administrative view that a member would only see
           replaced. */}
       {loading && !roleResolved ? (
-        <div className="p-4">
+        <div className="settings-body">
           <CardSkeleton />
         </div>
       ) : (

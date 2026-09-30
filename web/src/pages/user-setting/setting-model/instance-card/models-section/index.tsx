@@ -289,47 +289,49 @@ export function ModelsSection(props: ModelsSectionProps) {
 
   return (
     <div className="flex flex-col gap-3" data-testid="models-section">
-      <div className="flex items-center justify-between gap-2">
-        <div className="text-sm font-medium text-text-primary">
-          {t('setting.models')}
+      {/* One frame for the whole catalog: the section head carries the title and
+          the catalog-wide actions, the toolbar carries the filters, and the rows
+          live in the body. Three stacked frames (section, filter box, list) is
+          what made this area read as nested boxes rather than one list. */}
+      <section className="settings-section">
+        <div className="settings-section-head">
+          <h4 className="settings-section-title">{t('setting.models')}</h4>
+          {!hideActions && (
+            <div className="ms-auto flex shrink-0 items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs"
+                onClick={handleListModels}
+                disabled={manualListLoading}
+                data-testid="models-list-button"
+              >
+                {manualListLoading && <Loader2 className="size-3 animate-spin" />}
+                {t('setting.listModels')}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="size-8"
+                onClick={() => setDialogOpen(true)}
+                data-testid="models-add-custom"
+                aria-label={t('setting.addCustomModel')}
+              >
+                <Plus className="size-4" />
+              </Button>
+            </div>
+          )}
         </div>
-        {!hideActions && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleListModels}
-              disabled={manualListLoading}
-              data-testid="models-list-button"
-            >
-              {manualListLoading && <Loader2 className="size-3 animate-spin" />}
-              {t('setting.listModels')}
-            </Button>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              onClick={() => setDialogOpen(true)}
-              data-testid="models-add-custom"
-              aria-label={t('setting.addCustomModel')}
-            >
-              <Plus className="size-4" />
-            </Button>
-          </div>
-        )}
-      </div>
 
-      <div className="flex flex-col gap-2 border rounded-sm p-5 border-border-button">
-        <div className="flex flex-col gap-2 ">
-          <div className="flex items-center gap-2">
-            <SearchInput
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('setting.search')}
-              rootClassName={cn('flex-1', ceramicSearchFieldRootClassName)}
-              className={ceramicSearchFieldClassName}
-            />
-          </div>
-          <div className="flex flex-wrap gap-1.5">
+        <div className="settings-table-toolbar flex-col items-stretch gap-2">
+          <SearchInput
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('setting.search')}
+            rootClassName={cn('w-full', ceramicSearchFieldRootClassName)}
+            className={ceramicSearchFieldClassName}
+          />
+          <div className="flex flex-wrap items-center gap-1.5">
             <TagFilterButton
               label={tSetting('allModels')}
               count={models.length}
@@ -348,60 +350,65 @@ export function ModelsSection(props: ModelsSectionProps) {
               />
             ))}
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          {!readOnly && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBatchVerifyClick}
-              disabled={batchVerifying || filteredModels.length === 0}
-              data-testid="models-batch-verify"
-              className="ml-auto"
-            >
-              {batchVerifying ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : (
-                <ShieldCheck className="size-3" />
-              )}
-              {tSetting('batchVerifyModels')}
-            </Button>
-          )}
-          {!hideActions && (
-            // When the toggle is in "remove all" mode the click opens a
-            // confirmation dialog instead of mutating directly; the button
-            // acts as the dialog trigger, so the handler moves to `onOk`.
-            <ConfirmDeleteDialog
-              hidden={!allFilteredAdded}
-              onOk={handleBatchToggleModels}
-              title={t('common.removeModalTitle')}
-              okButtonText={t('common.remove')}
-            >
+          <div className="flex items-center gap-2">
+            {!readOnly && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={allFilteredAdded ? undefined : handleBatchToggleModels}
-                disabled={batchLoading || filteredModels.length === 0}
-                data-testid="models-batch-toggle"
+                onClick={handleBatchVerifyClick}
+                disabled={batchVerifying || filteredModels.length === 0}
+                data-testid="models-batch-verify"
+                className="ms-auto h-8 px-3 text-xs"
               >
-                {batchLoading && <Loader2 className="size-3 animate-spin" />}
-                {allFilteredAdded
-                  ? tSetting('batchRemoveModels')
-                  : tSetting('batchAddModels')}
+                {batchVerifying ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <ShieldCheck className="size-3" />
+                )}
+                {tSetting('batchVerifyModels')}
               </Button>
-            </ConfirmDeleteDialog>
-          )}
+            )}
+            {!hideActions && (
+              // When the toggle is in "remove all" mode the click opens a
+              // confirmation dialog instead of mutating directly; the button
+              // acts as the dialog trigger, so the handler moves to `onOk`.
+              <ConfirmDeleteDialog
+                hidden={!allFilteredAdded}
+                onOk={handleBatchToggleModels}
+                title={t('common.removeModalTitle')}
+                okButtonText={t('common.remove')}
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn('h-8 px-3 text-xs', readOnly && 'ms-auto')}
+                  onClick={
+                    allFilteredAdded ? undefined : handleBatchToggleModels
+                  }
+                  disabled={batchLoading || filteredModels.length === 0}
+                  data-testid="models-batch-toggle"
+                >
+                  {batchLoading && <Loader2 className="size-3 animate-spin" />}
+                  {allFilteredAdded
+                    ? tSetting('batchRemoveModels')
+                    : tSetting('batchAddModels')}
+                </Button>
+              </ConfirmDeleteDialog>
+            )}
+          </div>
         </div>
 
-        <div className="glass-panel max-h-80 overflow-auto scrollbar-auto rounded-xl">
+        <div className="max-h-80 overflow-auto scrollbar-auto">
           {filteredModels.length === 0 ? (
-            <div className="flex items-center justify-center text-text-secondary text-sm py-6 gap-2">
-              <Search className="size-4" />
-              {t('setting.listModelsEmpty')}
+            <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+              <Search className="size-5 text-content-tertiary" />
+              <span className="text-sm text-content-secondary">
+                {t('setting.listModelsEmpty')}
+              </span>
             </div>
           ) : (
-            <ul>
+            <ul className="divide-y divide-cable-hairline">
               {filteredModels.map((model) => (
                 <ModelRow
                   key={model.name}
@@ -419,7 +426,7 @@ export function ModelsSection(props: ModelsSectionProps) {
             </ul>
           )}
         </div>
-      </div>
+      </section>
 
       <AddCustomModelDialog
         open={dialogOpen}
