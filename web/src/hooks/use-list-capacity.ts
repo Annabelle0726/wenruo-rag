@@ -177,7 +177,21 @@ export function readRegionCapacity(region: HTMLElement | null): number | null {
  */
 type Capacity = number | null;
 
-let publishedCapacity: Capacity = null;
+/**
+ * The published reading, and whether a region has been read at all yet.
+ *
+ * `measured` is deliberately not "the capacity is known": a page with no region,
+ * or a region too small to trust, has been MEASURED and its answer is "no number".
+ * It exists so a caller can tell "the region has not been read yet (this is the
+ * first commit, before the layout effect)" apart from "the region was read and
+ * reported nothing" - the first is a moment, the second is an answer. A query may
+ * wait for a measurement that is guaranteed to have happened, but the switch that
+ * decides it is never the arithmetic: it is published by the same layout effect
+ * that measures, so it cannot stay closed.
+ */
+type CapacitySnapshot = { capacity: Capacity; measured: boolean };
+
+let snapshot: CapacitySnapshot = { capacity: null, measured: false };
 let observedRegion: HTMLElement | null = null;
 let resizeObserver: ResizeObserver | undefined;
 let contentObserver: MutationObserver | undefined;
@@ -191,9 +205,9 @@ let frame = 0;
 const listeners = new Set<() => void>();
 
 /** The capacity last published, readable outside React (the pager shows it). */
-export const currentListCapacity = () => publishedCapacity;
+export const currentListCapacity = () => snapshot.capacity;
 
-export const getListCapacitySnapshot = () => publishedCapacity;
+export const getListCapacitySnapshot = () => snapshot;
 
 /**
  * The innermost marked region, or null when the page has none.
@@ -206,9 +220,9 @@ const findRegion = (): HTMLElement | null => {
   return regions.length ? regions[regions.length - 1] : null;
 };
 
-const publish = (next: Capacity) => {
-  if (next === publishedCapacity) return;
-  publishedCapacity = next;
+const publish = (next: Capacity, measured = true) => {
+  if (next === snapshot.capacity && measured === snapshot.measured) return;
+  snapshot = { capacity: next, measured };
   listeners.forEach((listener) => listener());
 };
 
@@ -341,8 +355,9 @@ export const subscribeListCapacity = (listener: () => void) => {
  */
 export function useListCapacity(): {
   capacity: Capacity;
+  measured: boolean;
 } {
-  const capacity = useSyncExternalStore(
+  const { capacity, measured } = useSyncExternalStore(
     subscribeListCapacity,
     getListCapacitySnapshot,
     getListCapacitySnapshot,
@@ -361,5 +376,5 @@ export function useListCapacity(): {
     tick();
   }, []);
 
-  return { capacity };
+  return { capacity, measured };
 }

@@ -92,6 +92,7 @@ export const useGetPaginationWithRouter = () => {
     page,
     size: pageSize,
     sizeOptions,
+    measured,
   } = useSetPaginationParams();
 
   const onPageChange: Pagination['onChange'] = useCallback(
@@ -99,7 +100,12 @@ export const useGetPaginationWithRouter = () => {
       if (size !== pageSize) {
         setPaginationParams(1, size);
       } else {
-        setPaginationParams(pageNumber, size);
+        // A control reports the size the page is ALREADY paging by when the user
+        // turns a page, and that number is the region's measured capacity - not a
+        // preference anyone expressed. Writing it to `size`/localStorage would
+        // turn one reading into a remembered page size (see the capacity rules),
+        // so only the page number travels.
+        setPaginationParams(pageNumber);
       }
     },
     [setPaginationParams, pageSize],
@@ -107,10 +113,18 @@ export const useGetPaginationWithRouter = () => {
 
   const setCurrentPagination = useCallback(
     (pagination: { page: number; pageSize?: number }) => {
-      if (pagination.pageSize !== pageSize) {
+      // Same distinction for callers that hand back the current size while doing
+      // their own arithmetic (a search reset, stepping back off an emptied page):
+      // only a size that differs from the one in force is a choice.
+      const choseSize =
+        pagination.pageSize !== undefined && pagination.pageSize !== pageSize;
+      if (choseSize) {
         pagination.page = 1; // Reset to first page if pageSize changes
       }
-      setPaginationParams(pagination.page, pagination.pageSize);
+      setPaginationParams(
+        pagination.page,
+        choseSize ? pagination.pageSize : undefined,
+      );
     },
     [setPaginationParams, pageSize],
   );
@@ -132,6 +146,8 @@ export const useGetPaginationWithRouter = () => {
   return {
     pagination,
     setPagination: setCurrentPagination,
+    /** True once the page's list region has been read (see `useListCapacity`). */
+    measured,
   };
 };
 

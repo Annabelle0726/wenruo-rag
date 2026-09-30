@@ -187,10 +187,28 @@ export const useUploadDocument = () => {
   return { uploadDocument: upload, loading, data };
 };
 
-export const useFetchDocumentList = (loop = true) => {
+/**
+ * `countOnly` is for the caller that mounts this list only to read its TOTAL - a
+ * page whose own table is a different list (the dataset log page counts the files
+ * in the knowledge base). Such a caller has no region of its own, so its page size
+ * is borrowed from whatever region is on screen; requesting before that region has
+ * been read can only ask for the application cap (50) and then ask again with the
+ * real number, which is the "fetch a default to discover the capacity" the
+ * capacity rules forbid. Waiting for the first reading costs a single commit:
+ * `useListCapacity` publishes it from a pre-paint layout effect in the same
+ * mounting commit - and publishes "no region" just as promptly - so this gate
+ * cannot leave a count unfetched, and it never applies to a list that renders
+ * records (the default), where the rule that the measurement must not decide
+ * whether a list loads stands unchanged.
+ */
+export const useFetchDocumentList = (
+  loop = true,
+  options?: { countOnly?: boolean },
+) => {
+  const { countOnly } = options ?? {};
   const { knowledgeId } = useGetKnowledgeSearchParams();
   const { searchString, handleInputChange } = useHandleSearchChange();
-  const { pagination, setPagination } = useGetPaginationWithRouter();
+  const { pagination, setPagination, measured } = useGetPaginationWithRouter();
   const { id } = useParams();
   const queryClient = useQueryClient();
   const debouncedSearchString = useDebounce(searchString, { wait: 500 });
@@ -225,7 +243,9 @@ export const useFetchDocumentList = (loop = true) => {
     // region the page gives it, but permission to retrieve the records must never
     // depend on a layout measurement: a measurement that fails, is delayed or
     // oscillates would otherwise turn a non-empty dataset into "0 documents".
-    enabled,
+    // `countOnly` is the one caller that has no records of its own to lose (see
+    // the option's documentation); it waits for the reading, nothing else does.
+    enabled: enabled && (countOnly ? measured : true),
     queryFn: async () => {
       let run = [] as any;
       let returnEmptyMetadata = false;

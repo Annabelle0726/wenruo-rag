@@ -103,7 +103,7 @@ export const useSetPaginationParams = () => {
   // What this page's list region can actually show. `null` on a page whose list
   // has no region marked (or before it is measured), in which case the user cap
   // and the application cap are all there is to go on.
-  const { capacity } = useListCapacity();
+  const { capacity, measured } = useListCapacity();
 
   const setPaginationParams = useCallback(
     (page: number = 1, pageSize?: number) => {
@@ -171,6 +171,14 @@ export const useSetPaginationParams = () => {
     size,
     /** How many complete items this page's region shows, once measured. */
     capacity,
+    /**
+     * True once this page's region has been read - including a reading of "no
+     * number". A caller may hold its first request for this, and only for this:
+     * it is published by the same pre-paint layout effect that measures, so it
+     * opens within the mounting commit and can never strand a list. It says when
+     * the size became known, never whether the records may be fetched.
+     */
+    measured,
     /** The sizes the pager may offer here: nothing it could not honour. */
     sizeOptions: pageSizeOptionsFor(capacity),
   };

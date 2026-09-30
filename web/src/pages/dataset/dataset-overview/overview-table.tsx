@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { TableSkeleton } from '@/components/table-skeleton';
 import {
   Tooltip,
   TooltipContent,
@@ -404,6 +405,7 @@ const FileLogsTable: FC<FileLogsTableProps> = ({
   data,
   pagination,
   setPagination,
+  loading,
   active = LogTabs.FILE_LOGS,
 }) => {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -528,11 +530,18 @@ const FileLogsTable: FC<FileLogsTableProps> = ({
                 ))}
               </TableRow>
             ))
+          ) : loading ? (
+            /* A read in flight is not an empty list. Without this the first paint
+               said "no data" for as long as the request took and then turned into
+               rows - a visible jump under a summary that had already settled.
+               `TableSkeleton` carries `data-skeleton`, so it is the same 96px the
+               empty row is and neither counts as row space. */
+            <TableSkeleton columnsLength={columns.length} />
           ) : (
             /* `data-skeleton`: this row is not data - it is 96px against a 38px
                log row, and the page size is derived from a row's height, so a
-               measurement taken while the logs are empty (or loading) would page
-               the table by a third of what it can show. */
+               measurement taken while the logs are empty would page the table by
+               a third of what it can show. */
             <TableRow data-skeleton="">
               <TableCell colSpan={columns.length} className="h-24 text-center">
                 <Empty
@@ -556,6 +565,13 @@ const FileLogsTable: FC<FileLogsTableProps> = ({
         <RAGFlowPagination
           {...{ current: pagination.current, pageSize: pagination.pageSize }}
           total={pagination.total}
+          /* No size selector on this page: its page size is not a preference, it
+             is the number of log rows this viewport's list region can hold, and
+             the region re-measures itself on every resize and sidebar toggle.
+             An offer of "10 / 20 / 50" would be an offer the page cannot honour -
+             a size larger than the region is a scrollbar inside the table. The
+             pager keeps the count, the pages and the prev/next controls. */
+          showSizeChanger={false}
           onChange={(page, pageSize) => setPagination({ page, pageSize })}
         />
       </footer>

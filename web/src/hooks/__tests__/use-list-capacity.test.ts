@@ -432,7 +432,10 @@ describe('the shared capacity store', () => {
 
     unsubscribe = subscribeListCapacity(() => {});
 
-    expect(getListCapacitySnapshot()).toBe(Math.floor((600 - 40) / 38));
+    expect(getListCapacitySnapshot().capacity).toBe(
+      Math.floor((600 - 40) / 38),
+    );
+    expect(getListCapacitySnapshot().measured).toBe(true);
     // The outer region is a region too, just not the one that owns the page size.
     expect(outer.getAttribute('data-list-capacity')).toBeNull();
     expect(inner.dataset.listCapacity).toBe(
@@ -469,6 +472,51 @@ describe('the shared capacity store', () => {
   it('has no capacity for a page whose list has no region', () => {
     unsubscribe = subscribeListCapacity(() => {});
 
-    expect(getListCapacitySnapshot()).toBeNull();
+    expect(getListCapacitySnapshot().capacity).toBeNull();
+  });
+
+  it('reports a page without a region as measured, not as unread', () => {
+    // `measured` separates "this page has not been read yet" (the first commit,
+    // before the layout effect) from "this page was read and its answer is that
+    // there is no number". A query may wait for the first; it must never wait for
+    // an answer that a region-less page will not produce. Publishing the reading
+    // synchronously from the mount is what guarantees the wait ends.
+    jest.isolateModules(() => {
+      const fresh = require('../use-list-capacity');
+
+      // Unread before anything has mounted: this is the state a first request
+      // waits out, and it is why a fresh load never asks for the 50 cap.
+      expect(fresh.getListCapacitySnapshot()).toEqual({
+        capacity: null,
+        measured: false,
+      });
+
+      const stop = fresh.subscribeListCapacity(() => {});
+      expect(fresh.getListCapacitySnapshot()).toEqual({
+        capacity: null,
+        measured: true,
+      });
+      stop();
+    });
+  });
+
+  it('reports a region too small to trust as measured with no size', () => {
+    // The trustworthy minimum is a guard against a region caught mid-layout, not
+    // a reason to keep a list waiting: the page has been read, the answer is
+    // "no trustworthy number", and the caller falls back to its user cap and the
+    // application cap exactly as it does on a page with no region at all.
+    table({
+      regionHeight: 120,
+      rowHeight: 38,
+      headerHeight: 40,
+      rows: 1,
+      declaredHeight: 38,
+    });
+
+    unsubscribe = subscribeListCapacity(() => {});
+
+    const { capacity, measured } = getListCapacitySnapshot();
+    expect(measured).toBe(true);
+    expect(capacity).toBeNull();
   });
 });

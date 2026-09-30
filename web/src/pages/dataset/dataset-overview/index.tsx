@@ -35,6 +35,17 @@ interface CardFooterProcessProps {
   failedTip?: string;
 }
 
+/**
+ * One row of the page summary: a strip, not a hero.
+ *
+ * The three modules keep everything they said before - the same label, the same
+ * number, the same tooltip and the same detail line underneath - but they are laid
+ * out as identity on the left (icon, label, value) and detail under it, so the
+ * whole block is one 66px strip instead of a 116px card. The page's subject is the
+ * log table below; the summary states four numbers and gets out of its way. It is
+ * also why the number is 18px rather than 24px: still the largest figure in the
+ * card, no longer competing with the table's header for attention.
+ */
 const StatCard: FC<StatCardProps> = ({
   title,
   value,
@@ -43,38 +54,41 @@ const StatCard: FC<StatCardProps> = ({
   tooltip,
 }) => {
   return (
-    <Card
-      className="px-5 py-2.5 rounded-lg border-border-default grid grid-cols-[1fr_auto] grid-rows-[1fr_auto]"
-      style={{
-        gridTemplateAreas: '"data icon" "footer footer"',
-      }}
-    >
-      <span style={{ gridArea: 'icon' }}>{icon}</span>
+    <Card className="flex items-center gap-3 rounded-lg border-border-default px-3.5 py-2">
+      <span className="flex size-8 shrink-0 items-center justify-center">
+        {icon}
+      </span>
 
-      <div style={{ gridArea: 'data' }}>
-        <CardHeader className="p-0">
-          <h3 className="flex items-center gap-1 text-sm font-medium text-text-secondary">
-            {title}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <CardHeader className="min-w-0 p-0">
+            <h3 className="flex min-w-0 items-center gap-1 text-xs font-medium text-text-secondary">
+              <span className="truncate">{title}</span>
 
-            {tooltip && <WhatIsThis>{tooltip}</WhatIsThis>}
-          </h3>
-        </CardHeader>
+              {tooltip && <WhatIsThis>{tooltip}</WhatIsThis>}
+            </h3>
+          </CardHeader>
 
-        <CardDescription className="text-text-primary text-2xl font-medium leading-9">
-          <data value={value}>{value}</data>
-        </CardDescription>
+          <CardDescription className="shrink-0 text-lg leading-6 font-semibold text-text-primary tabular-nums">
+            <data value={value}>{value}</data>
+          </CardDescription>
+        </div>
+
+        <CardFooter className="mt-1 flex w-full items-center p-0">
+          <div className="min-w-0 flex-1">{children}</div>
+        </CardFooter>
       </div>
-
-      <CardFooter
-        className="p-0 mt-1.5 h-8 w-full flex items-end"
-        style={{ gridArea: 'footer' }}
-      >
-        <div className="flex-1">{children}</div>
-      </CardFooter>
     </Card>
   );
 };
 
+/**
+ * The success/failed split, as one line of two chips.
+ *
+ * Same two figures, same colours (`--state-success-5` / `--state-error-5`) and the
+ * same dot markers; the fill is now a 20px chip around them instead of a padded
+ * panel, which is one of the things that lets the card above close at 66px.
+ */
 const CardFooterProcess: FC<CardFooterProcessProps> = ({
   success = 0,
   successTip,
@@ -84,33 +98,31 @@ const CardFooterProcess: FC<CardFooterProcessProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center flex-col gap-2">
-      <dl className="w-full flex justify-between gap-4 rounded-lg text-sm font-bold text-text-primary">
-        <div className="flex items-center justify-between rounded-sm w-1/2 p-2 bg-state-success-5">
-          <dt className="flex items-center rounded-lg gap-1">
-            <div className="w-1 h-1 rounded-full bg-state-success"></div>
-            <div className="font-normal text-text-secondary text-xs flex items-center gap-1">
-              {t('knowledgeDetails.success')}
-              {successTip && <WhatIsThis>{successTip}</WhatIsThis>}
-            </div>
-          </dt>
+    <dl className="flex w-full items-center gap-2 text-xs">
+      <div className="flex min-w-0 flex-1 items-center justify-between gap-1 rounded-sm bg-state-success-5 px-1.5 py-0.5">
+        <dt className="flex min-w-0 items-center gap-1 text-text-secondary">
+          <span className="size-1 shrink-0 rounded-full bg-state-success" />
+          <span className="truncate">{t('knowledgeDetails.success')}</span>
+          {successTip && <WhatIsThis>{successTip}</WhatIsThis>}
+        </dt>
 
-          <dd className="font-normal">{success || 0}</dd>
-        </div>
+        <dd className="shrink-0 font-medium text-text-primary tabular-nums">
+          {success || 0}
+        </dd>
+      </div>
 
-        <div className="flex items-center justify-between rounded-sm w-1/2 bg-state-error-5 p-2">
-          <dt className="flex items-center rounded-lg gap-1">
-            <div className="w-1 h-1 rounded-full bg-state-error"></div>
-            <div className="font-normal text-text-secondary text-xs flex items-center gap-1">
-              {t('knowledgeDetails.failed')}
-              {failedTip && <WhatIsThis>{failedTip}</WhatIsThis>}
-            </div>
-          </dt>
+      <div className="flex min-w-0 flex-1 items-center justify-between gap-1 rounded-sm bg-state-error-5 px-1.5 py-0.5">
+        <dt className="flex min-w-0 items-center gap-1 text-text-secondary">
+          <span className="size-1 shrink-0 rounded-full bg-state-error" />
+          <span className="truncate">{t('knowledgeDetails.failed')}</span>
+          {failedTip && <WhatIsThis>{failedTip}</WhatIsThis>}
+        </dt>
 
-          <dd className="font-normal">{failed || 0}</dd>
-        </div>
-      </dl>
-    </div>
+        <dd className="shrink-0 font-medium text-text-primary tabular-nums">
+          {failed || 0}
+        </dd>
+      </div>
+    </dl>
   );
 };
 
@@ -136,7 +148,10 @@ const FileLogsPage: FC = () => {
   const { data: topData } = useFetchOverviewTotal();
   const {
     pagination: { total: fileTotal },
-  } = useFetchDocumentList(false);
+    // The page shows this number and nothing else from the document list, so the
+    // request must not go out before the log table's region has been read: with no
+    // size to ask for it would fetch the 50-record cap and then fetch again.
+  } = useFetchDocumentList(false, { countOnly: true });
 
   useEffect(() => {
     setTopAllData((prev) => {
@@ -169,6 +184,7 @@ const FileLogsPage: FC = () => {
 
   const {
     data: tableOriginData,
+    loading: tableLoading,
     searchString,
     handleInputChange,
     pagination,
@@ -264,16 +280,18 @@ const FileLogsPage: FC = () => {
       p-5 mr-5 mb-5 bg-transparent shadow-none
       flex h-full min-h-0 flex-col"
     >
-      {/* Stats Cards */}
-      <div className="grid shrink-0 grid-cols-3 md:grid-cols-3 gap-7 mb-6">
+      {/* Stats Cards. `gap-4 mb-4`, not `gap-7 mb-6`: the row is a summary strip
+          above the page's real subject, and every pixel it does not spend is a
+          pixel the table region can show a log row in. */}
+      <div className="grid shrink-0 grid-cols-3 gap-4 mb-4">
         <StatCard
           title={t('datasetOverview.totalFiles')}
           value={topAllData.totalFiles.value}
           icon={
             isDark ? (
-              <SvgIcon name="data-flow/total-files-icon" width={40} />
+              <SvgIcon name="data-flow/total-files-icon" width={24} />
             ) : (
-              <SvgIcon name="data-flow/total-files-icon-bri" width={40} />
+              <SvgIcon name="data-flow/total-files-icon-bri" width={24} />
             )
           }
         >
@@ -292,9 +310,9 @@ const FileLogsPage: FC = () => {
           value={topAllData.downloads.value}
           icon={
             isDark ? (
-              <SvgIcon name="data-flow/data-icon" width={40} />
+              <SvgIcon name="data-flow/data-icon" width={24} />
             ) : (
-              <SvgIcon name="data-flow/data-icon-bri" width={40} />
+              <SvgIcon name="data-flow/data-icon-bri" width={24} />
             )
           }
           tooltip={t('datasetOverview.downloadTip')}
@@ -311,9 +329,9 @@ const FileLogsPage: FC = () => {
           value={topAllData.processing.value}
           icon={
             isDark ? (
-              <SvgIcon name="data-flow/processing-icon" width={40} />
+              <SvgIcon name="data-flow/processing-icon" width={24} />
             ) : (
-              <SvgIcon name="data-flow/processing-icon-bri" width={40} />
+              <SvgIcon name="data-flow/processing-icon-bri" width={24} />
             )
           }
           tooltip={t('datasetOverview.processingTip')}
@@ -345,6 +363,7 @@ const FileLogsPage: FC = () => {
       {/* Table */}
       <FileLogsTable
         data={tableList}
+        loading={tableLoading}
         pagination={pagination}
         setPagination={handlePaginationChange}
         pageCount={10}
