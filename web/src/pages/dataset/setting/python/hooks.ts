@@ -10,18 +10,48 @@ import { checkEmbedding } from '@/services/knowledge-service';
 import { useIsFetching } from '@tanstack/react-query';
 import { pick } from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UseFormReturn } from 'react-hook-form';
 import { useParams, useSearchParams } from 'react-router';
 import { z } from 'zod';
 import { formSchema } from './form-schema';
 
-// The value that does not need to be displayed in the analysis method Select
-const HiddenFields = ['email', 'picture', 'audio', 'resume'];
+// Parser strategies outside the cable-document workflow stay supported by the
+// backend but are hidden from the product's built-in parser picker.
+const HiddenFields = [
+  'email',
+  'picture',
+  'audio',
+  'resume',
+  'paper',
+  'book',
+  'laws',
+  'presentation',
+  'one',
+  'tag',
+  'knowledge_graph',
+];
 
-export function useSelectChunkMethodList() {
+export function useSelectChunkMethodList(currentParserId?: string) {
   const parserList = useSelectParserList();
+  const { t, i18n } = useTranslation();
+  const hiddenCurrentParser = parserList.find(
+    (x) => x.value === currentParserId && HiddenFields.includes(x.value),
+  );
+  const visibleParserList = parserList.filter(
+    (x) => !HiddenFields.includes(x.value),
+  );
+  const translateParser = (parser: (typeof parserList)[number]) => {
+    const key = `knowledgeConfiguration.parserLabel.${parser.value}`;
+    return i18n.exists(key) ? { ...parser, label: t(key) } : parser;
+  };
 
-  return parserList.filter((x) => !HiddenFields.some((y) => y === x.value));
+  return [
+    ...visibleParserList.map(translateParser),
+    ...(hiddenCurrentParser
+      ? [{ ...translateParser(hiddenCurrentParser), disabled: true }]
+      : []),
+  ];
 }
 
 export function useHasParsedDocument(isEdit?: boolean) {

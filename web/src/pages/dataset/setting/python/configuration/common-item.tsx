@@ -60,7 +60,8 @@ export function ChunkMethodItem(props: IProps) {
   const { line, name = 'parser_id' } = props;
   const { t } = useTranslate('knowledgeConfiguration');
   const form = useFormContext();
-  const parserList = useSelectChunkMethodList();
+  const currentParserId = form.watch(name);
+  const parserList = useSelectChunkMethodList(currentParserId);
 
   return (
     <FormField
