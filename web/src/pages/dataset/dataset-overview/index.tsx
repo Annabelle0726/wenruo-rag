@@ -41,10 +41,16 @@ interface CardFooterProcessProps {
  * The three modules keep everything they said before - the same label, the same
  * number, the same tooltip and the same detail line underneath - but they are laid
  * out as identity on the left (icon, label, value) and detail under it, so the
- * whole block is one 66px strip instead of a 116px card. The page's subject is the
- * log table below; the summary states four numbers and gets out of its way. It is
- * also why the number is 18px rather than 24px: still the largest figure in the
- * card, no longer competing with the table's header for attention.
+ * whole block is one 76px strip instead of a 116px card. The page's subject is the
+ * log table below; the summary states four numbers and gets out of its way. The
+ * figure is 20px rather than 24px for the same reason: still the largest thing in
+ * the card, no longer competing with the table's header.
+ *
+ * The 66px first draft of this strip was too tight to read - 14px/8px of padding
+ * around a 12px label and an 18px number - so the breathing room came back to
+ * 16px/12px, a 36px icon tile and a 20px figure. That is 10px more than the tight
+ * version and 40px less than the card it replaced, and 10px is still less than the
+ * 39px row pitch the table pages by, so the capacity it costs is zero.
  */
 const StatCard: FC<StatCardProps> = ({
   title,
@@ -54,8 +60,8 @@ const StatCard: FC<StatCardProps> = ({
   tooltip,
 }) => {
   return (
-    <Card className="flex items-center gap-3 rounded-lg border-border-default px-3.5 py-2">
-      <span className="flex size-8 shrink-0 items-center justify-center">
+    <Card className="flex items-center gap-3 rounded-lg border-border-default px-4 py-3">
+      <span className="flex size-9 shrink-0 items-center justify-center">
         {icon}
       </span>
 
@@ -69,7 +75,7 @@ const StatCard: FC<StatCardProps> = ({
             </h3>
           </CardHeader>
 
-          <CardDescription className="shrink-0 text-lg leading-6 font-semibold text-text-primary tabular-nums">
+          <CardDescription className="shrink-0 text-xl leading-7 font-semibold text-text-primary tabular-nums">
             <data value={value}>{value}</data>
           </CardDescription>
         </div>
@@ -274,10 +280,22 @@ const FileLogsPage: FC = () => {
        page size is measured from. `min-w-[880px]` and the page's own scrollbar are
        both gone - a width floor there pushed a horizontal scrollbar onto the page
        at narrower widths, which is the squeeze the report describes, and a second
-       scroller inside the shell's own scroller could only fight it. */
+       scroller inside the shell's own scroller could only fight it.
+
+       The page carries NO outer margin. It used to be `p-5 mr-5 mb-5`, and that
+       `mb-5` was the dataset sub-page's own vertical scrollbar: the shell hands
+       this page a box (`main > article > div[data-list-region]`, `overflow-auto`)
+       of a definite height and this card asks for `h-full` of it, so a 20px bottom
+       margin made the card's outer height 100% + 20px - measured 819px of content
+       in a 799px region, one 10px scrollbar on the right of a page whose table and
+       pager already fit. A margin on a `height: 100%` box inside a scroller is
+       always that extra scroll: the gutters belong INSIDE the box, which is what
+       `p-5` alone gives. It also hands the table the 20px the right margin was
+       reserving (and the 10px the scrollbar was taking), and it leaves the card
+       measurable as exactly the region's height. */
     <Card
       className="
-      p-5 mr-5 mb-5 bg-transparent shadow-none
+      p-5 bg-transparent shadow-none
       flex h-full min-h-0 flex-col"
     >
       {/* Stats Cards. `gap-4 mb-4`, not `gap-7 mb-6`: the row is a summary strip

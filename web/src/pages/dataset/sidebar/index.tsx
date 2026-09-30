@@ -1,4 +1,5 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useLocalStorageState } from 'ahooks';
 import {
   Tooltip,
@@ -10,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import {
   PanelLeftClose,
   PanelLeftOpen,
+  ChevronRight,
   LucideBookText,
   LucideFolderOpen,
   LucideLogs,
@@ -25,7 +27,14 @@ import { Routes } from '@/routes';
 import { formatPureDate } from '@/utils/date';
 
 import { IDataset } from '@/interfaces/database/dataset';
-import { useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
+
+type DatasetSidebarItem = {
+  icon: ReactNode;
+  label: string;
+  key: string;
+  children?: { id: string; label: string }[];
+};
 
 type PropType = {
   refreshCount?: number;
@@ -43,32 +52,61 @@ export function SideBar({ dataset: data }: PropType) {
   );
   const pathName = useSecondPathName();
   const { id } = useParams();
+  const { pathname } = useLocation();
   const { t } = useTranslation();
+  const isConfigurationActive = '/' + pathName === Routes.DataSetSetting;
+  const [configurationExpanded, setConfigurationExpanded] = useState(
+    isConfigurationActive,
+  );
 
-  const items = useMemo(() => {
-    const list = [
+  useEffect(() => {
+    if (isConfigurationActive) {
+      setConfigurationExpanded(true);
+    }
+  }, [isConfigurationActive]);
+
+  const items = useMemo<DatasetSidebarItem[]>(() => {
+    const list: DatasetSidebarItem[] = [
       {
-        icon: <LucideFolderOpen className="size-[1em]" />,
+        icon: <LucideFolderOpen className="size-4" />,
         label: t(`knowledgeDetails.subbarFiles`),
         key: Routes.Files,
       },
       {
-        icon: <LucideTextSearch className="size-[1em]" />,
+        icon: <LucideTextSearch className="size-4" />,
         label: t(`knowledgeDetails.testing`),
         key: Routes.DatasetTesting,
       },
       {
-        icon: <LucideLogs className="size-[1em]" />,
+        icon: <LucideLogs className="size-4" />,
         label: t(`knowledgeDetails.overview`),
         key: Routes.DataSetOverview,
       },
       {
-        icon: <LucideSettings className="size-[1em]" />,
+        icon: <LucideSettings className="size-4" />,
         label: t(`knowledgeDetails.configuration`),
         key: Routes.DataSetSetting,
+        children: [
+          {
+            id: 'basic-info',
+            label: t('knowledgeConfiguration.baseInfo'),
+          },
+          {
+            id: 'visibility',
+            label: t('knowledgeConfiguration.visibilitySettings'),
+          },
+          {
+            id: 'retrieval',
+            label: t('knowledgeConfiguration.retrievalSettings'),
+          },
+          {
+            id: 'parsing',
+            label: t('knowledgeConfiguration.parsingMethod'),
+          },
+        ],
       },
       {
-        icon: <LucideBookText className="size-[1em]" />,
+        icon: <LucideBookText className="size-4" />,
         label: t('knowledgeDetails.artifacts'),
         key: Routes.Compilation,
       },
@@ -81,12 +119,25 @@ export function SideBar({ dataset: data }: PropType) {
     <aside
       className={cn(
         'flex h-full shrink-0 flex-col relative min-h-0 overflow-hidden transition-[width] duration-200 ease-in-out motion-reduce:transition-none',
-        collapsed ? 'w-16' : 'w-64',
+        /* `w-56`, not `w-64`: the expanded rail was 256px of a 1280px content
+           column and spent a fifth of the page on a five-item menu. 224px still
+           holds the longest label plus its 16px icon and the submenu chevron, keeps
+           the name, the file count and the created date on their own lines
+           untruncated, and gives the log table's region 32px back. The COLLAPSED
+           branch is untouched: its 64px box, the centred 48px toggle and the
+           centred icons are the same geometry they were, and only one of the two
+           widths is ever in the DOM. */
+        collapsed ? 'w-16' : 'w-56',
       )}
       data-collapsed={Boolean(collapsed)}
     >
-      <header className="shrink-0 px-3 pb-3">
-        <div className="flex min-w-0 items-center justify-end gap-2">
+      <header className="shrink-0 ps-0 pe-0 pb-3">
+        <div
+          className={cn(
+            'flex min-w-0 items-center gap-2',
+            collapsed && 'justify-center',
+          )}
+        >
           {!collapsed && data?.id && (
             <h3
               className="min-w-0 flex-1 truncate text-sm font-semibold text-text-primary"
@@ -100,7 +151,10 @@ export function SideBar({ dataset: data }: PropType) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="shrink-0"
+                className={cn(
+                  'h-9 rounded-none p-0',
+                  collapsed ? 'w-12 justify-center' : 'w-9 justify-center',
+                )}
                 onClick={toggleCollapsed}
                 aria-expanded={!collapsed}
                 aria-label={t(
@@ -166,38 +220,100 @@ export function SideBar({ dataset: data }: PropType) {
       <nav
         className={cn(
           'min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth pt-1 pb-4',
-          collapsed ? 'px-2' : 'px-3',
+          collapsed ? 'px-2' : 'ps-0 pe-3',
         )}
       >
         <ul className="space-y-1">
           {items.map((item) => {
             const active = '/' + pathName === item.key;
+            const hasChildren = Boolean(item.children?.length);
+            const expanded = hasChildren && !collapsed && configurationExpanded;
 
             return (
               <li key={item.key}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
+                <div className="flex min-w-0 items-center gap-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        aria-label={item.label}
+                        aria-current={active ? 'page' : undefined}
+                        asLink
+                        block
+                        variant="ghost"
+                        className={cn(
+                          'min-w-0 flex-1 justify-start gap-3 px-0 py-2 relative h-9 text-sm',
+                          collapsed && 'justify-center',
+                          active && 'bg-accent-primary-5 text-accent-primary',
+                        )}
+                        to={
+                          hasChildren
+                            ? `${Routes.DatasetBase}${item.key}/${id}/basic-info`
+                            : `${Routes.DatasetBase}${item.key}/${id}`
+                        }
+                      >
+                        {item.icon}
+                        {!collapsed && (
+                          <span className="truncate">{item.label}</span>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    {collapsed && (
+                      <TooltipContent side="right">{item.label}</TooltipContent>
+                    )}
+                  </Tooltip>
+                  {!collapsed && hasChildren && (
                     <Button
-                      aria-label={item.label}
-                      aria-current={active ? 'page' : undefined}
-                      asLink
-                      block
                       variant="ghost"
-                      className={cn(
-                        'justify-start gap-2 px-2 py-2 relative h-9 text-sm',
-                        collapsed && 'justify-center px-0',
-                        active && 'bg-bg-card text-text-primary',
-                      )}
-                      to={`${Routes.DatasetBase}${item.key}/${id}`}
+                      size="icon"
+                      aria-label={t('setting.toggleSection', {
+                        section: item.label,
+                      })}
+                      aria-expanded={expanded}
+                      aria-controls="dataset-settings-subnav"
+                      className="size-6 shrink-0 p-0 text-text-secondary hover:text-accent-primary"
+                      onClick={() =>
+                        setConfigurationExpanded((value) => !value)
+                      }
+                      data-testid="dataset-settings-nav-toggle"
                     >
-                      {item.icon}
-                      {!collapsed && <span>{item.label}</span>}
+                      <ChevronRight
+                        className={cn(
+                          'size-3.5 transition-transform',
+                          expanded && 'rotate-90',
+                        )}
+                      />
                     </Button>
-                  </TooltipTrigger>
-                  {collapsed && (
-                    <TooltipContent side="right">{item.label}</TooltipContent>
                   )}
-                </Tooltip>
+                </div>
+                {expanded && (
+                  <ul
+                    id="dataset-settings-subnav"
+                    className="ms-3.5 mt-0.5 flex flex-col gap-0.5 border-s border-accent-primary/25 ps-2"
+                    data-testid="dataset-settings-subnav"
+                  >
+                    {item.children?.map((child) => {
+                      const selected = pathname.endsWith(`/${child.id}`);
+                      return (
+                        <li key={child.id}>
+                          <Button
+                            asLink
+                            block
+                            variant="ghost"
+                            aria-current={selected ? 'location' : undefined}
+                            className={cn(
+                              'settings-rail-child w-full justify-start',
+                              selected &&
+                                'bg-accent-primary-5 font-medium text-accent-primary',
+                            )}
+                            to={`${Routes.DatasetBase}${Routes.DataSetSetting}/${id}/${child.id}`}
+                          >
+                            <span className="truncate">{child.label}</span>
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </li>
             );
           })}
