@@ -94,7 +94,8 @@ export const useGetPaginationParams = () => {
 const PageSizeStorageKeyPrefix = 'RAGFlowPageSize:';
 
 const getStoredPageSize = (pathname: string) =>
-  Number(localStorage.getItem(`${PageSizeStorageKeyPrefix}${pathname}`)) || null;
+  Number(localStorage.getItem(`${PageSizeStorageKeyPrefix}${pathname}`)) ||
+  null;
 
 export const useSetPaginationParams = () => {
   const [queryParameters, setSearchParams] = useSearchParams();
@@ -102,7 +103,7 @@ export const useSetPaginationParams = () => {
   // What this page's list region can actually show. `null` on a page whose list
   // has no region marked (or before it is measured), in which case the user cap
   // and the application cap are all there is to go on.
-  const { capacity, ready: capacityReady } = useListCapacity();
+  const { capacity } = useListCapacity();
 
   const setPaginationParams = useCallback(
     (page: number = 1, pageSize?: number) => {
@@ -126,10 +127,15 @@ export const useSetPaginationParams = () => {
   // persisted: writing the derived size into `size` or into localStorage would
   // turn a measured number into a remembered preference, and a single
   // mis-measurement would then pin the list to that size on every later visit.
+  //
+  // `replace`, not `push`: a resize is not a navigation, and several hooks on one
+  // page each derive this same page number - pushing would file one history entry
+  // per caller. The equality guard makes the second caller a no-op.
   const setPageOnly = useCallback(
     (page: number) => {
+      if (Number(queryParameters.get('page')) === page) return;
       queryParameters.set('page', page.toString());
-      setSearchParams(queryParameters);
+      setSearchParams(queryParameters, { replace: true });
     },
     [setSearchParams, queryParameters],
   );
@@ -154,7 +160,8 @@ export const useSetPaginationParams = () => {
   useEffect(() => {
     const previous = previousSizeRef.current;
     previousSizeRef.current = size;
-    if (previous === null || previous === size || page === requestedPage) return;
+    if (previous === null || previous === size || page === requestedPage)
+      return;
     setPageOnly(page);
   }, [page, requestedPage, size, setPageOnly]);
 
@@ -164,8 +171,6 @@ export const useSetPaginationParams = () => {
     size,
     /** How many complete items this page's region shows, once measured. */
     capacity,
-    /** True once the capacity is known; list queries wait for it. */
-    capacityReady,
     /** The sizes the pager may offer here: nothing it could not honour. */
     sizeOptions: pageSizeOptionsFor(capacity),
   };

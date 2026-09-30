@@ -35,6 +35,29 @@ type UseDatasetTableColumnsType = UseChangeDocumentParserShowType &
     showManageMetadataModal: (config: ShowManageMetadataModalProps) => void;
   };
 
+/**
+ * Column geometry, declared once.
+ *
+ * Every column except the name has a fixed width, so the name takes whatever the
+ * region has left and truncates while the others never change size. That is what
+ * stops a narrower region from squeezing the other columns into wrapped text: a
+ * wrapped cell is two lines tall, and the table pages by row height, so before
+ * this a collapsed sidebar turned seven rows into five.
+ *
+ * The row height itself is the contract `dataset/index.tsx` declares
+ * (`data-list-item-height`), and these widths are what make it hold.
+ */
+const DocumentColumnWidth = {
+  select: 'w-[3.5rem]',
+  name: 'min-w-0 overflow-hidden',
+  createTime: 'w-[11rem]',
+  status: 'w-[5rem]',
+  chunkCount: 'w-[6rem]',
+  metadata: 'w-[8.5rem]',
+  parser: 'w-[11rem]',
+  actions: 'w-[10rem]',
+} as const;
+
 export function useDatasetTableColumns({
   showChangeParserModal,
   showRenameModal,
@@ -78,6 +101,7 @@ export function useDatasetTableColumns({
         ),
         enableSorting: false,
         enableHiding: false,
+        meta: { headerCellClassName: DocumentColumnWidth.select },
       },
       {
         accessorKey: 'name',
@@ -98,7 +122,13 @@ export function useDatasetTableColumns({
             </div>
           );
         },
-        meta: { cellClassName: 'max-w-[20vw]' },
+        // The one column without a declared width: it takes the slack the fixed
+        // columns leave. `min-w-0` plus the truncating span is what lets it give
+        // space back, so a long file name ellipsizes instead of widening the table
+        // and deforming every other column.
+        meta: {
+          cellClassName: DocumentColumnWidth.name,
+        },
         cell: ({ row }) => {
           const name: string = row.getValue('name');
 
@@ -106,7 +136,7 @@ export function useDatasetTableColumns({
             <Tooltip>
               <TooltipTrigger asChild>
                 <div
-                  className="flex items-center gap-2 cursor-pointer"
+                  className="flex min-w-0 items-center gap-2 cursor-pointer"
                   onClick={navigateToChunkParsedResult(
                     row.original.id,
                     row.original.dataset_id,
@@ -115,7 +145,7 @@ export function useDatasetTableColumns({
                   <FileIcon name={name}></FileIcon>
                   <span
                     className={cn(
-                      'truncate',
+                      'min-w-0 truncate',
                       (parentHidden || row.original.status === '0') &&
                         'text-text-secondary',
                     )}
@@ -160,6 +190,7 @@ export function useDatasetTableColumns({
             </div>
           );
         },
+        meta: { headerCellClassName: DocumentColumnWidth.createTime },
         cell: ({ row }) => (
           <time
             className="lowercase"
@@ -172,6 +203,7 @@ export function useDatasetTableColumns({
       {
         accessorKey: 'status',
         header: t('enabled'),
+        meta: { headerCellClassName: DocumentColumnWidth.status },
         cell: ({ row }) => {
           const id = row.original.id;
           return (
@@ -193,6 +225,7 @@ export function useDatasetTableColumns({
       {
         accessorKey: 'chunk_count',
         header: t('chunkNumber'),
+        meta: { headerCellClassName: DocumentColumnWidth.chunkCount },
         cell: ({ row }) => (
           <div className="capitalize">{row.getValue('chunk_count')}</div>
         ),
@@ -200,12 +233,14 @@ export function useDatasetTableColumns({
       {
         accessorKey: 'meta_fields',
         header: t('metadata.metadata'),
+        meta: { headerCellClassName: DocumentColumnWidth.metadata },
         cell: ({ row }) => {
           const length = Object.keys(row.getValue('meta_fields') || {}).length;
           return (
             <Button
               variant="static"
               size="auto"
+              className="max-w-full min-w-0"
               onClick={() => {
                 showManageMetadataModal({
                   isEditField: false,
@@ -239,13 +274,15 @@ export function useDatasetTableColumns({
       {
         accessorKey: 'run',
         header: t('Parse'),
+        meta: { headerCellClassName: DocumentColumnWidth.parser },
         cell: ({ row }) => {
           // `pipeline_name` is free text with no length limit, so this cell is
-          // the column's min-content floor: capping it here keeps a long
-          // ingestion-pipeline name from widening the whole table. The dropdown
-          // already carries the full name in its tooltip.
+          // the column's min-content floor: the column width caps it and the
+          // wrapper truncates, which keeps a long ingestion-pipeline name from
+          // widening the whole table. The dropdown already carries the full name
+          // in its tooltip.
           return (
-            <div className="max-w-[12rem] truncate">
+            <div className="max-w-full min-w-0 truncate">
               <ParseDropdownButton
                 record={row.original}
                 showChangeParserModal={showChangeParserModal}
@@ -271,6 +308,7 @@ export function useDatasetTableColumns({
         id: 'actions',
         header: t('action'),
         enableHiding: false,
+        meta: { headerCellClassName: DocumentColumnWidth.actions },
         cell: ({ row }) => {
           const record = row.original;
 

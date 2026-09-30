@@ -140,14 +140,23 @@ export function DatasetTable({
   });
 
   return (
-    <div className="w-full">
+    <div className="flex min-h-0 w-full flex-1 flex-col">
       {/* No `max-h-[calc(100vh-…)]` here: the viewport is the shell's business
           (`#root` is `100dvh` and `main` is the row under the breadcrumb), so a
           second viewport-relative cap on the table guessed at space the page had
           already accounted for and gave the body a scrollbar of its own - with
           six rows on screen and room for all six. The page's own region holds the
-          table and pages it by complete rows instead. */}
-      <Table>
+          table and pages it by complete rows instead.
+
+          The three arbitrary variants are the table's own geometry contract:
+          rows are exactly 38px (`h-[38px]` below with the vertical padding taken
+          out of the cells), and no cell may wrap. A wrapped cell is a taller row,
+          and a taller row means fewer rows per page - so a narrower region would
+          change the page size, which is the one thing it must not do. */}
+      <Table
+        rootClassName="min-h-0 flex-1"
+        className="[&_td]:py-0 [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap"
+      >
         <TableHeader className="bg-table-header [&_tr]:border-b [&_tr]:border-table-border">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow
@@ -158,7 +167,10 @@ export function DatasetTable({
                 return (
                   <TableHead
                     key={header.id}
-                    className="h-10 text-[13px] font-semibold text-table-head-ink"
+                    className={cn(
+                      'h-10 text-[13px] font-semibold text-table-head-ink',
+                      header.column.columnDef.meta?.headerCellClassName,
+                    )}
                   >
                     {header.isPlaceholder
                       ? null
@@ -181,7 +193,7 @@ export function DatasetTable({
                 data-doc-name={row.original.name}
                 data-state={row.getIsSelected() && 'selected'}
                 className={cn(
-                  'group border-b border-table-border hover:bg-table-row-hover data-[state=selected]:bg-table-row-hover',
+                  'group h-[38px] border-b border-table-border hover:bg-table-row-hover data-[state=selected]:bg-table-row-hover',
                   isDocumentHidden(row.original.status)
                     ? 'bg-status-archived text-text-secondary'
                     : 'odd:bg-table-row-base even:bg-table-row-alternate',
@@ -198,7 +210,14 @@ export function DatasetTable({
               </TableRow>
             ))
           ) : (
-            <TableRow data-testid={`document-list-${state.status}`}>
+            // `data-skeleton` marks this row as NOT data: it is 96px against a
+            // 38px document row, and the page size is derived from a row's height,
+            // so measuring this one would page the table by a third of what it can
+            // show - exactly while the list is loading or empty.
+            <TableRow
+              data-skeleton=""
+              data-testid={`document-list-${state.status}`}
+            >
               <TableCell colSpan={columns.length} className="h-24 text-center">
                 {state.status === 'forbidden' ? (
                   <Empty
@@ -230,18 +249,28 @@ export function DatasetTable({
           )}
         </TableBody>
       </Table>
+      {/* The pager is a flex sibling AFTER the list region, in the page's own
+          flow. It used to be `absolute bottom-3 right-8`, which took it out of
+          the flow entirely: with no positioned ancestor it anchored to the
+          viewport, floated over the last rows of the table, and contributed
+          nothing to the height the page size is measured from - so the page asked
+          for rows it then covered with the pager.
+
+          `data-list-footer` is what tells the measurement to subtract it: the
+          capacity is the space the ROWS have, not the space the box has. */}
       {settled && (
-        <div className="flex items-center justify-end  py-4 absolute bottom-3 right-8">
-          <div className="space-x-2">
-            <RAGFlowPagination
-              {...pick(pagination, 'current', 'pageSize')}
-              total={pagination.total}
-              onChange={(page, pageSize) => {
-                setPagination({ page, pageSize });
-              }}
-            ></RAGFlowPagination>
-          </div>
-        </div>
+        <footer
+          data-list-footer=""
+          className="flex shrink-0 items-center justify-end pt-4"
+        >
+          <RAGFlowPagination
+            {...pick(pagination, 'current', 'pageSize')}
+            total={pagination.total}
+            onChange={(page, pageSize) => {
+              setPagination({ page, pageSize });
+            }}
+          ></RAGFlowPagination>
+        </footer>
       )}
       {changeParserVisible && (
         <ChangeParserDialog

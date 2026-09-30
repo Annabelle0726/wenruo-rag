@@ -2,6 +2,7 @@ import { useFetchKnowledgeBaseConfiguration } from '@/hooks/use-knowledge-reques
 import { usePublishBreadcrumbTrail } from '@/layouts/components/breadcrumb-context';
 import { KnowledgeBaseProvider } from '@/pages/dataset/contexts/knowledge-base-context';
 import { Routes } from '@/routes';
+import { TABLE_ROW_PITCH_PX } from '@/utils/list-capacity';
 import { useMemo } from 'react';
 
 import { Outlet, useParams } from 'react-router';
@@ -36,16 +37,20 @@ export default function DatasetWrapper() {
       <article className="pt-3 size-full grid grid-cols-[auto_minmax(0,1fr)] grid-rows-1">
         <SideBar dataset={data} />
 
-        {/* The region a dataset page's list pages by: this is the box the shell
-            gives the page (one viewport minus the header and the breadcrumb bar),
-            so it is the one place that knows how many rows fit. The declared item
-            height is the document table's own row height (`h-[38px]` in
-            `dataset/dataset/dataset-table.tsx`), used only until its first real row
-            has rendered - after that the row itself is measured. */}
+        {/* The shell's region, for the sub-pages that do not mark one of their
+            own: this is the box the shell gives the page (one viewport minus the
+            header and the breadcrumb bar). A sub-page that owns a tighter box for
+            its list marks that box too and the INNERMOST region is the one that
+            decides the page size - the files view does, because this box also
+            carries the page's own header, toolbar and bulk bar, whose heights are
+            not the list's.
+
+            The declared item height is the app's table row pitch, used only until
+            a real row has rendered - after that the row itself is measured. */}
         <div
           className="min-w-0 min-h-0 overflow-auto"
           data-list-region=""
-          data-list-item-height="38"
+          data-list-item-height={TABLE_ROW_PITCH_PX}
         >
           <Outlet />
         </div>

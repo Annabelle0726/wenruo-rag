@@ -1,7 +1,8 @@
 import {
-  useFetchNextChunkList,
+  useContinuousChunkList,
   useSwitchChunk,
 } from '@/hooks/use-chunk-request';
+import { LoadingDots } from '@/components/loading-dots';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -32,7 +33,6 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import message from '@/components/ui/message';
-import { RAGFlowPagination } from '@/components/ui/ragflow-pagination';
 import {
   ResizableHandle,
   ResizablePanel,
@@ -43,9 +43,15 @@ import {
   QueryStringMap,
   useNavigatePage,
 } from '@/hooks/logic-hooks/navigate-hooks';
-import { useClearSelectionOnPageChange } from '@/hooks/logic-hooks/use-clear-selection-on-page-change';
 import { getExtension } from '@/utils/document-util';
 import { LucideArrowBigLeft } from 'lucide-react';
+
+/**
+ * How close to the end of the loaded list the reader has to be before the next
+ * block of chunks is requested. Roughly two cards, so the request is in flight
+ * before the end of the list is actually reached.
+ */
+const LOAD_MORE_THRESHOLD_PX = 320;
 
 function Chunk() {
   const [filterChunkIds, setFilterChunkIds] = useState<string[]>([]);
@@ -58,22 +64,27 @@ function Chunk() {
     null,
   );
   const { removeChunk } = useDeleteChunkByIds();
+  // The chunks are ONE continuous list, in document order: search, the
+  // enabled/disabled filter and chunk operations all behave as before, but the
+  // reader scrolls through the whole document instead of paging through it.
   const {
-    data: { documentInfo, data = [], total },
-    pagination,
+    chunks,
+    documentInfo,
     loading,
+    loadingMore,
+    hasMore,
+    loadMore,
     searchString,
     handleInputChange,
     available,
     handleSetAvailable,
     dataUpdatedAt,
-  } = useFetchNextChunkList(true, { chunkIds: filterChunkIds });
+  } = useContinuousChunkList(true, { chunkIds: filterChunkIds });
   const { handleChunkCardClick, selectedChunkId } = useHandleChunkCardClick();
 
   const { t } = useTranslation();
   const { changeChunkTextMode, textMode } = useChangeChunkTextMode();
   const { switchChunk } = useSwitchChunk();
-  const [chunkList, setChunkList] = useState(data);
   const {
     chunkUpdatingLoading,
     onChunkUpdatingOk,
@@ -85,9 +96,6 @@ function Chunk() {
   } = useUpdateChunk();
   const { navigateToDataFile, getQueryString } = useNavigatePage();
   const fileUrl = useGetDocumentUrl(false);
-  useEffect(() => {
-    setChunkList(data);
-  }, [data]);
 
   const clearSelectedChunkIds = useCallback(() => {
     setSelectedChunkIds([]);
@@ -104,13 +112,27 @@ function Chunk() {
     [],
   );
 
-  useClearSelectionOnPageChange(pagination, clearSelectedChunkIds);
+  // A search or a filter changes WHICH chunks are on screen, so a selection made
+  // against the previous list is meaningless and is dropped - the same rule the
+  // paginated list applied when the page changed, keyed on the query instead of on
+  // the page number.
+  const displayedQueryRef = useRef('');
+  const filterKey = filterChunkIds.join(',');
+  useEffect(() => {
+    const key = `${searchString}|${available ?? ''}|${filterKey}`;
+    if (displayedQueryRef.current === key) return;
+    displayedQueryRef.current = key;
+    clearSelectedChunkIds();
+  }, [searchString, available, filterKey, clearSelectedChunkIds]);
 
   const selectAllChunk = useCallback(
     (checked: boolean) => {
-      setSelectedChunkIds(checked ? data.map((x) => x.chunk_id) : []);
+      // "All" is every chunk this reader has loaded. It used to mean "this page",
+      // which was the same thing when the list was paginated; a continuous list
+      // has no page, and the loaded set is the only set the reader can see.
+      setSelectedChunkIds(checked ? chunks.map((x) => x.chunk_id) : []);
     },
-    [data],
+    [chunks],
   );
 
   const handleSingleCheckboxClick = useCallback(
@@ -129,15 +151,9 @@ function Chunk() {
     [],
   );
 
-  const handleChunkIdsChange = useCallback(
-    (chunkIds: string[]) => {
-      setFilterChunkIds(chunkIds);
-      if (chunkIds.length === 0) {
-        pagination.onChange?.(1, pagination.pageSize);
-      }
-    },
-    [pagination],
-  );
+  const handleChunkIdsChange = useCallback((chunkIds: string[]) => {
+    setFilterChunkIds(chunkIds);
+  }, []);
 
   const showSelectedChunkWarning = useCallback(() => {
     message.warning(t('message.pleaseSelectChunk'));
@@ -171,27 +187,16 @@ function Chunk() {
         }
       }
 
-      const resCode: number = await switchChunk({
+      // The list is re-read by the mutation (see `useSwitchChunk`): patching the
+      // chunks on screen here would leave the blocks above and below them
+      // claiming a state the server no longer has.
+      await switchChunk({
         chunk_ids: ids,
         available_int: available,
         doc_id: documentId,
       });
-      if (ids?.length && resCode === 0) {
-        chunkList.forEach((x: any) => {
-          if (ids.indexOf(x['chunk_id']) > -1) {
-            x['available_int'] = available;
-          }
-        });
-        setChunkList(chunkList);
-      }
     },
-    [
-      switchChunk,
-      documentId,
-      selectedChunkIds,
-      showSelectedChunkWarning,
-      chunkList,
-    ],
+    [switchChunk, documentId, selectedChunkIds, showSelectedChunkWarning],
   );
 
   const { highlights, setWidthAndHeight } =
@@ -224,14 +229,40 @@ function Chunk() {
     return 'unknown';
   }, [documentInfo]);
 
-  // Virtual list setup for chunk cards
+  // The list is virtualized because a document can hold thousands of chunks and
+  // only the ones on screen are mounted; the blocks themselves arrive as the
+  // reader approaches the end of what is loaded.
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
-    count: chunkList.length,
+    count: chunks.length,
     getScrollElement: () => scrollContainerRef.current,
     estimateSize: () => 120, // Estimated card height
     overscan: 5, // Render 5 extra items above/below viewport
   });
+
+  // Reading to within a couple of cards of the end of the loaded list asks for the
+  // next block. Loading is never triggered by the list's LENGTH: a short list (a
+  // search with three matches) has nothing more to ask for.
+  const handleListScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const distanceToEnd =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    if (distanceToEnd <= LOAD_MORE_THRESHOLD_PX) loadMore();
+  }, [loadMore]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || !hasMore) return;
+    // A block that does not fill the region leaves nothing to scroll, so no scroll
+    // event would ever ask for the next one: ask here instead.
+    if (
+      container.scrollHeight <=
+      container.clientHeight + LOAD_MORE_THRESHOLD_PX
+    ) {
+      loadMore();
+    }
+  }, [chunks.length, hasMore, loadMore]);
 
   return (
     <main className="h-dvh flex flex-col">
@@ -352,13 +383,22 @@ function Chunk() {
                         selectAllChunk={selectAllChunk}
                         switchChunk={handleSwitchChunk}
                         removeChunk={handleRemoveChunk}
-                        checked={selectedChunkIds.length === data.length}
+                        checked={
+                          chunks.length > 0 &&
+                          selectedChunkIds.length === chunks.length
+                        }
                         selectedChunkIds={selectedChunkIds}
                       />
                     </div>
 
+                    {/* The one continuous scroll region of this page: no page
+                        control, no page count and no page size - the whole
+                        document is read downward, and the next block of chunks is
+                        fetched before the reader reaches the end of the loaded
+                        ones. */}
                     <div
                       ref={scrollContainerRef}
+                      onScroll={handleListScroll}
                       className="flex-1 overflow-y-auto min-h-0"
                     >
                       <div
@@ -369,7 +409,8 @@ function Chunk() {
                         }}
                       >
                         {virtualizer.getVirtualItems().map((virtualItem) => {
-                          const item = chunkList[virtualItem.index];
+                          const item = chunks[virtualItem.index];
+                          if (!item) return null;
                           return (
                             <div
                               key={item.chunk_id}
@@ -401,16 +442,19 @@ function Chunk() {
                           );
                         })}
                       </div>
-                    </div>
 
-                    <footer className="mt-5">
-                      <RAGFlowPagination
-                        pageSize={pagination.pageSize}
-                        current={pagination.current}
-                        total={total}
-                        onChange={pagination.onChange}
-                      />
-                    </footer>
+                      {/* The next block is on its way. A quiet marker at the end
+                          of the list, not a control: there is nothing to click,
+                          and nothing to page. */}
+                      {loadingMore && (
+                        <div
+                          className="flex items-center justify-center py-4"
+                          data-testid="chunk-list-loading-more"
+                        >
+                          <LoadingDots />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </Spin>
               </article>

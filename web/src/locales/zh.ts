@@ -957,7 +957,7 @@ export default {
       createChunk: '创建解析块',
       editChunk: '编辑解析块',
       bulk: '批量',
-      selectAll: '选择当前页',
+      selectAll: '全选已加载',
       enabledSelected: '启用选定的',
       disabledSelected: '禁用选定的',
       deleteSelected: '删除选定的',

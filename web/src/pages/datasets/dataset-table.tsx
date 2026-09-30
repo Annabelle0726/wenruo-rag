@@ -187,7 +187,11 @@ export function DatasetTable({
             </TableRow>
           ))
         ) : (
-          <TableRow className="hover:bg-transparent">
+          // `data-skeleton` marks this as NOT data. It is 120px against a 38px
+          // row, and the page size is derived from a row's height: unmarked, an
+          // empty (or filtered-to-nothing) list paged by a third of what the
+          // region can show, and the size jumped again the moment data landed.
+          <TableRow data-skeleton="" className="hover:bg-transparent">
             <TableCell
               colSpan={6}
               className="h-[120px] text-center align-middle text-content-tertiary"

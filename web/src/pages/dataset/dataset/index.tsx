@@ -22,6 +22,7 @@ import {
 } from '@/hooks/logic-hooks/use-row-selection';
 import { documentListIsSettled } from '@/hooks/document-list-state';
 import { useFetchDocumentList } from '@/hooks/use-document-request';
+import { TABLE_ROW_PITCH_PX } from '@/utils/list-capacity';
 import { LucidePlus } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -155,9 +156,9 @@ export default function Dataset() {
   return (
     <Card
       as="article"
-      className="mb-5 mr-5 border-0 bg-transparent shadow-none"
+      className="mr-5 flex h-full min-h-0 flex-col border-0 bg-transparent shadow-none"
     >
-      <CardHeader as="header" className="px-6 py-4 space-y-0">
+      <CardHeader as="header" className="shrink-0 px-6 py-4 space-y-0">
         <ListFilterBar
           searchVariant="capsule"
           onSearchChange={handleInputChange}
@@ -207,18 +208,38 @@ export default function Dataset() {
         )}
       </CardHeader>
 
-      <CardContent className="px-6 py-0">
-        <DatasetTable
-          documents={documents}
-          pagination={pagination}
-          setPagination={setPagination}
-          state={state}
-          retry={retry}
-          rowSelection={rowSelection}
-          setRowSelection={setRowSelection}
-          showManageMetadataModal={showManageMetadataModal}
-          bulkOperateBarVisible={!rowSelectionIsEmpty}
-        />
+      <CardContent className="flex min-h-0 flex-1 flex-col px-6 pb-5 pt-0">
+        {/* The region this page's table pages by.
+            
+            It is THIS box, not the whole dataset scroller: the scroller also
+            carries the card header above the table (and the bulk bar that appears
+            when a row is selected), so measuring it made the "space above the
+            table" term move with the selection - a page size that changed when a
+            checkbox was ticked. Here the box holds exactly the table and the pager,
+            its height is whatever the flex column has left, and the pager is
+            marked `data-list-footer` so it is subtracted.
+
+            `data-list-item-height` is `DatasetTable`'s own row pitch (its
+            `h-[38px]` rows plus the separator each draws), declared rather than
+            measured so the first request already asks for a whole page instead of
+            fetching a default and correcting itself. */}
+        <div
+          className="flex min-h-0 flex-1 flex-col overflow-auto"
+          data-list-region=""
+          data-list-item-height={TABLE_ROW_PITCH_PX}
+        >
+          <DatasetTable
+            documents={documents}
+            pagination={pagination}
+            setPagination={setPagination}
+            state={state}
+            retry={retry}
+            rowSelection={rowSelection}
+            setRowSelection={setRowSelection}
+            showManageMetadataModal={showManageMetadataModal}
+            bulkOperateBarVisible={!rowSelectionIsEmpty}
+          />
+        </div>
 
         {documentUploadVisible && (
           <FileUploadDialog

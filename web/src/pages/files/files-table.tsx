@@ -147,6 +147,7 @@ export function FilesTable({
       ),
       enableSorting: false,
       enableHiding: false,
+      meta: { headerCellClassName: 'w-[3.5rem]' },
     },
     {
       accessorKey: 'name',
@@ -166,7 +167,9 @@ export function FilesTable({
           </div>
         );
       },
-      meta: { cellClassName: 'max-w-[20vw]' },
+      meta: {
+        cellClassName: 'min-w-0 overflow-hidden',
+      },
       cell: ({ row }) => {
         const name: string = row.getValue('name');
         const type = row.original.type;
@@ -202,7 +205,7 @@ export function FilesTable({
                   />
                 </span>
 
-                <span className="truncate">{name}</span>
+                <span className="min-w-0 truncate">{name}</span>
               </Button>
             </TooltipTrigger>
 
@@ -229,6 +232,7 @@ export function FilesTable({
           </div>
         );
       },
+      meta: { headerCellClassName: 'w-[11rem]' },
       cell: ({ row }) => (
         <div className="lowercase">
           {formatDate(row.getValue('create_time'))}
@@ -253,6 +257,7 @@ export function FilesTable({
           </div>
         );
       },
+      meta: { headerCellClassName: 'w-[6.5rem]' },
       cell: ({ row }) => (
         <div className="capitalize">{formatFileSize(row.getValue('size'))}</div>
       ),
@@ -317,7 +322,13 @@ export function FilesTable({
           inside the page column: the table fills it and the page size is derived
           from how many complete rows it holds, so the table body must not carry a
           scroll cap of its own - a fixed `max-h-96` body scrolled internally even
-          when the region had room for every row. */}
+          when the region had room for every row.
+
+          The arbitrary variants are this table's geometry contract: 38px rows
+          (`h-[38px]` below, with the cells' vertical padding taken out) that never
+          wrap, so a row is the same height whatever width the region has. A
+          wrapped cell is two lines tall, and the page size is derived from the row
+          height - which is how a narrower region used to cost rows. */}
       <div className="glass-surface flex-1 min-h-0 size-full overflow-hidden rounded-2xl border border-cable-hairline">
         <Table
           rootClassName="max-h-full overflow-auto rounded-2xl bg-transparent"
@@ -326,7 +337,8 @@ export function FilesTable({
              rather than on each Button because the ghost variant's own
              hover:text-text-primary competes at equal specificity — the
              descendant selector is what reliably wins. */
-          className="[&_th]:text-sm [&_th]:font-medium [&_th]:text-text-primary [&_th_button:hover]:text-cable-accent [&_th_button_svg]:transition-colors [&_th_button_svg]:duration-200">
+          className="[&_td]:py-0 [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap [&_th]:text-sm [&_th]:font-medium [&_th]:text-text-primary [&_th_button:hover]:text-cable-accent [&_th_button_svg]:transition-colors [&_th_button_svg]:duration-200"
+        >
           <TableHeader className="bg-table-header">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
@@ -361,7 +373,7 @@ export function FilesTable({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className="group border-b border-cable-hairline bg-transparent transition-colors duration-200 hover:bg-table-row-hover data-[state=selected]:bg-table-row-hover"
+                  className="group h-[38px] border-b border-cable-hairline bg-transparent transition-colors duration-200 hover:bg-table-row-hover data-[state=selected]:bg-table-row-hover"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
@@ -383,7 +395,14 @@ export function FilesTable({
         </Table>
       </div>
 
-      <footer className="flex items-center justify-end pb-5 mt-4">
+      {/* `data-list-footer` is what tells the page-size measurement to subtract
+          the pager: the capacity is the space the ROWS have, not the space the
+          box has, and a pager counted as row space is a row the region cannot
+          show. */}
+      <footer
+        data-list-footer=""
+        className="flex shrink-0 items-center justify-end pb-5 mt-4"
+      >
         <RAGFlowPagination
           {...pick(pagination, 'current', 'pageSize')}
           total={total}

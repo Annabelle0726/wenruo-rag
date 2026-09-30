@@ -14,6 +14,7 @@ import { useGoToPreviousPageOnEmpty } from '@/hooks/logic-hooks';
 import { useClearSelectionOnPageChange } from '@/hooks/logic-hooks/use-clear-selection-on-page-change';
 import { useRowSelection } from '@/hooks/logic-hooks/use-row-selection';
 import { useFetchFileList } from '@/hooks/use-file-request';
+import { TABLE_ROW_PITCH_PX } from '@/utils/list-capacity';
 import { LucidePlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CreateFolderDialog } from './create-folder-dialog';
@@ -148,9 +149,14 @@ export default function Files() {
         )}
       </header>
 
+      {/* The box this page's table pages by, and the row pitch it pages by: the
+          table renders `h-[38px]` rows with no vertical padding, so the first
+          request already asks for a whole page instead of fetching a default and
+          correcting itself. */}
       <div
         className="page-gutter flex flex-1 flex-col overflow-hidden"
         data-list-region=""
+        data-list-item-height={TABLE_ROW_PITCH_PX}
       >
         <FilesTable
           files={files}

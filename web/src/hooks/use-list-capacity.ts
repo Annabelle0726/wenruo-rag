@@ -1,25 +1,31 @@
-import { useLayoutEffect, useRef, useState } from 'react';
 import { gridCapacity, rowsThatFit } from '@/utils/list-capacity';
+import { useLayoutEffect, useSyncExternalStore } from 'react';
 
 /**
  * What a paginated list's own region can show, measured from the region itself.
  *
- * The region is marked `data-list-region` by the page that owns it: a card grid
- * on the card pages, the scrolling wrapper of a table on the table pages. The
- * measurement reads the live box rather than repeating the layout's arithmetic,
- * so a sidebar toggle, a zoom step, a changed toolbar or a different theme are
- * all handled by measuring again:
+ * The region is marked `data-list-region` by the page that owns it. When regions
+ * are nested — a page shell marks the box the shell gives it, and the list inside
+ * marks the tighter box it actually pages by — the INNERMOST one wins: it is the
+ * box whose height the list owns, and the outer one also carries page headers and
+ * toolbars whose heights are not the list's business.
+ *
+ * The measurement reads the live box rather than repeating the layout's
+ * arithmetic:
  *
  *   columns  - the resolved `grid-template-columns` track count (the `auto-fill`
  *              sizing in `CardContainer` decides how many fit across)
  *   rows     - the region's height divided by a complete item's height + the gap
  *   capacity - columns x rows for a grid, rows for a table
  *
- * The item height comes from a rendered item when there is one. Before any data
- * has arrived there is nothing to measure, so a grid falls back to
- * `--list-card-height` - the same token `HomeCard` builds its row from - which is
- * what lets the FIRST request already ask for the right number of records instead
- * of fetching 50 to find out.
+ * TWO AXES, ONE OF WHICH MAY NOT MOVE THE ANSWER. A grid's column count follows
+ * the width it is given, so a narrower region really does hold fewer cards. A
+ * table's does not: its rows are a fixed height and its cells never wrap (see
+ * `DatasetTable`/`FilesTable`), so a table's capacity is a function of the
+ * region's HEIGHT alone. That is deliberate. When the row height followed the
+ * width — a squeezed cell wrapping to two lines — collapsing the sidebar turned 7
+ * rows into 5, and the count was also being read off whatever rows had arrived,
+ * which made the page size depend on its own answer.
  */
 
 /** A card row, a see-all tile and a create tile are all this tall. */
@@ -48,20 +54,45 @@ const itemHeightOf = (region: HTMLElement, style: CSSStyleDeclaration) => {
 };
 
 /**
- * The first REAL row of a table body: the unit a table page pages by.
+ * The row height a table region states about itself, in `data-list-item-height`.
  *
- * A loading skeleton is a deliberately different height (`h-24` against a 38px
- * row), so measuring one would page the table by the wrong number until the data
- * landed. Skeleton rows are skipped. Before any row has rendered, the region may
- * declare `data-list-item-height` - the table's own row height, stated once next
- * to the table that uses it - so the first request can still be a whole page.
+ * A table declares this because its row pitch is a design contract, not an
+ * observation: the list rows are `h-[38px]` with no vertical padding and never
+ * wrap, so every row costs the same (`TABLE_ROW_PITCH_PX` - the 38px row plus the
+ * separator it draws) whatever the table holds and however wide the region is.
+ * Reading the contract is what lets the FIRST request already ask for a whole page
+ * - and it is what keeps the page size from being derived from the rows that
+ * happen to have arrived.
+ */
+const declaredItemHeightOf = (region: HTMLElement) => {
+  const declared = Number.parseFloat(region.dataset.listItemHeight ?? '');
+  return Number.isFinite(declared) && declared > 0 ? declared : 0;
+};
+
+/**
+ * A row that is NOT data: a skeleton, a spinner, an empty state or an error.
+ *
+ * These are deliberately a different height from a real row (96px or 120px against
+ * a 38px document row), so measuring one pages the table by a third of what it can
+ * show - and it does so exactly when the list is empty or refused, which is the
+ * reading that then sticks until the data lands.
+ */
+const isPlaceholderRow = (row: Element) => row.hasAttribute('data-skeleton');
+
+/**
+ * How tall one table row is: the height the region declares, raised by a real
+ * rendered row when that row is TALLER than the declaration.
+ *
+ * The declaration stands on its own - a region that states 38px pages by 38px with
+ * no data on screen at all. A live row can only raise it, because a row taller than
+ * the contract is a layout fact the capacity has to respect; letting it LOWER the
+ * reading is what would make the page size follow the page it produced.
  */
 const tableRowHeightOf = (region: HTMLElement) => {
   const rows = [...region.querySelectorAll('tbody tr')];
-  const row = rows.find((candidate) => !candidate.hasAttribute('data-skeleton'));
-  if (row) return row.getBoundingClientRect().height;
-  const declared = Number.parseFloat(region.dataset.listItemHeight ?? '');
-  return Number.isFinite(declared) && declared > 0 ? declared : 0;
+  const row = rows.find((candidate) => !isPlaceholderRow(candidate));
+  const measured = row ? row.getBoundingClientRect().height : 0;
+  return Math.max(declaredItemHeightOf(region), measured);
 };
 
 const isGrid = (style: CSSStyleDeclaration) => style.display === 'grid';
@@ -112,110 +143,194 @@ export function readRegionCapacity(region: HTMLElement | null): number | null {
 }
 
 /**
- * The last measured capacity, readable outside React.
+ * The one region on screen, and the one reading of it.
  *
- * The pager shows the size the page is actually using, so it has to know the same
- * capacity - and making every call site pass it would leave one forgotten site
- * displaying a size the page is not using. The measured value is published here
- * and the pager reads it; a page that re-renders on a capacity change re-renders
- * its pager with the new value.
+ * Every paginated page mounts several hooks that each need this number - a list
+ * query, a search handler, a "go back a page when empty" helper - and when each of
+ * them owned its own `ResizeObserver` and `MutationObserver` they all measured the
+ * same box, all published their own reading of it, and a resize burst produced
+ * several competing answers and several refetches. The measurement lives here
+ * instead, shared by every subscriber, so a stable viewport converges on ONE
+ * reading no matter how many hooks ask for it.
  */
-let publishedCapacity: number | null = null;
+type Capacity = number | null;
 
+let publishedCapacity: Capacity = null;
+let observedRegion: HTMLElement | null = null;
+let resizeObserver: ResizeObserver | undefined;
+let contentObserver: MutationObserver | undefined;
+let bodyObserver: MutationObserver | undefined;
+/** The previous frame's raw reading, used to confirm one before publishing it. */
+let lastReading: Capacity | undefined;
+/** False until this region's first reading has been published. */
+let confirmed = false;
+let frame = 0;
+
+const listeners = new Set<() => void>();
+
+/** The capacity last published, readable outside React (the pager shows it). */
 export const currentListCapacity = () => publishedCapacity;
 
+export const getListCapacitySnapshot = () => publishedCapacity;
+
 /**
- * The capacity of the list region on screen, re-measured whenever that region
- * changes size.
+ * The innermost marked region, or null when the page has none.
  *
- * `ready` is false until a capacity is known, and pages hold their list query
- * until it is true: that is what keeps the first request from asking for a
- * number the viewport cannot show. The region is mounted by the page's own frame
- * (not by its data), so this resolves on the first commit rather than after the
- * first response.
+ * `querySelectorAll` returns document order, so the last match is the most deeply
+ * nested one - the box whose height the list itself owns.
+ */
+const findRegion = (): HTMLElement | null => {
+  const regions = document.querySelectorAll<HTMLElement>('[data-list-region]');
+  return regions.length ? regions[regions.length - 1] : null;
+};
+
+const publish = (next: Capacity) => {
+  if (next === publishedCapacity) return;
+  publishedCapacity = next;
+  listeners.forEach((listener) => listener());
+};
+
+/**
+ * One reading, and the decision to publish it.
+ *
+ * A region's FIRST reading is published at once: the caller measures it before the
+ * browser paints, so the first request can already be a whole page instead of
+ * fetching a default and correcting itself. Every reading after that has to be
+ * confirmed by the next frame, because a resize burst (a sidebar transition, a zoom
+ * step) produces a different number on every frame and only the number the layout
+ * settles on is a page size - this is what turns 7 -> 6 -> 7 -> 5 into one final 5.
+ */
+const measure = () => {
+  const region = observedRegion;
+  if (!region) return;
+  const next = readRegionCapacity(region);
+  // Mirrored onto the region so the number the page is paging by can be read
+  // straight off the DOM (devtools, and the browser acceptance checks).
+  region.dataset.listCapacity = next === null ? 'unmeasured' : String(next);
+
+  if (!confirmed) {
+    confirmed = true;
+    lastReading = next;
+    publish(next);
+    return;
+  }
+  if (next !== lastReading) {
+    lastReading = next;
+    schedule();
+    return;
+  }
+  publish(next);
+};
+
+const detachRegion = () => {
+  resizeObserver?.disconnect();
+  contentObserver?.disconnect();
+  resizeObserver = undefined;
+  contentObserver = undefined;
+  observedRegion = null;
+  lastReading = undefined;
+  confirmed = false;
+};
+
+/** Follow the innermost region, whatever the page has mounted this time. */
+const syncRegion = () => {
+  // `querySelectorAll` only ever returns connected nodes, so a region this page
+  // has dropped reads as "something else" (or as nothing) here.
+  const next = findRegion();
+  if (next === observedRegion) {
+    // Still no region: a reading left over from a page that has gone must not
+    // become this page's page size. (A reading for a region that is still on
+    // screen stays - the page has not changed its mind about it.)
+    if (!next) publish(null);
+    return;
+  }
+  detachRegion();
+  if (!next) {
+    publish(null);
+    return;
+  }
+  observedRegion = next;
+  // Both axes: a window resize changes the region's box, and so does a sidebar
+  // toggle or a browser zoom step.
+  resizeObserver = new ResizeObserver(schedule);
+  resizeObserver.observe(next);
+  // The region's height is fixed by the shell, so rows and cards arriving inside it
+  // do NOT resize it: without this the first page's rows would replace a loading
+  // skeleton and leave the capacity unmeasured forever.
+  contentObserver = new MutationObserver(schedule);
+  contentObserver.observe(next, { childList: true, subtree: true });
+  // Published before the paint that mounts this region, when the hook asks for it.
+  measure();
+};
+
+function tick() {
+  frame = 0;
+  syncRegion();
+  measure();
+}
+
+/**
+ * Coalesces every trigger - a resize observation, a content mutation, a new
+ * region appearing - into ONE reading per frame.
+ *
+ * A sidebar toggle animates its width over 200ms: without this, that is a dozen
+ * readings and a dozen candidate page sizes for a list that only ever needed the
+ * last one.
+ */
+function schedule() {
+  if (frame) return;
+  frame = requestAnimationFrame(tick);
+}
+
+const start = () => {
+  // A page renders its region in its own commit, which can be later than this
+  // subscription: watch the document for it rather than measuring once and
+  // giving up. The watcher is coalesced into the same frame as everything else.
+  bodyObserver = new MutationObserver(schedule);
+  bodyObserver.observe(document.body, { childList: true, subtree: true });
+  tick();
+};
+
+const stop = () => {
+  bodyObserver?.disconnect();
+  bodyObserver = undefined;
+  if (frame) {
+    cancelAnimationFrame(frame);
+    frame = 0;
+  }
+  detachRegion();
+};
+
+export const subscribeListCapacity = (listener: () => void) => {
+  listeners.add(listener);
+  if (listeners.size === 1) start();
+  return () => {
+    listeners.delete(listener);
+    if (!listeners.size) stop();
+  };
+};
+
+/**
+ * The capacity of the list region on screen, shared by every caller on the page.
+ *
+ * A page's frame mounts before its data does, so this resolves on the first commit
+ * rather than after the first response, and the query that follows it already asks
+ * for a number the viewport can hold.
  */
 export function useListCapacity(): {
-  capacity: number | null;
-  ready: boolean;
+  capacity: Capacity;
 } {
-  const [capacity, setCapacity] = useState<number | null>(null);
-  // A page whose list has no marked region (a table on a settings page, say) must
-  // not wait forever for a measurement that will never come: after a grace period
-  // the query is released with the cap, which is what such a page did before
-  // capacities existed.
-  const [gaveUp, setGaveUp] = useState(false);
-  // A region read while the page is still laying out reports a height the page
-  // will not keep - a header that has not taken its space yet, a table whose first
-  // real row has not replaced its skeleton. Publishing such a reading pages the
-  // list by the wrong number and refetches when the layout settles, so a value is
-  // only published once the next frame agrees with it.
-  const pendingCapacity = useRef<number | null | undefined>(undefined);
+  const capacity = useSyncExternalStore(
+    subscribeListCapacity,
+    getListCapacitySnapshot,
+    getListCapacitySnapshot,
+  );
 
   useLayoutEffect(() => {
-    let resizeObserver: ResizeObserver | undefined;
-    let contentObserver: MutationObserver | undefined;
-    let measuredRegion: HTMLElement | null = null;
-
-    const measure = () => {
-      const next = readRegionCapacity(measuredRegion);
-      // Mirrored onto the region so the number the page is paging by can be read
-      // straight off the DOM (devtools, and the browser acceptance checks).
-      if (measuredRegion) {
-        measuredRegion.dataset.listCapacity =
-          next === null ? 'unmeasured' : String(next);
-      }
-      if (pendingCapacity.current !== next) {
-        // First sighting of this value: remember it, confirm on the next frame.
-        pendingCapacity.current = next;
-        requestAnimationFrame(() => measure());
-        return;
-      }
-      publishedCapacity = next;
-      setCapacity((previous) => (previous === next ? previous : next));
-    };
-
-    const attach = () => {
-      const region = document.querySelector<HTMLElement>('[data-list-region]');
-      if (!region) return false;
-      measuredRegion = region;
-      // A layout effect runs before the browser paints, so the first request
-      // already has a capacity when the region is part of the first render.
-      measure();
-      // Both axes: a window resize changes the region's box, and so does a
-      // sidebar toggle or a browser zoom step.
-      resizeObserver = new ResizeObserver(measure);
-      resizeObserver.observe(region);
-      // The region's height is fixed by the shell, so rows and cards arriving
-      // inside it do NOT resize it: without this the first page's rows would
-      // replace a loading skeleton and leave the capacity unmeasured forever.
-      contentObserver = new MutationObserver(measure);
-      contentObserver.observe(region, { childList: true, subtree: true });
-      return true;
-    };
-
-    if (attach()) {
-      return () => {
-        resizeObserver?.disconnect();
-        contentObserver?.disconnect();
-      };
-    }
-
-    // The region belongs to the page's frame; watch for it rather than measuring
-    // once and giving up, so a page that renders its frame late still pages by
-    // its real capacity. If it never appears, the grace period releases the query.
-    const graceTimer = setTimeout(() => setGaveUp(true), 400);
-    const mutations = new MutationObserver(() => {
-      if (attach()) mutations.disconnect();
-    });
-    mutations.observe(document.body, { childList: true, subtree: true });
-
-    return () => {
-      clearTimeout(graceTimer);
-      mutations.disconnect();
-      resizeObserver?.disconnect();
-      contentObserver?.disconnect();
-    };
+    // `subscribe` runs after paint; measuring here as well is what lets the very
+    // first request ask for a whole page. It is a no-op once measured.
+    if (getListCapacitySnapshot() === null) tick();
   }, []);
 
-  return { capacity, ready: capacity !== null || gaveUp };
+  return { capacity };
 }

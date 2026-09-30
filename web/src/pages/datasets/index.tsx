@@ -9,6 +9,7 @@ import { useDatasetPreferences } from '@/hooks/use-dataset-preferences';
 import { useGetPaginationWithRouter } from '@/hooks/logic-hooks';
 import { useDatasetList } from './use-dataset-list';
 import { UserSettingKeys } from '@/hooks/use-user-setting-request';
+import { TABLE_ROW_PITCH_PX } from '@/utils/list-capacity';
 import { useQueryClient } from '@tanstack/react-query';
 import { pick } from 'lodash';
 import { Eye, EyeOff, Plus } from 'lucide-react';
@@ -174,12 +175,16 @@ export default function Datasets() {
 
       {/* The list region exists before the rows do: the page size is how many
           complete rows this region holds, so it has to be measurable from the
-          first render (and the table shows its own skeleton inside it). */}
+          first render (and the table shows its own skeleton inside it). The
+          declared height is `DatasetTable`'s own row pitch, so the first request
+          already asks for a whole page rather than a default that is corrected
+          afterwards. */}
       {loading || kbs.length || query.keyword ? (
         <>
           <div
             className="page-gutter min-h-0 flex-1 overflow-auto"
             data-list-region=""
+            data-list-item-height={TABLE_ROW_PITCH_PX}
           >
             <DatasetTable
               datasets={pageDatasets}

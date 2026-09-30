@@ -1076,7 +1076,7 @@ export default {
       createChunk: 'Create chunk',
       editChunk: 'Edit chunk',
       bulk: 'Bulk',
-      selectAll: 'Select page',
+      selectAll: 'Select loaded',
       enabledSelected: 'Enable selected',
       disabledSelected: 'Disable selected',
       deleteSelected: 'Delete selected',

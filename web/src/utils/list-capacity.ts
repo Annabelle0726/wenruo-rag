@@ -38,6 +38,21 @@ export const MAX_PAGE_SIZE = 50;
 export const PAGE_SIZE_PRESETS = [10, 20, 50, 100] as const;
 
 /**
+ * The pitch of one row in the app's table lists, which is what a page of rows
+ * costs and what a list region declares in `data-list-item-height`.
+ *
+ * A list row is `h-[38px]` and draws its own `border-b` separator, so the row's
+ * border box measures 39px - and 39 is the number the capacity has to divide by.
+ * It has to be EXACT, not a round number: a region that declares 38 pages by
+ * `floor(available / 38)`, which is one row more than `floor(available / 39)`, so
+ * the first request would ask for a row that does not fit and immediately refetch
+ * with the measured 39 - which is the jump this declaration exists to avoid.
+ *
+ * Changing a list row's height or its border means changing this number with it.
+ */
+export const TABLE_ROW_PITCH_PX = 39;
+
+/**
  * Complete rows of `itemHeight` that fit in `available` px, given `gap` between
  * rows. A partial row never counts: the pagination has to be able to show a whole
  * row, so a row that would be cut by the region's edge belongs to the next page.
