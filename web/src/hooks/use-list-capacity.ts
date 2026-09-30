@@ -98,6 +98,27 @@ const tableRowHeightOf = (region: HTMLElement) => {
 const isGrid = (style: CSSStyleDeclaration) => style.display === 'grid';
 
 /**
+ * The horizontal scrollbar on the table's own scroll box, in px (0 when there is
+ * none).
+ *
+ * The shared `Table` root is the box a wide table scrolls in, and its `clientHeight`
+ * already excludes that scrollbar while the REGION's does not. Counting those 10px
+ * as row space pages the table by one row it cannot show - which is exactly how a
+ * table that fits its height ends up with an internal vertical scrollbar because
+ * its WIDTH overflowed. Measured as the difference between the box's border box and
+ * its client box, so a border (there is none here) would not be mistaken for one.
+ */
+const sidewaysScrollbarOf = (
+  table: Element | null,
+  region: HTMLElement,
+): number => {
+  const wrapper = table?.parentElement;
+  if (!wrapper || wrapper === region) return 0;
+  const wrapperBox = wrapper as HTMLElement;
+  return Math.max(0, wrapperBox.offsetHeight - wrapperBox.clientHeight);
+};
+
+/**
  * How many complete items `region` can show, or `null` when it cannot be
  * measured yet (no region, no item height to page by, or a reading too small to
  * be a real region).
@@ -134,8 +155,9 @@ export function readRegionCapacity(region: HTMLElement | null): number | null {
       : 0;
     const headerHeight = header ? header.getBoundingClientRect().height : 0;
     const footerHeight = footer ? footer.getBoundingClientRect().height : 0;
+    const sideways = sidewaysScrollbarOf(table, region);
     const available =
-      region.clientHeight - aboveTable - headerHeight - footerHeight;
+      region.clientHeight - aboveTable - headerHeight - footerHeight - sideways;
     return rowsThatFit(available, rowHeight);
   })();
 
@@ -328,8 +350,15 @@ export function useListCapacity(): {
 
   useLayoutEffect(() => {
     // `subscribe` runs after paint; measuring here as well is what lets the very
-    // first request ask for a whole page. It is a no-op once measured.
-    if (getListCapacitySnapshot() === null) tick();
+    // first request ask for a whole page.
+    //
+    // Unconditionally, not only when nothing has been measured yet: this page's
+    // region must be measured before this page paints, and the store may still be
+    // holding the region of a page that has just been unmounted. That stale reading
+    // is a page size the new page would request and then correct - a wasted request
+    // and one visible re-layout of the list. `tick` is idempotent: it compares the
+    // innermost region with the one it is watching and returns when they match.
+    tick();
   }, []);
 
   return { capacity };

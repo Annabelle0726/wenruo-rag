@@ -38,24 +38,41 @@ type UseDatasetTableColumnsType = UseChangeDocumentParserShowType &
 /**
  * Column geometry, declared once.
  *
- * Every column except the name has a fixed width, so the name takes whatever the
- * region has left and truncates while the others never change size. That is what
- * stops a narrower region from squeezing the other columns into wrapped text: a
- * wrapped cell is two lines tall, and the table pages by row height, so before
- * this a collapsed sidebar turned seven rows into five.
+ * Every column except the name has a width; the name gets whatever the row has
+ * left and truncates. Under `table-fixed` those widths are used as written, so the
+ * table is exactly as wide as its box and no column is ever resized by the content
+ * that happens to be in it.
  *
- * The row height itself is the contract `dataset/index.tsx` declares
- * (`data-list-item-height`), and these widths are what make it hold.
+ * Each width is the widest thing that column renders plus its own padding (16px
+ * left, 24px right on the last column), read off the live list rather than guessed
+ * - so nothing inside is clipped, and the sum (848px) still leaves the name a real
+ * share of a 1280px desktop with the sidebar expanded. The two free-text columns
+ * (the file name, the ingestion pipeline's label) truncate inside their cells and
+ * carry the full value in a tooltip.
+ *
+ * The actions column carries slack on purpose: its five 24px buttons and the gaps
+ * between them are 152px wide, and the column that used to hold them was 168px -
+ * so a `table-fixed` cell with `overflow-hidden` cut the last 24px off, which is
+ * the delete button, and it read as pinned to the table's own edge. A fixed layout
+ * makes that kind of mistake silent, so the budget has to be measured off the live
+ * list rather than assumed.
+ *
+ * The row pitch is the other half of the contract: `dataset/index.tsx` declares it
+ * (`data-list-item-height`, `TABLE_ROW_PITCH_PX`) so the page size is a function of
+ * the region's height alone.
  */
 const DocumentColumnWidth = {
-  select: 'w-[3.5rem]',
+  select: 'w-[2.75rem]',
   name: 'min-w-0 overflow-hidden',
   createTime: 'w-[11rem]',
-  status: 'w-[5rem]',
-  chunkCount: 'w-[6rem]',
-  metadata: 'w-[8.5rem]',
-  parser: 'w-[11rem]',
-  actions: 'w-[10rem]',
+  status: 'w-[4rem]',
+  chunkCount: 'w-[4.75rem]',
+  metadata: 'w-[5.5rem]',
+  parser: 'w-[6rem]',
+  parseStatus: 'w-[6.5rem]',
+  // 152px of buttons + 40px of cell padding, and 8px more so the group does not
+  // end hard against the table's edge.
+  actions: 'w-[12.5rem]',
 } as const;
 
 export function useDatasetTableColumns({
@@ -294,6 +311,7 @@ export function useDatasetTableColumns({
       {
         id: 'run-status',
         header: '',
+        meta: { headerCellClassName: DocumentColumnWidth.parseStatus },
         cell: ({ row }) => {
           return (
             <ParsingStatusCell

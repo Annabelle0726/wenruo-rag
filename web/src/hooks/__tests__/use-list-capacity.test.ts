@@ -77,6 +77,7 @@ const table = ({
   placeholderRows = 0,
   footerHeight = 0,
   nested,
+  scrollWrapper,
 }: {
   regionHeight: number;
   rowHeight: number;
@@ -89,6 +90,11 @@ const table = ({
   footerHeight?: number;
   /** A tighter region nested inside this one. */
   nested?: HTMLElement;
+  /**
+   * The table's own scroll box: its height, and the horizontal scrollbar on it.
+   * The shared `Table` always renders one, so this is the live shape of a table.
+   */
+  scrollWrapper?: { height: number; sidewaysScrollbar?: number };
 }) => {
   const region = document.createElement('div');
   region.setAttribute('data-list-region', '');
@@ -103,7 +109,18 @@ const table = ({
   thead.appendChild(headRow);
   const tbody = document.createElement('tbody');
   tableEl.append(thead, tbody);
-  region.appendChild(tableEl);
+  if (scrollWrapper) {
+    const wrapper = document.createElement('div');
+    wrapper.appendChild(tableEl);
+    region.appendChild(wrapper);
+    layout(wrapper, scrollWrapper.height);
+    Object.defineProperty(wrapper, 'offsetHeight', {
+      configurable: true,
+      value: scrollWrapper.height + (scrollWrapper.sidewaysScrollbar ?? 0),
+    });
+  } else {
+    region.appendChild(tableEl);
+  }
   // The measurement subtracts the header the table renders, which is the `thead`.
   layout(thead, headerHeight);
   layout(headRow, headerHeight);
@@ -303,6 +320,65 @@ describe('table capacity', () => {
         }),
       ),
     ).toBe(Math.floor((600 - 40 - 52) / 38));
+  });
+
+  it('subtracts the table scroll box\u2019s own horizontal scrollbar', () => {
+    // A table that is wider than its box pays for a scrollbar, and the box's
+    // client height already excludes it while the region's does not. Counted as row
+    // space it is one row the table cannot show - which is how a table that fits
+    // its HEIGHT ends up with an internal vertical scrollbar because its WIDTH
+    // overflowed.
+    const scrolling = readRegionCapacity(
+      table({
+        regionHeight: 600,
+        rowHeight: 38,
+        headerHeight: 40,
+        rows: 4,
+        footerHeight: 52,
+        scrollWrapper: { height: 508, sidewaysScrollbar: 10 },
+      }),
+    );
+    expect(scrolling).toBe(Math.floor((600 - 40 - 52 - 10) / 38));
+
+    // No scrollbar: the same reading as before it existed.
+    const fitting = readRegionCapacity(
+      table({
+        regionHeight: 600,
+        rowHeight: 38,
+        headerHeight: 40,
+        rows: 4,
+        footerHeight: 52,
+        scrollWrapper: { height: 508 },
+      }),
+    );
+    expect(fitting).toBe(Math.floor((600 - 40 - 52) / 38));
+  });
+
+  it('reserves the pager\u2019s row whether or not the pager has data', () => {
+    // The footer is rendered (invisibly) from the first paint so the rows area is
+    // the same before and after the list answers. Measured with and without it the
+    // page size differed by one row, which is what made the table reload itself.
+    const withPager = readRegionCapacity(
+      table({
+        regionHeight: 600,
+        rowHeight: 38,
+        headerHeight: 40,
+        rows: 0,
+        declaredHeight: 38,
+        footerHeight: 58,
+      }),
+    );
+    const afterData = readRegionCapacity(
+      table({
+        regionHeight: 600,
+        rowHeight: 38,
+        headerHeight: 40,
+        rows: 9,
+        declaredHeight: 38,
+        footerHeight: 58,
+      }),
+    );
+    expect(withPager).toBe(afterData);
   });
 });
 

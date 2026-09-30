@@ -47,7 +47,11 @@ function FilePreview({ file }: FilePreviewProps) {
   }
 
   return (
-    <FileText strokeWidth={1} className="size-10 text-muted-foreground" aria-hidden="true" />
+    <FileText
+      strokeWidth={1}
+      className="size-10 text-muted-foreground"
+      aria-hidden="true"
+    />
   );
 }
 
@@ -160,9 +164,16 @@ interface FileUploaderProps extends Omit<
 
   /**
    * Whether the folder tab should be shown in the uploader.
+   *
+   * OFF, and it is not a default any product entry should flip back on yet:
+   * uploading a folder is not available, so the tab only offers a path that leads
+   * nowhere. The capability is kept behind this flag rather than deleted - the
+   * hidden `webkitdirectory` input, `processFiles` and the `{ path, file }` shape
+   * the upload pipeline accepts all still work - so a caller that has a real use
+   * for it can opt in with `showFolderTab`.
    * @type boolean
-   * @default true
-   * @example showFolderTab={false}
+   * @default false
+   * @example showFolderTab={true}
    */
   showFolderTab?: boolean;
 
@@ -200,7 +211,7 @@ export function FileUploader(props: FileUploaderProps) {
     multiple = false,
     disabled = false,
     hideDropzoneOnMaxFileCount = false,
-    showFolderTab = true,
+    showFolderTab = false,
     className,
     title,
     description,

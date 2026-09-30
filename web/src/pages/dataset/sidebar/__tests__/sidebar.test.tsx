@@ -28,9 +28,15 @@ const renderSidebar = () =>
       <TooltipProvider delayDuration={0}>
         <SidebarComponent
           dataset={
-            { name: 'Test dataset', create_time: 0 } as Parameters<
-              typeof SidebarComponent
-            >[0]['dataset']
+            // `id` is part of `IDataset` and is how the sidebar knows the
+            // knowledge base has arrived: until it has, the name and the metadata
+            // row are not rendered at all (they would read "undefined files" over
+            // an empty title), while the row's height stays reserved.
+            {
+              id: 'dataset-1',
+              name: 'Test dataset',
+              create_time: 0,
+            } as Parameters<typeof SidebarComponent>[0]['dataset']
           }
         />
       </TooltipProvider>

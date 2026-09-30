@@ -53,6 +53,26 @@ export const PAGE_SIZE_PRESETS = [10, 20, 50, 100] as const;
 export const TABLE_ROW_PITCH_PX = 39;
 
 /**
+ * The height of a paginated list's pager row: the pager's own 42px control row
+ * plus the 16px gap above it.
+ *
+ * A list renders its pager only once the read has answered, because a pager states
+ * a count and there is no count to state while the read is in flight, refused or
+ * failed. The ROW is nevertheless reserved from the first paint: the page size is
+ * measured from the space the rows have, and a region measured without a pager
+ * reads one row taller than the same region with one - so the size changed the
+ * moment the data landed, the table reloaded itself around the new size, and the
+ * pager appearing flipped it back. Measured on the live list before this: four
+ * document requests on first load (`page_size` 50, 16, 15, 16), four skeleton-and-
+ * rows flashes and six column-width layout shifts.
+ *
+ * Keep it in step with `RAGFlowPagination`'s control row (32px page links and a
+ * 32px size trigger inside a `p-1` capsule, i.e. 42px) and the `pt-4` the footer
+ * carries above it.
+ */
+export const PAGER_ROW_HEIGHT_PX = 58;
+
+/**
  * Complete rows of `itemHeight` that fit in `available` px, given `gap` between
  * rows. A partial row never counts: the pagination has to be able to show a whole
  * row, so a row that would be cut by the region's edge belongs to the next page.

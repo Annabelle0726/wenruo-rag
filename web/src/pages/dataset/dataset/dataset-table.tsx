@@ -14,6 +14,7 @@ import {
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';
+import { PAGER_ROW_HEIGHT_PX } from '@/utils/list-capacity';
 import { EmptyType } from '@/components/empty/constant';
 import Empty from '@/components/empty/empty';
 import { LoadingDots } from '@/components/loading-dots';
@@ -148,14 +149,24 @@ export function DatasetTable({
           six rows on screen and room for all six. The page's own region holds the
           table and pages it by complete rows instead.
 
-          The three arbitrary variants are the table's own geometry contract:
-          rows are exactly 38px (`h-[38px]` below with the vertical padding taken
-          out of the cells), and no cell may wrap. A wrapped cell is a taller row,
-          and a taller row means fewer rows per page - so a narrower region would
-          change the page size, which is the one thing it must not do. */}
+          `table-fixed` plus the column widths in `DocumentColumnWidth` is what
+          makes this table behave. In the default auto layout a column's minimum
+          width comes from its CONTENT, and a file name is one unbreakable run under
+          `whitespace-nowrap` - so the name column alone demanded 422px and the
+          table could not shrink below 1218px inside a 1116px box: it overflowed by
+          102px and threw a horizontal scrollbar at a normal desktop width. Fixed
+          layout sizes the columns from their declared widths and gives the one
+          column without a width (the name) whatever is left, so the table is
+          exactly as wide as its box, the columns never move with the content, and
+          a long name ellipsizes instead of pushing the row wider.
+
+          The three arbitrary variants are the other half of the contract: rows are
+          exactly 38px (`h-[38px]` below, with the vertical padding taken out of the
+          cells), no cell may wrap, and a cell whose content does not fit is
+          clipped rather than drawn over its neighbour. */}
       <Table
         rootClassName="min-h-0 flex-1"
-        className="[&_td]:py-0 [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap"
+        className="table-fixed [&_td]:overflow-hidden [&_td]:py-0 [&_td]:whitespace-nowrap [&_th]:overflow-hidden [&_th]:whitespace-nowrap"
       >
         <TableHeader className="bg-table-header [&_tr]:border-b [&_tr]:border-table-border">
           {table.getHeaderGroups().map((headerGroup) => (
@@ -256,13 +267,18 @@ export function DatasetTable({
           nothing to the height the page size is measured from - so the page asked
           for rows it then covered with the pager.
 
-          `data-list-footer` is what tells the measurement to subtract it: the
-          capacity is the space the ROWS have, not the space the box has. */}
-      {settled && (
-        <footer
-          data-list-footer=""
-          className="flex shrink-0 items-center justify-end pt-4"
-        >
+          Its ROW is reserved from the first paint, while the pager itself is
+          rendered only once the list has an answer: a pager states a count, and
+          there is no count to state while the read is in flight, refused or
+          failed. Reserving the row is what keeps the page size still - measured
+          without a pager the rows area reads one row taller, so the size moved the
+          moment the data landed and the table reloaded itself around it. */}
+      <footer
+        data-list-footer=""
+        className="flex shrink-0 items-center justify-end pt-4"
+        style={{ minHeight: PAGER_ROW_HEIGHT_PX }}
+      >
+        {settled && (
           <RAGFlowPagination
             {...pick(pagination, 'current', 'pageSize')}
             total={pagination.total}
@@ -270,8 +286,8 @@ export function DatasetTable({
               setPagination({ page, pageSize });
             }}
           ></RAGFlowPagination>
-        </footer>
-      )}
+        )}
+      </footer>
       {changeParserVisible && (
         <ChangeParserDialog
           record={changeParserRecord}
