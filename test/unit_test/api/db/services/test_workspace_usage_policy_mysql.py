@@ -12,11 +12,12 @@ writing policy there is forbidden.
 
 import os
 import threading
+from contextlib import contextmanager
 
 import pytest
 from peewee import MySQLDatabase
 
-from api.db.db_models import Tenant, UserTenant, WorkspaceAudit, WorkspaceBudget
+from api.db.db_models import Tenant, UserTenant, WorkspaceAudit, WorkspaceBudget, WorkspaceUsage
 from api.db.services import workspace_budget_service as budget
 
 HOST = os.environ.get("U3_TEST_MYSQL_HOST")
@@ -30,7 +31,39 @@ pytestmark = pytest.mark.skipif(
     reason="U3_TEST_MYSQL_HOST must point at an ISOLATED MySQL 8.0 container",
 )
 
-MODELS = [Tenant, UserTenant, WorkspaceBudget, WorkspaceAudit]
+# Every model `configure_budget` reaches, including the counter table its
+# `usage_snapshot` reads: a model left out here stays bound to the application's
+# own database and the block would then span two of them.
+MODELS = [Tenant, UserTenant, WorkspaceBudget, WorkspaceUsage, WorkspaceAudit]
+
+
+@contextmanager
+def one_database(database):
+    """Make every name that reaches the app database resolve to ONE object.
+
+    A peewee transaction is a property of the `Database` object that opened it, and
+    `Model._meta.database` decides which object issues a statement. Production has
+    exactly one object -- `bind_ctx` appears nowhere in product code -- so
+    `DB.atomic()` and every statement inside it share a connection and a
+    transaction. A gate that binds the models to a SECOND object does not test
+    that: the statements run on the second object, outside the transaction, and the
+    tenant-row lock the service relies on is released with its own statement.
+
+    `bind_ctx` covers the models; the service reaches its database through the
+    module-level name it imported, so that name has to be re-pointed as well.
+    """
+    from api.db import db_models
+
+    previous_models = db_models.DB
+    previous_service = budget.DB
+    db_models.DB = database
+    budget.DB = database
+    try:
+        with database.bind_ctx(MODELS):
+            yield database
+    finally:
+        db_models.DB = previous_models
+        budget.DB = previous_service
 
 
 @pytest.fixture(scope="module")
@@ -50,13 +83,11 @@ def mysql(tmp_path_factory):
         password=PASSWORD,
         charset="utf8mb4",
     )
-    with db.bind_ctx(MODELS):
+    with one_database(db):
         db.create_tables(MODELS)
         assert "InnoDB" in str(db.execute_sql("SHOW TABLE STATUS LIKE 'workspace_budget'").fetchone())
-        Tenant.delete().execute()
-        UserTenant.delete().execute()
-        WorkspaceBudget.delete().execute()
-        WorkspaceAudit.delete().execute()
+        for model in MODELS:
+            model.delete().execute()
         Tenant.create(id="ws-iso", name="ws-iso", llm_id="", embd_id="", asr_id="", img2txt_id="", rerank_id="", parser_ids="")
         Tenant.create(id="ws-other", name="ws-other", llm_id="", embd_id="", asr_id="", img2txt_id="", rerank_id="", parser_ids="")
         for user, role in (("owner-a", "owner"), ("admin-b", "admin")):
@@ -69,6 +100,21 @@ def mysql(tmp_path_factory):
 def test_the_isolated_engine_really_is_mysql(mysql):
     version = mysql.execute_sql("SELECT VERSION()").fetchone()[0]
     assert version.startswith("8.0"), version
+
+
+def test_the_gate_really_did_bind_one_database_object(mysql):
+    """The serialization the other two tests judge only exists under this wiring.
+
+    Without it the tenant self-update runs on an autocommit connection, its lock is
+    released with the statement, and two writers can both pass the revision check
+    and commit -- which is what this gate reported before the binding was fixed.
+    """
+    from api.db import db_models
+
+    assert budget.DB is mysql
+    assert db_models.DB is mysql
+    for model in MODELS:
+        assert model._meta.database is mysql, model.__name__
 
 
 def test_g7_two_writers_from_one_revision_lose_no_update(mysql):

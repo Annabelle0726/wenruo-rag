@@ -734,7 +734,6 @@ def _load_api_module():
     names from it, so they are stubbed for the duration of the load.
     """
     import types
-    from unittest.mock import patch
 
     from quart import Blueprint
 
@@ -747,8 +746,28 @@ def _load_api_module():
     module = importlib.util.module_from_spec(spec)
     module.manager = Blueprint("workspace_usage_api_under_test", __name__)
     sys.modules[spec.name] = module
-    with patch.dict(sys.modules, {"api.apps": stub}):
+
+    # EXACTLY ONE KEY is substituted, and exactly one key is put back. This must
+    # not be `unittest.mock.patch.dict`: on exit that helper clears the whole
+    # `sys.modules` mapping and repopulates it from a snapshot taken on entry, so
+    # every module this load imported for the FIRST time is evicted. The chain
+    # `api.utils.api_utils -> common.mcp_tool_call_conn -> mcp -> mcp.types` is one
+    # of them, and `mcp.types` lazily registers `pydantic.root_model` while it
+    # builds `class JSONRPCMessage(RootModel[...])`. A second load in the same
+    # process then re-executes that class body, and pydantic's generic-submodel
+    # machinery does `sys.modules[created_model.__module__]` -> KeyError:
+    # 'pydantic.root_model'. Restoring one key leaves everything the load imported
+    # resident, which is what a real `import` does.
+    absent = object()
+    previous = sys.modules.get("api.apps", absent)
+    sys.modules["api.apps"] = stub
+    try:
         spec.loader.exec_module(module)
+    finally:
+        if previous is absent:
+            sys.modules.pop("api.apps", None)
+        else:
+            sys.modules["api.apps"] = previous
     return module
 
 
