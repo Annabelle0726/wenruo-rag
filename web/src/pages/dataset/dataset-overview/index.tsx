@@ -253,13 +253,19 @@ const FileLogsPage: FC = () => {
   const isDark = useIsDarkTheme();
 
   return (
+    /* A flex column with a definite height, so the log table's region can take
+       what is left after the statistics and the filter: that region is the box the
+       page size is measured from. `min-w-[880px]` and the page's own scrollbar are
+       both gone - a width floor there pushed a horizontal scrollbar onto the page
+       at narrower widths, which is the squeeze the report describes, and a second
+       scroller inside the shell's own scroller could only fight it. */
     <Card
       className="
-      p-5 min-w-[880px] mr-5 mb-5 bg-transparent shadow-none
-      flex flex-col overflow-y-auto scrollbar-auto"
+      p-5 mr-5 mb-5 bg-transparent shadow-none
+      flex h-full min-h-0 flex-col"
     >
       {/* Stats Cards */}
-      <div className="grid grid-cols-3 md:grid-cols-3 gap-7 mb-6">
+      <div className="grid shrink-0 grid-cols-3 md:grid-cols-3 gap-7 mb-6">
         <StatCard
           title={t('datasetOverview.totalFiles')}
           value={topAllData.totalFiles.value}
@@ -321,16 +327,20 @@ const FileLogsPage: FC = () => {
         </StatCard>
       </div>
 
-      {/* Tabs & Search */}
-      <DatasetFilter
-        filters={filters as FilterCollection[]}
-        value={filterValue}
-        active={active}
-        setActive={changeActiveLogs}
-        searchString={searchString}
-        onSearchChange={handleInputChange}
-        onChange={handleFilterSubmit}
-      />
+      {/* Tabs & Search. `shrink-0` so the flex column never squeezes the tab row
+          or the search field to give the table more room - the table's region is
+          the element that flexes. */}
+      <div className="shrink-0">
+        <DatasetFilter
+          filters={filters as FilterCollection[]}
+          value={filterValue}
+          active={active}
+          setActive={changeActiveLogs}
+          searchString={searchString}
+          onSearchChange={handleInputChange}
+          onChange={handleFilterSubmit}
+        />
+      </div>
 
       {/* Table */}
       <FileLogsTable
