@@ -22,22 +22,14 @@ import {
 } from '@/hooks/use-pipeline-operator';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isEqual } from 'lodash';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { FieldErrors, useForm, useFormState, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import ChunkMethodLearnMore from '../python/chunk-method-learn-more';
-import LinkDataSource, {
-  IDataSourceNodeProps,
-} from './components/link-data-source';
 import { formSchema } from './form-schema';
 import { GeneralForm } from './general-form';
-import {
-  useConnectorHandlers,
-  useFetchDatasetSettingOnMount,
-  usePipelineDataList,
-  useSaveDatasetSetting,
-} from './hooks';
+import { useFetchDatasetSettingOnMount, useSaveDatasetSetting } from './hooks';
 import { useRevealSubmitErrors } from './use-reveal-submit-errors';
 
 export default function DatasetSetting() {
@@ -61,19 +53,9 @@ export default function DatasetSetting() {
     },
   });
 
-  const {
-    knowledgeDetails,
-    loading: datasetSettingLoading,
-    sourceData,
-  } = useFetchDatasetSettingOnMount(form);
+  const { knowledgeDetails, loading: datasetSettingLoading } =
+    useFetchDatasetSettingOnMount(form);
   const { handleSave, loading: saveLoading } = useSaveDatasetSetting();
-
-  const [sourceDataState, setSourceDataState] =
-    useState<IDataSourceNodeProps[]>();
-
-  useEffect(() => {
-    setSourceDataState(sourceData);
-  }, [sourceData]);
 
   const parseType = useWatch({
     control: form.control,
@@ -150,9 +132,6 @@ export default function DatasetSetting() {
     name: 'parser_config',
   });
 
-  const { handleLinkOrEditSubmit, unbindFunc, handleAutoParse } =
-    useConnectorHandlers(form, sourceDataState, setSourceDataState);
-
   const handleOperatorValuesChange = useCallback(
     (operatorId: string, values: any) => {
       const currentParserConfig = form.getValues('parser_config') || {};
@@ -174,8 +153,6 @@ export default function DatasetSetting() {
     control: form.control,
     name: 'parser_config',
   });
-
-  const pipelineDataList = usePipelineDataList(sourceDataState);
 
   const showOperatorTabs =
     operatorNodes.length > 0 &&
@@ -200,11 +177,11 @@ export default function DatasetSetting() {
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(handleSubmit, handleInvalidSubmit)}
-              className="flex flex-col"
+              className="flex min-w-0 flex-1 flex-col"
             >
               <div
                 ref={scrollContainerRef}
-                className="flex-1 h-0 w-[768px] px-5 pt-5 overflow-y-auto scrollbar-auto"
+                className="flex-1 h-0 w-full max-w-[1200px] px-5 pt-5 overflow-y-auto scrollbar-auto"
               >
                 <section className="space-y-5 text-text-secondary">
                   <div className="text-base font-medium text-text-primary">
@@ -218,7 +195,12 @@ export default function DatasetSetting() {
                   </div>
                   <ParseTypeItem line={1} name="parse_type" />
                   {parseType === ParseType.BuiltIn && (
-                    <BuiltinPipelineItem line={1} name="parser_id" />
+                    <>
+                      <BuiltinPipelineItem line={1} name="parser_id" />
+                      {builtinPipelineId && (
+                        <ChunkMethodLearnMore parserId={builtinPipelineId} />
+                      )}
+                    </>
                   )}
                   {parseType === ParseType.Pipeline && (
                     <DataFlowSelect
@@ -243,18 +225,10 @@ export default function DatasetSetting() {
                       fixedFileFormats
                     />
                   )}
-
-                  <Divider />
-                  <LinkDataSource
-                    data={pipelineDataList}
-                    handleLinkOrEditSubmit={handleLinkOrEditSubmit}
-                    unbindFunc={unbindFunc}
-                    handleAutoParse={handleAutoParse}
-                  />
                 </section>
               </div>
 
-              <div className="p-5 text-right items-center flex justify-end gap-3 w-[768px]">
+              <div className="p-5 text-right items-center flex justify-end gap-3 w-full max-w-[1200px]">
                 <Button
                   type="reset"
                   variant="transparent"
@@ -278,12 +252,6 @@ export default function DatasetSetting() {
               </div>
             </form>
           </Form>
-
-          <div className="flex-1 p-5 overflow-auto">
-            {parseType === ParseType.BuiltIn && builtinPipelineId && (
-              <ChunkMethodLearnMore parserId={builtinPipelineId} />
-            )}
-          </div>
         </CardContent>
       </Card>
     </div>
