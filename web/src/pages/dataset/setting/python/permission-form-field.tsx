@@ -19,7 +19,7 @@ export function PermissionFormField() {
 
   return (
     <section
-      className="rounded-lg border border-table-border bg-table-row-alternate p-4"
+      className="w-full max-w-[1120px] space-y-5 rounded-xl border border-table-border bg-table-row-alternate p-5"
       aria-label={t('listVisibility.settings')}
     >
       <RAGFlowFormItem
@@ -28,6 +28,9 @@ export function PermissionFormField() {
         // The mode is also what a `custom` grant hangs off, so the tooltip has to
         // name all three rather than only the team case.
         tooltip={t('knowledgeConfiguration.permissionsTip')}
+        labelClassName="font-medium"
+        valueClassName="max-w-[520px]"
+        className="items-start gap-6"
         horizontal
       >
         <SelectWithSearch
@@ -37,9 +40,6 @@ export function PermissionFormField() {
         ></SelectWithSearch>
       </RAGFlowFormItem>
 
-      <p className="mb-4 text-sm text-text-secondary">
-        {t('knowledgeConfiguration.permissionsTip')}
-      </p>
       {permission === PermissionRole.Custom && <DatasetAuthorizationFields />}
     </section>
   );

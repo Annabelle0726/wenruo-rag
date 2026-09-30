@@ -108,10 +108,6 @@ export default function DatasetSettings() {
     name: 'chunk_method',
     control: form.control,
   });
-  const pipelineId = useWatch({
-    name: 'pipeline_id',
-    control: form.control,
-  });
 
   useEffect(() => {
     if (parseType === ParseType.BuiltIn) {
@@ -146,9 +142,9 @@ export default function DatasetSettings() {
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="flex w-full max-w-[960px] min-w-0 flex-col"
+                className="flex w-full max-w-[1280px] min-w-0 flex-col"
               >
-                <div className="flex-1 h-0 w-full max-w-[960px] px-5 pt-5 overflow-y-auto scrollbar-auto">
+                <div className="flex-1 h-0 w-full max-w-[1280px] px-5 pt-5 overflow-y-auto scrollbar-auto">
                   <MainContainer className="text-text-secondary">
                     <div className="text-base font-medium text-text-primary">
                       {t('knowledgeConfiguration.baseInfo')}
@@ -175,15 +171,11 @@ export default function DatasetSettings() {
                             formFieldName="pipeline_id"
                             layout={FormLayout.Horizontal}
                           />
-                          {pipelineId && (
-                            <div className="pl-[25%]">
-                              <ChunkMethodLearnMore
-                                parserId={
-                                  selectedTag || DocumentParserType.Naive
-                                }
-                              />
-                            </div>
-                          )}
+                          <div className="pl-[25%]">
+                            <ChunkMethodLearnMore
+                              parserId={selectedTag || DocumentParserType.Naive}
+                            />
+                          </div>
                         </>
                       )}
                     </section>
@@ -192,7 +184,7 @@ export default function DatasetSettings() {
                   </MainContainer>
                 </div>
 
-                <div className="p-5 text-right items-center flex justify-end gap-3 w-full max-w-[960px]">
+                <div className="p-5 text-right items-center flex justify-end gap-3 w-full max-w-[1280px]">
                   <Button
                     type="reset"
                     variant="transparent"

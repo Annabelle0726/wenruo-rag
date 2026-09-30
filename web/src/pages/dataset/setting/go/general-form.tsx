@@ -35,88 +35,21 @@ export function GeneralForm() {
 
   return (
     <>
-      <FormField
-        control={form.control}
-        name="name"
-        render={({ field }) => (
-          <FormItem className="items-center space-y-0">
-            <div className="flex">
-              <FormLabel className="text-sm whitespace-nowrap w-1/4">
-                <span className="text-red-600">*</span>
-                {t('common.name')}
-              </FormLabel>
-              <FormControl className="w-3/4">
-                <Input
-                  {...field}
-                  data-testid="ds-settings-basic-name-input"
-                ></Input>
-              </FormControl>
-            </div>
-            <div className="flex pt-1">
-              <div className="w-1/4"></div>
-              <FormMessage />
-            </div>
-          </FormItem>
-        )}
-      />
-      <div className="items-center">
-        <RAGFlowFormItem
-          name="language"
-          label={t('common.language')}
-          horizontal={true}
-        >
-          <SelectWithSearch
-            options={languageOptions}
-            triggerClassName="w-full"
-            testId="ds-settings-basic-language-select"
-          ></SelectWithSearch>
-        </RAGFlowFormItem>
-      </div>
-      <FormField
-        control={form.control}
-        name="avatar"
-        render={({ field }) => (
-          <FormItem className="items-center space-y-0">
-            <div className="flex">
-              <FormLabel className="text-sm  whitespace-nowrap w-1/4">
-                {t('setting.avatar')}
-              </FormLabel>
-              <FormControl className="w-3/4">
-                <AvatarUpload
-                  {...field}
-                  uploadInputTestId="ds-settings-basic-avatar-upload"
-                  cropModalTestId="ds-settings-basic-avatar-crop-modal"
-                  cropModalOkButtonTestId="ds-settings-basic-avatar-crop-confirm-btn"
-                ></AvatarUpload>
-              </FormControl>
-            </div>
-            <div className="flex pt-1">
-              <div className="w-1/4"></div>
-              <FormMessage />
-            </div>
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="description"
-        render={({ field }) => {
-          // null initialize empty string
-          if (typeof field.value === 'object' && !field.value) {
-            form.setValue('description', '');
-          }
-          return (
+      <div className="grid grid-cols-1 gap-x-8 gap-y-5 lg:grid-cols-2">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
             <FormItem className="items-center space-y-0">
               <div className="flex">
-                <FormLabel className="text-sm  whitespace-nowrap w-1/4">
-                  {t('flow.description')}
+                <FormLabel className="text-sm whitespace-nowrap w-1/4">
+                  <span className="text-red-600">*</span>
+                  {t('common.name')}
                 </FormLabel>
                 <FormControl className="w-3/4">
                   <Input
                     {...field}
-                    maxLength={DESCRIPTION_MAX_LENGTH}
-                    placeholder={t('knowledgeConfiguration.datasetDescription')}
-                    data-testid="ds-settings-basic-description-input"
+                    data-testid="ds-settings-basic-name-input"
                   ></Input>
                 </FormControl>
               </div>
@@ -125,9 +58,80 @@ export function GeneralForm() {
                 <FormMessage />
               </div>
             </FormItem>
-          );
-        }}
-      />
+          )}
+        />
+        <div className="items-center">
+          <RAGFlowFormItem
+            name="language"
+            label={t('common.language')}
+            horizontal={true}
+          >
+            <SelectWithSearch
+              options={languageOptions}
+              triggerClassName="w-full"
+              testId="ds-settings-basic-language-select"
+            ></SelectWithSearch>
+          </RAGFlowFormItem>
+        </div>
+        <FormField
+          control={form.control}
+          name="avatar"
+          render={({ field }) => (
+            <FormItem className="items-center space-y-0">
+              <div className="flex">
+                <FormLabel className="text-sm  whitespace-nowrap w-1/4">
+                  {t('setting.avatar')}
+                </FormLabel>
+                <FormControl className="w-3/4">
+                  <AvatarUpload
+                    {...field}
+                    uploadInputTestId="ds-settings-basic-avatar-upload"
+                    cropModalTestId="ds-settings-basic-avatar-crop-modal"
+                    cropModalOkButtonTestId="ds-settings-basic-avatar-crop-confirm-btn"
+                  ></AvatarUpload>
+                </FormControl>
+              </div>
+              <div className="flex pt-1">
+                <div className="w-1/4"></div>
+                <FormMessage />
+              </div>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => {
+            // null initialize empty string
+            if (typeof field.value === 'object' && !field.value) {
+              form.setValue('description', '');
+            }
+            return (
+              <FormItem className="items-center space-y-0">
+                <div className="flex">
+                  <FormLabel className="text-sm  whitespace-nowrap w-1/4">
+                    {t('flow.description')}
+                  </FormLabel>
+                  <FormControl className="w-3/4">
+                    <Input
+                      {...field}
+                      maxLength={DESCRIPTION_MAX_LENGTH}
+                      placeholder={t(
+                        'knowledgeConfiguration.datasetDescription',
+                      )}
+                      data-testid="ds-settings-basic-description-input"
+                    ></Input>
+                  </FormControl>
+                </div>
+                <div className="flex pt-1">
+                  <div className="w-1/4"></div>
+                  <FormMessage />
+                </div>
+              </FormItem>
+            );
+          }}
+        />
+      </div>
       <PermissionFormField></PermissionFormField>
       <EmbeddingModelItem
         isEdit={true}

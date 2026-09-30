@@ -177,11 +177,11 @@ export default function DatasetSetting() {
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(handleSubmit, handleInvalidSubmit)}
-              className="flex w-full max-w-[960px] min-w-0 flex-col"
+              className="flex w-full max-w-[1280px] min-w-0 flex-col"
             >
               <div
                 ref={scrollContainerRef}
-                className="flex-1 h-0 w-full max-w-[960px] px-5 pt-5 overflow-y-auto scrollbar-auto"
+                className="flex-1 h-0 w-full max-w-[1280px] px-5 pt-5 overflow-y-auto scrollbar-auto"
               >
                 <section className="space-y-5 text-text-secondary">
                   <div className="text-base font-medium text-text-primary">
@@ -206,13 +206,11 @@ export default function DatasetSetting() {
                           formFieldName="pipeline_id"
                           layout={FormLayout.Horizontal}
                         />
-                        {pipelineId && (
-                          <div className="pl-[25%]">
-                            <ChunkMethodLearnMore
-                              parserId={builtinPipelineId || 'naive'}
-                            />
-                          </div>
-                        )}
+                        <div className="pl-[25%]">
+                          <ChunkMethodLearnMore
+                            parserId={builtinPipelineId || 'naive'}
+                          />
+                        </div>
                       </>
                     )}
                   </section>
@@ -234,7 +232,7 @@ export default function DatasetSetting() {
                 </section>
               </div>
 
-              <div className="p-5 text-right items-center flex justify-end gap-3 w-full max-w-[960px]">
+              <div className="p-5 text-right items-center flex justify-end gap-3 w-full max-w-[1280px]">
                 <Button
                   type="reset"
                   variant="transparent"

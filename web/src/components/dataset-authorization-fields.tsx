@@ -62,61 +62,61 @@ export const DatasetAuthorizationFields = memo(() => {
 
   return (
     <>
-      <RAGFlowFormItem
-        name="department_ids"
-        label={t('knowledgeConfiguration.customDepartments')}
-        horizontal
-      >
-        {(field) => (
-          <div className="w-full space-y-1">
-            <MultiSelect
-              options={departmentOptions}
-              value={field.value ?? []}
-              onValueChange={field.onChange}
-              placeholder={t(
-                'knowledgeConfiguration.customDepartmentsPlaceholder',
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <RAGFlowFormItem
+          name="department_ids"
+          label={t('knowledgeConfiguration.customDepartments')}
+        >
+          {(field) => (
+            <div className="w-full space-y-1">
+              <MultiSelect
+                options={departmentOptions}
+                value={field.value ?? []}
+                onValueChange={field.onChange}
+                placeholder={t(
+                  'knowledgeConfiguration.customDepartmentsPlaceholder',
+                )}
+                popoverTestId="ds-authorization-department-popover"
+                optionTestIdPrefix="ds-authorization-department"
+                className="w-full"
+              />
+              {departmentOptions.length === 0 && (
+                <p className="text-xs text-text-secondary">
+                  {t('knowledgeConfiguration.customDepartmentsEmpty')}
+                </p>
               )}
-              popoverTestId="ds-authorization-department-popover"
-              optionTestIdPrefix="ds-authorization-department"
-              className="w-full"
-            />
-            {departmentOptions.length === 0 && (
-              <p className="text-xs text-text-secondary">
-                {t('knowledgeConfiguration.customDepartmentsEmpty')}
-              </p>
-            )}
-          </div>
-        )}
-      </RAGFlowFormItem>
+            </div>
+          )}
+        </RAGFlowFormItem>
 
-      <RAGFlowFormItem
-        name="user_ids"
-        label={t('knowledgeConfiguration.customUsers')}
-        horizontal
-      >
-        {(field) => (
-          <div className="w-full space-y-1">
-            <MultiSelect
-              options={memberOptions}
-              value={field.value ?? []}
-              onValueChange={field.onChange}
-              placeholder={t('knowledgeConfiguration.customUsersPlaceholder')}
-              popoverTestId="ds-authorization-user-popover"
-              optionTestIdPrefix="ds-authorization-user"
-              className="w-full"
-            />
-            {memberOptions.length === 0 && (
-              <p className="text-xs text-text-secondary">
-                {t('knowledgeConfiguration.customUsersEmpty')}
-              </p>
-            )}
-          </div>
-        )}
-      </RAGFlowFormItem>
+        <RAGFlowFormItem
+          name="user_ids"
+          label={t('knowledgeConfiguration.customUsers')}
+        >
+          {(field) => (
+            <div className="w-full space-y-1">
+              <MultiSelect
+                options={memberOptions}
+                value={field.value ?? []}
+                onValueChange={field.onChange}
+                placeholder={t('knowledgeConfiguration.customUsersPlaceholder')}
+                popoverTestId="ds-authorization-user-popover"
+                optionTestIdPrefix="ds-authorization-user"
+                className="w-full"
+              />
+              {memberOptions.length === 0 && (
+                <p className="text-xs text-text-secondary">
+                  {t('knowledgeConfiguration.customUsersEmpty')}
+                </p>
+              )}
+            </div>
+          )}
+        </RAGFlowFormItem>
+      </div>
 
-      <p className="pb-4 text-xs text-text-secondary">
+      <div className="rounded-md border border-border-button/70 bg-background/60 px-3 py-2 text-xs leading-5 text-text-secondary">
         {t('knowledgeConfiguration.customHint')}
-      </p>
+      </div>
     </>
   );
 });
