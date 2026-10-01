@@ -44,7 +44,7 @@ import {
  */
 function MyUsage() {
   const { t } = useTranslation();
-  const [days, setDays] = useState<UsageRangeDays>(31);
+  const [days, setDays] = useState<UsageRangeDays>(30);
   const window = useUsageDayWindow(days);
   const { data, loading, refetch, error } = useFetchMyUsage(window);
   const {

@@ -51,7 +51,9 @@ function CostCell({
 
   if (display.kind === 'unavailable') {
     return (
-      <span className="text-text-disabled">{t('usage.costNotAvailable')}</span>
+      <span className="font-sans text-text-disabled">
+        {t('usage.costNotAvailable')}
+      </span>
     );
   }
 
@@ -218,7 +220,9 @@ export function RecordedModelUsageTable({
     >
       <TableHeader className="bg-table-header">
         <TableRow className="border-b border-table-border hover:bg-table-header">
-          <TableHead className="settings-table-head-cell">{t('usage.recordedModel')}</TableHead>
+          <TableHead className="settings-table-head-cell">
+            {t('usage.recordedModel')}
+          </TableHead>
           <TableHead className="settings-table-head-cell text-end">
             {t('usage.attemptedCalls')}
           </TableHead>

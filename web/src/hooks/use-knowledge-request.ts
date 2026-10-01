@@ -153,6 +153,9 @@ export const useTestRetrieval = () => {
   const mutation = useMutation<INextTestingResult, Error, typeof queryParams>({
     mutationFn: async (params) => {
       const { data } = await kbService.retrievalTest(params);
+      if (data?.code !== 0) {
+        throw new Error(data?.message || 'Retrieval test failed');
+      }
       const result = data?.data ?? {};
       return { ...result, isRuned: true };
     },
@@ -194,6 +197,7 @@ export const useTestRetrieval = () => {
   return {
     data,
     loading: mutation.isPending,
+    error: mutation.error,
     setValues,
     refetch,
     handleFilterSubmit,

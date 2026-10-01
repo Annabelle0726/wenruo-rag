@@ -99,10 +99,12 @@ function LimitRow({
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <span className="text-[13px] text-text-primary">{t(labelKey)}</span>
         <span className="flex items-baseline gap-2 text-xs text-text-secondary tabular-nums">
-          <span className="font-medium">
-            {formatLimitValue(dimension, standing.limit)}
+          <span className="font-mono font-medium tabular-nums">
+            {notEnforced && COST_DIMENSIONS.has(dimension)
+              ? t('usage.limitNotEnforced')
+              : formatLimitValue(dimension, standing.limit)}
           </span>
-          {notEnforced && (
+          {notEnforced && !COST_DIMENSIONS.has(dimension) && (
             <span className="settings-tag text-content-tertiary">
               {/* One message for both cases: whether the dimension is allowed to
                   be zero or the stored value is a legacy zero, it is not enforced
@@ -189,7 +191,7 @@ export function LimitStandingList({ quota }: { quota: IUsageEnvelope }) {
         </span>
       </div>
 
-      <div className="divide-y divide-cable-hairline">
+      <div className="grid grid-cols-1 gap-x-8 gap-y-3 lg:grid-cols-2">
         {DIMENSION_LABEL_KEYS.map(([dimension, labelKey]) => (
           <LimitRow
             key={dimension}

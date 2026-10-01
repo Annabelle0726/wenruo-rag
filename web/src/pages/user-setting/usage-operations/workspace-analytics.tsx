@@ -143,7 +143,7 @@ function AnalyticsSection({
  */
 function WorkspaceAnalytics() {
   const { t } = useTranslation();
-  const [days, setDays] = useState<UsageRangeDays>(31);
+  const [days, setDays] = useState<UsageRangeDays>(30);
   const window = useUsageDayWindow(days);
 
   const summary = useFetchWorkspaceUsageSummary(window);

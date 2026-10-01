@@ -224,6 +224,10 @@ const routeConfigOptions = [
             Component: () => import('@/pages/dataset/dataset-overview'),
           },
           {
+            path: `${Routes.DatasetBase}${Routes.DataSetSetting}/:id/:section`,
+            Component: () => import('@/pages/dataset/setting'),
+          },
+          {
             path: `${Routes.DatasetBase}${Routes.DataSetSetting}/:id`,
             Component: () => import('@/pages/dataset/setting'),
           },

@@ -56,7 +56,7 @@ export function UsageMetricTile({
       <span className="settings-tile-label">{label}</span>
       <span
         className={cn(
-          'settings-tile-value',
+          'settings-tile-value font-mono tabular-nums',
           tone === 'outstanding' && 'text-state-warning',
         )}
       >
@@ -94,7 +94,7 @@ export function EstimatedCostTile({
       testId={testId}
       value={
         display.kind === 'unavailable' ? (
-          <span className="text-base font-medium text-text-disabled">
+          <span className="text-base font-medium text-text-disabled font-sans">
             {t('usage.costNotAvailable')}
           </span>
         ) : (

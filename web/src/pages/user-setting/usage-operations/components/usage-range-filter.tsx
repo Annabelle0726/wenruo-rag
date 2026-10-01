@@ -28,7 +28,7 @@ import { resolveDayWindow } from './usage-format';
  * 92-day cap (a longer range is REFUSED, not truncated, on the server). Keeping
  * the presets here means no view can build an unbounded historical request.
  */
-export const USAGE_RANGE_PRESETS = [7, 31, 92] as const;
+export const USAGE_RANGE_PRESETS = [7, 30, 90] as const;
 
 export type UsageRangeDays = (typeof USAGE_RANGE_PRESETS)[number];
 
@@ -53,8 +53,8 @@ export function UsageRangeFilter({
   const { t } = useTranslation();
   const labelKeys: Record<UsageRangeDays, string> = {
     7: 'usage.rangeLast7',
-    31: 'usage.rangeLast31',
-    92: 'usage.rangeLast92',
+    30: 'usage.rangeLast30',
+    90: 'usage.rangeLast90',
   };
 
   return (
