@@ -119,7 +119,7 @@ export function HomeCard({
         // is clipped. The height is a token because the page-size calculation
         // measures a region before any card has rendered and needs the same value.
         'card-interactive group flex h-[var(--list-card-height)] w-full overflow-hidden rounded-xl px-4 py-3',
-        layout === 'chat'
+        layout === 'chat' || layout === 'memory'
           ? 'flex-col items-stretch justify-center gap-2'
           : layout === 'search'
             ? 'items-center justify-between gap-3'
@@ -139,21 +139,21 @@ export function HomeCard({
     >
       {layout === 'memory' ? (
         <>
-          <div className="flex size-8 shrink-0 items-center justify-center">
-            {leading ?? (
-              <RAGFlowAvatar
-                className="w-[32px] h-[32px]"
-                avatar={data.avatar}
-                name={data.name}
-              />
-            )}
-          </div>
+          <div className="flex w-full min-w-0 items-center gap-3">
+            <div className="flex size-8 shrink-0 items-center justify-center">
+              {leading ?? (
+                <RAGFlowAvatar
+                  className="w-[32px] h-[32px]"
+                  avatar={data.avatar}
+                  name={data.name}
+                />
+              )}
+            </div>
 
-          <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-            <header className="flex min-w-0 flex-row items-center gap-2">
+            <header className="flex min-w-0 flex-1 items-center gap-2">
               <TruncatedText
                 as="h3"
-                className="min-w-0 flex-1 truncate text-sm font-bold leading-5"
+                className="min-w-0 flex-1 truncate text-sm font-bold leading-snug"
                 testId="agent-name"
                 tooltip={data.name}
               >
@@ -165,22 +165,21 @@ export function HomeCard({
                 {moreDropdown}
               </div>
             </header>
+          </div>
 
-            <TruncatedText
-              className="truncate text-xs leading-4 text-text-secondary"
-              tooltip={data.description}
-            >
-              {data.description}
-            </TruncatedText>
+          <div
+            className="h-px w-full shrink-0 bg-cable-divider opacity-40"
+            aria-hidden="true"
+          />
 
-            {extra}
-
-            <div className="flex min-w-0 items-center justify-between gap-2">
-              <Time
-                time={data.update_time}
-                format="DD/MM/YYYY HH:mm"
-                className="text-[11px] leading-4"
-              />
+          <div className="flex w-full min-w-0 items-center justify-between gap-2 pt-1">
+            <Time
+              time={data.update_time}
+              format="DD/MM/YYYY HH:mm"
+              className="text-xs"
+            />
+            <div className="flex min-w-0 items-center gap-2">
+              {extra}
               {sharedBadge}
             </div>
           </div>

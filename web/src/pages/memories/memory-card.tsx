@@ -4,7 +4,6 @@ import { MoreButton } from '@/components/more-button';
 import { SharedBadge } from '@/components/shared-badge';
 import { useNavigatePage } from '@/hooks/logic-hooks/navigate-hooks';
 import { useTranslation } from 'react-i18next';
-import { MemoryOptions } from './constants';
 import { IMemory } from './interface';
 import { MemoryDropdown } from './memory-dropdown';
 
@@ -15,10 +14,6 @@ interface IProps {
 export function MemoryCard({ data, showMemoryRenameModal }: IProps) {
   const { navigateToMemory } = useNavigatePage();
   const { t } = useTranslation();
-  const selectedTypes = MemoryOptions(t).filter((option) =>
-    (data?.memory_type ?? []).includes(option.value),
-  );
-  const visibleTypes = selectedTypes.slice(0, 2);
 
   return (
     <HomeCard
@@ -31,26 +26,9 @@ export function MemoryCard({ data, showMemoryRenameModal }: IProps) {
       }}
       leading={<CardIdentityIcon kind="memory" avatar={data?.avatar} />}
       extra={
-        selectedTypes.length > 0 ? (
-          <div
-            className="flex h-4 min-w-0 items-center gap-1 overflow-hidden"
-            title={selectedTypes.map((type) => type.label).join(' · ')}
-          >
-            {visibleTypes.map((type) => (
-              <span
-                key={type.value}
-                className="inline-flex h-4 max-w-24 shrink-0 items-center truncate rounded-sm border border-cable-hairline bg-bg-input/70 px-1 text-[10px] leading-none text-text-secondary"
-              >
-                {type.label}
-              </span>
-            ))}
-            {selectedTypes.length > visibleTypes.length && (
-              <span className="inline-flex h-4 shrink-0 items-center rounded-sm border border-cable-hairline bg-bg-input/70 px-1 text-[10px] leading-none tabular-nums text-text-secondary">
-                +{selectedTypes.length - visibleTypes.length}
-              </span>
-            )}
-          </div>
-        ) : null
+        <span className="inline-flex h-5 shrink-0 items-center rounded border border-cable-hairline bg-cable-brand/10 px-1.5 text-[11px] font-medium leading-none text-cable-brand">
+          {t('memories.raw')}
+        </span>
       }
       moreDropdown={
         <MemoryDropdown
