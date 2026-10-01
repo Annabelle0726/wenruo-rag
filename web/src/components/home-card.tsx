@@ -59,8 +59,8 @@ interface IProps {
   trailing?: ReactNode;
   /** Visual-only class overrides for a specific card family. */
   className?: string;
-  /** Uses a structured layout for chat and search cards. */
-  layout?: 'standard' | 'chat' | 'search';
+  /** Uses structured layouts for chat, memory and search cards. */
+  layout?: 'standard' | 'chat' | 'memory' | 'search';
 }
 
 function Time({
@@ -137,7 +137,55 @@ export function HomeCard({
         cardClassName,
       )}
     >
-      {layout === 'search' ? (
+      {layout === 'memory' ? (
+        <>
+          <div className="flex size-8 shrink-0 items-center justify-center">
+            {leading ?? (
+              <RAGFlowAvatar
+                className="w-[32px] h-[32px]"
+                avatar={data.avatar}
+                name={data.name}
+              />
+            )}
+          </div>
+
+          <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+            <header className="flex min-w-0 flex-row items-center gap-2">
+              <TruncatedText
+                as="h3"
+                className="min-w-0 flex-1 truncate text-sm font-bold leading-5"
+                testId="agent-name"
+                tooltip={data.name}
+              >
+                {data.name}
+              </TruncatedText>
+              {icon}
+              <div className="flex shrink-0 items-center gap-1">
+                {badge}
+                {moreDropdown}
+              </div>
+            </header>
+
+            <TruncatedText
+              className="truncate text-xs leading-4 text-text-secondary"
+              tooltip={data.description}
+            >
+              {data.description}
+            </TruncatedText>
+
+            {extra}
+
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <Time
+                time={data.update_time}
+                format="DD/MM/YYYY HH:mm"
+                className="text-[11px] leading-4"
+              />
+              {sharedBadge}
+            </div>
+          </div>
+        </>
+      ) : layout === 'search' ? (
         <>
           <div className="flex min-w-0 flex-[0_1_48%] flex-col justify-center gap-2">
             <header className="flex min-w-0 items-center gap-2">
