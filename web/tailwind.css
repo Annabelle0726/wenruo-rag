@@ -1319,11 +1319,11 @@
   }
 }
 
-@media (min-width: 1024px) {
-  .page-gutter {
-    padding-inline: 3rem;
-  }
-}
+/*@media (min-width: 1024px) {*/
+/*  .page-gutter {*/
+/*    padding-inline: 3rem;*/
+/*  }*/
+/*}*/
 
 @layer utilities {
   .ceramic-cta.ceramic-cta {

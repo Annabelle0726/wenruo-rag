@@ -84,16 +84,16 @@ function LoginFormContent({
 
   return (
     <div className="flex w-full flex-col items-center justify-center">
-      <div className="mb-4 text-center">
-        <h2 className="text-2xl font-semibold text-text-primary">
-          {title === 'login' ? t('loginTitle') : t('signUpTitle')}
-        </h2>
-      </div>
-      <div className="ceramic-pill w-full max-w-[520px] px-8 py-7 transition-colors duration-200 ease-in-out focus-within:border-cable-brand">
+      <div className="ceramic-pill w-full max-w-[520px] px-8 py-6 transition-colors duration-200 ease-in-out focus-within:border-cable-brand">
+        <div className="login-auth-card-header mb-5">
+          <h2 className="login-auth-title text-xl font-bold text-text-primary">
+            {title === 'login' ? t('loginTitle') : t('signUpTitle')}
+          </h2>
+        </div>
         {!disablePasswordLogin && (
           <Form {...form}>
             <form
-              className="flex flex-col gap-4 text-text-primary"
+              className="flex flex-col gap-3 text-text-primary"
               data-testid="auth-form"
               data-active={isActiveFace ? 'true' : undefined}
               onSubmit={form.handleSubmit(onCheck)}
@@ -103,7 +103,7 @@ function LoginFormContent({
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>{t('emailLabel')}</FormLabel>
+                    <FormLabel className="login-auth-label">{t('emailLabel')}</FormLabel>
                     <FormControl>
                       <Input
                         data-testid="auth-email"
@@ -144,7 +144,7 @@ function LoginFormContent({
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>{t('passwordLabel')}</FormLabel>
+                    <FormLabel className="login-auth-label">{t('passwordLabel')}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
@@ -185,7 +185,7 @@ function LoginFormContent({
                           </FormControl>
                           <FormLabel
                             className={cn('cursor-pointer', {
-                              'text-text-disabled': !field.value,
+                              'text-text-secondary': !field.value,
                               'text-text-primary': field.value,
                             })}
                           >
@@ -401,7 +401,35 @@ const Login = () => {
 
   return (
     <>
-      <div className="bg-cable-page relative flex h-screen w-screen flex-col overflow-hidden">
+      <div className="bg-cable-page relative isolate flex h-screen w-screen flex-col overflow-hidden">
+        <svg
+          aria-hidden="true"
+          className="login-cable-art pointer-events-none absolute inset-0 z-0 h-full w-full text-cable-brand"
+          viewBox="0 0 1600 900"
+          preserveAspectRatio="xMidYMid slice"
+          fill="none"
+        >
+          <g className="login-cable-traces">
+            <path d="M-120 704C214 704 286 178 636 178s328 526 638 526 346-282 446-282" stroke="currentColor" strokeWidth="2.5" />
+            <path d="M-120 716C236 716 298 190 636 190s314 526 638 526 334-282 446-282" stroke="currentColor" strokeWidth="2.5" />
+            <path d="M-120 728C258 728 310 202 636 202s300 526 638 526 322-282 446-282" stroke="currentColor" strokeWidth="2.5" />
+            <path d="M-120 740C280 740 322 214 636 214s286 526 638 526 310-282 446-282" stroke="currentColor" strokeWidth="2.5" />
+          </g>
+          <g className="login-cable-flows">
+            <path d="M-120 704C214 704 286 178 636 178s328 526 638 526 346-282 446-282" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M-120 716C236 716 298 190 636 190s314 526 638 526 334-282 446-282" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M-120 728C258 728 310 202 636 202s300 526 638 526 322-282 446-282" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M-120 740C280 740 322 214 636 214s286 526 638 526 310-282 446-282" stroke="currentColor" strokeWidth="1.5" />
+          </g>
+          <g className="login-target-art">
+            <circle className="login-target-ring login-target-ring--outer" cx="1480" cy="360" r="98" stroke="currentColor" strokeWidth="2" />
+            <circle className="login-target-ring login-target-ring--middle" cx="1480" cy="360" r="72" stroke="currentColor" strokeWidth="2" />
+            <circle className="login-target-ring login-target-ring--inner" cx="1480" cy="360" r="46" stroke="currentColor" strokeWidth="2" />
+            <circle className="login-target-ring login-target-ring--core" cx="1480" cy="360" r="12" stroke="currentColor" strokeWidth="2" />
+            <circle className="login-target-sweep" cx="1480" cy="360" r="98" stroke="currentColor" strokeWidth="2" />
+            <path className="login-target-crosshair" d="M1480 225v32m0 206v32m-135-135h32m206 0h32" stroke="currentColor" strokeWidth="2" />
+          </g>
+        </svg>
         {/* 右上角语言与主题切换控件区域 */}
         <div className="absolute right-5 top-5 z-20">
           <LoginLanguageToggle />
@@ -409,8 +437,6 @@ const Login = () => {
 
         <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-6 py-6">
           <div className="grid w-full max-w-[1200px] grid-cols-1 items-center gap-8 lg:grid-cols-12 lg:gap-12">
-            <LoginHero />
-
             <div className="flex w-full flex-col items-center lg:col-span-7">
               <header className="mb-4 flex flex-row items-center justify-center lg:hidden">
                 <span className="flex h-10 shrink-0 items-center justify-center bg-transparent dark:rounded-lg dark:bg-white dark:px-2 dark:py-1">
@@ -434,10 +460,12 @@ const Login = () => {
                 />
               </FlipCard3D>
             </div>
+
+            <LoginHero />
           </div>
         </div>
 
-        <AppFooter />
+        <AppFooter variant="login" className="relative z-10" />
       </div>
     </>
   );

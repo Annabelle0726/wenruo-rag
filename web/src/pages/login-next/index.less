@@ -33,3 +33,118 @@
   transform: rotateY(0deg);
   -webkit-transform: rotateY(0deg);
 }
+
+.login-auth-title,
+.login-auth-label {
+  font-family: Arial, 'Microsoft YaHei', sans-serif;
+}
+
+.login-auth-label {
+  font-weight: 700;
+}
+.login-hero-brand > img {
+  height: 2.375rem;
+}
+
+.login-hero-brand span:first-child {
+  font-size: 1.25rem;
+}
+
+.login-hero-brand span:last-child {
+  font-size: 0.6875rem;
+}
+
+.login-cable-traces {
+  opacity: 0.055;
+}
+
+.login-cable-flows {
+  opacity: 0.28;
+}
+
+.login-cable-flows path {
+  stroke-dasharray: 32 168;
+  animation: login-cable-flow 48s linear infinite;
+}
+
+.login-cable-flows path:nth-child(2) {
+  animation-delay: -12s;
+}.login-cable-flows path:nth-child(3) {
+  animation-delay: -24s;
+}
+
+.login-cable-flows path:nth-child(4) {
+  animation-delay: -36s;
+}
+
+.login-target-art {
+  opacity: 0.24;
+}
+
+.login-target-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: login-target-breathe 6s ease-in-out infinite;
+}
+
+.login-target-ring--middle {
+  animation-delay: -1.5s;
+}
+
+.login-target-ring--inner {
+  animation-delay: -3s;
+}
+
+.login-target-ring--core {
+  animation-delay: -4.5s;
+}
+
+.login-target-sweep {
+  stroke-dasharray: 1 12;
+  animation: login-target-sweep 24s linear infinite;
+}@keyframes login-cable-flow {
+  to {
+    stroke-dashoffset: -2000px;
+  }
+}
+
+@keyframes login-target-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.99);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.015);
+  }
+}
+
+@keyframes login-target-sweep {
+  to {
+    stroke-dashoffset: -650px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-cable-flows path,
+  .login-target-ring,
+  .login-target-sweep {
+    animation: none;
+  }
+
+  .login-cable-flows path {
+    stroke-dasharray: none;
+  }
+
+  .login-target-ring {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-cable-flows {
+    display: none;
+  }
+}
