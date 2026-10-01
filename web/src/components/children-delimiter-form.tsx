@@ -65,12 +65,25 @@ export const DelimiterInput = forwardRef<HTMLInputElement, InputProps & IProps>(
   },
 );
 
-export function ChildrenDelimiterForm() {
+export function ChildrenDelimiterForm({
+  switchPlacement = 'end',
+}: {
+  /**
+   * `'end'` is the long-standing row (the switch at the far end of the control
+   * column, which the parsing dialog keeps). `'control'` gives the label the same
+   * quarter-width column as every other field on the parser page and puts the
+   * switch at the start of the control column, so the toggle sits beside the field
+   * it belongs to. The delimiter below still appears only while the switch is on -
+   * that is this form's own logic and is untouched.
+   */
+  switchPlacement?: 'end' | 'control';
+} = {}) {
   const { t } = useTranslation();
   const form = useFormContext();
 
   const delimiterValue = form.watch('parser_config.children_delimiter');
   const enableChildren = form.watch('parser_config.enable_children');
+  const inlineSwitch = switchPlacement === 'control';
 
   return (
     <fieldset className="space-y-2">
@@ -79,8 +92,12 @@ export function ChildrenDelimiterForm() {
         name="parser_config.enable_children"
         render={({ field: { value, onChange, ...restProps } }) => (
           <FormItem className="items-center space-y-0 ">
-            <div className="flex items-center justify-between gap-1">
-              <FormLabel>
+            <div
+              className={cn('flex items-center gap-1', {
+                'justify-between': !inlineSwitch,
+              })}
+            >
+              <FormLabel className={cn('text-sm', { 'w-1/4': inlineSwitch })}>
                 {t('knowledgeDetails.enableChildrenDelimiter')}
               </FormLabel>
 

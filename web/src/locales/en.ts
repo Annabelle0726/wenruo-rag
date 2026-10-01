@@ -888,6 +888,16 @@ export default {
       visibilitySettings: 'Visibility settings',
       retrievalSettings: 'Retrieval settings',
       parsingMethod: 'Parsing method',
+      /* The parser page's four section headings: one line each, no closing stop. */
+      parsingMode: 'Parsing mode',
+      parsingModeTip: 'Use a built-in parser, or hand the work to a data pipeline',
+      documentParsing: 'Document parsing',
+      documentParsingTip: 'How a document becomes text, and how that text is split',
+      multimodalContent: 'Multimodal and structured content',
+      multimodalContentTip: 'How sub-chunks, images and tables are handled',
+      intelligentEnrichment: 'Intelligent enrichment',
+      intelligentEnrichmentTip:
+        'The index model, plus generated metadata, keywords and questions',
       linkDataPipeline: 'Link ingestion pipeline',
       enableAutoGenerate: 'Enable auto generate',
       teamPlaceholder: 'Please select a team.',

@@ -15,6 +15,7 @@
  */
 
 import { useTranslate } from '@/hooks/common-hooks';
+import { cn } from '@/lib/utils';
 import { useFormContext } from 'react-hook-form';
 import {
   FormControl,
@@ -25,7 +26,17 @@ import {
 } from './ui/form';
 import { Switch } from './ui/switch';
 
-export function ExcelToHtmlFormField() {
+export function ExcelToHtmlFormField({
+  switchPlacement = 'end',
+}: {
+  /**
+   * `'end'` is the long-standing row (the switch at the far end of the control
+   * column, which the parsing dialogs keep). `'control'` puts it at the start of
+   * that column, in line with every other control on the parser page, so the switch
+   * reads as part of its own field instead of a toggle at the panel's edge.
+   */
+  switchPlacement?: 'end' | 'control';
+} = {}) {
   const form = useFormContext();
   const { t } = useTranslate('knowledgeDetails');
 
@@ -41,7 +52,11 @@ export function ExcelToHtmlFormField() {
 
         return (
           <FormItem defaultChecked={false} className=" items-center space-y-0 ">
-            <div className="flex items-center justify-between  gap-1">
+            <div
+              className={cn('flex items-center gap-1', {
+                'justify-between': switchPlacement === 'end',
+              })}
+            >
               <FormLabel
                 tooltip={t('html4excelTip')}
                 className="text-sm text-text-secondary whitespace-break-spaces w-1/4"

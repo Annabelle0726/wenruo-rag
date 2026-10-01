@@ -22,7 +22,10 @@ import { z } from 'zod';
 import { ChunkMethodForm } from './chunk-method-form';
 import ChunkMethodLearnMore from './chunk-method-learn-more';
 import { ParseTypeItem } from '@/components/parse-type-form-field';
-import { MainContainer } from './configuration-form-container';
+import {
+  ConfigurationFormContainer,
+  MainContainer,
+} from './configuration-form-container';
 import { ChunkMethodItem } from './configuration/common-item';
 import { formSchema } from './form-schema';
 import { GeneralForm } from './general-form';
@@ -119,6 +122,12 @@ export default function DatasetSettings() {
   }, [parseType, form]);
 
   return (
+    /* Normal flow, as this page has always laid out: the page is as tall as its
+       sections, the shell's own region scrolls it, and the action row comes after the
+       last section - where a reader who has finished the form finds it - instead of
+       hovering over the fields. A definite page height would have pinned Save/Cancel
+       and bought a second scroller inside the shell; the section cards below are what
+       this restructure needed. */
     <div className="pr-5 pb-5">
       <Card className="p-0 h-full flex flex-col bg-transparent shadow-none">
         <CardHeader className="p-5 border-b-0.5 border-border-button">
@@ -162,19 +171,17 @@ export default function DatasetSettings() {
                 <div className="flex-1 h-0 w-full max-w-[1280px] px-5 pt-5 overflow-y-auto scrollbar-auto">
                   <MainContainer className="text-text-secondary">
                     {section === 'parsing' ? (
-                      <section className="space-y-5">
-                        <header className="flex items-center gap-3">
-                          <span className="h-6 w-1 rounded-full bg-accent-primary" />
-                          <div>
-                            <h2 className="text-lg font-semibold text-text-primary">
-                              {t('knowledgeConfiguration.parsingMethod')}
-                            </h2>
-                            <p className="mt-1 text-sm text-text-secondary">
-                              {t('knowledgeConfiguration.dataPipeline')}
-                            </p>
-                          </div>
-                        </header>
-                        <div className="space-y-4 rounded-xl border border-accent-primary/20 bg-transparent p-5 shadow-sm">
+                      <>
+                        {/* Section 1: the mode itself. It is not part of the
+                            parser's own fields - it decides which of the four
+                            groups below even exist - so it is rendered here, on the
+                            same surface as the rest. */}
+                        <ConfigurationFormContainer
+                          title={t('knowledgeConfiguration.parsingMode')}
+                          description={t(
+                            'knowledgeConfiguration.parsingModeTip',
+                          )}
+                        >
                           <ParseTypeItem line={1} name="parse_type" />
                           {parseType === ParseType.BuiltIn && (
                             <ChunkMethodItem line={1} name="chunk_method" />
@@ -196,9 +203,9 @@ export default function DatasetSettings() {
                               </div>
                             </>
                           )}
-                        </div>
+                        </ConfigurationFormContainer>
                         {parseType === ParseType.BuiltIn && <ChunkMethodForm />}
-                      </section>
+                      </>
                     ) : (
                       <section className="space-y-5">
                         <header className="flex items-center gap-3">
@@ -221,7 +228,12 @@ export default function DatasetSettings() {
                   </MainContainer>
                 </div>
 
-                <div className="p-5 text-right items-center flex justify-end gap-3 w-full max-w-[1280px]">
+                {/* The action row: in the document flow at the end of the form, with
+                    a hairline above it and the page's own hierarchy - the filled Save
+                    on the right, the quiet Cancel beside it. It is not fixed and not
+                    sticky: it is the last row of the page, so nothing is pinned over
+                    the fields and no scroller is added to keep it in view. */}
+                <div className="flex items-center justify-end gap-3 w-full max-w-[1280px] border-t border-border-default px-5 py-4">
                   <Button
                     type="reset"
                     variant="transparent"

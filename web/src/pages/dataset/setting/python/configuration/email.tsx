@@ -5,10 +5,15 @@ import {
 import { ConfigurationFormContainer } from '../configuration-form-container';
 import { AutoMetadata, GlobalIndexModelItem } from './common-item';
 import { FormLayout } from '@/constants/form';
+import { useTranslate } from '@/hooks/common-hooks';
 
 export function EmailConfiguration() {
+  const { t } = useTranslate('knowledgeConfiguration');
   return (
-    <ConfigurationFormContainer>
+    <ConfigurationFormContainer
+      title={t('intelligentEnrichment')}
+      description={t('intelligentEnrichmentTip')}
+    >
       <>
         <GlobalIndexModelItem />
         <AutoMetadata />

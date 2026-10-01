@@ -9,7 +9,10 @@ import {
 } from '@/components/ui/select';
 import { useTranslate } from '@/hooks/common-hooks';
 import { useFormContext, useWatch } from 'react-hook-form';
-import { ConfigurationFormContainer } from '../configuration-form-container';
+import {
+  ConfigurationFormContainer,
+  MainContainer,
+} from '../configuration-form-container';
 import { GlobalIndexModelItem } from './common-item';
 
 const ROLE_OPTIONS = [
@@ -68,90 +71,108 @@ export function TableConfiguration() {
   };
 
   return (
-    <ConfigurationFormContainer>
-      <GlobalIndexModelItem />
-      <FormItem className="space-y-2">
-        <FormLabel className="text-sm font-medium">
-          {t('tableColumnMode')}
-        </FormLabel>
-        <FormControl>
-          <RadioGroup
-            value={mode}
-            onValueChange={handleModeChange}
-            className="flex gap-4"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="auto" id="table-mode-auto" />
-              <label
-                htmlFor="table-mode-auto"
-                className="text-sm font-normal cursor-pointer"
-              >
-                {t('tableColumnModeAuto')}
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="manual" id="table-mode-manual" />
-              <label
-                htmlFor="table-mode-manual"
-                className="text-sm font-normal cursor-pointer"
-              >
-                {t('tableColumnModeManual')}
-              </label>
-            </div>
-          </RadioGroup>
-        </FormControl>
-      </FormItem>
+    <MainContainer>
+      {/* The column policy decides how a table's cells are turned into structured
+          content, so it is read with the rest of the structured-content settings;
+          the index model is generated on top of the parsed result. The fields and
+          their conditional rendering are exactly as they were. */}
+      <ConfigurationFormContainer
+        title={t('multimodalContent')}
+        description={t('multimodalContentTip')}
+      >
+        <FormItem className="space-y-2">
+          <FormLabel className="text-sm font-medium">
+            {t('tableColumnMode')}
+          </FormLabel>
+          <FormControl>
+            <RadioGroup
+              value={mode}
+              onValueChange={handleModeChange}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="auto" id="table-mode-auto" />
+                <label
+                  htmlFor="table-mode-auto"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  {t('tableColumnModeAuto')}
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="manual" id="table-mode-manual" />
+                <label
+                  htmlFor="table-mode-manual"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  {t('tableColumnModeManual')}
+                </label>
+              </div>
+            </RadioGroup>
+          </FormControl>
+        </FormItem>
 
-      {mode === 'auto' && (
-        <p className="text-sm text-muted-foreground">
-          {t('tableColumnModeAutoDescription')}
-        </p>
-      )}
-
-      {mode === 'manual' && columns.length === 0 && (
-        <p className="text-sm text-muted-foreground">
-          {t('tableColumnRolesEmpty')}
-        </p>
-      )}
-
-      {mode === 'manual' && columns.length > 0 && (
-        <>
-          <p className="text-sm text-muted-foreground mb-3">
-            {t('tableColumnRolesTip')}
+        {mode === 'auto' && (
+          <p className="text-sm text-muted-foreground">
+            {t('tableColumnModeAutoDescription')}
           </p>
-          <div className="space-y-3">
-            {columns.map((col) => (
-              <FormItem key={col} className="flex flex-row items-center gap-4">
-                <FormLabel className="min-w-[120px] shrink-0 text-sm font-normal">
-                  {col}
-                </FormLabel>
-                <FormControl>
-                  <Select
-                    value={selectTableColumnRoleValue(
-                      tableColumnRoles && tableColumnRoles[col],
-                    )}
-                    onValueChange={(value) => handleRoleChange(col, value)}
-                  >
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ROLE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {t(opt.labelKey)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-              </FormItem>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            {t('tableColumnRolesReparseTip')}
+        )}
+
+        {mode === 'manual' && columns.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            {t('tableColumnRolesEmpty')}
           </p>
-        </>
-      )}
-    </ConfigurationFormContainer>
+        )}
+
+        {mode === 'manual' && columns.length > 0 && (
+          <>
+            <p className="text-sm text-muted-foreground mb-3">
+              {t('tableColumnRolesTip')}
+            </p>
+            <div className="space-y-3">
+              {columns.map((col) => (
+                <FormItem
+                  key={col}
+                  className="flex flex-row items-center gap-4"
+                >
+                  <FormLabel className="min-w-[120px] shrink-0 text-sm font-normal">
+                    {col}
+                  </FormLabel>
+                  <FormControl>
+                    <Select
+                      value={selectTableColumnRoleValue(
+                        tableColumnRoles && tableColumnRoles[col],
+                      )}
+                      onValueChange={(value) => handleRoleChange(col, value)}
+                    >
+                      <SelectTrigger className="w-[160px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ROLE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {t(opt.labelKey)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                </FormItem>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              {t('tableColumnRolesReparseTip')}
+            </p>
+          </>
+        )}
+      </ConfigurationFormContainer>
+
+      <ConfigurationFormContainer
+        title={t('intelligentEnrichment')}
+        description={t('intelligentEnrichmentTip')}
+      >
+        <GlobalIndexModelItem />
+      </ConfigurationFormContainer>
+    </MainContainer>
   );
 }

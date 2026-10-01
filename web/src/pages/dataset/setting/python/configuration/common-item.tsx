@@ -56,6 +56,20 @@ interface IProps {
   label?: string;
   name?: string;
 }
+
+/**
+ * The width a slider-plus-value control is allowed to take.
+ *
+ * The slider row is 25% label / 75% control, and inside that control the slider
+ * (`w-full`) and the number input are laid out with `justify-between` - so on a
+ * 1100px form the number landed some 630px away from the thumb it belongs to: the
+ * slider read as one control and the value as a stray field at the panel's edge.
+ * Capping the control group makes the two one object again, while the value box
+ * still sits at the end of the slider it edits. Passed to the shared slider field
+ * through its own `className`/`controlClassName`, so no other page changes.
+ */
+export const SLIDER_CONTROL_CLASS = 'max-w-md';
+
 export function ChunkMethodItem(props: IProps) {
   const { line, name = 'parser_id' } = props;
   const { t } = useTranslate('knowledgeConfiguration');
@@ -70,7 +84,9 @@ export function ChunkMethodItem(props: IProps) {
       render={({ field }) => (
         <FormItem className="items-center gap-1">
           <div
-            className={line === 1 ? 'flex items-center' : 'flex flex-col gap-1'}
+            className={
+              line === 1 ? 'flex items-center gap-1' : 'flex flex-col gap-1'
+            }
           >
             <FormLabel
               required
@@ -246,7 +262,11 @@ export function EnableAutoGenerateItem() {
   );
 }
 
-export function ImageContextWindow() {
+export function ImageContextWindow({
+  controlClassName,
+}: {
+  controlClassName?: string;
+} = {}) {
   const { t } = useTranslate('knowledgeConfiguration');
   const form = useFormContext();
 
@@ -259,6 +279,7 @@ export function ImageContextWindow() {
           <FormControl>
             <SliderInputFormField
               {...field}
+              className={controlClassName}
               label={t('imageTableContextWindow')}
               tooltip={t('imageTableContextWindowTip')}
               defaultValue={0}
@@ -285,6 +306,7 @@ export function OverlappedPercent() {
       name="parser_config.overlapped_percent"
       label={t('knowledgeConfiguration.overlappedPercent')}
       tooltip={t('knowledgeConfiguration.overlappedPercentTip')}
+      className={SLIDER_CONTROL_CLASS}
       max={0.3}
       step={0.01}
       sliderTestId="ds-settings-parser-overlapped-percent-slider"
@@ -296,9 +318,19 @@ export function OverlappedPercent() {
 export function AutoMetadata({
   type = MetadataType.Setting,
   otherData,
+  switchPlacement = 'end',
 }: {
   type?: MetadataType;
   otherData?: Record<string, any>;
+  /**
+   * Where this field's on/off switch sits. The default is the long-standing row -
+   * the 设置 button at the control column's start and the switch at its far end -
+   * and it is what the parsing dialogs keep. `'control'` groups the switch with the
+   * button instead, so both belong visibly to the label beside them and the switch
+   * no longer lands past the panel's right edge, hundreds of pixels from its own
+   * field. Only the parser page asks for it.
+   */
+  switchPlacement?: 'end' | 'control';
 }) {
   // get metadata field
   const location = useLocation();
@@ -362,7 +394,12 @@ export function AutoMetadata({
     defaultValue: true,
     tooltip: t('knowledgeConfiguration.autoMetadataTip'),
     render: (fieldProps: ControllerRenderProps) => (
-      <div className="flex items-center justify-between">
+      <div
+        className={cn(
+          'flex items-center',
+          switchPlacement === 'control' ? 'gap-3' : 'justify-between',
+        )}
+      >
         <Button
           type="button"
           variant="ghost"
@@ -487,7 +524,7 @@ export function LLMModelItem({
           <FormItem className={cn('items-center space-y-0')}>
             <div
               className={cn('flex', {
-                'items-center': line === 1,
+                'items-center gap-1': line === 1,
                 'flex-col gap-1': line === 2,
               })}
             >

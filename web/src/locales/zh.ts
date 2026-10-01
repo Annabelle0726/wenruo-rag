@@ -834,6 +834,16 @@ export default {
       visibilitySettings: '可见性设置',
       retrievalSettings: '检索设置',
       parsingMethod: '解析方法',
+      /* The parser page's four section headings. Each description is one line and
+         carries no closing full stop, like the page subtitles beside it. */
+      parsingMode: '解析模式',
+      parsingModeTip: '选择内置解析器，或改由数据管道处理',
+      documentParsing: '文档解析',
+      documentParsingTip: '文档如何转为文本，以及文本如何切分',
+      multimodalContent: '多模态与结构化内容',
+      multimodalContentTip: '子文本块、图像与表格的处理方式',
+      intelligentEnrichment: '智能增强',
+      intelligentEnrichmentTip: '索引模型，以及自动生成的元数据、关键词与问题',
       linkDataPipeline: '关联 pipeline',
       enableAutoGenerate: '是否启用自动生成',
       teamPlaceholder: '请选择团队',

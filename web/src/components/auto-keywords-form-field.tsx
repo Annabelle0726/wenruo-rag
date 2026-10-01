@@ -21,11 +21,14 @@ import { SliderInputFormField } from './slider-input-form-field';
 interface AutoFieldProps {
   name?: string;
   layout?: FormLayout;
+  /** Bounds the slider-plus-value group; the slider field's own `className`. */
+  controlClassName?: string;
 }
 
 export function AutoKeywordsFormField({
   name = 'parser_config.auto_keywords',
   layout = FormLayout.Vertical,
+  controlClassName,
 }: AutoFieldProps) {
   const { t } = useTranslate('knowledgeDetails');
 
@@ -37,6 +40,7 @@ export function AutoKeywordsFormField({
       min={0}
       tooltip={t('autoKeywordsTip')}
       layout={layout}
+      className={controlClassName}
       sliderTestId="ds-settings-parser-auto-keyword-slider"
       numberInputTestId="ds-settings-parser-auto-keyword-input"
       integer
@@ -47,6 +51,7 @@ export function AutoKeywordsFormField({
 export function AutoQuestionsFormField({
   name = 'parser_config.auto_questions',
   layout = FormLayout.Vertical,
+  controlClassName,
 }: AutoFieldProps) {
   const { t } = useTranslate('knowledgeDetails');
 
@@ -58,6 +63,7 @@ export function AutoQuestionsFormField({
       min={0}
       tooltip={t('autoQuestionsTip')}
       layout={layout}
+      className={controlClassName}
       sliderTestId="ds-settings-parser-auto-question-slider"
       numberInputTestId="ds-settings-parser-auto-question-input"
       integer

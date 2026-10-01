@@ -23,6 +23,8 @@ interface IProps {
   max?: number;
   sliderTestId?: string;
   numberInputTestId?: string;
+  /** Bounds the slider-plus-value group; the slider field's own `className`. */
+  controlClassName?: string;
 }
 
 export function MaxTokenNumberFormField({
@@ -30,6 +32,7 @@ export function MaxTokenNumberFormField({
   initialValue,
   sliderTestId,
   numberInputTestId,
+  controlClassName,
 }: IProps) {
   const { t } = useTranslate('knowledgeConfiguration');
 
@@ -41,6 +44,7 @@ export function MaxTokenNumberFormField({
       max={max}
       defaultValue={initialValue ?? 0}
       layout={FormLayout.Horizontal}
+      className={controlClassName}
       sliderTestId={sliderTestId}
       numberInputTestId={numberInputTestId}
       min={1}

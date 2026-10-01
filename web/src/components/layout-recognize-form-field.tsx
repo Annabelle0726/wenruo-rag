@@ -51,6 +51,7 @@ export function LayoutRecognizeFormField({
   showPaddleocrOptions = true,
   testId,
   ownerTenantId,
+  hintVariant = 'link',
 }: {
   name?: string;
   horizontal?: boolean;
@@ -60,6 +61,15 @@ export function LayoutRecognizeFormField({
   showPaddleocrOptions?: boolean;
   testId?: string;
   ownerTenantId?: string;
+  /**
+   * How the standard/scanned guidance under the dropdown is dressed. `'link'` is
+   * the long-standing presentation - a green link followed by the tip, on the
+   * field's own line. `'quiet'` puts both inside one hairline callout with a 5%
+   * accent wash, so it reads as advice underneath a field rather than as a second
+   * action competing with it: same words, same one-click preset, lower weight. It
+   * is never an alert - nothing here is wrong.
+   */
+  hintVariant?: 'link' | 'quiet';
 }) {
   const form = useFormContext();
 
@@ -168,15 +178,22 @@ export function LayoutRecognizeFormField({
               </div>
               <div
                 className={cn(
-                  'flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 text-xs',
-                  { 'pl-[25%]': horizontal },
+                  'flex flex-wrap items-center gap-x-2 gap-y-1 text-xs',
+                  {
+                    'pl-[25%] pt-1': horizontal,
+                    'rounded-md border border-accent-primary/20 bg-accent-primary/5 px-2.5 py-1.5 text-text-secondary':
+                      hintVariant === 'quiet',
+                  },
                 )}
               >
                 <Button
                   type="button"
                   variant="link"
                   size="sm"
-                  className="h-auto p-0 text-xs text-accent-primary"
+                  className={cn('h-auto p-0 text-xs text-accent-primary', {
+                    'font-normal no-underline hover:underline':
+                      hintVariant === 'quiet',
+                  })}
                   onClick={handleUsePlainTextPreset}
                 >
                   {t('plainTextPreset')}

@@ -10,19 +10,27 @@ import {
 import { useOwnerTenantId } from '../../../contexts/knowledge-base-context';
 import { AutoMetadata, GlobalIndexModelItem } from './common-item';
 import { FormLayout } from '@/constants/form';
+import { useTranslate } from '@/hooks/common-hooks';
 
 export function PaperConfiguration() {
+  const { t } = useTranslate('knowledgeConfiguration');
   const ownerTenantId = useOwnerTenantId();
   return (
     <MainContainer>
-      <ConfigurationFormContainer>
+      <ConfigurationFormContainer
+        title={t('documentParsing')}
+        description={t('documentParsingTip')}
+      >
         <LayoutRecognizeFormField
           ownerTenantId={ownerTenantId}
         ></LayoutRecognizeFormField>
-        <GlobalIndexModelItem />
       </ConfigurationFormContainer>
 
-      <ConfigurationFormContainer>
+      <ConfigurationFormContainer
+        title={t('intelligentEnrichment')}
+        description={t('intelligentEnrichmentTip')}
+      >
+        <GlobalIndexModelItem />
         <AutoMetadata />
         <AutoKeywordsFormField
           layout={FormLayout.Horizontal}

@@ -40,6 +40,15 @@ function EmptyComponent() {
   return <div></div>;
 }
 
+/**
+ * The selected built-in parser's own sections.
+ *
+ * It renders them straight into the page's stack of section cards. It used to wrap
+ * them in a second `overflow-auto` box, which the page no longer needs - and must
+ * not have: the page's field area is the one scroll region under the header, and a
+ * scroller inside it would put two scrollbars in the same column (the outer one with
+ * nothing to scroll, the inner one carrying the whole form).
+ */
 export function ChunkMethodForm() {
   const form = useFormContext();
 
@@ -54,11 +63,5 @@ export function ChunkMethodForm() {
       : EmptyComponent;
   }, [finalParserId]);
 
-  return (
-    <section className="h-full flex flex-col">
-      <div className="overflow-auto flex-1 min-h-0">
-        <ConfigurationComponent></ConfigurationComponent>
-      </div>
-    </section>
-  );
+  return <ConfigurationComponent></ConfigurationComponent>;
 }
