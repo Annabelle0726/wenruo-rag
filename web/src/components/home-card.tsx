@@ -119,11 +119,13 @@ export function HomeCard({
         // is clipped. The height is a token because the page-size calculation
         // measures a region before any card has rendered and needs the same value.
         'card-interactive group flex h-[var(--list-card-height)] w-full overflow-hidden rounded-xl px-4 py-3',
-        layout === 'chat' || layout === 'memory'
-          ? 'flex-col items-stretch justify-center gap-2'
-          : layout === 'search'
-            ? 'items-center justify-between gap-3'
-            : 'items-center gap-3',
+        layout === 'agent'
+          ? 'flex-col items-stretch justify-center gap-1'
+          : layout === 'chat' || layout === 'memory'
+            ? 'flex-col items-stretch justify-center gap-2'
+            : layout === 'search'
+              ? 'items-center justify-between gap-3'
+              : 'items-center gap-3',
         // Translucent glass tint, so the page's own glow reads through the card
         // instead of stopping dead at an opaque surface. The ceramic shell adds
         // the inner rim light and the drop shadow, in whichever theme is active.
@@ -137,7 +139,70 @@ export function HomeCard({
         cardClassName,
       )}
     >
-      {layout === 'memory' ? (
+      {layout === 'agent' ? (
+        <>
+          <div className="flex w-full min-w-0 items-center gap-3">
+            <div className="flex size-8 shrink-0 items-center justify-center">
+              {leading ?? (
+                <RAGFlowAvatar
+                  className="w-[32px] h-[32px]"
+                  avatar={data.avatar}
+                  name={data.name}
+                />
+              )}
+            </div>
+
+            <header className="flex min-w-0 flex-1 items-center gap-2">
+              <TruncatedText
+                as="h3"
+                className="min-w-0 flex-1 truncate text-base font-bold leading-snug"
+                testId="agent-name"
+                tooltip={data.name}
+              >
+                {data.name}
+              </TruncatedText>
+              {icon}
+              <div className="flex shrink-0 items-center">{moreDropdown}</div>
+            </header>
+          </div>
+
+          <div className="flex w-full min-w-0 items-center gap-2">
+            <TruncatedText
+              className="min-w-0 flex-1 truncate text-xs leading-4 text-text-secondary"
+              tooltip={data.description}
+            >
+              {data.description}
+            </TruncatedText>
+            {extra}
+          </div>
+
+          <div
+            className="h-px w-full shrink-0 bg-cable-divider opacity-40"
+            aria-hidden="true"
+          />
+
+          <div className="flex w-full min-w-0 items-center justify-between gap-2 rounded-md border border-cable-hairline bg-cable-surface/60 px-2 py-1">
+            <div
+              title={t('flow.lastSavedAt')}
+              className="flex min-w-0 items-center gap-1.5"
+            >
+              <Clock3
+                className="size-3 shrink-0 text-cable-muted"
+                aria-hidden="true"
+              />
+              <Time
+                time={data.update_time}
+                format="DD/MM/YYYY HH:mm"
+                className="text-[11px] leading-4"
+              />
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {badge}
+              {sharedBadge}
+            </div>
+          </div>
+        </>
+      ) : layout === 'memory' ? (
         <>
           <div className="flex w-full min-w-0 items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center">
@@ -213,7 +278,9 @@ export function HomeCard({
               className="text-xs"
             />
           </div>
-          <div className="flex min-w-0 flex-[1_1_52%] items-center">{trailing}</div>
+          <div className="flex min-w-0 flex-[1_1_52%] items-center">
+            {trailing}
+          </div>
         </>
       ) : layout === 'chat' ? (
         <>
