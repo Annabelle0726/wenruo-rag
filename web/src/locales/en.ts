@@ -4083,6 +4083,8 @@ export default {
       searchApps: 'Search apps',
       createSearch: 'Create search',
       searchGreeting: 'How can I help you today ？',
+      cardComposerLabel: 'Ask this search app',
+      cardComposerPlaceholder: 'Ask a question…',
       profile: 'Hide Profile',
       locale: 'Locale',
       embedCode: 'Embed code',

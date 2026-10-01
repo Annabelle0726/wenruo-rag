@@ -3588,6 +3588,8 @@ export default {
       searchApps: '搜索',
       createSearch: '创建查询',
       searchGreeting: '今天我能为你做些什么？',
+      cardComposerLabel: '在此搜索应用中提问',
+      cardComposerPlaceholder: '输入问题…',
       profile: '隐藏个人资料',
       locale: '语言',
       embedCode: '嵌入代码',

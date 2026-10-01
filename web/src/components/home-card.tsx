@@ -59,8 +59,8 @@ interface IProps {
   trailing?: ReactNode;
   /** Visual-only class overrides for a specific card family. */
   className?: string;
-  /** Uses a two-row layout for chat cards: identity/title, then date/count. */
-  layout?: 'standard' | 'chat';
+  /** Uses a structured layout for chat and search cards. */
+  layout?: 'standard' | 'chat' | 'search';
 }
 
 function Time({
@@ -121,7 +121,9 @@ export function HomeCard({
         'card-interactive group flex h-[var(--list-card-height)] w-full overflow-hidden rounded-xl px-4 py-3',
         layout === 'chat'
           ? 'flex-col items-stretch justify-center gap-2'
-          : 'items-center gap-3',
+          : layout === 'search'
+            ? 'items-center justify-between gap-3'
+            : 'items-center gap-3',
         // Translucent glass tint, so the page's own glow reads through the card
         // instead of stopping dead at an opaque surface. The ceramic shell adds
         // the inner rim light and the drop shadow, in whichever theme is active.
@@ -135,7 +137,38 @@ export function HomeCard({
         cardClassName,
       )}
     >
-      {layout === 'chat' ? (
+      {layout === 'search' ? (
+        <>
+          <div className="flex min-w-0 flex-[0_1_48%] flex-col justify-center gap-2">
+            <header className="flex min-w-0 items-center gap-2">
+              <div className="flex size-8 shrink-0 items-center justify-center">
+                {leading ?? (
+                  <RAGFlowAvatar
+                    className="w-[32px] h-[32px]"
+                    avatar={data.avatar}
+                    name={data.name}
+                  />
+                )}
+              </div>
+              <TruncatedText
+                as="h3"
+                className="min-w-0 flex-1 truncate text-sm font-bold leading-snug"
+                testId="agent-name"
+                tooltip={data.name}
+              >
+                {data.name}
+              </TruncatedText>
+              <div className="flex shrink-0 items-center">{moreDropdown}</div>
+            </header>
+            <Time
+              time={data.update_time}
+              format="DD/MM/YYYY HH:mm"
+              className="text-xs"
+            />
+          </div>
+          <div className="flex min-w-0 flex-[1_1_52%] items-center">{trailing}</div>
+        </>
+      ) : layout === 'chat' ? (
         <>
           <div className="flex w-full min-w-0 items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center">

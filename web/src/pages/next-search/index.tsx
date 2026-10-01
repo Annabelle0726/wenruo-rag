@@ -23,6 +23,7 @@ import {
 import { Settings } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router';
 import {
   ISearchAppDetailProps,
   useFetchSearchDetail,
@@ -40,6 +41,8 @@ export default function SearchPage() {
 
   const [openSetting, setOpenSetting] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const location = useLocation();
+  const navigate = useNavigate();
   const { data: userInfo } = useFetchUserInfo();
   const { openSetting: checkOpenSetting } = useCheckSettings(
     SearchData as ISearchAppDetailProps,
@@ -54,6 +57,30 @@ export default function SearchPage() {
   }, [SearchData]);
 
   usePublishBreadcrumbTrail(breadcrumbTrail);
+  useEffect(() => {
+    const initialQuery = (location.state as { searchCardQuery?: unknown } | null)
+      ?.searchCardQuery;
+    if (
+      typeof initialQuery !== 'string' ||
+      !initialQuery.trim() ||
+      !SearchData
+    ) {
+      return;
+    }
+
+    setSearchText(initialQuery);
+    if (!checkOpenSetting) {
+      setIsSearching(true);
+    }
+    navigate(location.pathname, { replace: true, state: null });
+  }, [
+    SearchData,
+    checkOpenSetting,
+    location.pathname,
+    location.state,
+    navigate,
+  ]);
+
   useEffect(() => {
     setOpenSetting(checkOpenSetting);
   }, [checkOpenSetting]);
