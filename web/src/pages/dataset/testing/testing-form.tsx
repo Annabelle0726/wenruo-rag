@@ -5,7 +5,6 @@ import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
 import { CrossLanguageFormField } from '@/components/cross-language-form-field';
-import { FormContainer } from '@/components/form-container';
 import {
   RerankCandidatesCountFormField,
   rerankCandidatesCountSchema,
@@ -36,8 +35,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useTestRetrieval } from '@/hooks/use-knowledge-request';
 import { ITestRetrievalRequestBody } from '@/interfaces/request/knowledge';
 import { trim } from 'lodash';
-import { Send } from 'lucide-react';
-import { useEffect } from 'react';
+import { ChevronDown, Send } from 'lucide-react';
+import { ReactNode, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 import { useOwnerTenantId } from '../contexts/knowledge-base-context';
@@ -45,12 +44,15 @@ import { useOwnerTenantId } from '../contexts/knowledge-base-context';
 type TestingFormProps = Pick<
   ReturnType<typeof useTestRetrieval>,
   'loading' | 'refetch' | 'setValues'
->;
+> & {
+  result: ReactNode;
+};
 
 export default function TestingForm({
   loading,
   refetch,
   setValues,
+  result,
 }: TestingFormProps) {
   const { t } = useTranslation();
   const { id } = useParams();
@@ -100,59 +102,87 @@ export default function TestingForm({
   return (
     <Form {...form}>
       <form
-        className="size-full flex flex-col"
+        className="flex min-h-0 flex-1 flex-col gap-4"
         onSubmit={form.handleSubmit(onSubmit)}
       >
-        <div className="px-5 h-0 flex-1">
-          <FormContainer className="p-5 h-full overflow-auto">
-            <SimilaritySliderFormField
-              isTooltipShown={true}
-            ></SimilaritySliderFormField>
-            <RerankFormFields ownerTenantId={ownerTenantId}></RerankFormFields>
-            <CrossLanguageFormField
-              name={'cross_languages'}
-            ></CrossLanguageFormField>
-            <MetadataFilter prefix=""></MetadataFilter>
-            <RerankCandidatesCountFormField></RerankCandidatesCountFormField>
-            <TopSelectFormItem></TopSelectFormItem>
-          </FormContainer>
-        </div>
-
-        <footer className="flex-0 p-5">
+        <section className="shrink-0 rounded-md border border-border-button bg-bg-card p-4">
           <FormField
             control={form.control}
             name="question"
             render={({ field }) => (
               <FormItem>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        form.handleSubmit(onSubmit)();
-                      }
-                    }}
-                  ></Textarea>
-                </FormControl>
-
+                <div className="mb-2 flex items-center justify-between gap-4">
+                  <label className="text-sm font-semibold text-text-primary">
+                    {t('knowledgeDetails.testQuestion')}
+                  </label>
+                  <span className="text-xs text-text-secondary">
+                    {t('knowledgeDetails.testQuestionShortcut')}
+                  </span>
+                </div>
+                <div className="relative">
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      className="min-h-24 resize-none bg-bg-card pb-12 pr-36"
+                      placeholder={t('knowledgeDetails.testQuestionPlaceholder')}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          form.handleSubmit(onSubmit)();
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <ButtonLoading
+                    type="submit"
+                    className="absolute bottom-3 right-3 h-9 shrink-0 px-4"
+                    disabled={!trim(question)}
+                    loading={loading}
+                  >
+                    {t('knowledgeDetails.testingLabel')}
+                    <Send className="size-4" />
+                  </ButtonLoading>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
           />
+        </section>
 
-          <div className="mt-2.5 text-end">
-            <ButtonLoading
-              type="submit"
-              disabled={!trim(question)}
-              loading={loading}
-            >
-              {/* {!loading && <CirclePlay />} */}
-              {t('knowledgeDetails.testingLabel')}
-              <Send />
-            </ButtonLoading>
+        <div className="grid min-h-0 flex-1 grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)] gap-4">
+          <article className="flex min-h-0 flex-col overflow-hidden rounded-md border border-border-button bg-bg-card">
+            <header className="shrink-0 border-b border-border-button px-5 py-3">
+              <h2 className="text-base font-semibold text-text-primary">
+                {t('knowledgeDetails.retrievalParameters')}
+              </h2>
+            </header>
+            <div className="min-h-0 flex-1 overflow-auto p-5">
+              <div className="space-y-5">
+                <SimilaritySliderFormField isTooltipShown={true} />
+                <TopSelectFormItem />
+                <details className="group rounded-md border border-border-button bg-bg-base p-3">
+                  <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-text-primary">
+                    <ChevronDown className="size-4 transition-transform group-open:rotate-180" />
+                    {t('knowledgeDetails.advancedSettings')}
+                  </summary>
+                  <div className="mt-4 space-y-5 border-t border-border-button pt-4">
+                    <RerankFormFields ownerTenantId={ownerTenantId} />
+                    <CrossLanguageFormField name="cross_languages" />
+                    <MetadataFilter prefix="" />
+                    <RerankCandidatesCountFormField />
+                    <p className="text-xs leading-5 text-text-secondary">
+                      {t('knowledgeDetails.rerankCandidateValidationHint')}
+                    </p>
+                  </div>
+                </details>
+              </div>
+            </div>
+          </article>
+
+          <div className="min-h-0 overflow-hidden rounded-md border border-border-button bg-bg-card">
+            {result}
           </div>
-        </footer>
+        </div>
       </form>
     </Form>
   );

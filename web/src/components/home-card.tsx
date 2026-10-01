@@ -124,8 +124,8 @@ export function HomeCard({
           : layout === 'chat' || layout === 'memory'
             ? 'flex-col items-stretch justify-center gap-2'
             : layout === 'search'
-              ? 'items-center justify-between gap-3'
-              : 'items-center gap-3',
+              ? 'items-center justify-between gap-1'
+              : 'items-center gap-1',
         // Translucent glass tint, so the page's own glow reads through the card
         // instead of stopping dead at an opaque surface. The ceramic shell adds
         // the inner rim light and the drop shadow, in whichever theme is active.

@@ -12,7 +12,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ChevronDown,
-  ChevronLeft,
+  ChevronRight,
   LucideBookText,
   LucideFolderOpen,
   LucideLogs,
@@ -169,9 +169,9 @@ export function SideBar({ dataset: data }: PropType) {
                     shows the open one (`PanelLeftOpen`). Everything else about the
                     control - size, slot, tooltip, aria-label - is unchanged. */}
                 {collapsed ? (
-                  <PanelLeftClose className="size-4" />
-                ) : (
                   <PanelLeftOpen className="size-4" />
+                ) : (
+                  <PanelLeftClose className="size-4" />
                 )}
               </Button>
             </TooltipTrigger>
@@ -297,7 +297,7 @@ export function SideBar({ dataset: data }: PropType) {
                               ) : (
                                 /* Branch folded: a left chevron, the same shape the
                                    rotated icon produced, now the icon itself. */
-                                <ChevronLeft
+                                <ChevronRight
                                   className={cn(
                                     'ms-1 size-3.5 shrink-0 transition-transform',
                                     active

@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { SideBar } from '..';
+import { useSecondPathName } from '@/hooks/route-hook';
 
 const SidebarComponent = SideBar;
 jest.mock('@/routes', () => ({

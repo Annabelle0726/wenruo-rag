@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils';
 import { TFunction } from 'i18next';
 import {
   ChevronDown,
-  ChevronLeft,
+  ChevronRight,
   LucideActivity,
   LucideBox,
   LucideLogOut,
@@ -160,7 +160,7 @@ export function SideBar() {
                     (expanded ? (
                       <ChevronDown className="ms-1 hidden size-3.5 shrink-0 md:block" />
                     ) : (
-                      <ChevronLeft className="ms-1 hidden size-3.5 shrink-0 md:block" />
+                      <ChevronRight className="ms-1 hidden size-3.5 shrink-0 md:block" />
                     ))}
                 </Button>
 
