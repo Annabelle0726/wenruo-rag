@@ -1,14 +1,22 @@
-> **执行状态（2026-09-29 更新）**
+> **执行状态（2026-09-30 更新）**
 >
-> | 阶段   | 状态             | 证据 / 说明                                                                                                        |
-> |--------|------------------|--------------------------------------------------------------------------------------------------------------------|
-> | U0     | DONE（审计冻结）  | `docs/key-usage/workspace-ai-usage-provider-reliability-u0.md`                                                      |
-> | U0.5   | DONE（readiness） | `...-u0-5.md`：范围/会计/术语/授权矩阵冻结；源测试在仓库自带 `.venv` 中执行 `48 passed, 2 skipped`                     |
-> | U0.6   | DONE（解除 blocker） | `...-u0-5.md` §11：生产只读形状核对 PASS；`U1_IMPLEMENTATION_READY: YES`                                            |
-> | **U1** | **DONE（本轮实现）** | `...-u1.md`：7 个只读视图 + 43 个新测试；连同既有预算/安全回归 `91 passed, 2 skipped`；**无 migration**              |
-> | **U2** | **DONE（本轮实现）** | `...-u2.md`：Settings 导航（Model providers / Team / Usage & operations）+ Usage & Operations 四 Tab + 通知铃铛外壳；接入 U1 的 7 个 GET；jest `23 passed`、类型检查新增文件 0 error、`npm run build` 通过；**后端与 DB 零改动** |
-> | U3     | NOT STARTED      | 等待明确授权                                                                                                        |
-> | U3–U8  | NOT STARTED      | 未触碰                                                                                                              |
+> | 阶段   | 状态 | 证据 / 说明 |
+> |--------|------|-------------|
+> | U0 | DONE（审计冻结） | `docs/key-usage/workspace-ai-usage-provider-reliability-u0.md` |
+> | U0.5 | DONE（readiness） | `...-u0-5.md`：范围/会计/术语/授权矩阵冻结；源测试在仓库自带 `.venv` 中执行 `48 passed, 2 skipped` |
+> | U0.6 | DONE（解除 blocker） | `...-u0-5.md` §11：生产只读形状核对 PASS；`U1_IMPLEMENTATION_READY: YES` |
+> | **U1** | **DONE（实现完成；待随 Usage candidate 发布）** | 7 个权威只读 usage views 已实现；当前 production frontend 已包含 Usage UI，但 production backend 尚未包含 U1 `/usage/*` read-model routes，因此 U1 的最终 production closure 并入 Usage Backend Release Candidate |
+> | **U2** | **DONE（已进入当前 production frontend）** | Settings 导航、Usage & Operations 四 Tab、Usage Policy 展示骨架、Notification Bell shell 已实现；当前 production frontend 已包含相关 Usage UI |
+> | **U3** | **IMPLEMENTED / FINAL ACCEPTANCE HOLD** | Usage Policy backend + frontend editor +既有 gates 已实现并保留；不回滚现有 U3 commits。原独立 G14 暂停，最终 G14 改由 `current production frontend × minimal candidate backend` 执行，避免 acceptance artifact 与 deployment artifact 不一致 |
+> | **U4–U8** | **HOLD / NOT STARTED** | 在 Usage candidate 完成 G14、部署授权与 live acceptance 前不启动；尤其不得把 P1-2、metadata、Pricing Foundation 或其他 retrieval 工作混入本轮 Usage release |
+>
+> **当前执行边界：产品开发线与 Docker/release 线在 G14 汇合。** U3 implementation 已保留，但 U3 尚不能标记 COMPLETE / ACCEPTED。最终验收必须针对真正准备部署的 Usage Backend Release Candidate，而不是 HEAD 或独立临时 backend。
+>
+> 当前 release flow：`U1 read model + U3 policy backend → dependency closure → minimal Usage backend candidate → backend gates / isolation → current production frontend × candidate backend → G14 browser acceptance → READY_FOR_USAGE_CANDIDATE_DEPLOYMENT → 单独授权 deployment → live acceptance`。
+>
+> **冻结项：** P1-2 HOLD；metadata HOLD；Pricing Foundation OUT OF SCOPE；Full Build HOLD。不得因为 Usage candidate 发布而把 `PRICING_NOT_ACCEPTED` 隐式改为 accepted。
+>
+> **U3 完成条件：** 只有当 candidate 上的 `/usage/*` contract、save/reload、真实 `If-Match`、`POLICY_CONFLICT`、stale revision UI、NORMAL authorization 与 frontend contract 全部通过，并在获授权部署后完成 live acceptance，才将 U3 标记为 COMPLETE / ACCEPTED。
 >
 > U1 已实现视图：`my_usage` / `workspace_summary` / `member_breakdown` / `daily_series` / `monthly_series` /
 > `recorded_model_breakdown` / `quota_status`，注册于 `/api/v1/tenants/<tenant_id>/usage/*`（只读 GET）。
@@ -323,6 +331,27 @@ Browser/UI gates only.
 No Provider Health backend yet.
 
 U3 — Usage & Quota Productisation
+
+Execution State — 2026-09-30
+
+Implementation is substantially complete, but final acceptance is intentionally held. Existing U3 implementation commits and gate results are preserved and must not be reverted merely because deployment closure moved to the release track.
+
+The original standalone G14 browser acceptance is retired as the final acceptance path. Production currently has the Usage frontend surface while the corresponding U1 `/usage/*` read-model backend is not yet present in the deployed backend. Therefore G14 must run against the exact backend candidate intended for release:
+
+`current production frontend × minimal Usage backend candidate`
+
+G14 must cover at minimum:
+- all required `/usage/*` contracts no longer returning 404;
+- OWNER / ADMIN policy edit → save → reload → persisted;
+- `policy_revision` and real `If-Match`;
+- stale write conflict: HTTP 200 + `code=101` + `POLICY_CONFLICT`;
+- stale-revision UI behavior;
+- NORMAL user read/write authorization boundaries;
+- no Pricing Foundation dependency;
+- no P1-2 / metadata / unrelated retrieval code in the candidate.
+
+Acceptance artifact must equal deployment artifact. Do not declare U3 COMPLETE from a HEAD-only or temporary-backend G14 run.
+
 Goal
 Connect U1 authoritative usage data to U2 UI.
 My Usage
