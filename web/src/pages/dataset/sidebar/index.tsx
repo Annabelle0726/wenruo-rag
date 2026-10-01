@@ -220,7 +220,11 @@ export function SideBar({ dataset: data }: PropType) {
       <nav
         className={cn(
           'min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth pt-1 pb-4',
-          collapsed ? 'px-2' : 'ps-0 pe-3',
+          /* The rows below own their own icon gutter; this is only the rail's outer
+             one. `px-3` expanded is what keeps the active row's fill clear of the
+             sidebar's edge instead of running into it. The collapsed rail keeps the
+             8px it had, because its 48px rows are centred inside it either way. */
+          collapsed ? 'px-2' : 'px-3',
         )}
       >
         <ul className="space-y-1">
@@ -241,8 +245,12 @@ export function SideBar({ dataset: data }: PropType) {
                         block
                         variant="ghost"
                         className={cn(
-                          'min-w-0 flex-1 justify-start gap-3 px-0 py-2 relative h-9 text-sm',
-                          collapsed && 'justify-center',
+                          'min-w-0 flex-1 justify-start gap-3 py-2 relative h-9 text-sm',
+                          /* Expanded rows carry their own 8px so the icon is not the
+                             first thing at the sidebar's edge (with the nav's 12px
+                             that is a 20px gutter, the same rhythm the settings rail
+                             uses). Collapsed rows keep `px-0` and stay centred. */
+                          collapsed ? 'px-0 justify-center' : 'px-2',
                           active && 'bg-accent-primary-5 text-accent-primary',
                         )}
                         to={
@@ -251,7 +259,15 @@ export function SideBar({ dataset: data }: PropType) {
                             : `${Routes.DatasetBase}${item.key}/${id}`
                         }
                       >
-                        {item.icon}
+                        {/* ONE fixed-width, centring box for every menu icon, so the
+                            five items share a single vertical line and the labels all
+                            start at the same x, whatever the SVG inside is: nothing
+                            here is tuned per icon. It is also why the collapsed rail
+                            is unaffected - a centred box has the icon's own centre,
+                            so the 16px glyph stays on the 64px rail's midline. */}
+                        <span className="flex size-5 shrink-0 items-center justify-center">
+                          {item.icon}
+                        </span>
                         {!collapsed && (
                           <span className="truncate">{item.label}</span>
                         )}
@@ -288,7 +304,10 @@ export function SideBar({ dataset: data }: PropType) {
                 {expanded && (
                   <ul
                     id="dataset-settings-subnav"
-                    className="ms-3.5 mt-0.5 flex flex-col gap-0.5 border-s border-accent-primary/25 ps-2"
+                    /* Indented so the branch's labels line up under the parent's
+                       LABEL (20px for the parent's own gutter + its 20px icon box),
+                       with the hairline falling just inside the parent's icon. */
+                    className="ms-5 mt-0.5 flex flex-col gap-0.5 border-s border-accent-primary/25 ps-2.5"
                     data-testid="dataset-settings-subnav"
                   >
                     {item.children?.map((child) => {

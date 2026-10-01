@@ -615,7 +615,7 @@ export default {
       name: '名称',
       namePlaceholder: '请输入名称',
       doc: '文档',
-      datasetDescription: '解析成功后才能问答哦。',
+      datasetDescription: '解析成功后才能问答',
       filesLoading: '正在加载文件列表…',
       filesLoadFailed: '文件列表加载失败',
       filesForbidden: '你没有查看该数据集文件的权限',
