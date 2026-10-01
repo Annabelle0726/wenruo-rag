@@ -34,7 +34,8 @@ export default function DatasetWrapper() {
 
   return (
     <KnowledgeBaseProvider knowledgeBase={data} loading={loading}>
-      <article className="pt-3 size-full grid grid-cols-[auto_minmax(0,1fr)] grid-rows-1">
+      <article className="page-gutter pt-3 size-full grid grid-cols-[auto_minmax(0,1fr)]
+      grid-rows-1 gap-1">
         <SideBar dataset={data} />
 
         {/* The shell's region, for the sub-pages that do not mark one of their

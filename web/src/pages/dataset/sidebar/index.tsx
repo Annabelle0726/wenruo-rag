@@ -224,7 +224,7 @@ export function SideBar({ dataset: data }: PropType) {
              one. `px-3` expanded is what keeps the active row's fill clear of the
              sidebar's edge instead of running into it. The collapsed rail keeps the
              8px it had, because its 48px rows are centred inside it either way. */
-          collapsed ? 'px-2' : 'px-3',
+          collapsed ? 'px-2' : 'px-0',
         )}
       >
         <ul className="space-y-1">
@@ -235,7 +235,7 @@ export function SideBar({ dataset: data }: PropType) {
 
             return (
               <li key={item.key}>
-                <div className="flex min-w-0 items-center gap-1">
+                <div className="flex min-w-0 items-center">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -245,11 +245,7 @@ export function SideBar({ dataset: data }: PropType) {
                         block
                         variant="ghost"
                         className={cn(
-                          'min-w-0 flex-1 justify-start gap-3 py-2 relative h-9 text-sm',
-                          /* Expanded rows carry their own 8px so the icon is not the
-                             first thing at the sidebar's edge (with the nav's 12px
-                             that is a 20px gutter, the same rhythm the settings rail
-                             uses). Collapsed rows keep `px-0` and stay centred. */
+                          'min-w-0 flex-1 justify-start gap-3 py-2 relative h-9 text-sm transition-colors hover:bg-accent-primary-5 hover:text-accent-primary focus-visible:bg-accent-primary-5 focus-visible:text-accent-primary active:bg-accent-primary-10 active:text-accent-primary',
                           collapsed ? 'px-0 justify-center' : 'px-2',
                           active && 'bg-accent-primary-5 text-accent-primary',
                         )}
@@ -258,18 +254,39 @@ export function SideBar({ dataset: data }: PropType) {
                             ? `${Routes.DatasetBase}${item.key}/${id}/basic-info`
                             : `${Routes.DatasetBase}${item.key}/${id}`
                         }
+                        onClick={
+                          hasChildren
+                            ? () => setConfigurationExpanded((value) => !value)
+                            : undefined
+                        }
+                        aria-expanded={hasChildren ? expanded : undefined}
+                        aria-controls={
+                          hasChildren ? 'dataset-settings-subnav' : undefined
+                        }
+                        data-testid={
+                          hasChildren ? 'dataset-settings-nav-toggle' : undefined
+                        }
                       >
-                        {/* ONE fixed-width, centring box for every menu icon, so the
-                            five items share a single vertical line and the labels all
-                            start at the same x, whatever the SVG inside is: nothing
-                            here is tuned per icon. It is also why the collapsed rail
-                            is unaffected - a centred box has the icon's own centre,
-                            so the 16px glyph stays on the 64px rail's midline. */}
                         <span className="flex size-5 shrink-0 items-center justify-center">
                           {item.icon}
                         </span>
                         {!collapsed && (
-                          <span className="truncate">{item.label}</span>
+                          <>
+                            <span className="min-w-0 truncate text-left">
+                              {item.label}
+                            </span>
+                            {hasChildren && (
+                              <ChevronRight
+                                className={cn(
+                                  'ms-1 size-3.5 shrink-0 transition-transform',
+                                  active
+                                    ? 'text-accent-primary'
+                                    : 'text-text-secondary',
+                                  expanded ? 'rotate-90' : 'rotate-180',
+                                )}
+                              />
+                            )}
+                          </>
                         )}
                       </Button>
                     </TooltipTrigger>
@@ -277,29 +294,6 @@ export function SideBar({ dataset: data }: PropType) {
                       <TooltipContent side="right">{item.label}</TooltipContent>
                     )}
                   </Tooltip>
-                  {!collapsed && hasChildren && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={t('setting.toggleSection', {
-                        section: item.label,
-                      })}
-                      aria-expanded={expanded}
-                      aria-controls="dataset-settings-subnav"
-                      className="size-6 shrink-0 p-0 text-text-secondary hover:text-accent-primary"
-                      onClick={() =>
-                        setConfigurationExpanded((value) => !value)
-                      }
-                      data-testid="dataset-settings-nav-toggle"
-                    >
-                      <ChevronRight
-                        className={cn(
-                          'size-3.5 transition-transform',
-                          expanded && 'rotate-90',
-                        )}
-                      />
-                    </Button>
-                  )}
                 </div>
                 {expanded && (
                   <ul

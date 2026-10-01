@@ -182,17 +182,14 @@ export default {
       seeAll: 'See all',
       /* Sign-in hero: the brand column beside the form. */
       hero: {
-        featureHybridSearch: 'Precise hybrid retrieval',
+        featureHybridSearch: 'Standards and technical document search',
         featureHybridSearchDesc:
-          'Vector semantics and full-text search in one engine, lifting retrieval accuracy by 85%+.',
-        featureDocumentParsing: 'Second-scale parsing for any document',
-        featureDocumentParsingDesc:
-          'Dozens of formats — PDF, Word, Markdown and more — chunked and indexed in milliseconds.',
-        featureAgentMemory: 'Agents with long memory chains',
+          'Find relevant clauses across cable standards, procurement specifications, and quality documents.',
+        featureAgentMemory: 'Multi-turn document Q&A',
+        featureProcurementReview: 'Procurement specification review',
+        featureBomQuality: 'BOM and quality inspection records',
         featureAgentMemoryDesc:
-          'Structured memory plus a tool chain gives the model deeper reasoning and lasting context.',
-        badgeLatency: 'Vector search under 10ms',
-        badgeIsolation: '100% private tenant isolation',
+          'Combine document parsing with conversation context for ongoing search and analysis.',
       },
     },
     header: {
@@ -208,9 +205,9 @@ export default {
       flow: 'Agent',
       search: 'Search',
       brandShort: 'Wenruo RAG',
-      heroTitle: 'Cable industry intelligent search agent platform',
+      heroTitle: 'Wenruo RAG Cable Industry Search Platform',
       heroSubtitle:
-        'Industrial standards, BOM and QC compliance verification system',
+        'Built for engineering procurement, helping teams search, verify, and ask questions about standards, technical specifications, BOMs, and quality inspection materials.',
       dataset: 'Dataset',
       memories: 'Memory',
       help: 'Help',
@@ -225,6 +222,8 @@ export default {
       newAgent: 'New agent',
     },
     footer: {
+      loginCopyright: '© Xindao Digital Technology | All rights reserved.',
+      icpPlaceholder: 'ICP filing number: [placeholder]',
       copyright:
         '© XD Xindao Digital Technology | Industrial standard and QC compliance inspection system',
     },
@@ -664,7 +663,15 @@ export default {
       testSetting: 'Setting',
       retrievalTesting: 'Retrieval testing',
       retrievalTestingDescription:
-        'Conduct a retrieval test to check if RAGFlow can recover the intended content for the LLM.',
+        'Verify that this dataset can retrieve content relevant to the question',
+      testQuestion: 'Test question',
+      testQuestionPlaceholder: 'For example: What are the insulation requirements for 220 kV submarine cables?',
+      testQuestionShortcut: 'Enter to run · Shift + Enter for a new line',
+      retrievalParameters: 'Retrieval parameters',
+      advancedSettings: 'Advanced settings',
+      rerankCandidateValidationHint: 'Rerank candidates must be greater than or equal to Top N.',
+      retrievalLoading: 'Retrieving…',
+      retrievalError: 'Retrieval failed',
       Parse: 'Parse',
       dataset: 'Dataset',
       testing: 'Retrieval testing',
@@ -677,7 +684,7 @@ export default {
       namePlaceholder: 'Please input name!',
       doc: 'Docs',
       datasetDescription:
-        'Please wait for your files to finish parsing before starting an AI-powered chat.',
+        'Please wait for your files to finish parsing before starting an AI-powered chat',
       filesLoading: 'Loading the file list…',
       filesLoadFailed: 'Failed to load the file list',
       filesForbidden: 'You do not have permission to view this dataset’s files',
@@ -878,6 +885,9 @@ export default {
       linkPipelineSetTip: 'Manage ingestion pipeline linkage with this dataset',
       default: 'Default',
       dataPipeline: 'Switch or configure ingestion pipeline.',
+      visibilitySettings: 'Visibility settings',
+      retrievalSettings: 'Retrieval settings',
+      parsingMethod: 'Parsing method',
       linkDataPipeline: 'Link ingestion pipeline',
       enableAutoGenerate: 'Enable auto generate',
       teamPlaceholder: 'Please select a team.',
@@ -888,7 +898,7 @@ export default {
       manualSetup: 'Pipeline',
       builtIn: 'Built-in',
       titleDescription:
-        'Update your dataset configuration here, particularly the LLM and prompts.',
+        'Update your dataset configuration here, particularly the LLM and prompts',
       name: 'Dataset name',
       photo: 'Dataset photo',
       photoTip: 'You can upload an image up to 4 MB.',
@@ -1402,34 +1412,50 @@ export default {
       policyFieldError_empty: 'Enter a value; an empty field is not 0',
       policyFieldError_notInteger: 'Enter a whole number',
       policyFieldError_belowMin: 'A call limit must be at least 1',
-      policyFieldError_aboveMax: 'This value is beyond what the limit can store',
+      policyFieldError_aboveMax:
+        'This value is beyond what the limit can store',
       policyNoChanges: 'Nothing has changed yet.',
-      policyExemptNotice: 'Your role is exempt from these limits, and your usage is still recorded.',
+      policyExemptNotice:
+        'Your role is exempt from these limits, and your usage is still recorded.',
       policyOutcome_conflictTitle: 'This policy changed while you were editing',
-      policyOutcome_conflictDescription: 'Another administrator saved first, so your change was not applied. Reload to see the current policy, review the difference and save again.',
+      policyOutcome_conflictDescription:
+        'Another administrator saved first, so your change was not applied. Reload to see the current policy, review the difference and save again.',
       policyConflictReview: 'Your draft changes: {{fields}}',
-      policyConflictNeedsReload: 'Reload before saving again. Your attempt was based on revision {{revision}}.',
+      policyConflictNeedsReload:
+        'Reload before saving again. Your attempt was based on revision {{revision}}.',
       policyOutcome_unknownTitle: 'The result of that save is unknown',
-      policyOutcome_unknownDescription: 'The request timed out or the connection dropped, so it may or may not have been applied. This page will not resend it automatically: reload the policy and compare before saving again.',
+      policyOutcome_unknownDescription:
+        'The request timed out or the connection dropped, so it may or may not have been applied. This page will not resend it automatically: reload the policy and compare before saving again.',
       'policyOutcome_stale-after-saveTitle': 'Saved, but the reload failed',
-      'policyOutcome_stale-after-saveDescription': 'Your change was accepted. The page could not re-read the policy, so the values shown may be out of date.',
-      memberNoLongerActive: 'This member is no longer active in the workspace, so the limits no longer apply to them.',
+      'policyOutcome_stale-after-saveDescription':
+        'Your change was accepted. The page could not re-read the policy, so the values shown may be out of date.',
+      memberNoLongerActive:
+        'This member is no longer active in the workspace, so the limits no longer apply to them.',
       providerToggleDetails: 'Show details for {{provider}}',
       providerModelCount: '{{count}} models',
       providerCategoryEmptyTitle: 'No provider of this type yet',
-      providerCategoryEmptyDescription: 'This workspace has no configured provider in this category. Nothing is listed rather than an example one.',
-      providerCategoryCaveat: 'No health, balance, remaining quota or cost is shown here: none is recorded for a provider, and a private endpoint exposes no provider account value.',
+      providerCategoryEmptyDescription:
+        'This workspace has no configured provider in this category. Nothing is listed rather than an example one.',
+      providerCategoryCaveat:
+        'No health, balance, remaining quota or cost is shown here: none is recorded for a provider, and a private endpoint exposes no provider account value.',
       policyTitle: 'Usage policy',
       subsectionNotAuthorizedTitle: 'Not available for your role',
-      subsectionNotAuthorizedDescription: 'This destination reads the whole workspace, which a workspace owner or administrator may see. Your own usage is available under My usage.',
+      subsectionNotAuthorizedDescription:
+        'This destination reads the whole workspace, which a workspace owner or administrator may see. Your own usage is available under My usage.',
       readModelUnavailableTitle: 'The usage read model could not be reached',
-      readModelUnavailableDescription: 'The request for this figure failed, so no number is shown rather than a placeholder one. Retry, or check that the API serving this console carries the usage endpoints.',
+      readModelUnavailableDescription:
+        'The request for this figure failed, so no number is shown rather than a placeholder one. Retry, or check that the API serving this console carries the usage endpoints.',
       readModelEmptyTitle: 'No usage recorded for this window',
-      readModelEmptyDescription: 'The read model answered with nothing for this scope, which means no metered model call was recorded in it.',
-      reconciliationSemantics: 'The counters hold budget occupancy (the reservation plus what is in flight); the ledger is the per-attempt record. Both are reported and never merged.',
-      limitsPerMemberCaveat: 'Limits are per-member rules, not a workspace-wide monetary cap. Owners and administrators are exempt from them, but their attempts are still recorded. A limit of 0 on the token or cost dimension means the dimension is not enforced, never that nothing remains. A cost limit can only be enforced for models that carry pricing.',
-      modelAttributionCaveat: 'Provider, key instance and workload are not recorded in the usage ledger, so they are absent here rather than reconstructed. A model whose name was not recorded appears as Unrecorded.',
-      pageDescription: 'Workspace usage and operations. Every figure comes from the usage read model; nothing is estimated in the browser.',
+      readModelEmptyDescription:
+        'The read model answered with nothing for this scope, which means no metered model call was recorded in it.',
+      reconciliationSemantics:
+        'The counters hold budget occupancy (the reservation plus what is in flight); the ledger is the per-attempt record. Both are reported and never merged.',
+      limitsPerMemberCaveat:
+        'Limits are per-member rules, not a workspace-wide monetary cap. Owners and administrators are exempt from them, but their attempts are still recorded. A limit of 0 on the token or cost dimension means the dimension is not enforced, never that nothing remains. A cost limit can only be enforced for models that carry pricing.',
+      modelAttributionCaveat:
+        'Provider, key instance and workload are not recorded in the usage ledger, so they are absent here rather than reconstructed. A model whose name was not recorded appears as Unrecorded.',
+      pageDescription:
+        'Workspace usage and operations. Every figure comes from the usage read model; nothing is estimated in the browser.',
       tabMyUsage: 'My usage',
       tabWorkspaceAnalytics: 'Workspace analytics',
       tabProviderHealth: 'Provider health',
@@ -1444,34 +1470,42 @@ export default {
       rangeLast31: 'Last 31 days',
       rangeLast92: 'Last 92 days',
       attemptedCalls: 'Metered attempts',
-      attemptedCallsHint: 'One per metered model call. A request refused before dispatch is not counted.',
+      attemptedCallsHint:
+        'One per metered model call. A request refused before dispatch is not counted.',
       settledTokens: 'Settled tokens',
       outstandingTokens: 'Outstanding reserved tokens',
-      outstandingTokensHint: 'Reserved budget occupancy, not provider-reported usage.',
+      outstandingTokensHint:
+        'Reserved budget occupancy, not provider-reported usage.',
       effectiveTokens: 'Total occupancy',
       effectiveTokensHint: 'Settled tokens plus outstanding reservations.',
       settledEstimatedCost: 'Estimated model cost',
       outstandingEstimatedCost: 'Outstanding estimated cost',
       estimatedCostHint: 'Pricing coverage: {{coverage}}',
       estimatedCostTerm: 'Shown as {{term}}.',
-      estimatedCostCaveat: 'Derived from the configured per-million-token price of each model. It is not a provider bill or invoice, and usage without pricing is reported as not available rather than as 0.',
+      estimatedCostCaveat:
+        'Derived from the configured per-million-token price of each model. It is not a provider bill or invoice, and usage without pricing is reported as not available rather than as 0.',
       costNotAvailable: 'Not available',
       costPartial: 'Partial',
       coverageComplete: 'complete',
       coveragePartial: 'partial',
       coverageUnavailable: 'unavailable',
       unavailableTitle: 'Usage is not available right now',
-      unavailableDescription: 'The usage read model did not answer for this workspace, so no figure is shown rather than a placeholder one.',
-      workspaceUnavailableDescription: 'The workspace aggregate did not answer. Nothing is estimated in the browser.',
-      quotaUnavailableDescription: 'The quota standing did not answer for this workspace.',
+      unavailableDescription:
+        'The usage read model did not answer for this workspace, so no figure is shown rather than a placeholder one.',
+      workspaceUnavailableDescription:
+        'The workspace aggregate did not answer. Nothing is estimated in the browser.',
+      quotaUnavailableDescription:
+        'The quota standing did not answer for this workspace.',
       noMeteredActivityTitle: 'No metered activity in this window',
-      noMeteredActivityDescription: 'No model call was metered in the selected window, so there is nothing to break down.',
+      noMeteredActivityDescription:
+        'No model call was metered in the selected window, so there is nothing to break down.',
       truncatedNotice: 'Showing the first page of {{total}}.',
       memberBreakdown: 'Member breakdown',
       recordedModelBreakdown: 'Recorded model breakdown',
       dailySeries: 'Daily usage',
       monthlySeries: 'Monthly usage',
-      monthlySeriesHint: 'Month totals are counted on their own and are never added to the day rows.',
+      monthlySeriesHint:
+        'Month totals are counted on their own and are never added to the day rows.',
       member: 'Member',
       roleUnknown: 'Role unknown',
       memberRemoved: 'No longer a member',
@@ -1493,43 +1527,62 @@ export default {
       limitUsed: 'Used {{value}}',
       limitRemaining: 'Remaining {{value}}',
       usedUnavailable: 'Not tracked here',
-      rollingMinuteNote: 'The rolling minute is tracked in Redis and is not part of this read model.',
-      limitsSourceDefaults: 'No limits are configured for this workspace, so the backend defaults apply.',
+      rollingMinuteNote:
+        'The rolling minute is tracked in Redis and is not part of this read model.',
+      limitsSourceDefaults:
+        'No limits are configured for this workspace, so the backend defaults apply.',
       limitsSourceConfigured: 'Limits are configured for this workspace.',
-      limitsScopePerMember: 'Limits apply per member; owners and admins are exempt.',
-      policyDescription: 'Current limits and the occupancy of this period, as the server enforces them. Display only.',
+      limitsScopePerMember:
+        'Limits apply per member; owners and admins are exempt.',
+      policyDescription:
+        'Current limits and the occupancy of this period, as the server enforces them. Display only.',
       reconciliationTitle: 'Counters and ledger',
-      reconciliationConsistent: 'The durable counters and the usage ledger agree for this window.',
-      reconciliationDivergent: 'The durable counters report {{counter}} attempts while the ledger holds {{ledger}}. Nothing reconciles them automatically.',
+      reconciliationConsistent:
+        'The durable counters and the usage ledger agree for this window.',
+      reconciliationDivergent:
+        'The durable counters report {{counter}} attempts while the ledger holds {{ledger}}. Nothing reconciles them automatically.',
       providerOverviewTitle: 'Configured providers',
-      providerOverviewEmpty: 'No model provider is configured in this workspace yet.',
+      providerOverviewEmpty:
+        'No model provider is configured in this workspace yet.',
       providerGroupManaged: 'Managed API',
       providerGroupManagedHint: 'Reached over the vendor API.',
       providerGroupPrivate: 'Private endpoint',
-      providerGroupPrivateHint: 'Reached at an address you run; it exposes no provider account value.',
+      providerGroupPrivateHint:
+        'Reached at an address you run; it exposes no provider account value.',
       providerGroupUnclassified: 'Unclassified',
-      providerGroupUnclassifiedHint: 'Not in the endpoint classification list, so its type is left unstated.',
+      providerGroupUnclassifiedHint:
+        'Not in the endpoint classification list, so its type is left unstated.',
       providerNameUnknown: 'Unknown provider',
       providerCapabilityUnknown: 'Capability not reported',
       providerConfiguredModels: '{{count}} model(s): {{models}}',
       providerConnection: 'Connection: {{instances}}',
       providerStatusNotObserved: 'Status: not observed yet',
       providerHealthEmptyTitle: 'No provider health facts are recorded yet',
-      providerHealthEmptyDescription: 'Provider health needs observed dispatches with a sanitized failure classification, which this release does not collect. Nothing is shown rather than an assumed status.',
-      providerHealthPendingObservation: 'A passive success or failure observation per provider instance',
-      providerHealthPendingFailureClass: 'A sanitized failure class and its time',
+      providerHealthEmptyDescription:
+        'Provider health needs observed dispatches with a sanitized failure classification, which this release does not collect. Nothing is shown rather than an assumed status.',
+      providerHealthPendingObservation:
+        'A passive success or failure observation per provider instance',
+      providerHealthPendingFailureClass:
+        'A sanitized failure class and its time',
       providerHealthPendingCapability: 'Capability-level availability',
       providerHealthNotShownTitle: 'Deliberately not shown',
-      providerHealthNotShownStatus: 'No healthy, degraded or unavailable status for any provider.',
-      providerHealthNotShownBalance: 'No provider balance, remaining quota or usage figure, because none is readable today and a private endpoint has no such concept.',
-      providerHealthNotShownFallback: 'No claim that the system fell back to another provider or to lexical retrieval.',
+      providerHealthNotShownStatus:
+        'No healthy, degraded or unavailable status for any provider.',
+      providerHealthNotShownBalance:
+        'No provider balance, remaining quota or usage figure, because none is readable today and a private endpoint has no such concept.',
+      providerHealthNotShownFallback:
+        'No claim that the system fell back to another provider or to lexical retrieval.',
       retrievalHealthEmptyTitle: 'Retrieval health is not surfaced here yet',
-      retrievalHealthEmptyDescription: 'Retrieval health exists in the answer path contract; this console has no read model for it yet, so no leg or route status is shown.',
-      retrievalHealthPendingLegs: 'Per-leg outcome for dense and lexical retrieval',
+      retrievalHealthEmptyDescription:
+        'Retrieval health exists in the answer path contract; this console has no read model for it yet, so no leg or route status is shown.',
+      retrievalHealthPendingLegs:
+        'Per-leg outcome for dense and lexical retrieval',
       retrievalHealthPendingRoutes: 'Attempted and succeeded routes',
-      retrievalHealthPendingReadModel: 'A workspace-scoped read model over those facts',
+      retrievalHealthPendingReadModel:
+        'A workspace-scoped read model over those facts',
       retrievalHealthNotClaimedTitle: 'Deliberately not claimed',
-      retrievalHealthNotClaimedDescription: 'Degraded retrieval is never inferred from a provider failure, and a fallback is reported only when retrieval health recorded it.',
+      retrievalHealthNotClaimedDescription:
+        'Degraded retrieval is never inferred from a provider failure, and a fallback is reported only when retrieval health recorded it.',
     },
     notification: {
       title: 'Notifications',
@@ -1540,10 +1593,12 @@ export default {
       markAllAsRead: 'Mark all as read',
       open: 'Open',
       emptyTitle: 'No notifications',
-      emptyDescription: 'Operational notifications arrive once their backend source exists: usage thresholds, provider health and retrieval health. This release shows only what the server actually reports.',
+      emptyDescription:
+        'Operational notifications arrive once their backend source exists: usage thresholds, provider health and retrieval health. This release shows only what the server actually reports.',
       deliveryScope: 'In-product only. No email, SMS or webhook.',
       workspaceInvitationTitle: 'Workspace invitation pending',
-      workspaceInvitationDescription: 'You have not answered the invitation to {{workspace}} yet.',
+      workspaceInvitationDescription:
+        'You have not answered the invitation to {{workspace}} yet.',
     },
     setting: {
       usageOperations: 'Usage & operations',

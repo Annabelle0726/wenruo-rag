@@ -161,17 +161,14 @@ export default {
       review: '来自 500 多条评论',
       /* Sign-in hero: the brand column beside the form. */
       hero: {
-        featureHybridSearch: '精准混合检索',
+        featureHybridSearch: '标准与技术资料检索',
         featureHybridSearchDesc:
-          '向量语义 + 全文检索双引擎，检索准确率提升 85%+',
-        featureDocumentParsing: '多源文档秒级解析',
-        featureDocumentParsingDesc:
-          '支持 PDF、Word、Markdown 等数十种格式毫秒级切分与索引',
-        featureAgentMemory: '智能体与长记忆链',
+          '快速定位线缆标准、采购规范与质检资料中的相关条款。',
+        featureAgentMemory: '多轮文档问答',
+        featureProcurementReview: '采购规范核对',
+        featureBomQuality: 'BOM 与质检资料',
         featureAgentMemoryDesc:
-          '结合结构化 Memory 与工具链，赋予 AI 深度推理与上下文记忆能力',
-        badgeLatency: '向量检索延迟 < 10ms',
-        badgeIsolation: '100% 企业级私域隔离',
+          '结合文档解析与对话上下文，持续开展资料检索与分析。',
       },
     },
     header: {
@@ -187,8 +184,9 @@ export default {
       flow: '智能体',
       search: '搜索',
       brandShort: '芯导软件',
-      heroTitle: '线缆工业智搜 Agent 平台',
-      heroSubtitle: '工业级标准、BOM 表与质检规范智能查验系统',
+      heroTitle: '文若RAG 线缆智能检索平台',
+      heroSubtitle:
+        '面向工程采购场景，让标准、技术规范、BOM 与质检资料更易检索、核对与问答',
       dataset: '知识库',
       memories: '记忆',
       help: '帮助',
@@ -196,7 +194,7 @@ export default {
     breadcrumb: {
       datasetModule: '知识库管理',
       /* 面包屑自己的子页面名，避免与侧边栏文案相互耦合。 */
-      artifact: 'Artifacts',
+      artifact: '知识成果',
       messages: '消息',
       setting: '设置',
       agentTemplates: '智能体模板',
@@ -204,6 +202,8 @@ export default {
       newAgent: '新建智能体',
     },
     footer: {
+      loginCopyright: '© 芯导数字科技 | 版权所有',
+      icpPlaceholder: 'ICP备案号：[待补充]',
       copyright: '© XD芯导数字科技 | 工业标准与 QC 合规检验系统',
     },
     skills: {
@@ -496,7 +496,7 @@ export default {
       empty: '暂无数据',
     },
     knowledgeDetails: {
-      artifacts: 'Artifacts',
+      artifacts: '知识成果',
       collapseSidebar: '收起侧边栏',
       expandSidebar: '展开侧边栏',
       parentHiddenFile: '跟随知识库已隐藏',
@@ -570,10 +570,10 @@ export default {
       subbarFiles: '文件列表',
       generate: '生成',
       raptor: 'RAPTOR',
-      artifact: 'Artifact',
+      artifact: '知识成果',
       toSkills: '生成 Skills',
       generateArtifact:
-        '从配置了知识编译模板的每个文档中编译 Artifact 页面（Entity / Concept / Topic）。每次运行仅处理新添加的 Chunk。',
+        '从已配置知识编译模板的文档中生成知识成果页面（实体、概念、主题）。每次仅处理新增分块。',
       generateToSkills:
         '从该数据集构建分层 Skills 树，并存储生成的 Skills 页面以供搜索和复用。',
       processingType: '处理类型',
@@ -602,8 +602,15 @@ export default {
       testResults: '测试结果',
       testSetting: '测试设置',
       retrievalTesting: '知识检索测试',
-      retrievalTestingDescription:
-        '进行检索测试，检查 RAGFlow 是否能够为大语言模型（LLM）恢复预期的内容。',
+      retrievalTestingDescription: '验证当前知识库能否召回与问题相关的内容',
+      testQuestion: '测试问题',
+      testQuestionPlaceholder: '例如：220kV 海底电缆绝缘材料有哪些要求？',
+      testQuestionShortcut: 'Enter 运行 · Shift + Enter 换行',
+      retrievalParameters: '检索参数',
+      advancedSettings: '高级设置',
+      rerankCandidateValidationHint: '重排候选数必须大于或等于 Top N。',
+      retrievalLoading: '正在检索…',
+      retrievalError: '检索失败',
       Parse: '解析',
       dataset: '知识库',
       testing: '检索测试',
@@ -824,6 +831,9 @@ export default {
       linkPipelineSetTip: '管理与此知识库的数据管道链接',
       default: '默认',
       dataPipeline: '切换或配置 ingestion pipeline。',
+      visibilitySettings: '可见性设置',
+      retrievalSettings: '检索设置',
+      parsingMethod: '解析方法',
       linkDataPipeline: '关联 pipeline',
       enableAutoGenerate: '是否启用自动生成',
       teamPlaceholder: '请选择团队',
@@ -833,7 +843,7 @@ export default {
       parseType: '解析方法',
       manualSetup: '选择pipeline',
       builtIn: '内置',
-      titleDescription: '在这里更新您的知识库配置，特别是大语言模型和提示词。',
+      titleDescription: '在这里更新您的知识库配置，特别是大语言模型和提示词',
       name: '知识库名称',
       photo: '知识库图片',
       photoTip: '你可以上传 4MB 的文件',
@@ -1286,30 +1296,43 @@ export default {
       policyNoChanges: '尚未修改任何内容。',
       policyExemptNotice: '您的角色豁免这些额度，但您的调用仍会被记录。',
       policyOutcome_conflictTitle: '编辑期间该策略已被修改',
-      policyOutcome_conflictDescription: '另一位管理员先保存成功，因此您的修改未生效。请重新加载以查看当前策略，核对差异后再保存。',
+      policyOutcome_conflictDescription:
+        '另一位管理员先保存成功，因此您的修改未生效。请重新加载以查看当前策略，核对差异后再保存。',
       policyConflictReview: '您草稿中的改动：{{fields}}',
-      policyConflictNeedsReload: '请先重新加载再保存。您本次提交基于版本 {{revision}}。',
+      policyConflictNeedsReload:
+        '请先重新加载再保存。您本次提交基于版本 {{revision}}。',
       policyOutcome_unknownTitle: '本次保存结果未知',
-      policyOutcome_unknownDescription: '请求超时或连接中断，因此可能已生效也可能未生效。本页面不会自动重发：请先重新加载策略并核对，再决定是否保存。',
+      policyOutcome_unknownDescription:
+        '请求超时或连接中断，因此可能已生效也可能未生效。本页面不会自动重发：请先重新加载策略并核对，再决定是否保存。',
       'policyOutcome_stale-after-saveTitle': '已保存，但刷新失败',
-      'policyOutcome_stale-after-saveDescription': '您的修改已被接受，但页面未能重新读取策略，因此当前显示的值可能已过期。',
+      'policyOutcome_stale-after-saveDescription':
+        '您的修改已被接受，但页面未能重新读取策略，因此当前显示的值可能已过期。',
       memberNoLongerActive: '该成员已不在工作区中，额度对其不再生效。',
       providerToggleDetails: '展开{{provider}}的详情',
       providerModelCount: '{{count}} 个模型',
       providerCategoryEmptyTitle: '该类别下暂无提供商',
-      providerCategoryEmptyDescription: '本工作区在此类别下没有任何已配置的提供商，因此不列出内容，也不用示例代替。',
-      providerCategoryCaveat: '此处不显示健康、余额、剩余额度或费用：系统没有记录这些事实，私有端点也不存在供应商账户数值。',
+      providerCategoryEmptyDescription:
+        '本工作区在此类别下没有任何已配置的提供商，因此不列出内容，也不用示例代替。',
+      providerCategoryCaveat:
+        '此处不显示健康、余额、剩余额度或费用：系统没有记录这些事实，私有端点也不存在供应商账户数值。',
       policyTitle: '用量策略',
       subsectionNotAuthorizedTitle: '当前角色不可查看',
-      subsectionNotAuthorizedDescription: '该页面读取整个工作区的数据，仅工作区拥有者或管理员可查看。您自己的用量请见“我的用量”。',
+      subsectionNotAuthorizedDescription:
+        '该页面读取整个工作区的数据，仅工作区拥有者或管理员可查看。您自己的用量请见“我的用量”。',
       readModelUnavailableTitle: '无法连接用量读取模型',
-      readModelUnavailableDescription: '该数据的请求失败，因此不显示任何数字，也不用占位数字代替。可重试，或确认当前控制台所连的 API 是否已包含用量接口。',
+      readModelUnavailableDescription:
+        '该数据的请求失败，因此不显示任何数字，也不用占位数字代替。可重试，或确认当前控制台所连的 API 是否已包含用量接口。',
       readModelEmptyTitle: '该区间没有用量记录',
-      readModelEmptyDescription: '读取模型对该范围返回了空结果，表示其间没有任何受计量模型调用。',
-      reconciliationSemantics: '计数器保存的是预算占用（预留加上在飞部分），账本保存的是逐次调用的记录。两者同时展示，绝不合并。',
-      limitsPerMemberCaveat: '额度按成员生效，不是工作区级金额硬帽。拥有者与管理员豁免这些额度，但其调用仍会被记录。Token 或费用维度上的 0 表示该维度未启用，绝不表示已无剩余。费用额度只有在模型带有定价时才能生效。',
-      modelAttributionCaveat: '用量账本未记录供应商、密钥实例与工作负载，因此此处不显示，也不做任何重建。模型名未记录时显示为“未记录”。',
-      pageDescription: '工作区用量与运维。所有数字都来自用量读取模型，浏览器端不做任何估算。',
+      readModelEmptyDescription:
+        '读取模型对该范围返回了空结果，表示其间没有任何受计量模型调用。',
+      reconciliationSemantics:
+        '计数器保存的是预算占用（预留加上在飞部分），账本保存的是逐次调用的记录。两者同时展示，绝不合并。',
+      limitsPerMemberCaveat:
+        '额度按成员生效，不是工作区级金额硬帽。拥有者与管理员豁免这些额度，但其调用仍会被记录。Token 或费用维度上的 0 表示该维度未启用，绝不表示已无剩余。费用额度只有在模型带有定价时才能生效。',
+      modelAttributionCaveat:
+        '用量账本未记录供应商、密钥实例与工作负载，因此此处不显示，也不做任何重建。模型名未记录时显示为“未记录”。',
+      pageDescription:
+        '工作区用量与运维。所有数字都来自用量读取模型，浏览器端不做任何估算。',
       tabMyUsage: '我的用量',
       tabWorkspaceAnalytics: '工作区分析',
       tabProviderHealth: '供应商健康',
@@ -1324,7 +1347,8 @@ export default {
       rangeLast31: '最近 31 天',
       rangeLast92: '最近 92 天',
       attemptedCalls: '受计量调用次数',
-      attemptedCallsHint: '每次受计量模型调用计一次；dispatch 之前被拒绝的请求不计入。',
+      attemptedCallsHint:
+        '每次受计量模型调用计一次；dispatch 之前被拒绝的请求不计入。',
       settledTokens: '已结算 Token',
       outstandingTokens: '未结算预留 Token',
       outstandingTokensHint: '预算占用，不是供应商报告的用量。',
@@ -1334,18 +1358,22 @@ export default {
       outstandingEstimatedCost: '未结算预估费用',
       estimatedCostHint: '定价覆盖：{{coverage}}',
       estimatedCostTerm: '展示术语：{{term}}。',
-      estimatedCostCaveat: '由各模型配置的每百万 Token 单价推算，不是供应商账单或发票；没有定价的用量显示为不可用，而不是 0。',
+      estimatedCostCaveat:
+        '由各模型配置的每百万 Token 单价推算，不是供应商账单或发票；没有定价的用量显示为不可用，而不是 0。',
       costNotAvailable: '不可用',
       costPartial: '部分',
       coverageComplete: '完整',
       coveragePartial: '部分',
       coverageUnavailable: '不可用',
       unavailableTitle: '暂时无法获取用量',
-      unavailableDescription: '该工作区的用量读取模型没有返回结果，因此不显示任何数字，也不用占位数字代替。',
-      workspaceUnavailableDescription: '工作区聚合没有返回结果，浏览器端不做任何估算。',
+      unavailableDescription:
+        '该工作区的用量读取模型没有返回结果，因此不显示任何数字，也不用占位数字代替。',
+      workspaceUnavailableDescription:
+        '工作区聚合没有返回结果，浏览器端不做任何估算。',
       quotaUnavailableDescription: '该工作区的额度状态没有返回结果。',
       noMeteredActivityTitle: '该区间没有受计量活动',
-      noMeteredActivityDescription: '所选区间内没有任何受计量模型调用，因此没有可分解的内容。',
+      noMeteredActivityDescription:
+        '所选区间内没有任何受计量模型调用，因此没有可分解的内容。',
       truncatedNotice: '仅显示前若干条，共 {{total}} 条。',
       memberBreakdown: '成员明细',
       recordedModelBreakdown: '已记录模型明细',
@@ -1380,7 +1408,8 @@ export default {
       policyDescription: '当前额度与本期占用，与服务器实际执行一致。仅作展示。',
       reconciliationTitle: '计数器与账本',
       reconciliationConsistent: '该区间内 durable 计数器与用量账本一致。',
-      reconciliationDivergent: 'durable 计数器报告 {{counter}} 次，而账本记录 {{ledger}} 次。系统不会自动对账。',
+      reconciliationDivergent:
+        'durable 计数器报告 {{counter}} 次，而账本记录 {{ledger}} 次。系统不会自动对账。',
       providerOverviewTitle: '已配置的供应商',
       providerOverviewEmpty: '该工作区尚未配置任何模型供应商。',
       providerGroupManaged: '托管 API',
@@ -1395,21 +1424,27 @@ export default {
       providerConnection: '连接配置：{{instances}}',
       providerStatusNotObserved: '状态：尚无观测',
       providerHealthEmptyTitle: '尚未记录任何供应商健康事实',
-      providerHealthEmptyDescription: '供应商健康需要带脱敏失败分类的真实 dispatch 观测，本版本尚未采集。因此不显示任何状态，也不用假定状态填充。',
+      providerHealthEmptyDescription:
+        '供应商健康需要带脱敏失败分类的真实 dispatch 观测，本版本尚未采集。因此不显示任何状态，也不用假定状态填充。',
       providerHealthPendingObservation: '按供应商实例的被动成功/失败观测',
       providerHealthPendingFailureClass: '脱敏后的失败分类及其时间',
       providerHealthPendingCapability: '按能力维度的可用性',
       providerHealthNotShownTitle: '刻意不显示',
-      providerHealthNotShownStatus: '不显示任何供应商的健康、降级或不可用状态。',
-      providerHealthNotShownBalance: '不显示供应商余额、剩余额度或用量：目前无法读取，且私有端点不存在该概念。',
-      providerHealthNotShownFallback: '不声称系统已回退到其他供应商或词法检索。',
+      providerHealthNotShownStatus:
+        '不显示任何供应商的健康、降级或不可用状态。',
+      providerHealthNotShownBalance:
+        '不显示供应商余额、剩余额度或用量：目前无法读取，且私有端点不存在该概念。',
+      providerHealthNotShownFallback:
+        '不声称系统已回退到其他供应商或词法检索。',
       retrievalHealthEmptyTitle: '检索健康尚未在此展示',
-      retrievalHealthEmptyDescription: '检索健康事实存在于问答链路的自身契约中；本控制台尚无对应读取模型，因此不显示任何检索腿或路由状态。',
+      retrievalHealthEmptyDescription:
+        '检索健康事实存在于问答链路的自身契约中；本控制台尚无对应读取模型，因此不显示任何检索腿或路由状态。',
       retrievalHealthPendingLegs: '向量与词法检索各腿的结果',
       retrievalHealthPendingRoutes: '尝试与成功的路由',
       retrievalHealthPendingReadModel: '面向这些事实的工作区级读取模型',
       retrievalHealthNotClaimedTitle: '刻意不主张',
-      retrievalHealthNotClaimedDescription: '检索降级绝不从供应商失败推断；只有在检索健康实际记录时才报告回退。',
+      retrievalHealthNotClaimedDescription:
+        '检索降级绝不从供应商失败推断；只有在检索健康实际记录时才报告回退。',
     },
     notification: {
       title: '通知',
@@ -1420,7 +1455,8 @@ export default {
       markAllAsRead: '全部标记为已读',
       open: '打开',
       emptyTitle: '暂无通知',
-      emptyDescription: '运维通知将在后端事实源就绪后出现：用量阈值、供应商健康与检索健康。本版本只显示服务器真实报告的内容。',
+      emptyDescription:
+        '运维通知将在后端事实源就绪后出现：用量阈值、供应商健康与检索健康。本版本只显示服务器真实报告的内容。',
       deliveryScope: '仅站内。不发送邮件、短信或 webhook。',
       workspaceInvitationTitle: '有待处理的工作区邀请',
       workspaceInvitationDescription: '您尚未处理加入 {{workspace}} 的邀请。',
@@ -3350,7 +3386,7 @@ export default {
       extractorDescription:
         '使用 LLM 从文档块（例如摘要、分类等）中提取结构化见解。',
       compiler: '编译器',
-      compilerDescription: '使用知识编译模板将文档块编译为知识工件。',
+      compilerDescription: '使用知识编译模板将文档块编译为知识成果。',
       outputFormat: '输出格式',
       fileFormatOptions: {
         pdf: 'PDF',
