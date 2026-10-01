@@ -63,8 +63,20 @@ interface IProps {
   layout?: 'standard' | 'chat';
 }
 
-function Time({ time }: { time: string | number | undefined }) {
-  return <p className="truncate text-sm text-cable-muted">{formatDate(time)}</p>;
+function Time({
+  time,
+  format,
+  className,
+}: {
+  time: string | number | undefined;
+  format?: string;
+  className?: string;
+}) {
+  return (
+    <p className={cn('truncate text-sm text-cable-muted', className)}>
+      {formatDate(time, format)}
+    </p>
+  );
 }
 
 export function HomeCard({
@@ -156,12 +168,16 @@ export function HomeCard({
           </div>
 
           <div
-            className="h-px w-full shrink-0 bg-cable-divider"
+            className="h-px w-full shrink-0 bg-cable-divider opacity-60"
             aria-hidden="true"
           />
 
-          <div className="flex w-full min-w-0 items-center justify-between gap-2">
-            <Time time={data.update_time}></Time>
+          <div className="flex w-full min-w-0 items-center justify-between gap-2 pt-1">
+            <Time
+              time={data.update_time}
+              format="DD/MM/YYYY HH:mm"
+              className="text-xs"
+            />
             {trailing}
           </div>
         </>

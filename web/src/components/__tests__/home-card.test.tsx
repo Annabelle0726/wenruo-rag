@@ -65,8 +65,11 @@ describe('HomeCard slots', () => {
     const title = screen.getByRole('heading', { name: 'Cable QA' });
     expect(titleRow?.querySelector('header')?.contains(title)).toBe(true);
     expect(divider?.className).toContain('h-px');
+    expect(divider?.className).toContain('opacity-60');
     expect(metadataRow?.contains(screen.getByTestId('message-count'))).toBe(true);
-    expect(metadataRow?.querySelector('p')?.textContent).toBeTruthy();
+    const time = metadataRow?.querySelector('p');
+    expect(time?.className).toContain('text-xs');
+    expect(time?.textContent).not.toMatch(/\d{2}:\d{2}:\d{2}/);
     expect(screen.queryByText('desc')).not.toBeInTheDocument();
   });
 });
