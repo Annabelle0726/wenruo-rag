@@ -57,6 +57,8 @@ interface IProps {
    * rather than clamping a second thing into the title row.
    */
   trailing?: ReactNode;
+  /** Visual-only class overrides for a specific card family. */
+  className?: string;
 }
 
 function Time({ time }: { time: string | number | undefined }) {
@@ -75,6 +77,7 @@ export function HomeCard({
   showReleaseTime = false,
   extra,
   trailing,
+  className: cardClassName,
 }: IProps) {
   const { t } = useTranslation();
 
@@ -112,6 +115,7 @@ export function HomeCard({
         // The ceramic hover moves the shadow too, so both are named here.
         'transition-[background-color,border-color,box-shadow,opacity] duration-200 ease-in-out',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cable-accent',
+        cardClassName,
       )}
     >
       <div className="flex size-8 shrink-0 items-center justify-center">

@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
  * have taken.
  */
 const COUNT_CLASS =
-  'inline-flex shrink-0 items-center rounded-full border border-cable-hairline bg-cable-surface px-2.5 py-0.5 text-xs text-text-secondary';
+  'inline-flex shrink-0 items-center rounded-full border border-accent-primary/20 bg-accent-color-soft px-2.5 py-0.5 font-mono text-xs tabular-nums text-cable-brand';
 
 export function ChatCardTrailing({ messageCount }: { messageCount?: number }) {
   const { t } = useTranslation();

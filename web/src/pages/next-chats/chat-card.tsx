@@ -21,8 +21,15 @@ export function ChatCard({ data, showChatRenameModal }: IProps) {
         description: data.description,
         update_time: data.update_time,
       }}
-      leading={<CardIdentityIcon kind="chat" avatar={data.icon} />}
+      leading={
+        <CardIdentityIcon
+          kind="chat"
+          avatar={data.icon}
+          className="rounded-md border border-cable-hairline"
+        />
+      }
       trailing={<ChatCardTrailing messageCount={data.message_count} />}
+      className="relative bg-cable-surface shadow-[0_1px_2px_rgb(var(--text-primary)_/_0.06)] before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-cable-hairline before:content-[''] hover:border-ceramic-border-hover hover:shadow-[0_2px_6px_rgb(var(--accent-primary)_/_0.12)] hover:before:bg-cable-brand"
       moreDropdown={
         <ChatDropdown chat={data} showChatRenameModal={showChatRenameModal}>
           <MoreButton></MoreButton>
