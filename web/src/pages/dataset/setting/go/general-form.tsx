@@ -12,6 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import {
   DESCRIPTION_MAX_LENGTH,
+  LanguageMap,
   LanguageTranslationMap,
 } from '@/constants/common';
 import { useMemo } from 'react';
@@ -26,9 +27,11 @@ export function GeneralForm() {
   const { t } = useTranslation();
   const ownerTenantId = useOwnerTenantId();
 
+  // Same two languages and the same stored values as the python variant; the labels
+  // read in their own script. The default stays `DEFAULT_DATASET_LANGUAGE` ('Chinese').
   const languageOptions = useMemo(() => {
     return Object.keys(LanguageTranslationMap).map((x) => ({
-      label: x,
+      label: (LanguageMap as Record<string, string>)[x] ?? x,
       value: x,
     }));
   }, []);

@@ -150,14 +150,17 @@ export function SideBar() {
                     aria-label={sectionLabel(t, section.labelKey)}
                     aria-current={isActiveSection ? 'page' : undefined}
                     className={cn(
-                      'settings-rail-item justify-start px-2.5 max-md:size-9 max-md:justify-center max-md:p-0 md:px-3',
+                      // The same row padding, icon-to-label gap and child indent the
+                      // Dataset configuration submenu uses, so the two rails read as
+                      // one vocabulary (see `pages/dataset/sidebar/index.tsx`).
+                      'settings-rail-item justify-start px-2.5 max-md:size-9 max-md:justify-center max-md:p-0 md:px-2',
                       'min-w-0 flex-1',
                       isActiveSection && 'settings-rail-item-active',
                     )}
                     onClick={() => goTo(section.path)}
                     data-testid={section.testId}
                   >
-                    <span className="flex items-center gap-2.5 max-md:gap-0">
+                    <span className="flex items-center gap-3 max-md:gap-0">
                       {SECTION_ICONS[section.path]}
                       <span className="hidden truncate md:inline">
                         {sectionLabel(t, section.labelKey)}
@@ -167,10 +170,12 @@ export function SideBar() {
                 </div>
 
                 {/* Second level: indented rows behind a hairline, so the branch
-                    reads as belonging to the section above it. */}
+                    reads as belonging to the section above it. The indent matches
+                    the Dataset configuration submenu's (`ms-5 ps-2.5`), which puts a
+                    child's label just inside its parent's label. */}
                 {hasChildren && expanded && (
                   <ul
-                    className="ms-3.5 mt-0.5 hidden flex-col gap-0.5 border-s border-cable-hairline ps-2 md:flex"
+                    className="ms-5 mt-0.5 hidden flex-col gap-0.5 border-s border-cable-hairline ps-2.5 md:flex"
                     data-testid={`${section.testId}-children`}
                   >
                     {section.children.map((child) => {

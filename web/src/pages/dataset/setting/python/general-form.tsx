@@ -12,6 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import {
   DESCRIPTION_MAX_LENGTH,
+  LanguageMap,
   LanguageTranslationMap,
 } from '@/constants/common';
 import { useMemo } from 'react';
@@ -27,9 +28,13 @@ export function GeneralForm() {
   const { t } = useTranslation();
   const ownerTenantId = useOwnerTenantId();
 
+  // The two languages the product bundles, shown under their own names
+  // ("简体中文", "English") while the VALUE stays the stored language name the API
+  // expects. The default is `DEFAULT_DATASET_LANGUAGE` ('Chinese'), applied by this
+  // page's form defaults, so a new knowledge base starts on Chinese.
   const languageOptions = useMemo(() => {
     return Object.keys(LanguageTranslationMap).map((x) => ({
-      label: x,
+      label: (LanguageMap as Record<string, string>)[x] ?? x,
       value: x,
     }));
   }, []);

@@ -163,10 +163,14 @@ export function SideBar({ dataset: data }: PropType) {
                     : 'knowledgeDetails.collapseSidebar',
                 )}
               >
+                {/* The two glyphs are the pair the rail has always used, SWAPPED:
+                    collapsed shows the closed-panel glyph (`PanelLeftClose`), expanded
+                    shows the open one (`PanelLeftOpen`). Everything else about the
+                    control - size, slot, tooltip, aria-label - is unchanged. */}
                 {collapsed ? (
-                  <PanelLeftOpen className="size-4" />
-                ) : (
                   <PanelLeftClose className="size-4" />
+                ) : (
+                  <PanelLeftOpen className="size-4" />
                 )}
               </Button>
             </TooltipTrigger>
@@ -264,7 +268,9 @@ export function SideBar({ dataset: data }: PropType) {
                           hasChildren ? 'dataset-settings-subnav' : undefined
                         }
                         data-testid={
-                          hasChildren ? 'dataset-settings-nav-toggle' : undefined
+                          hasChildren
+                            ? 'dataset-settings-nav-toggle'
+                            : undefined
                         }
                       >
                         <span className="flex size-5 shrink-0 items-center justify-center">
