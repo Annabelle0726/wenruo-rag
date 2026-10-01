@@ -11,7 +11,8 @@ import { useTranslation } from 'react-i18next';
 import {
   PanelLeftClose,
   PanelLeftOpen,
-  ChevronRight,
+  ChevronDown,
+  ChevronLeft,
   LucideBookText,
   LucideFolderOpen,
   LucideLogs,
@@ -281,17 +282,30 @@ export function SideBar({ dataset: data }: PropType) {
                             <span className="min-w-0 truncate text-left">
                               {item.label}
                             </span>
-                            {hasChildren && (
-                              <ChevronRight
-                                className={cn(
-                                  'ms-1 size-3.5 shrink-0 transition-transform',
-                                  active
-                                    ? 'text-accent-primary'
-                                    : 'text-text-secondary',
-                                  expanded ? 'rotate-90' : 'rotate-180',
-                                )}
-                              />
-                            )}
+                            {hasChildren &&
+                              (expanded ? (
+                                /* Branch open: a down chevron, stated as the icon it
+                                   is rather than a right chevron rotated 90 degrees. */
+                                <ChevronDown
+                                  className={cn(
+                                    'ms-1 size-3.5 shrink-0 transition-transform',
+                                    active
+                                      ? 'text-accent-primary'
+                                      : 'text-text-secondary',
+                                  )}
+                                />
+                              ) : (
+                                /* Branch folded: a left chevron, the same shape the
+                                   rotated icon produced, now the icon itself. */
+                                <ChevronLeft
+                                  className={cn(
+                                    'ms-1 size-3.5 shrink-0 transition-transform',
+                                    active
+                                      ? 'text-accent-primary'
+                                      : 'text-text-secondary',
+                                  )}
+                                />
+                              ))}
                           </>
                         )}
                       </Button>
