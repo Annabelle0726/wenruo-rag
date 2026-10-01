@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import Divider from '@/components/ui/divider';
 import { Form } from '@/components/ui/form';
 import { DEFAULT_DATASET_LANGUAGE } from '@/constants/common';
 import { FormLayout } from '@/constants/form';
@@ -18,6 +17,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { createContext, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { useParams } from 'react-router';
 import { z } from 'zod';
 import { ChunkMethodForm } from './chunk-method-form';
 import ChunkMethodLearnMore from './chunk-method-learn-more';
@@ -39,6 +39,7 @@ export const DataSetContext = createContext<{
 
 export default function DatasetSettings() {
   const { t } = useTranslation();
+  const { section = 'basic-info' } = useParams();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -122,7 +123,21 @@ export default function DatasetSettings() {
       <Card className="p-0 h-full flex flex-col bg-transparent shadow-none">
         <CardHeader className="p-5 border-b-0.5 border-border-button">
           <header>
-            <CardTitle as="h1">{t('knowledgeDetails.configuration')}</CardTitle>
+            {/* `CardTitle`/`CardDescription` are the app-wide card primitives
+                (`src/components/ui/card.tsx`), so their own type is not this page's
+                to change: the title takes the retrieval testing page's type through
+                `className` instead (24px + 600 + -0.025em + primary ink, the same
+                `text-2xl font-semibold tracking-tight text-text-primary` it uses;
+                `leading-8` is that `text-2xl`'s own line-height, which the
+                primitive's `leading-normal` would otherwise stretch). The
+                subtitle primitive already IS `text-sm text-text-secondary`, i.e.
+                the reference, and is left alone. */}
+            <CardTitle
+              as="h1"
+              className="font-semibold leading-8 tracking-tight text-text-primary"
+            >
+              {t('knowledgeDetails.configuration')}
+            </CardTitle>
 
             <CardDescription>
               {t('knowledgeConfiguration.titleDescription')}
@@ -146,41 +161,63 @@ export default function DatasetSettings() {
               >
                 <div className="flex-1 h-0 w-full max-w-[1280px] px-5 pt-5 overflow-y-auto scrollbar-auto">
                   <MainContainer className="text-text-secondary">
-                    <div className="text-base font-medium text-text-primary">
-                      {t('knowledgeConfiguration.baseInfo')}
-                    </div>
-                    <GeneralForm></GeneralForm>
-
-                    <Divider />
-                    <section className="space-y-4 rounded-xl border border-border-button bg-card/50 p-4 shadow-sm">
-                      <div className="text-base font-medium text-text-primary">
-                        {t('knowledgeConfiguration.dataPipeline')}
-                      </div>
-                      <ParseTypeItem line={1} name="parse_type" />
-                      {parseType === ParseType.BuiltIn && (
-                        <ChunkMethodItem
-                          line={1}
-                          name="chunk_method"
-                        ></ChunkMethodItem>
-                      )}
-                      {parseType === ParseType.Pipeline && (
-                        <>
-                          <DataFlowSelect
-                            isMult={false}
-                            showToDataPipeline={true}
-                            formFieldName="pipeline_id"
-                            layout={FormLayout.Horizontal}
-                          />
-                          <div className="pl-[25%]">
-                            <ChunkMethodLearnMore
-                              parserId={selectedTag || DocumentParserType.Naive}
-                            />
+                    {section === 'parsing' ? (
+                      <section className="space-y-5">
+                        <header className="flex items-center gap-3">
+                          <span className="h-6 w-1 rounded-full bg-accent-primary" />
+                          <div>
+                            <h2 className="text-lg font-semibold text-text-primary">
+                              {t('knowledgeConfiguration.parsingMethod')}
+                            </h2>
+                            <p className="mt-1 text-sm text-text-secondary">
+                              {t('knowledgeConfiguration.dataPipeline')}
+                            </p>
                           </div>
-                        </>
-                      )}
-                    </section>
-
-                    {parseType === ParseType.BuiltIn && <ChunkMethodForm />}
+                        </header>
+                        <div className="space-y-4 rounded-xl border border-accent-primary/20 bg-transparent p-5 shadow-sm">
+                          <ParseTypeItem line={1} name="parse_type" />
+                          {parseType === ParseType.BuiltIn && (
+                            <ChunkMethodItem line={1} name="chunk_method" />
+                          )}
+                          {parseType === ParseType.Pipeline && (
+                            <>
+                              <DataFlowSelect
+                                isMult={false}
+                                showToDataPipeline={true}
+                                formFieldName="pipeline_id"
+                                layout={FormLayout.Horizontal}
+                              />
+                              <div className="pl-[25%]">
+                                <ChunkMethodLearnMore
+                                  parserId={
+                                    selectedTag || DocumentParserType.Naive
+                                  }
+                                />
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        {parseType === ParseType.BuiltIn && <ChunkMethodForm />}
+                      </section>
+                    ) : (
+                      <section className="space-y-5">
+                        <header className="flex items-center gap-3">
+                          <span className="h-6 w-1 rounded-full bg-accent-primary" />
+                          <h2 className="text-lg font-semibold text-text-primary">
+                            {t(
+                              section === 'visibility'
+                                ? 'knowledgeConfiguration.visibilitySettings'
+                                : section === 'retrieval'
+                                  ? 'knowledgeConfiguration.retrievalSettings'
+                                  : 'knowledgeConfiguration.baseInfo',
+                            )}
+                          </h2>
+                        </header>
+                        <div className="rounded-xl border border-border-button bg-transparent p-6">
+                          <GeneralForm section={section} />
+                        </div>
+                      </section>
+                    )}
                   </MainContainer>
                 </div>
 

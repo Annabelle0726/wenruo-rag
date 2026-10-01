@@ -156,9 +156,9 @@ export default function Dataset() {
   return (
     <Card
       as="article"
-      className="mr-5 flex h-full min-h-0 flex-col border-0 bg-transparent shadow-none"
+      className="flex h-full min-h-0 flex-col border-0 bg-transparent shadow-none"
     >
-      <CardHeader as="header" className="shrink-0 px-6 py-4 space-y-0">
+      <CardHeader as="header" className="shrink-0 pb-4 space-y-0 pl-6 pr-0 pt-0">
         <ListFilterBar
           searchVariant="capsule"
           onSearchChange={handleInputChange}
@@ -171,10 +171,24 @@ export default function Dataset() {
           className="items-end"
           leftPanel={
             <div>
-              <h1 className="leading-normal font-medium">
+              {/* The page-level title and subtitle carry the SAME type as the
+                  retrieval testing header (`pages/dataset/testing/index.tsx`), which
+                  is this area's reference: 24px/600/-0.025em in the primary ink over
+                  14px/400 in the secondary ink (`text-2xl` and `text-sm` bring their
+                  own line-heights). Only the type is shared - the two stay stacked
+                  the way this toolbar has always laid them out, because that is
+                  layout, not typography.
+
+                  `font-normal` is the one class the reference does not need and
+                  this one does: `list-filter-bar` wraps the whole panel in its own
+                  `h1` (`text-base font-semibold`), so the subtitle would inherit
+                  600 from it and read as bold next to the same subtitle elsewhere.
+                  The title already states the weight it wants, hence only the
+                  subtitle pins it. */}
+              <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
                 {t('knowledgeDetails.subbarFiles')}
               </h1>
-              <p className="text-text-secondary text-sm font-normal">
+              <p className="text-sm font-normal text-text-secondary">
                 {t('knowledgeDetails.datasetDescription')}
               </p>
             </div>
@@ -208,7 +222,7 @@ export default function Dataset() {
         )}
       </CardHeader>
 
-      <CardContent className="flex min-h-0 flex-1 flex-col px-6 pb-5 pt-0">
+      <CardContent className="flex min-h-0 flex-1 flex-col p-0">
         {/* The region this page's table pages by.
             
             It is THIS box, not the whole dataset scroller: the scroller also
