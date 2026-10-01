@@ -1218,8 +1218,13 @@
     font-weight: 400;
   }
 
+  /* One step lighter than the active fill (`--accent-color-soft`) and the same wash
+     the Dataset configuration row uses for its own hover, so a child row answers the
+     pointer in the rail's own green rather than in the neutral hover of the shell.
+     Both rails that use `.settings-rail-child` (Settings and the Dataset
+     configuration submenu) therefore hover identically. */
   .settings-rail-child.settings-rail-child:hover {
-    background-color: var(--surface-hover-bg);
+    background-color: rgb(var(--accent-primary) / 0.05);
     color: var(--content-primary);
   }
 

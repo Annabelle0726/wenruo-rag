@@ -2598,6 +2598,8 @@ export default {
       latestDate: '最新日期',
       createDate: '创建日期',
       publishedAt: '发布于',
+      published: '已发布',
+      draft: '草稿',
       beginInput: '开始输入',
       seconds: '秒',
       ref: '引用变量',

@@ -20,6 +20,7 @@ import { TruncatedText } from '@/components/truncated-text';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/utils/date';
+import { Clock3 } from 'lucide-react';
 import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -40,14 +41,13 @@ interface IProps {
    * their class icon here instead of the first letter of the name.
    */
   leading?: ReactNode;
-  /** Classification chip, rendered in the title row next to the actions. */
+  /** Compact state marker, placed according to the selected card layout. */
   badge?: ReactNode;
   testId?: string;
   showReleaseTime?: boolean;
   /**
-   * Rendered in the title row beside the name. Agent cards put their tag badges
-   * here: a card holds three lines (title, description, date row), so anything
-   * else has to share one of them and clamp instead of taking a line of its own.
+   * Secondary metadata slot. Agent cards place compact tags beside the summary;
+   * other layouts may use it in their own metadata row.
    */
   extra?: ReactNode;
   /**
@@ -59,8 +59,8 @@ interface IProps {
   trailing?: ReactNode;
   /** Visual-only class overrides for a specific card family. */
   className?: string;
-  /** Uses structured layouts for chat, memory and search cards. */
-  layout?: 'standard' | 'chat' | 'memory' | 'search';
+  /** Uses structured layouts for agent, chat, memory and search cards. */
+  layout?: 'standard' | 'agent' | 'chat' | 'memory' | 'search';
 }
 
 function Time({
@@ -111,8 +111,8 @@ export function HomeCard({
         // hover tint. No transform or scale: these cards render inside
         // `overflow-hidden` grids, which clip a lifted card, so the lift comes
         // from the ceramic shadow rather than from a translate.
-        // The standard layout centres the avatar and text in one row; the chat
-        // layout uses two rows while sharing the same fixed-height card contract.
+        // Standard cards use a single horizontal row; structured card families
+        // arrange identity and metadata vertically within the same fixed height.
         // `h-[var(--list-card-height)]` + `overflow-hidden` is that contract — the
         // card never grows its row (a taller card would stretch every card beside
         // it), so every line below is truncated to one line and anything left over

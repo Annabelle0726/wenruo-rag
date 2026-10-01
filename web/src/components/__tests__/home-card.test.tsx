@@ -11,14 +11,21 @@ const renderCard = (props: {
   extra?: React.ReactNode;
   trailing?: React.ReactNode;
   leading?: React.ReactNode;
-  layout?: 'standard' | 'chat';
+  badge?: React.ReactNode;
+  sharedBadge?: React.ReactNode;
+  icon?: React.ReactNode;
+  layout?: 'standard' | 'agent' | 'chat';
 }) =>
   render(
     // The title and the description are truncated texts, which are tooltips, and
     // the app supplies the provider at its root.
     <TooltipProvider>
       <HomeCard
-        data={{ name: 'Cable QA', description: 'desc', update_time: '2026-09-18' }}
+        data={{
+          name: 'Cable QA',
+          description: 'desc',
+          update_time: '2026-09-18',
+        }}
         moreDropdown={<span>more</span>}
         {...props}
       />
@@ -66,10 +73,40 @@ describe('HomeCard slots', () => {
     expect(titleRow?.querySelector('header')?.contains(title)).toBe(true);
     expect(divider?.className).toContain('h-px');
     expect(divider?.className).toContain('opacity-60');
-    expect(metadataRow?.contains(screen.getByTestId('message-count'))).toBe(true);
+    expect(metadataRow?.contains(screen.getByTestId('message-count'))).toBe(
+      true,
+    );
     const time = metadataRow?.querySelector('p');
     expect(time?.className).toContain('text-xs');
     expect(time?.textContent).not.toMatch(/\d{2}:\d{2}:\d{2}/);
     expect(screen.queryByText('desc')).not.toBeInTheDocument();
+  });
+
+  it('lays out agent identity, summary and publication state within the card', () => {
+    const { container } = renderCard({
+      layout: 'agent',
+      leading: <span data-testid="identity">agent icon</span>,
+      icon: <span data-testid="agent-type">workflow</span>,
+      extra: <span data-testid="agent-tag">cable QA</span>,
+      badge: <span data-testid="publish-state">Published</span>,
+      sharedBadge: <span data-testid="owner">owner</span>,
+    });
+
+    const card = container.querySelector('article');
+    const [identityRow, summaryRow, divider, stateBand] = Array.from(
+      card?.children ?? [],
+    );
+
+    expect(identityRow?.contains(screen.getByTestId('identity'))).toBe(true);
+    expect(
+      identityRow?.contains(screen.getByRole('heading', { name: 'Cable QA' })),
+    ).toBe(true);
+    expect(identityRow?.contains(screen.getByTestId('agent-type'))).toBe(true);
+    expect(summaryRow?.contains(screen.getByText('desc'))).toBe(true);
+    expect(summaryRow?.contains(screen.getByTestId('agent-tag'))).toBe(true);
+    expect(divider?.className).toContain('opacity-40');
+    expect(stateBand?.className).toContain('bg-cable-surface/60');
+    expect(stateBand?.contains(screen.getByTestId('publish-state'))).toBe(true);
+    expect(stateBand?.contains(screen.getByTestId('owner'))).toBe(true);
   });
 });

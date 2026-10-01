@@ -3000,6 +3000,8 @@ export default {
       ingestionPipeline: 'Ingestion pipeline',
       agents: 'Agents',
       publishedAt: 'Published at',
+      published: 'Published',
+      draft: 'Draft',
       days: 'Days',
       beginInput: 'Begin input',
       ref: 'Variable',

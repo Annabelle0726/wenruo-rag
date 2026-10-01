@@ -27,7 +27,8 @@ import {
 import { cn } from '@/lib/utils';
 import { TFunction } from 'i18next';
 import {
-  ChevronRight,
+  ChevronDown,
+  ChevronLeft,
   LucideActivity,
   LucideBox,
   LucideLogOut,
@@ -46,10 +47,11 @@ import { useSettingsNav } from './hooks';
  * data that a test can assert without a renderer.
  */
 const SECTION_ICONS: Record<string, React.ReactNode> = {
-  [SETTINGS_PATHS.model]: <LucideBox className="size-[1em]" />,
-  [SETTINGS_PATHS.team]: <LucideUsers className="size-[1em]" />,
-  [SETTINGS_PATHS.usage]: <LucideActivity className="size-[1em]" />,
-  [SETTINGS_PATHS.profile]: <LucideUser className="size-[1em]" />,
+  // 16px glyphs in the row's 20px box, the recipe the Dataset rail's rows use.
+  [SETTINGS_PATHS.model]: <LucideBox className="size-4" />,
+  [SETTINGS_PATHS.team]: <LucideUsers className="size-4" />,
+  [SETTINGS_PATHS.usage]: <LucideActivity className="size-4" />,
+  [SETTINGS_PATHS.profile]: <LucideUser className="size-4" />,
 };
 
 const sectionLabel = (t: TFunction, labelKey: string) => t(labelKey);
@@ -109,65 +111,58 @@ export function SideBar() {
 
             return (
               <li key={section.path} className="w-full">
-                <div className="flex items-center gap-0.5">
-                  {/* The chevron toggles the branch; the label navigates to the
-                      section itself. One control cannot do both, and a reader who
-                      wants only to open the tree must not be moved off the page
-                      they are on. */}
-                  {hasChildren ? (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={t('setting.toggleSection', {
-                        section: sectionLabel(t, section.labelKey),
-                      })}
-                      aria-expanded={expanded}
-                      className="hidden size-6 shrink-0 p-0 text-content-tertiary hover:text-content-primary md:flex"
-                      onClick={() => toggleSection(section.path)}
-                      data-testid={`${section.testId}-toggle`}
-                    >
-                      <ChevronRight
-                        className={cn(
-                          'size-3.5 transition-transform',
-                          expanded && 'rotate-90',
-                        )}
-                      />
-                    </Button>
-                  ) : (
-                    <span
-                      className="hidden size-6 shrink-0 md:block"
-                      aria-hidden
-                    />
+                {/* ONE clickable row, as the Dataset configuration row is: the icon
+                    sits in a fixed 20px box, the title follows it at the same 12px
+                    gap, and the branch chevron closes the row - all inside this single
+                    hit target, so the chevron is never a second control floating at
+                    the rail's edge. The click does what the two controls used to do
+                    together: it navigates to the section and, when the section has
+                    children, toggles its branch. The surface, its hover and its active
+                    step are the Dataset row's (`bg-accent-primary-5` /
+                    `active:bg-accent-primary-10`), so the rail is one vocabulary. */}
+                <Button
+                  block
+                  variant="ghost"
+                  aria-label={sectionLabel(t, section.labelKey)}
+                  aria-current={isActiveSection ? 'page' : undefined}
+                  aria-expanded={hasChildren ? expanded : undefined}
+                  aria-controls={
+                    hasChildren ? `${section.testId}-children` : undefined
+                  }
+                  className={cn(
+                    'min-w-0 w-full justify-start gap-3 py-2 relative h-9 text-sm font-semibold transition-colors',
+                    'hover:bg-accent-primary-5 hover:text-accent-primary',
+                    'focus-visible:bg-accent-primary-5 focus-visible:text-accent-primary',
+                    'active:bg-accent-primary-10 active:text-accent-primary',
+                    'px-2 max-md:size-9 max-md:justify-center max-md:p-0',
+                    (isActiveSection || expanded) &&
+                      'bg-accent-primary-5 text-accent-primary',
                   )}
-
-                  {/* One row height, one ink, one selected idiom for both levels:
-                      the section label is 14px (not 16px, which made the rail
-                      louder than the page it opens) and its selected state is the
-                      same 2px brand marker the child uses. */}
-                  <Button
-                    block
-                    variant="ghost"
-                    aria-label={sectionLabel(t, section.labelKey)}
-                    aria-current={isActiveSection ? 'page' : undefined}
-                    className={cn(
-                      // The same row padding, icon-to-label gap and child indent the
-                      // Dataset configuration submenu uses, so the two rails read as
-                      // one vocabulary (see `pages/dataset/sidebar/index.tsx`).
-                      'settings-rail-item justify-start px-2.5 max-md:size-9 max-md:justify-center max-md:p-0 md:px-2',
-                      'min-w-0 flex-1',
-                      isActiveSection && 'settings-rail-item-active',
-                    )}
-                    onClick={() => goTo(section.path)}
-                    data-testid={section.testId}
-                  >
-                    <span className="flex items-center gap-3 max-md:gap-0">
-                      {SECTION_ICONS[section.path]}
-                      <span className="hidden truncate md:inline">
-                        {sectionLabel(t, section.labelKey)}
-                      </span>
-                    </span>
-                  </Button>
-                </div>
+                  onClick={() => {
+                    goTo(section.path);
+                    if (hasChildren) {
+                      toggleSection(section.path);
+                    }
+                  }}
+                  data-testid={section.testId}
+                >
+                  <span className="flex size-5 shrink-0 items-center justify-center">
+                    {SECTION_ICONS[section.path]}
+                  </span>
+                  <span className="hidden min-w-0 truncate text-left md:inline">
+                    {sectionLabel(t, section.labelKey)}
+                  </span>
+                  {/* The same two icons the Dataset branch indicator uses, with no
+                      rotation and no transform: open reads as a down chevron, folded
+                      as a left one, and only colours transition. The compact icon rail
+                      has no room for it. */}
+                  {hasChildren &&
+                    (expanded ? (
+                      <ChevronDown className="ms-1 hidden size-3.5 shrink-0 md:block" />
+                    ) : (
+                      <ChevronLeft className="ms-1 hidden size-3.5 shrink-0 md:block" />
+                    ))}
+                </Button>
 
                 {/* Second level: indented rows behind a hairline, so the branch
                     reads as belonging to the section above it. The indent matches
