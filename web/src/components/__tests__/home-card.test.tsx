@@ -10,6 +10,8 @@ import { render, screen } from '@testing-library/react';
 const renderCard = (props: {
   extra?: React.ReactNode;
   trailing?: React.ReactNode;
+  leading?: React.ReactNode;
+  layout?: 'standard' | 'chat';
 }) =>
   render(
     // The title and the description are truncated texts, which are tooltips, and
@@ -47,5 +49,24 @@ describe('HomeCard slots', () => {
 
     expect(container.querySelector('header')?.contains(tag)).toBe(true);
     expect(container.querySelector('article')?.lastElementChild).not.toBe(tag);
+  });
+
+  it('lays out chat identity and title above a divider, then date and count', () => {
+    const { container } = renderCard({
+      layout: 'chat',
+      leading: <span data-testid="identity">chat icon</span>,
+      trailing: <span data-testid="message-count">57 messages</span>,
+    });
+
+    const card = container.querySelector('article');
+    const [titleRow, divider, metadataRow] = Array.from(card?.children ?? []);
+
+    expect(titleRow?.contains(screen.getByTestId('identity'))).toBe(true);
+    const title = screen.getByRole('heading', { name: 'Cable QA' });
+    expect(titleRow?.querySelector('header')?.contains(title)).toBe(true);
+    expect(divider?.className).toContain('h-px');
+    expect(metadataRow?.contains(screen.getByTestId('message-count'))).toBe(true);
+    expect(metadataRow?.querySelector('p')?.textContent).toBeTruthy();
+    expect(screen.queryByText('desc')).not.toBeInTheDocument();
   });
 });

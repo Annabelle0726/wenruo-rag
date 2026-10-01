@@ -59,6 +59,8 @@ interface IProps {
   trailing?: ReactNode;
   /** Visual-only class overrides for a specific card family. */
   className?: string;
+  /** Uses a two-row layout for chat cards: identity/title, then date/count. */
+  layout?: 'standard' | 'chat';
 }
 
 function Time({ time }: { time: string | number | undefined }) {
@@ -78,6 +80,7 @@ export function HomeCard({
   extra,
   trailing,
   className: cardClassName,
+  layout = 'standard',
 }: IProps) {
   const { t } = useTranslation();
 
@@ -96,15 +99,17 @@ export function HomeCard({
         // hover tint. No transform or scale: these cards render inside
         // `overflow-hidden` grids, which clip a lifted card, so the lift comes
         // from the ceramic shadow rather than from a translate.
-        // `items-center` centres the avatar and the text block in the row, which
-        // is what makes a card with one line of content sit the same as a card
-        // with three: the box is fixed, the content is centred inside it.
+        // The standard layout centres the avatar and text in one row; the chat
+        // layout uses two rows while sharing the same fixed-height card contract.
         // `h-[var(--list-card-height)]` + `overflow-hidden` is that contract — the
         // card never grows its row (a taller card would stretch every card beside
         // it), so every line below is truncated to one line and anything left over
         // is clipped. The height is a token because the page-size calculation
         // measures a region before any card has rendered and needs the same value.
-        'card-interactive group flex h-[var(--list-card-height)] w-full items-center gap-3 overflow-hidden rounded-xl px-4 py-3',
+        'card-interactive group flex h-[var(--list-card-height)] w-full overflow-hidden rounded-xl px-4 py-3',
+        layout === 'chat'
+          ? 'flex-col items-stretch justify-center gap-2'
+          : 'items-center gap-3',
         // Translucent glass tint, so the page's own glow reads through the card
         // instead of stopping dead at an opaque surface. The ceramic shell adds
         // the inner rim light and the drop shadow, in whichever theme is active.
@@ -118,75 +123,113 @@ export function HomeCard({
         cardClassName,
       )}
     >
-      <div className="flex size-8 shrink-0 items-center justify-center">
-        {leading ?? (
-          <RAGFlowAvatar
-            className="w-[32px] h-[32px]"
-            avatar={data.avatar}
-            name={data.name}
-          />
-        )}
-      </div>
-
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-        <header className="flex min-w-0 flex-row items-center gap-2">
-          <TruncatedText
-            as="h3"
-            className="min-w-0 flex-1 truncate text-base font-bold leading-snug"
-            testId="agent-name"
-            tooltip={data.name}
-          >
-            {data.name}
-          </TruncatedText>
-
-          {/* Title-row extras (an agent's tags) sit beside the name and are
-              clamped, rather than taking a line of their own: a card holds three
-              lines, and the description and the date are the other two. */}
-          {extra}
-
-          {icon}
-
-          <div className="flex shrink-0 items-center gap-1">
-            {badge}
-            {moreDropdown}
-          </div>
-        </header>
-
-        {/* The same 14/20 rhythm as the date below it, so the two lines sit at one
-            spacing instead of a 16px line box leaving a gap between them. */}
-        <TruncatedText
-          className="text-sm leading-5 whitespace-nowrap overflow-hidden text-ellipsis"
-          tooltip={data.description}
-        >
-          {data.description}
-        </TruncatedText>
-
-        {/* One row under the description, the same shape on every card: the date
-            or the two dates on the left, the owner badge on the right. */}
-        <div className="flex justify-between items-center gap-2 min-w-0">
-          {showReleaseTime ? (
-            <section className="flex min-w-0 items-center gap-2 text-sm text-text-secondary">
-              <span className="truncate whitespace-nowrap">
-                {t('flow.lastSavedAt')}:
-              </span>
-              <Time time={data.update_time}></Time>
-              {data.release_time && (
-                <>
-                  <span className="truncate whitespace-nowrap">
-                    {t('flow.publishedAt')}:
-                  </span>
-                  <Time time={data.release_time}></Time>
-                </>
+      {layout === 'chat' ? (
+        <>
+          <div className="flex w-full min-w-0 items-center gap-3">
+            <div className="flex size-8 shrink-0 items-center justify-center">
+              {leading ?? (
+                <RAGFlowAvatar
+                  className="w-[32px] h-[32px]"
+                  avatar={data.avatar}
+                  name={data.name}
+                />
               )}
-            </section>
-          ) : (
-            <Time time={data.update_time}></Time>
-          )}
-          {sharedBadge}
-        </div>
-      </div>
+            </div>
 
-      {trailing}
+            <header className="flex min-w-0 flex-1 items-center gap-2">
+              <TruncatedText
+                as="h3"
+                className="min-w-0 flex-1 truncate text-base font-bold leading-snug"
+                testId="agent-name"
+                tooltip={data.name}
+              >
+                {data.name}
+              </TruncatedText>
+
+              {icon}
+
+              <div className="flex shrink-0 items-center gap-1">
+                {badge}
+                {moreDropdown}
+              </div>
+            </header>
+          </div>
+
+          <div
+            className="h-px w-full shrink-0 bg-cable-divider"
+            aria-hidden="true"
+          />
+
+          <div className="flex w-full min-w-0 items-center justify-between gap-2">
+            <Time time={data.update_time}></Time>
+            {trailing}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="flex size-8 shrink-0 items-center justify-center">
+            {leading ?? (
+              <RAGFlowAvatar
+                className="w-[32px] h-[32px]"
+                avatar={data.avatar}
+                name={data.name}
+              />
+            )}
+          </div>
+
+          <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+            <header className="flex min-w-0 flex-row items-center gap-2">
+              <TruncatedText
+                as="h3"
+                className="min-w-0 flex-1 truncate text-base font-bold leading-snug"
+                testId="agent-name"
+                tooltip={data.name}
+              >
+                {data.name}
+              </TruncatedText>
+
+              {extra}
+              {icon}
+
+              <div className="flex shrink-0 items-center gap-1">
+                {badge}
+                {moreDropdown}
+              </div>
+            </header>
+
+            <TruncatedText
+              className="text-sm leading-5 whitespace-nowrap overflow-hidden text-ellipsis"
+              tooltip={data.description}
+            >
+              {data.description}
+            </TruncatedText>
+
+            <div className="flex justify-between items-center gap-2 min-w-0">
+              {showReleaseTime ? (
+                <section className="flex min-w-0 items-center gap-2 text-sm text-text-secondary">
+                  <span className="truncate whitespace-nowrap">
+                    {t('flow.lastSavedAt')}:
+                  </span>
+                  <Time time={data.update_time}></Time>
+                  {data.release_time && (
+                    <>
+                      <span className="truncate whitespace-nowrap">
+                        {t('flow.publishedAt')}:
+                      </span>
+                      <Time time={data.release_time}></Time>
+                    </>
+                  )}
+                </section>
+              ) : (
+                <Time time={data.update_time}></Time>
+              )}
+              {sharedBadge}
+            </div>
+          </div>
+
+          {trailing}
+        </>
+      )}
     </Card>
   );
 }
