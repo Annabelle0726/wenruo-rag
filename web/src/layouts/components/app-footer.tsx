@@ -24,7 +24,13 @@ import { BrandLockup } from './brand-lockup';
  * content, and it adds no scroll of its own: it is shorter than the footer it
  * replaces (a 64px bar against the 80px block it was).
  */
-export function AppFooter({ className }: { className?: string }) {
+export function AppFooter({
+  className,
+  variant = 'default',
+}: {
+  className?: string;
+  variant?: 'default' | 'login';
+}) {
   const { t } = useTranslation();
 
   return (
@@ -43,15 +49,24 @@ export function AppFooter({ className }: { className?: string }) {
           </div>
         </div>
 
-        {/* 第三层信息：版权。竖线是两栏之间的分隔，窄屏折行时隐藏 */}
+        {/* 右侧法律信息；登录页附带备案号占位，其他页面维持原文案 */}
         <div className="flex min-w-0 items-center gap-4">
           <span
             aria-hidden
             className="hidden h-9 w-px shrink-0 bg-panel-border md:block"
           />
-          <p className="min-w-0 text-xs text-content-secondary sm:text-right">
-            {t('footer.copyright')}
-          </p>
+          {variant === 'login' ? (
+            <div className="min-w-0 space-y-1 text-xs text-content-secondary sm:text-right">
+              <p>{t('footer.loginCopyright')}</p>
+              <p className="text-content-tertiary">
+                {t('footer.icpPlaceholder')}
+              </p>
+            </div>
+          ) : (
+            <p className="min-w-0 text-xs text-content-secondary sm:text-right">
+              {t('footer.copyright')}
+            </p>
+          )}
         </div>
       </div>
     </footer>
