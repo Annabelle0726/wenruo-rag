@@ -44,6 +44,17 @@ VIEW_PARAMS = {
     "my_usage": {"start_day": "start_day", "end_day": "end_day"},
     "workspace_summary": {"start_day": "start_day", "end_day": "end_day"},
     "member_breakdown": {"start_day": "start_day", "end_day": "end_day", "limit": "limit", "offset": "offset"},
+    # Naming ONE member is the same question on both routes that ask it, so both
+    # accept the name `/usage/quota` already publishes (`user_id`) and the explicit
+    # spelling of the keyword it maps to. Supplying both is refused below.
+    "member_report": {
+        "user_id": "member_user_id",
+        "member_user_id": "member_user_id",
+        "start_day": "start_day",
+        "end_day": "end_day",
+        "limit": "limit",
+        "offset": "offset",
+    },
     "daily_series": {"start_day": "start_day", "end_day": "end_day"},
     "monthly_series": {"start_month": "start_month", "end_month": "end_month"},
     "recorded_model_breakdown": {"start_day": "start_day", "end_day": "end_day", "limit": "limit", "offset": "offset"},
@@ -57,7 +68,12 @@ def _read(view, tenant_id):
     unknown = sorted(set(request.args.keys()) - set(params))
     if unknown:
         raise WorkspaceAccessDenied(f"未知的查询参数：{', '.join(unknown)}")
-    supplied = {params[key]: request.args.get(key) for key in params if key in request.args}
+    present = [key for key in params if key in request.args]
+    supplied = {params[key]: request.args.get(key) for key in present}
+    if len(supplied) != len(present):
+        # Two spellings of one parameter are two answers to one question; picking
+        # one of them silently is exactly what this whitelist exists to prevent.
+        raise WorkspaceAccessDenied("请勿同时指定等价参数（如 user_id 与 member_user_id）")
     return get_json_result(data=build_view(view, current_user.id, tenant_id, **supplied))
 
 
@@ -87,6 +103,22 @@ def usage_members(tenant_id):
     """Per-member usage for the workspace, paginated (OWNER/ADMIN only)."""
     try:
         return _read("member_breakdown", tenant_id)
+    except Exception as exc:
+        return server_error_response(exc)
+
+
+@manager.route("/tenants/<tenant_id>/usage/member-report", methods=["GET"])  # noqa: F821
+@login_required
+def usage_member_report(tenant_id):
+    """One member's metered usage over a bounded day window (OWNER/ADMIN only).
+
+    The member is named by `user_id` (or its explicit alias `member_user_id`). The
+    subject may be a member who has since been removed - their metered history is
+    retained - while the actor must still be a live member of the workspace named
+    in the path.
+    """
+    try:
+        return _read("member_report", tenant_id)
     except Exception as exc:
         return server_error_response(exc)
 
