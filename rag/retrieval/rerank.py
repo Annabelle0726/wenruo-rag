@@ -79,6 +79,7 @@ from rag.retrieval.chunk_profile import (
     summarize,
     table_family_key,
 )
+from rag.retrieval.context_reservation import reserve_for_question
 from rag.retrieval.decomposition import (
     mentions_requirement,
     question_values,
@@ -758,6 +759,14 @@ async def rerank_chunks(rerank_mdl, chunks: Sequence[dict], question: str, top_n
         chunk["rerank_score"] = value
         chunk["similarity"] = value
 
-    selected = _select(apply_rank_adjustments(pool, policy), limit, policy=policy, reason=" by rerank score")
+    ordered = apply_rank_adjustments(pool, policy)
+    selected = _select(ordered, limit, policy=policy, reason=" by rerank score")
+    # Fact-type evidence parity (Phase 2). A question that names two or more fact types must get a
+    # window that can answer each of them; the cut above selects by score alone, and on this corpus
+    # the passage that STATES a fact type can rank below the window boundary even when the window is
+    # enlarged. This adjusts which members of the already-scored pool occupy the window - it does not
+    # rescore anything, reorder anything, or change the window size - and it is inert for a question
+    # that names fewer than two fact types.
+    selected = reserve_for_question(ordered, limit, selected, question)
     _LOG.info("[Rerank] pool %s -> context %s", summarize(pool), summarize(selected))
     return selected
