@@ -17,11 +17,12 @@
 import { registerNextServer } from '@/utils/register-server';
 import { READ_QUERY_OPTIONS } from '@/utils/read-query-options';
 
-/** The seven U1 usage views, as the server's own path suffixes. */
+/** The usage read model's views, as the server's own path suffixes. */
 export const WORKSPACE_USAGE_ENDPOINTS = [
   'my',
   'summary',
   'members',
+  'member-report',
   'daily',
   'monthly',
   'models',
@@ -80,6 +81,13 @@ const rawUsageService = registerNextServer({
       usagePath(config.tenantId, 'members', config),
     method: 'get',
   },
+  // The member is named with `user_id`, the same parameter `/usage/quota` already
+  // accepts for naming one member; the server refuses both spellings at once.
+  memberReport: {
+    url: (config: { tenantId: string } & UsageQuery) =>
+      usagePath(config.tenantId, 'member-report', config),
+    method: 'get',
+  },
   dailySeries: {
     url: (config: { tenantId: string } & UsageQuery) =>
       usagePath(config.tenantId, 'daily', config),
@@ -135,6 +143,7 @@ const workspaceUsageService = {
   myUsage: owningTheErrorSurface(rawUsageService.myUsage),
   workspaceSummary: owningTheErrorSurface(rawUsageService.workspaceSummary),
   memberBreakdown: owningTheErrorSurface(rawUsageService.memberBreakdown),
+  memberReport: owningTheErrorSurface(rawUsageService.memberReport),
   dailySeries: owningTheErrorSurface(rawUsageService.dailySeries),
   monthlySeries: owningTheErrorSurface(rawUsageService.monthlySeries),
   recordedModelBreakdown: owningTheErrorSurface(

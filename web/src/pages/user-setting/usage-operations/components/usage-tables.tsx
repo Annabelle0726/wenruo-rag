@@ -30,6 +30,8 @@ import {
 } from '@/interfaces/database/workspace-usage';
 import { cn } from '@/lib/utils';
 import { getRoleDisplayConfig } from '@/utils/tenant-role';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Fragment, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatCount, resolveCostDisplay } from './usage-format';
 
@@ -88,50 +90,89 @@ function AccountingCells({ accounting }: { accounting: IUsageAccounting }) {
   );
 }
 
-/** `GET /usage/daily` and `/usage/monthly` render through this one table. */
+/**
+ * `GET /usage/daily` and `/usage/monthly` render through this one table.
+ *
+ * With `previewLimit`, the table shows the LATEST that many periods and offers one
+ * control to expand to every period in the requested window and collapse back. The
+ * preview is a view choice, not a filter: the collapsed table still shows the
+ * recent periods, and the total row count always comes from the window the read
+ * model returned.
+ */
 export function UsageSeriesTable({
   buckets,
   granularity,
+  previewLimit,
 }: {
   buckets: ISeriesBucket[];
   granularity: 'day' | 'month';
+  previewLimit?: number;
 }) {
   const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+  const tableId = useId();
+  // Choose the latest periods FIRST, then present them newest first, so a preview is
+  // the newest end of the window whatever order the server sent.
+  const newestFirst = [...buckets].sort((a, b) =>
+    b.period.localeCompare(a.period),
+  );
+  const visible =
+    previewLimit && !expanded ? newestFirst.slice(0, previewLimit) : newestFirst;
+  const toggleExpanded = () => setExpanded((value) => !value);
+  const ExpandIcon = expanded ? ChevronUp : ChevronDown;
 
   return (
-    <Table
-      rootClassName="settings-table [&_td]:py-0 [&_th]:py-0 [&_th]:whitespace-nowrap"
-      className="table-fixed [&_td]:overflow-hidden"
-    >
-      <TableHeader className="bg-table-header">
-        <TableRow className="border-b border-table-border hover:bg-table-header">
-          <TableHead className="settings-table-head-cell">
-            {granularity === 'day' ? t('usage.day') : t('usage.month')}
-          </TableHead>
-          <TableHead className="settings-table-head-cell text-end">
-            {t('usage.attemptedCalls')}
-          </TableHead>
-          <TableHead className="settings-table-head-cell text-end">{t('usage.settledTokens')}</TableHead>
-          <TableHead className="settings-table-head-cell text-end">
-            {t('usage.outstandingTokens')}
-          </TableHead>
-          <TableHead className="settings-table-head-cell text-end">
-            {t('usage.settledEstimatedCost')}
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {buckets.map((bucket) => (
-          <TableRow key={bucket.period} className={settingsRow}>
-            <TableCell className="settings-table-cell tabular-nums">{bucket.period}</TableCell>
-            <TableCell className="settings-table-cell text-end tabular-nums">
-              {formatCount(bucket.attempted_calls)}
-            </TableCell>
-            <AccountingCells accounting={bucket.accounting} />
+    <div id={tableId}>
+      <Table
+        rootClassName="settings-table [&_td]:py-0 [&_th]:py-0 [&_th]:whitespace-nowrap"
+        className="table-fixed [&_td]:overflow-hidden"
+      >
+        <TableHeader className="bg-table-header">
+          <TableRow className="border-b border-table-border hover:bg-table-header">
+            <TableHead className="settings-table-head-cell">
+              {granularity === 'day' ? t('usage.day') : t('usage.month')}
+            </TableHead>
+            <TableHead className="settings-table-head-cell text-end">
+              {t('usage.attemptedCalls')}
+            </TableHead>
+            <TableHead className="settings-table-head-cell text-end">{t('usage.settledTokens')}</TableHead>
+            <TableHead className="settings-table-head-cell text-end">
+              {t('usage.outstandingTokens')}
+            </TableHead>
+            <TableHead className="settings-table-head-cell text-end">
+              {t('usage.settledEstimatedCost')}
+            </TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {visible.map((bucket) => (
+            <TableRow key={bucket.period} className={settingsRow}>
+              <TableCell className="settings-table-cell tabular-nums">{bucket.period}</TableCell>
+              <TableCell className="settings-table-cell text-end tabular-nums">
+                {formatCount(bucket.attempted_calls)}
+              </TableCell>
+              <AccountingCells accounting={bucket.accounting} />
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      {previewLimit && buckets.length > previewLimit && (
+        <div className="flex justify-center pt-3">
+          <button
+            type="button"
+            className="settings-control inline-flex min-h-8 items-center justify-center gap-1.5 px-3 text-xs text-text-secondary hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-primary"
+            aria-expanded={expanded}
+            aria-controls={tableId}
+            onClick={toggleExpanded}
+          >
+            <ExpandIcon size={14} aria-hidden="true" />
+            {t(expanded ? 'usage.collapseRecentDays' : 'usage.showAllDays', {
+              count: expanded ? previewLimit : buckets.length,
+            })}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -141,9 +182,24 @@ export function UsageSeriesTable({
  * A member who is no longer active keeps their history here - the server reports
  * `live_member: false` rather than dropping the row - so the table labels it
  * instead of hiding usage the workspace really incurred.
+ *
+ * When `onToggle` is given, a row opens that member's report directly beneath it.
+ * WHICH row is open is the caller's state (`openUserId`), so exactly one report can
+ * be open at a time; this table never decides that for itself.
  */
-export function MemberUsageTable({ members }: { members: IMemberUsageRow[] }) {
+export function MemberUsageTable({
+  members,
+  openUserId,
+  onToggle,
+  renderReport,
+}: {
+  members: IMemberUsageRow[];
+  openUserId?: string | null;
+  onToggle?: (userId: string) => void;
+  renderReport?: (member: IMemberUsageRow) => React.ReactNode;
+}) {
   const { t } = useTranslation();
+  const expandable = Boolean(onToggle && renderReport);
 
   return (
     <Table
@@ -167,33 +223,77 @@ export function MemberUsageTable({ members }: { members: IMemberUsageRow[] }) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {members.map((member) => (
-          <TableRow key={member.user_id} className={settingsRow}>
-            <TableCell className="settings-table-cell">
-              {member.nickname || member.user_id}
-            </TableCell>
-            <TableCell className="settings-table-cell">
-              <span className="flex items-center gap-2">
-                {/* The same tag the roster uses for a role, so a role reads the
-                    same in a settings table and in a usage table. */}
-                <span className="settings-tag text-content-secondary">
-                  {/* A removed member has no role any more; the shared role helper
-                      renders its neutral label rather than inventing one. */}
-                  {t(getRoleDisplayConfig(member.role ?? undefined).labelKey)}
-                </span>
-                {!member.live_member && (
-                  <span className="settings-field-hint">
-                    {t('usage.memberRemoved')}
+        {members.map((member) => {
+          const open = openUserId === member.user_id;
+          const detailId = `member-report-${member.user_id}`;
+          return (
+            <Fragment key={member.user_id}>
+              <TableRow
+                className={cn(settingsRow, expandable && 'cursor-pointer')}
+                data-testid="member-usage-row"
+                onClick={expandable ? () => onToggle?.(member.user_id) : undefined}
+              >
+                <TableCell className="settings-table-cell">
+                  <span className="flex items-center gap-2">
+                    {expandable && (
+                      <button
+                        type="button"
+                        className="inline-flex size-5 shrink-0 items-center justify-center text-text-secondary hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-primary"
+                        aria-expanded={open}
+                        aria-controls={detailId}
+                        aria-label={t('usage.memberReport')}
+                        data-testid="member-usage-toggle"
+                        onClick={(event) => {
+                          // The row is a convenience target; the control is the button,
+                          // so one click must not toggle twice.
+                          event.stopPropagation();
+                          onToggle?.(member.user_id);
+                        }}
+                      >
+                        {open ? (
+                          <ChevronUp size={14} aria-hidden="true" />
+                        ) : (
+                          <ChevronDown size={14} aria-hidden="true" />
+                        )}
+                      </button>
+                    )}
+                    {member.nickname || member.user_id}
                   </span>
-                )}
-              </span>
-            </TableCell>
-            <TableCell className="settings-table-cell text-end tabular-nums">
-              {formatCount(member.accounting.attempted_calls)}
-            </TableCell>
-            <AccountingCells accounting={member.accounting} />
-          </TableRow>
-        ))}
+                </TableCell>
+                <TableCell className="settings-table-cell">
+                  <span className="flex items-center gap-2">
+                    {/* The same tag the roster uses for a role, so a role reads the
+                        same in a settings table and in a usage table. */}
+                    <span className="settings-tag text-content-secondary">
+                      {/* A removed member has no role any more; the shared role helper
+                          renders its neutral label rather than inventing one. */}
+                      {t(getRoleDisplayConfig(member.role ?? undefined).labelKey)}
+                    </span>
+                    {!member.live_member && (
+                      <span className="settings-field-hint">
+                        {t('usage.memberRemoved')}
+                      </span>
+                    )}
+                  </span>
+                </TableCell>
+                <TableCell className="settings-table-cell text-end tabular-nums">
+                  {formatCount(member.accounting.attempted_calls)}
+                </TableCell>
+                <AccountingCells accounting={member.accounting} />
+              </TableRow>
+              {open && renderReport && (
+                <TableRow
+                  className="hover:bg-transparent"
+                  data-testid="member-usage-report-row"
+                >
+                  <TableCell colSpan={6} className="settings-table-cell">
+                    <div id={detailId}>{renderReport(member)}</div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </Fragment>
+          );
+        })}
       </TableBody>
     </Table>
   );

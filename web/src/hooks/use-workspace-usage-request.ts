@@ -15,6 +15,7 @@
  */
 
 import {
+  IMemberReportData,
   IQuotaStatusData,
   IUsageEnvelope,
   IUsageMonthRangeParams,
@@ -104,6 +105,34 @@ export const useFetchWorkspaceUsageSummary = (params: IUsageRangeParams = {}) =>
 export const useFetchMemberUsageBreakdown = (
   params: IUsageRangeParams & IUsagePageParams = {},
 ) => useUsageView('member_breakdown', params, workspaceUsageService.memberBreakdown);
+
+/**
+ * `GET /tenants/<id>/usage/member-report` - ONE member's window.
+ *
+ * The member is named with `user_id`, the parameter the quota read already uses to
+ * name one member, and the range is the page's own window so the report and the
+ * sections above it describe the same interval. Naming nobody reads the caller's
+ * own report: that default is the SERVER's rule (the scope resolver resolves an
+ * unnamed subject to the actor), not a second rule invented here.
+ */
+export const useFetchMemberReport = (
+  memberUserId?: string,
+  params: IUsageRangeParams & IUsagePageParams = {},
+) =>
+  useUsageView(
+    'member_report',
+    { ...params, memberUserId },
+    (config) =>
+      workspaceUsageService.memberReport({
+        ...config,
+        ...(memberUserId ? { user_id: memberUserId } : {}),
+      }),
+  ) as {
+    data?: IUsageEnvelope & { data?: IMemberReportData };
+    loading: boolean;
+    refetch: () => Promise<{ error?: unknown } | undefined>;
+    error: unknown;
+  };
 
 /** `GET /tenants/<id>/usage/daily` - one bucket per day (OWNER/ADMIN). */
 export const useFetchDailyUsageSeries = (params: IUsageRangeParams = {}) =>

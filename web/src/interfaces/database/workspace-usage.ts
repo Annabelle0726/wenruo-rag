@@ -195,11 +195,36 @@ export interface IQuotaStatusData {
   not_answered: string;
 }
 
+/**
+ * One member's report: the same envelope as every other view, with that member's
+ * own rows behind it.
+ *
+ * `daily`/`monthly` are the existing series shape and `models` is the existing
+ * recorded-model shape, so the panel renders them with the same components the
+ * workspace sections use. Nothing here is recomputed on the client.
+ */
+export interface IMemberReportSubject {
+  user_id: string;
+  nickname: string | null;
+  name_available: boolean;
+  live_member: boolean;
+  role: string | null;
+}
+
+export interface IMemberReportData {
+  member: IMemberReportSubject;
+  daily: ISeriesData;
+  monthly: ISeriesData;
+  models: IRecordedModelBreakdownData;
+  not_answered: string;
+}
+
 /** Every usage view the U1 read model exposes. */
 export type UsageView =
   | 'my_usage'
   | 'workspace_summary'
   | 'member_breakdown'
+  | 'member_report'
   | 'daily_series'
   | 'monthly_series'
   | 'recorded_model_breakdown'
