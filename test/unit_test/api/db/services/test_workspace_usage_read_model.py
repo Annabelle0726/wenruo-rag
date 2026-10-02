@@ -783,6 +783,7 @@ def test_the_api_layer_exposes_exactly_the_frozen_views():
         "/api/v1/tenants/<tenant_id>/usage/my",
         "/api/v1/tenants/<tenant_id>/usage/summary",
         "/api/v1/tenants/<tenant_id>/usage/members",
+        "/api/v1/tenants/<tenant_id>/usage/member-report",
         "/api/v1/tenants/<tenant_id>/usage/daily",
         "/api/v1/tenants/<tenant_id>/usage/monthly",
         "/api/v1/tenants/<tenant_id>/usage/models",
@@ -804,3 +805,205 @@ def test_the_api_layer_maps_every_parameter_to_a_view_keyword():
             assert keyword in signature.parameters, (view, keyword)
     assert "start_day" not in module.VIEW_PARAMS["quota_status"]
     assert module.VIEW_PARAMS["quota_status"]["user_id"] == "member_user_id"
+    # Naming one member is one question with two accepted spellings, and the view it
+    # reaches takes exactly one keyword for it.
+    member_params = module.VIEW_PARAMS["member_report"]
+    assert member_params["user_id"] == member_params["member_user_id"] == "member_user_id"
+    assert set(member_params) == {"user_id", "member_user_id", "start_day", "end_day", "limit", "offset"}
+
+
+# --------------------------------------------------------------------------- #
+# member report: one member's window, composed from the same primitives
+# --------------------------------------------------------------------------- #
+
+
+def test_an_owner_reads_one_members_report(usage):
+    payload = read.member_report(OWNER, WORKSPACE, member_user_id=MEMBER_A, start_day=DAY, end_day=DAY, now=NOW)
+
+    assert payload["view"] == "member_report"
+    assert payload["scope"]["subject_user_id"] == MEMBER_A
+    assert payload["scope"]["workspace_wide"] is False
+    assert payload["data"]["member"] == {
+        "user_id": MEMBER_A,
+        "nickname": MEMBER_A.upper(),
+        "name_available": True,
+        "live_member": True,
+        "role": "normal",
+    }
+    # The report is the member's own read, named: same predicate, same figures.
+    own = read.my_usage(MEMBER_A, WORKSPACE, start_day=DAY, end_day=DAY, now=NOW)
+    assert payload["accounting"] == own["accounting"]
+    assert payload["period"]["days"] == 1
+    assert payload["period"]["days_with_activity"] == 1
+
+
+def test_an_admin_reads_one_members_report(usage):
+    payload = read.member_report(ADMIN, WORKSPACE, member_user_id=MEMBER_B, start_day=DAY, end_day=DAY, now=NOW)
+
+    assert payload["data"]["member"]["user_id"] == MEMBER_B
+    assert payload["accounting"]["attempted_calls"] == 2
+    buckets = {row["bucket"] for row in payload["data"]["models"]["models"]}
+    # One of MEMBER_B's calls recorded no model name, so it is an explicit bucket.
+    assert buckets == {"chat-y", read.UNRECORDED_MODEL}
+
+
+def test_a_normal_member_reads_their_own_report(usage):
+    payload = read.member_report(MEMBER_A, WORKSPACE, member_user_id=MEMBER_A, start_day=DAY, end_day=DAY, now=NOW)
+
+    assert payload["data"]["member"]["user_id"] == MEMBER_A
+
+
+def test_a_normal_member_cannot_read_another_members_report(usage):
+    _denied(
+        lambda: read.member_report(MEMBER_A, WORKSPACE, member_user_id=MEMBER_B, start_day=DAY, end_day=DAY, now=NOW)
+    )
+
+
+def test_a_report_without_a_named_member_is_the_callers_own(usage):
+    # The same rule `quota_status` follows: an unnamed subject resolves to the actor,
+    # so no second convention about whose rows are read exists in this module.
+    payload = read.member_report(OWNER, WORKSPACE, start_day=DAY, end_day=DAY, now=NOW)
+    assert payload["data"]["member"]["user_id"] == OWNER
+    assert payload["accounting"] == read.my_usage(OWNER, WORKSPACE, start_day=DAY, end_day=DAY, now=NOW)["accounting"]
+
+    # A NORMAL member cannot use the omission to reach anyone but themselves.
+    own = read.member_report(MEMBER_A, WORKSPACE, start_day=DAY, end_day=DAY, now=NOW)
+    assert own["data"]["member"]["user_id"] == MEMBER_A
+
+
+def test_only_a_live_member_of_the_path_workspace_may_read_a_report(usage):
+    # An owner of ANOTHER workspace is not a member here, whatever they ask for.
+    _denied(
+        lambda: read.member_report(OUTSIDER, WORKSPACE, member_user_id=MEMBER_A, start_day=DAY, end_day=DAY, now=NOW)
+    )
+
+
+def test_a_removed_members_report_stays_readable(usage):
+    UserTenant.delete().where((UserTenant.tenant_id == WORKSPACE) & (UserTenant.user_id == MEMBER_B)).execute()
+
+    payload = read.member_report(OWNER, WORKSPACE, member_user_id=MEMBER_B, start_day=DAY, end_day=DAY, now=NOW)
+
+    member = payload["data"]["member"]
+    assert member["live_member"] is False
+    assert member["role"] is None
+    # The name is looked up separately, never joined destructively.
+    assert member["name_available"] is True
+    assert member["nickname"] == MEMBER_B.upper()
+    assert payload["accounting"]["attempted_calls"] == 2
+
+
+def test_a_removed_actor_cannot_read_any_report(usage):
+    UserTenant.delete().where((UserTenant.tenant_id == WORKSPACE) & (UserTenant.user_id == MEMBER_A)).execute()
+
+    _denied(
+        lambda: read.member_report(MEMBER_A, WORKSPACE, member_user_id=MEMBER_A, start_day=DAY, end_day=DAY, now=NOW)
+    )
+
+
+def test_the_report_matches_the_members_row_in_the_breakdown(usage):
+    breakdown = read.member_breakdown(OWNER, WORKSPACE, start_day=DAY, end_day=DAY, now=NOW)
+    rows = {row["user_id"]: row for row in breakdown["data"]["members"]}
+
+    for user_id in (MEMBER_A, MEMBER_B, OWNER, ADMIN):
+        report = read.member_report(OWNER, WORKSPACE, member_user_id=user_id, start_day=DAY, end_day=DAY, now=NOW)
+        assert report["accounting"] == rows[user_id]["accounting"], user_id
+
+
+def test_the_daily_buckets_sum_to_the_reported_attempts(usage):
+    payload = read.member_report(OWNER, WORKSPACE, member_user_id=MEMBER_A, start_day=DAY, end_day=DAY2, now=NOW)
+
+    buckets = payload["data"]["daily"]["buckets"]
+    assert [bucket["period"] for bucket in buckets] == [DAY, DAY2]
+    assert sum(bucket["attempted_calls"] for bucket in buckets) == 4
+    assert payload["accounting"]["attempted_calls"] == 4
+    assert payload["data"]["daily"]["granularity"] == "day"
+
+
+def test_the_month_buckets_cover_the_months_the_day_window_spans(usage):
+    payload = read.member_report(OWNER, WORKSPACE, member_user_id=MEMBER_A, start_day=DAY, end_day=DAY2, now=NOW)
+
+    months = payload["data"]["monthly"]["buckets"]
+    assert [bucket["period"] for bucket in months] == [MONTH]
+    assert months[0]["attempted_calls"] == payload["accounting"]["attempted_calls"] == 4
+
+
+def test_a_member_report_never_carries_another_members_or_workspaces_rows(usage):
+    payload = read.member_report(OWNER, WORKSPACE, member_user_id=MEMBER_A, start_day=DAY, end_day=DAY, now=NOW)
+
+    # MEMBER_A also has rows in OTHER_WORKSPACE (999 tokens): only this workspace's count.
+    assert payload["accounting"]["settled_tokens"] == 150
+    assert payload["accounting"]["attempted_calls"] == 3
+    assert {row["bucket"] for row in payload["data"]["models"]["models"]} == {"chat-x", "embed-x"}
+    workspace_models = read.recorded_model_breakdown(OWNER, WORKSPACE, start_day=DAY, end_day=DAY, now=NOW)
+    assert workspace_models["accounting"]["attempted_calls"] > payload["accounting"]["attempted_calls"]
+
+
+def test_a_subject_with_no_rows_in_this_workspace_reports_a_zero_window(usage):
+    # The predicate stays scoped to the path workspace, so an unrelated subject gets an
+    # empty window - never another workspace's figures.
+    payload = read.member_report(OWNER, WORKSPACE, member_user_id=OUTSIDER, start_day=DAY, end_day=DAY, now=NOW)
+
+    assert payload["accounting"]["attempted_calls"] == 0
+    assert payload["accounting"]["effective_tokens"] == 0
+    assert payload["data"]["daily"]["buckets"][0]["attempted_calls"] == 0
+    assert payload["data"]["models"]["models"] == []
+    assert payload["data"]["member"]["live_member"] is False
+    assert payload["data"]["member"]["role"] is None
+
+
+def test_unpriced_rows_leave_the_member_cost_unavailable_never_zero(usage):
+    payload = read.member_report(OWNER, WORKSPACE, member_user_id=MEMBER_B, start_day=DAY, end_day=DAY, now=NOW)
+
+    assert payload["accounting"]["settled_estimated_cost_micros"] is None
+    assert payload["accounting"]["settled_cost_coverage"] == "unavailable"
+    assert payload["cost"]["settled_coverage"] == "unavailable"
+
+
+def test_priced_rows_make_the_member_cost_available(usage):
+    payload = read.member_report(OWNER, WORKSPACE, member_user_id=MEMBER_A, start_day=DAY, end_day=DAY, now=NOW)
+
+    assert payload["accounting"]["settled_estimated_cost_micros"] == 700
+    assert payload["accounting"]["settled_cost_coverage"] == "complete"
+    # The reservation carries no pricing, so the OUTSTANDING figure stays null while the
+    # settled one is known: the two are gated independently.
+    assert payload["accounting"]["outstanding_reserved_cost_micros"] is None
+    assert payload["accounting"]["outstanding_cost_coverage"] != "complete"
+
+
+def test_the_member_report_reconciles_against_that_members_counters(usage):
+    payload = read.member_report(OWNER, WORKSPACE, member_user_id=MEMBER_A, start_day=DAY, end_day=DAY, now=NOW)
+
+    reconciliation = payload["reconciliation"]
+    assert reconciliation["ledger_attempted_calls"] == 3
+    assert reconciliation["counter_calls"] == 3
+    assert reconciliation["calls_consistent"] is True
+
+
+def test_the_member_report_range_rules_match_every_other_view(usage):
+    _denied(lambda: read.member_report(OWNER, WORKSPACE, member_user_id=MEMBER_A, start_day=DAY2, end_day=DAY, now=NOW))
+    _denied(
+        lambda: read.member_report(OWNER, WORKSPACE, member_user_id=MEMBER_A, start_day="2026-3-1", end_day=DAY, now=NOW)
+    )
+    _denied(
+        lambda: read.member_report(
+            OWNER, WORKSPACE, member_user_id=MEMBER_A, start_day="2025-01-01", end_day=DAY, now=NOW
+        )
+    )
+
+
+def test_the_member_report_pages_the_model_buckets(usage):
+    payload = read.member_report(
+        OWNER, WORKSPACE, member_user_id=MEMBER_A, start_day=DAY, end_day=DAY, limit=1, offset=0, now=NOW
+    )
+
+    assert len(payload["data"]["models"]["models"]) == 1
+    assert payload["data"]["models"]["limit"] == 1
+    assert payload["data"]["models"]["truncated"] is True
+
+
+def test_the_member_report_writes_nothing(usage):
+    before = _snapshot()
+
+    read.member_report(OWNER, WORKSPACE, member_user_id=MEMBER_A, start_day=DAY, end_day=DAY, now=NOW)
+
+    assert _snapshot() == before

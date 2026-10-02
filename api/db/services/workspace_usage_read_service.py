@@ -84,6 +84,15 @@ MAX_PAGE_SIZE = 200
 
 UNRECORDED_MODEL = "unrecorded"
 
+#: The one sentence every series carries about a zero bucket. It lives in the module
+#: so the workspace series and the member report cannot describe the same figures
+#: differently.
+ZERO_FILLED_NOTE = (
+    "Every period in the requested window is present. A bucket with attempted_calls = 0 "
+    "means no metered attempt was recorded in it - not that usage was measured as zero "
+    "before the ledger existed."
+)
+
 NOTES_SCOPE = (
     "attempted_calls counts metered dispatch attempts (one usage-ledger row each). "
     "A pre-dispatch budget refusal writes no row and is therefore not counted.",
@@ -683,9 +692,14 @@ def member_breakdown(actor_user_id, workspace_id, start_day=None, end_day=None, 
     return _envelope("member_breakdown", scope, period, accounting, data=data)
 
 
-def _series(scope, keys, column, kind, month=False):
-    """One bucket per period key in a bounded window, oldest first."""
-    predicate = _ledger_predicate(column, keys, workspace_id=scope.workspace_id)
+def _series_buckets(predicate, keys, column):
+    """One bucket per period key in a bounded window, oldest first.
+
+    The bucket shape every series publishes, including the member report's: every
+    period in the window is present, so a gap reads as a zero bucket rather than as
+    a missing row, and each bucket carries the same accounting block as every other
+    view.
+    """
     grouped = {
         row[column.name]: row
         for row in WorkspaceUsageLedger.select(column, *_LEDGER_GROUP).where(predicate).group_by(column).dicts()
@@ -694,6 +708,13 @@ def _series(scope, keys, column, kind, month=False):
     for key in keys:
         accounting = _accounting(grouped.get(key, {}))
         buckets.append({"period": key, "attempted_calls": accounting["attempted_calls"], "accounting": accounting})
+    return buckets
+
+
+def _series(scope, keys, column, kind, month=False):
+    """One bucket per period key in a bounded window, oldest first."""
+    predicate = _ledger_predicate(column, keys, workspace_id=scope.workspace_id)
+    buckets = _series_buckets(predicate, keys, column)
     period = _period_block(day_keys=None if month else keys, month_keys=keys if month else None)
     period.update({"timezone": scope.timezone, "timezones_in_scope": _timezones_in_scope(predicate)})
     if not month:
@@ -701,9 +722,7 @@ def _series(scope, keys, column, kind, month=False):
     data = {
         "buckets": buckets,
         "granularity": kind,
-        "zero_filled": ("Every period in the requested window is present. A bucket with attempted_calls = 0 "
-                        "means no metered attempt was recorded in it - not that usage was measured as zero "
-                        "before the ledger existed."),
+        "zero_filled": ZERO_FILLED_NOTE,
     }
     accounting = _accounting(_aggregate(predicate))
     # The same period keys are compared against the durable counters. A day
@@ -733,21 +752,13 @@ def monthly_series(actor_user_id, workspace_id, start_month=None, end_month=None
     return _series(scope, month_keys, WorkspaceUsageLedger.period_month, "monthly", month=True)
 
 
-@_in_db_context
-def recorded_model_breakdown(actor_user_id, workspace_id, start_day=None, end_day=None, limit=None, offset=None, now=None):
-    """Usage grouped by the RECORDED model name, paginated (OWNER/ADMIN only).
+def _recorded_model_rows(predicate, size, skip):
+    """The recorded-model buckets for a predicate, paginated.
 
-    The name is what the ledger recorded - a bare model name, not a configured
-    provider instance. Provider, key-instance and workload attribution are not
-    recorded and are never inferred; they are reported as null. Rows with no
-    recorded name (an extra provider round charged as an extra call) appear in
-    the explicit `unrecorded` bucket.
+    Shared by the workspace model breakdown and the member report, so a member's
+    model rows are the same shape read over that member's own rows rather than a
+    second projection that could drift from it.
     """
-    scope = resolve_read_scope(actor_user_id, workspace_id, workspace_wide=True)
-    day_keys = resolve_day_range(start_day, end_day, scope.timezone, now=now)
-    size, skip = resolve_page(limit, offset)
-    predicate = _ledger_predicate(WorkspaceUsageLedger.period_day, day_keys, workspace_id=workspace_id)
-
     total_models = WorkspaceUsageLedger.select(fn.COUNT(fn.DISTINCT(WorkspaceUsageLedger.model_name))).where(predicate).scalar() or 0
     rows = list(
         WorkspaceUsageLedger.select(WorkspaceUsageLedger.model_name, *_LEDGER_GROUP)
@@ -772,11 +783,7 @@ def recorded_model_breakdown(actor_user_id, workspace_id, start_day=None, end_da
                 "accounting": _accounting(row),
             }
         )
-
-    period = _period_block(day_keys=day_keys, days_with_activity=_days_with_activity(predicate))
-    period["timezone"] = scope.timezone
-    accounting = _accounting(_aggregate(predicate))
-    data = {
+    return {
         "models": models,
         "total_buckets": _count(total_models),
         "limit": size,
@@ -786,7 +793,102 @@ def recorded_model_breakdown(actor_user_id, workspace_id, start_day=None, end_da
                          "them and this read model does not reconstruct them. An empty recorded name is the "
                          f"`{UNRECORDED_MODEL}` bucket."),
     }
+
+
+@_in_db_context
+def recorded_model_breakdown(actor_user_id, workspace_id, start_day=None, end_day=None, limit=None, offset=None, now=None):
+    """Usage grouped by the RECORDED model name, paginated (OWNER/ADMIN only).
+
+    The name is what the ledger recorded - a bare model name, not a configured
+    provider instance. Provider, key-instance and workload attribution are not
+    recorded and are never inferred; they are reported as null. Rows with no
+    recorded name (an extra provider round charged as an extra call) appear in
+    the explicit `unrecorded` bucket.
+    """
+    scope = resolve_read_scope(actor_user_id, workspace_id, workspace_wide=True)
+    day_keys = resolve_day_range(start_day, end_day, scope.timezone, now=now)
+    size, skip = resolve_page(limit, offset)
+    predicate = _ledger_predicate(WorkspaceUsageLedger.period_day, day_keys, workspace_id=workspace_id)
+
+    period = _period_block(day_keys=day_keys, days_with_activity=_days_with_activity(predicate))
+    period["timezone"] = scope.timezone
+    accounting = _accounting(_aggregate(predicate))
+    data = _recorded_model_rows(predicate, size, skip)
     return _envelope("recorded_model_breakdown", scope, period, accounting, data=data)
+
+
+@_in_db_context
+def member_report(actor_user_id, workspace_id, member_user_id=None, start_day=None, end_day=None, limit=None, offset=None, now=None):
+    """One member's metered usage over a bounded day window (OWNER/ADMIN only).
+
+    Composed ENTIRELY from this module's own primitives: the same scope resolver,
+    the same ledger predicate and durable counters, the same accounting and cost
+    blocks, the same series buckets, the same recorded-model buckets and the same
+    envelope. It computes no accounting of its own, so a member's totals here are
+    the figures `member_breakdown` already publishes for that member's row - read
+    over that member's own rows - and the two can never disagree.
+
+    The SUBJECT may be a member who has since been removed: their metered history
+    is retained and stays readable, and `live_member`/`role` report that instead of
+    the read being refused. Only the ACTOR must still be a live member of the
+    workspace, which `resolve_read_scope` re-checks on every call.
+
+    The month window is the one the requested DAY window spans, so a report covers
+    one window; month buckets are read for their own periods and are never derived
+    from, or added to, the day buckets.
+
+    Naming no member is the caller's own report, exactly as `quota_status` treats
+    an unnamed member: the scope resolver already resolves an unnamed subject to the
+    actor, so this view adds no second rule about whose rows are read.
+    """
+    scope = resolve_read_scope(actor_user_id, workspace_id, member_user_id=member_user_id)
+    subject = scope.subject_user_id or scope.actor_user_id
+    day_keys = resolve_day_range(start_day, end_day, scope.timezone, now=now)
+    size, skip = resolve_page(limit, offset)
+    predicate = _ledger_predicate(WorkspaceUsageLedger.period_day, day_keys, user_id=subject, workspace_id=workspace_id)
+
+    accounting = _accounting(_aggregate(predicate))
+    period = _period_block(day_keys=day_keys, days_with_activity=_days_with_activity(predicate))
+    period["timezone"] = scope.timezone
+    period["timezones_in_scope"] = _timezones_in_scope(predicate)
+    counters = _counter_totals(workspace_id, day_keys, user_id=subject)
+
+    month_keys = resolve_month_range(day_keys[0][:7], day_keys[-1][:7], scope.timezone, now=now)
+    month_predicate = _ledger_predicate(
+        WorkspaceUsageLedger.period_month, month_keys, user_id=subject, workspace_id=workspace_id
+    )
+
+    names = _nicknames([subject])
+    subject_role = _subject_role(workspace_id, subject)
+    data = {
+        "member": {
+            "user_id": subject,
+            "nickname": names.get(subject),
+            "name_available": subject in names,
+            "live_member": subject_role is not None,
+            "role": subject_role,
+        },
+        "daily": {
+            "buckets": _series_buckets(predicate, day_keys, WorkspaceUsageLedger.period_day),
+            "granularity": "day",
+            "zero_filled": ZERO_FILLED_NOTE,
+        },
+        "monthly": {
+            "buckets": _series_buckets(month_predicate, month_keys, WorkspaceUsageLedger.period_month),
+            "granularity": "month",
+            "zero_filled": ZERO_FILLED_NOTE,
+        },
+        "models": _recorded_model_rows(predicate, size, skip),
+        "not_answered": (
+            "These are the same figures the member breakdown publishes for this member's row, read over the "
+            "member's own metered attempts; nothing is re-derived here. The subject may be a member who was "
+            "removed - their history is retained, and live_member/role say which case it is. A window this "
+            "member recorded no metered attempt in reports zero attempts: it does not mean usage was measured "
+            "as zero before the ledger existed. Month buckets cover the months the requested day window spans "
+            "and are never added to the day buckets."
+        ),
+    }
+    return _envelope("member_report", scope, period, accounting, counters=counters, data=data)
 
 
 @_in_db_context
@@ -887,6 +989,7 @@ VIEWS = {
     "my_usage": my_usage,
     "workspace_summary": workspace_summary,
     "member_breakdown": member_breakdown,
+    "member_report": member_report,
     "daily_series": daily_series,
     "monthly_series": monthly_series,
     "recorded_model_breakdown": recorded_model_breakdown,

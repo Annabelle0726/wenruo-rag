@@ -1512,8 +1512,15 @@ export default {
         'No model call was metered in the selected window, so there is nothing to break down.',
       truncatedNotice: 'Showing the first page of {{total}}.',
       memberBreakdown: 'Member breakdown',
+      memberReport: 'Member usage report',
+      memberReportId: 'Member id',
+      windowDays: '{{count}} day(s) in the window',
       recordedModelBreakdown: 'Recorded model breakdown',
       dailySeries: 'Daily usage',
+      dailySeriesHint:
+        'Shows the latest 7 days first. Expand to view every day in the selected window. A day with 0 metered calls means no metered attempt was recorded that day; it does not mean earlier usage was measured as zero before the ledger existed.',
+      showAllDays: 'View all dates in the selected range ({{count}} days)',
+      collapseRecentDays: 'Show only the latest {{count}} days',
       monthlySeries: 'Monthly usage',
       monthlySeriesHint:
         'Month totals are counted on their own and are never added to the day rows.',

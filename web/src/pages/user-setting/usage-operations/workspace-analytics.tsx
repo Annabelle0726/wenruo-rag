@@ -19,7 +19,6 @@ import {
   IMemberBreakdownData,
   IRecordedModelBreakdownData,
   ISeriesData,
-  IUsageEnvelope,
 } from '@/interfaces/database/workspace-usage';
 import {
   useFetchDailyUsageSeries,
@@ -28,11 +27,13 @@ import {
   useFetchRecordedModelUsage,
   useFetchWorkspaceUsageSummary,
 } from '@/hooks/use-workspace-usage-request';
-import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { EstimatedCostTile, UsageTotalsGrid } from './components/usage-metric';
+import { AnalyticsSection } from './components/analytics-section';
+import { MemberUsageReport } from './components/member-usage-report';
 import { ReadModelNotice } from './components/read-model-notice';
+import { ReconciliationStrip } from './components/reconciliation-strip';
+import { EstimatedCostTile, UsageTotalsGrid } from './components/usage-metric';
 import {
   UsageRangeDays,
   UsageRangeFilter,
@@ -45,106 +46,24 @@ import {
 } from './components/usage-tables';
 
 /**
- * The reconciliation strip.
- *
- * The counters and the ledger are two records of the same attempts and nothing
- * reconciles them automatically, so a disagreement is TOLD to the reader rather
- * than resolved by showing whichever figure looks better. Both numbers are on
- * screen either way.
- */
-function ReconciliationStrip({ payload }: { payload: IUsageEnvelope }) {
-  const { t } = useTranslation();
-  const reconciliation = payload.reconciliation;
-
-  if (!reconciliation) {
-    return null;
-  }
-
-  const consistent =
-    reconciliation.calls_consistent && reconciliation.tokens_consistent;
-
-  return (
-    <div
-      className="settings-tile"
-      data-testid="usage-reconciliation"
-    >
-      <span className="settings-tile-label">
-        {t('usage.reconciliationTitle')}
-      </span>
-      <span
-        className={cn(
-          'text-xs',
-          consistent ? 'text-text-secondary' : 'text-state-warning',
-        )}
-      >
-        {consistent
-          ? t('usage.reconciliationConsistent')
-          : t('usage.reconciliationDivergent', {
-              ledger: reconciliation.ledger_attempted_calls,
-              counter: reconciliation.counter_calls,
-            })}
-      </span>
-      <span className="settings-tile-hint">
-        {t('usage.reconciliationSemantics')}
-      </span>
-    </div>
-  );
-}
-
-/**
- * One block of the analytics page, so every block states its own three states the
- * same way: loading, a failure that the block owns, or content.
- */
-function AnalyticsSection({
-  title,
-  hint,
-  loading,
-  failed,
-  onRetry,
-  empty,
-  testId,
-  children,
-}: {
-  title: string;
-  hint?: string;
-  loading: boolean;
-  failed: boolean;
-  onRetry: () => void;
-  empty: boolean;
-  testId: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="settings-section">
-      <div className="settings-section-head">
-        <h3 className="settings-section-title">{title}</h3>
-        {hint && <p className="settings-section-hint">{hint}</p>}
-      </div>
-      <div className="settings-section-body">
-        {loading ? (
-          <CardSkeleton />
-        ) : failed || empty ? (
-          <ReadModelNotice failed={failed} onRetry={onRetry} testId={testId} />
-        ) : (
-          children
-        )}
-      </div>
-    </section>
-  );
-}
-
-/**
  * Workspace Analytics: OWNER/ADMIN only.
  *
  * Each block fires its own read, so a reader who only wants the model breakdown
  * does not pay for the series. Nothing is computed here: the reconciliation
  * verdict is the server's own flag rather than a second sum that could drift from
  * the server's.
+ *
+ * The page's day window is the ONE window: every block below is asked for the same
+ * `[start_day, end_day]`, and a member's report inherits it, so a figure in a
+ * report and the same member's row above it describe the same interval.
  */
 function WorkspaceAnalytics() {
   const { t } = useTranslation();
   const [days, setDays] = useState<UsageRangeDays>(30);
   const window = useUsageDayWindow(days);
+  // ONE member report at a time: which row is open belongs to the page, so the
+  // table never keeps its own copy of that decision.
+  const [openMemberId, setOpenMemberId] = useState<string | null>(null);
 
   const summary = useFetchWorkspaceUsageSummary(window);
   const members = useFetchMemberUsageBreakdown({ ...window, limit: 50 });
@@ -159,6 +78,9 @@ function WorkspaceAnalytics() {
     | undefined;
   const dailyData = daily.data?.data as ISeriesData | undefined;
   const monthlyData = monthly.data?.data as ISeriesData | undefined;
+
+  const toggleMember = (userId: string) =>
+    setOpenMemberId((current) => (current === userId ? null : userId));
 
   return (
     <div className="settings-body">
@@ -221,7 +143,14 @@ function WorkspaceAnalytics() {
             empty={!memberData?.members?.length}
             testId="member-breakdown-unavailable"
           >
-            <MemberUsageTable members={memberData?.members ?? []} />
+            <MemberUsageTable
+              members={memberData?.members ?? []}
+              openUserId={openMemberId}
+              onToggle={toggleMember}
+              renderReport={(member) => (
+                <MemberUsageReport member={member} window={window} />
+              )}
+            />
           </AnalyticsSection>
 
           <AnalyticsSection
@@ -244,15 +173,20 @@ function WorkspaceAnalytics() {
 
           <AnalyticsSection
             title={t('usage.dailySeries')}
-            hint={dailyData?.zero_filled}
+            hint={t('usage.dailySeriesHint')}
             loading={daily.loading && !dailyData}
             failed={Boolean(daily.error)}
             onRetry={daily.refetch}
             empty={!dailyData?.buckets?.length}
             testId="daily-series-unavailable"
           >
+            {/* The table shows the latest 7 days and expands to the whole window.
+                The key restarts that choice when the window changes, so a range the
+                reader has not looked at yet always opens on its own latest 7 days. */}
             <UsageSeriesTable
+              key={`${window.start_day}:${window.end_day}`}
               granularity="day"
+              previewLimit={7}
               buckets={dailyData?.buckets ?? []}
             />
           </AnalyticsSection>
@@ -265,6 +199,8 @@ function WorkspaceAnalytics() {
             onRetry={monthly.refetch}
             empty={!monthlyData?.buckets?.length}
             testId="monthly-series-unavailable"
+            collapsible
+            defaultOpen={false}
           >
             <UsageSeriesTable
               granularity="month"
