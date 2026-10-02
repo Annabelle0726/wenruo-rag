@@ -14,7 +14,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-"""Deterministic supplemental routes for a two-axis question (entity x fact-type).
+"""Deterministic supplemental routes for a two-axis question (entity x fact type).
+
+Reads TWO axes out of a question's own wording - the objects it is about, and the fact types it
+asks for - and returns their bounded cross product as routes to ADD to whatever the caller has.
 
 WHY THIS EXISTS
 ===============
@@ -23,43 +26,36 @@ A question of the shape
 
     …（终端与接头）的设计使用寿命与结构有何要求
 
-carries TWO enumerations: an entity axis (终端 / 接头) and a fact-type axis (设计使用寿命 /
-结构). The deployed pipeline hands such a question to the LLM decomposition node, and the node's
-GRANULARITY varies between sessions: it has produced both
+carries an entity axis (终端 / 接头) and a fact-type axis (design life / structure). The deployed
+pipeline hands such a question to an LLM decomposition node, and that node's granularity varies
+between sessions: it has produced four narrow routes in one session (design-life table recalled) and
+two composite routes in another (ZERO design-life passages) for the same question on the same build.
+This module removes the dependency: the narrowing is produced deterministically.
 
-    A. four narrow routes (终端/接头 x 寿命/结构) - the design-life table is recalled, and
-    B. two composite routes (寿命, 结构)      - the composite life route returns ZERO
-                                               design-life passages,
+WHAT CHANGED IN 1.1 (GENERALIZED AXIS READER)
+=============================================
 
-for the same question on the same build. Which one a session gets decides whether the answer can
-state the design life at all. That was measured, not inferred: see
-``docs/evaluation/rag_qa_004_instability.md``.
+Version 1 read the entity axis only out of a parenthesised group, so it fired on 1 of 6 natural
+paraphrases of the same question, and its fact reader emitted predicate residue ("结构分别有",
+"结构有") that became route text. This version reads the axes from the sentence's structure:
 
-This module removes that dependency. It reads the two enumerations out of the question
-STRUCTURALLY - the same way :func:`rag.retrieval.planner.dimension_heads` reads a single
-enumeration - and emits the bounded cross product, so the narrowing that made case A work is
-produced deterministically instead of being hoped for from the model.
+* **Entity axis** - the enumeration run joined by the enumerating conjunctions the deployed
+  dimension reader already uses (``、；;和与及以及`` plus ``/``), with each member cleaned by
+  structural boundaries. A parenthesised group is used when present, but is no longer required.
+* **Fact axis** - the domain's declared fact types (:mod:`rag.retrieval.domain_facts`), resolved to
+  the term the corpus uses. The reader holds no vocabulary of its own.
 
-IT IS ADDITIVE
-==============
+The cleaning is purely structural: a member is cut at the first question/predicate marker it
+contains, at the last framing prefix before it, and rejected if what remains is a fragment rather
+than a noun phrase. No complete question wording is matched anywhere.
 
-Nothing here removes, reorders or rewrites a route the caller already has. The caller passes its
-current route list in and gets supplementary routes back; every emitted route is distinct from
-every existing one.
+ADDITIVE, BOUNDED, AND INERT WHEN IT DOES NOT APPLY
+===================================================
 
-IT HOLDS NO DOMAIN VOCABULARY
-=============================
-
-There is no list of cable words in this file. Both axes are read from the question's own wording,
-and the only domain input is the existing profile table: expansion is offered only for a question
-the deployed :mod:`rag.nlp.retrieval_projection` profiles already recognise as belonging to a known
-domain. A new domain is a new entry in that table, not a new branch here.
-
-IT IS BOUNDED
-=============
-
-The cross product is capped at :data:`MAX_SUPPLEMENTAL_ROUTES` routes over at most
-:data:`MAX_AXIS_MEMBERS` members per axis, and the caller can lower it further with ``budget``.
+Nothing here removes, reorders or rewrites a route the caller already has. The cross product is
+capped at :data:`MAX_SUPPLEMENTAL_ROUTES` over at most :data:`MAX_AXIS_MEMBERS` members per axis, the
+caller's ``budget`` can lower it further, and a question that does not carry BOTH axes - two or more
+entities AND two or more fact types - gets an empty list and a byte-identical route set.
 """
 
 from __future__ import annotations
@@ -67,31 +63,59 @@ from __future__ import annotations
 import re
 from typing import Sequence
 
-from rag.nlp.retrieval_projection import classify_category, profile_for
+from rag.nlp.retrieval_projection import classify_category
 from rag.retrieval.decomposition import ENUMERATING_CONJUNCTION_RE, MAX_SUB_QUERY_CHARS
+from rag.retrieval.domain_facts import is_fact_text, mentioned, resolve_domain
 
 #: Most supplemental routes this rule may ever add: one 2x2 cross product. Four narrow routes are
 #: what the working (4-route) decomposition produced, so this reproduces it and cannot exceed it.
 MAX_SUPPLEMENTAL_ROUTES = 4
 
 #: Members read from one axis. A question enumerating four entities and three fact types would ask
-#: a twelve-route cross product, which is a route explosion, not a fix; the first members in the
-#: question's own order are used and the rest are dropped.
+#: a twelve-route cross product, which is a route explosion, not a fix.
 MAX_AXIS_MEMBERS = 3
 
-#: A member shorter than this carries no information ("与", "的"), and a member with no ideograph is
-#: a number or a latin fragment that the axes rule was not written for.
+#: Longest an entity member may be. An entity is a name ("电缆终端", "接头"); anything longer is a
+#: clause the fragmenter failed to cut, and admitting it would put a whole phrase into a route.
+MAX_ENTITY_CHARS = 8
+
+#: Shortest an entity member may be, and it must carry an ideograph: a lone latin/number fragment is
+#: not an entity in this domain.
 MIN_AXIS_MEMBER_CHARS = 2
 
 _IDEOGRAPH_RE = re.compile(r"[\u3400-\u9fff]")
 _WHITESPACE_RE = re.compile(r"\s+")
+
+#: An enumeration group inside brackets is the cleanest form and is used when present. It is NOT
+#: required: the conjunction reader below handles the unbracketed forms.
 _PAREN_RE = re.compile(r"[（(]([^（()）]{2,80})[)）]")
-#: The tail that belongs to the QUESTION rather than to a member: "结构有何要求" -> "结构".
-_PREDICATE_CUT_RE = re.compile(r"(?:有何|有哪|是什|是怎|如何|怎样|怎么|多少|哪些|什么|要求|规定|标准|参数|数值|数值)")
-#: The shared subject that precedes the first member of the fact axis: "标准对电缆附件 的设计使用
-#: 寿命" -> "设计使用寿命". The subject is stated once, before the first 的, and every member of the
-#: enumeration inherits it.
-_LEADING_SUBJECT_RE = re.compile(r"^.*?的", re.DOTALL)
+
+#: Fragment separators. The enumerating conjunctions come from the deployed dimension reader, so the
+#: two readers cannot disagree about what an enumeration is; the rest are the structural boundaries
+#: that separate an enumeration from the phrase it sits in.
+_FRAGMENT_SPLIT_RE = re.compile(
+    ENUMERATING_CONJUNCTION_RE.pattern + r"|[/／]|的|其|在|方面|[，,。？?！!：:；;（）()【】\[\]「」]"
+)
+
+#: Where a member ENDS: the question's own predicate. Cutting here is what removes the residue
+#: ("结构分别有什么要求" -> "结构", "接头能使用多少年" -> "接头").
+_TRAIL_CUT_RE = re.compile(r"有|是|多少|什么|怎样|怎么|如何|哪些|分别|以及|能不能|能|可以|要求|规定|构成|类型|各")
+
+#: Where a member's LEADING FRAMING ends: "标准对终端" -> "终端". Applied at the LAST occurrence so a
+#: nested phrase keeps its inner boundary.
+_LEAD_CUT_RE = re.compile(r"^(?:.*(?:对于|关于|请问|针对|对))", re.DOTALL)
+
+#: Locative scope words. "电缆附件中" is where the question looks, not an object it asks about.
+_LOCATIVE_TAIL_RE = re.compile(r"[中内里上下]$|之中$|之内$")
+
+#: Generic non-referential nouns. They are never an entity axis member, and they are not domain
+#: vocabulary - they are the question's own scaffolding.
+_GENERIC_STOPLIST = frozenset(
+    {
+        "技术", "要求", "规定", "方面", "内容", "情况", "资料", "条件", "指标", "数值", "参数",
+        "标准", "规范", "数据", "说明", "问题", "相关", "具体", "主要", "重要", "一般",
+    }
+)
 
 
 def _clean(text: str) -> str:
@@ -103,123 +127,131 @@ def _key(text: str) -> str:
     return _WHITESPACE_RE.sub("", str(text or "")).lower()
 
 
-def _is_member(text: str) -> bool:
-    return len(text) >= MIN_AXIS_MEMBER_CHARS and bool(_IDEOGRAPH_RE.search(text))
+def _trim_member(raw: str, category: str) -> str:
+    """Reduce one fragment to an entity member, or to ``""`` when it is not one.
 
+    Structural only, in this order:
 
-def _axis_members(segment: str) -> list[str]:
-    """The enumeration members in ``segment``, in the order the segment names them.
-
-    Splitting uses the SAME enumerating-conjunction pattern the dimension planner uses, so the two
-    readers cannot disagree about what an enumeration is.
+    1. the question's predicate is cut off at its first marker;
+    2. the leading framing ("标准对", "关于") is cut off;
+    3. punctuation and a trailing locative are dropped;
+    4. what is left must be a short ideographic noun phrase that is not a fact type and not generic
+       scaffolding.
     """
-    out: list[str] = []
-    for raw in ENUMERATING_CONJUNCTION_RE.split(str(segment or "")):
-        member = _clean(raw).strip("，。、,;；:： ")
-        if _is_member(member) and member not in out:
-            out.append(member)
-    return out
+    member = _clean(raw).strip("，。、,;；:： 　")
+    cut = _TRAIL_CUT_RE.search(member)
+    if cut is not None:
+        member = member[: cut.start()] if cut.start() > 0 else ""
+    member = _LEAD_CUT_RE.sub("", member)
+    member = member.strip("，。、,;；:： 　")
+    if _LOCATIVE_TAIL_RE.search(member):
+        # "电缆附件中" is where the question looks, not an object it asks about. STRIP the locative
+        # and the scope noun becomes a phantom entity that displaces a real one from the bounded
+        # cross product, so the fragment is dropped instead.
+        return ""
+    if not member or not _IDEOGRAPH_RE.search(member):
+        return ""
+    if not (MIN_AXIS_MEMBER_CHARS <= len(member) <= MAX_ENTITY_CHARS):
+        return ""
+    if member in _GENERIC_STOPLIST or is_fact_text(member, category):
+        return ""
+    return member
 
 
-def _fact_members(segment: str) -> list[str]:
-    """The fact-type members in ``segment``, with the shared subject and the predicate removed.
+def _bracketed_entities(text: str, category: str) -> list[str]:
+    """Entity members from a parenthesised enumeration, or ``[]``.
 
-    Two deterministic cuts, both needed because the fact axis sits in the middle of a sentence
-    rather than in parentheses:
-
-    * the leading subject is dropped up to and including the first 的
-      (``标准对电缆附件 的设计使用寿命`` -> ``设计使用寿命``);
-    * the question's own predicate is dropped from the first interrogative or requirement marker
-      (``结构有何要求`` -> ``结构``).
+    Preferred when present because its members are already bare nouns, and because it is what tells
+    a scope noun from the enumeration: in "电缆附件（终端与接头）" the bracket carries the
+    enumeration and 电缆附件 is the scope, so the scope never becomes a member.
     """
-    out: list[str] = []
-    for raw in ENUMERATING_CONJUNCTION_RE.split(str(segment or "")):
-        member = _clean(raw)
-        member = _LEADING_SUBJECT_RE.sub("", member, count=1) if "的" in member else member
-        cut = _PREDICATE_CUT_RE.search(member)
-        if cut and cut.start() > 0:
-            member = member[: cut.start()]
-        member = member.strip("，。、,;；:： ")
-        if _is_member(member) and member not in out:
-            out.append(member)
-    return out
+    for group in _PAREN_RE.findall(text):
+        members: list[str] = []
+        for raw in ENUMERATING_CONJUNCTION_RE.split(group):
+            member = _trim_member(raw, category)
+            if member and member not in members:
+                members.append(member)
+        if len(members) >= 2:
+            return members
+    return []
 
 
-def domain_profile(question: str):
-    """The domain profile that recognises ``question``, or ``None``.
+def _conjunction_entities(text: str, category: str) -> list[str]:
+    """Entity members read from the sentence's enumeration structure, brackets not required.
 
-    Reuses the deployed projector rather than a list of its own: ``classify_category`` answers
-    from the profile ``cues``, which is where the cable domain's vocabulary already lives.
+    Every fragment between two structural boundaries is offered to :func:`_trim_member`; a fragment
+    that is a fact type ("结构") or the question's scaffolding ("技术要求") is refused, and what
+    survives is the entity axis in the order the question names it.
     """
-    category = classify_category(str(question or ""))
-    if not category or category == "unknown":
-        return None
-    return profile_for(category)
+    members: list[str] = []
+    for raw in _FRAGMENT_SPLIT_RE.split(text):
+        member = _trim_member(raw, category)
+        if member and member not in members:
+            members.append(member)
+    return members
 
 
 def read_axes(question: str) -> dict:
-    """The two enumerations this rule can cross, or empty axes. Pure; no I/O, no model.
+    """The two axes this rule can cross, or empty axes. Pure; no I/O, no model.
 
-    Returns ``{"entities": [...], "fact_types": [...], "reason": str}``. ``reason`` is filled on
-    every path where nothing is emitted, so a caller can report WHY the rule declined instead of
-    guessing.
+    ``reason`` is filled on every path where nothing is emitted, so a caller can report WHY the rule
+    declined instead of guessing.
     """
     text = _clean(question)
-    trace: dict = {"entities": [], "fact_types": [], "reason": ""}
+    trace: dict = {"entities": [], "fact_types": [], "fact_keys": [], "reason": "", "profile": None}
     if not text:
         trace["reason"] = "empty_question"
         return trace
 
-    # Axis A - the entity enumeration. Parenthesised is the shape whose members are already bare
-    # nouns, so nothing has to be cut away from them.
-    for group in _PAREN_RE.findall(text):
-        members = _axis_members(group)
-        if len(members) >= 2:
-            trace["entities"] = members
-            break
-    if not trace["entities"]:
-        trace["reason"] = "no_entity_enumeration"
-        return trace
-
-    # Axis B - the fact-type enumeration, read from everything OUTSIDE the parenthesised group so
-    # axis A's members cannot leak into axis B.
-    outside = _PAREN_RE.sub(" ", text)
-    facts = _fact_members(outside)
-    # The leading subject survives the split as part of the FIRST member only when it carried no 的;
-    # it must not become a fact type of its own.
-    facts = [fact for fact in facts if _key(fact) not in {_key(entity) for entity in trace["entities"]}]
-    if len(facts) < 2:
+    # The domain is resolved from the question's FACT VOCABULARY, with the deployed classifier's
+    # answer as a preference. Requiring a domain cue word here rejected questions that name two fact
+    # types of the profile and no domain word at all (measured: V3, V5, V6), which is most of the
+    # paraphrases this reader exists to cover.
+    hint = classify_category(text)
+    category, facts = resolve_domain(text, "" if hint == "unknown" else hint)
+    if not category:
         trace["reason"] = "no_fact_enumeration"
         return trace
-    trace["fact_types"] = facts
+    trace["profile"] = category
+    trace["profile_hint"] = hint
+    trace["fact_types"] = [item["route_term"] for item in facts]
+    trace["fact_keys"] = [item["key"] for item in facts]
+
+    entities = _bracketed_entities(text, category)
+    trace["entity_source"] = "bracketed" if entities else "conjunctions"
+    if not entities:
+        entities = _conjunction_entities(text, category)
+    # Recorded BEFORE the gates so a declined question still reports what the reader saw; a caller
+    # that only sees "no_fact_enumeration" cannot tell a question with one entity from one with four.
+    trace["entities"] = entities[:MAX_AXIS_MEMBERS]
+
+    if len(entities) < 2:
+        trace["reason"] = "single_entity" if entities else "no_entity_enumeration"
+        return trace
+
+    trace["facts_ordered"] = [(item["route_term"], item["at"]) for item in facts][:MAX_AXIS_MEMBERS]
     return trace
 
 
 def entity_fact_routes(question: str) -> tuple[list[str], dict]:
     """The bounded entity x fact-type cross product for ``question``.
 
-    Gated on a KNOWN domain profile AND at least two members on EACH axis: one axis alone means the
-    question declares one information need per member and the existing single-axis readers
-    (:func:`comparative_routes`, :func:`clause_route`) already cover it.
+    Route text is ``"<entity> <canonical fact term>"`` - the entity as the question names it, and the
+    fact type as the CORPUS names it, so the route matches lexically without relying on a global
+    synonym entry.
     """
     trace = read_axes(question)
-    trace["profile"] = None
-    if trace["entities"] and trace["fact_types"]:
-        profile = domain_profile(question)
-        trace["profile"] = getattr(profile, "category", None)
-        if profile is None:
-            trace["reason"] = "unknown_domain"
-            return [], trace
-    else:
+    if trace["reason"]:
         return [], trace
+    facts = [item["route_term"] for item in mentioned(_clean(question), trace["profile"])][:MAX_AXIS_MEMBERS]
 
     routes: list[str] = []
-    for entity in trace["entities"][:MAX_AXIS_MEMBERS]:
-        for fact in trace["fact_types"][:MAX_AXIS_MEMBERS]:
+    for entity in trace["entities"]:
+        for fact in facts:
             text = _clean(f"{entity} {fact}")[:MAX_SUB_QUERY_CHARS].strip()
             if text and text not in routes:
                 routes.append(text)
-    trace["reason"] = "expanded"
+    trace["reason"] = "expanded" if routes else "no_route_text"
     return routes[:MAX_SUPPLEMENTAL_ROUTES], trace
 
 
@@ -233,8 +265,8 @@ def supplemental_routes(
     """Routes to ADD for ``question``, de-duplicated against what the caller already has.
 
     ``existing_routes`` is never modified and never re-ordered. ``budget`` is the caller's remaining
-    route allowance; when it is smaller than ``max_routes`` it wins, so a caller under its own
-    route cap cannot be pushed past it by this rule.
+    route allowance; when it is smaller than ``max_routes`` it wins, so a caller under its own route
+    cap cannot be pushed past it by this rule.
     """
     trace: dict = {"added": [], "dropped_duplicates": [], "reason": ""}
     produced, axes = entity_fact_routes(question)

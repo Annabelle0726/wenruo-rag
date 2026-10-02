@@ -41,6 +41,7 @@ RUNS = int(os.environ.get("P1_RUNS", "3"))
 #: Optional filters so a correction can be re-measured without repeating the whole matrix.
 ONLY_QUERIES = [x for x in os.environ.get("P1_ONLY", "").split(",") if x]
 ONLY_MODES = [x for x in os.environ.get("P1_MODES", "").split(",") if x]
+QUERY_SET = os.environ.get("P1_SET", "benchmark")
 JSON_OUT = f"/tmp/p1_{LABEL}.json"
 ROUTE_BUDGET = 16
 
@@ -70,6 +71,22 @@ CONTROLS: tuple[tuple[str, str], ...] = (
     ("QA003", "2026版标准相比2019旧版标准，主要进行了哪些重要修订？"),
     ("QA005", "110kV海缆系统的耐压试验系统（出厂与安装后）是如何规定的？".replace("试验系统", "试验标准")),
 )
+
+#: PART A generalization gate: natural-language variants of QA-004 (V) and questions the rule MUST
+#: NOT expand (N). Selected with P1_SET=variants.
+VARIANTS: tuple[tuple[str, str], ...] = (
+    ("V1_paren_baseline", "标准对电缆附件（终端与接头）的设计使用寿命与结构有何要求？"),
+    ("V2_he_dunhao", "电缆终端和接头的设计寿命、结构分别有什么要求？"),
+    ("V3_howmany", "终端与接头能使用多少年？结构上有什么规定？"),
+    ("V4_qizhong", "电缆附件中的终端、接头，其使用年限和结构要求是什么？"),
+    ("V5_reversed", "标准对终端和接头的结构以及设计使用年限是怎样规定的？"),
+    ("V6_tech", "终端、接头在寿命和结构方面有哪些技术要求？"),
+    ("N1_life_only_one_entity", "海缆的设计使用寿命是多少？"),
+    ("N2_struct_only_one_fact", "终端结构有什么要求？"),
+    ("N3_types_one_axis", "终端和接头有哪些类型？"),
+)
+
+QUERY_SETS = {"benchmark": CONTROLS, "variants": VARIANTS}
 
 LIFE_NEEDLES = ("设计使用年限", "不少于30")
 STRUCT_NEEDLES = ("结构图纸",)
@@ -156,6 +173,7 @@ async def main() -> int:
     report: dict = {
         "label": LABEL,
         "runs_per_mode": RUNS,
+        "query_set": QUERY_SET,
         "parameters": slo,
         "route_budget": ROUTE_BUDGET,
         "expansion_audit": {},
@@ -163,7 +181,7 @@ async def main() -> int:
     }
 
     # ---- the rule's decision per query, computed once, in-process ------------------------
-    for name, question in CONTROLS:
+    for name, question in QUERY_SETS[QUERY_SET]:
         added, trace = supplemental_routes(question, existing_routes=(), budget=ROUTE_BUDGET)
         report["expansion_audit"][name] = {
             "entities": trace.get("entities"),
@@ -223,7 +241,7 @@ async def main() -> int:
             return None, f"{type(exc).__name__}: {exc}"
         return ans, None
 
-    for name, question in CONTROLS:
+    for name, question in QUERY_SETS[QUERY_SET]:
         if ONLY_QUERIES and name not in ONLY_QUERIES:
             continue
         entry: dict = {"question": question, "modes": {}}
@@ -238,6 +256,9 @@ async def main() -> int:
                 "AFTER_NO_LLM": [],
             }
         else:
+            # Every other question (benchmark control or paraphrase variant) is compared on its OWN
+            # observed decomposition, so the only difference between the two modes is the
+            # deterministic supplemental routes.
             sets = {"CTRL_BEFORE": list(asis_routes), "CTRL_AFTER": list(asis_routes)}
         entry["llm_routes_observed_asis"] = list(asis_routes)
         entry["llm_route_count_asis"] = len(asis_routes)
