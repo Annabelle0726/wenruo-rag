@@ -1519,6 +1519,10 @@ export default {
       dailySeries: 'Daily usage',
       dailySeriesHint:
         'Shows the latest 7 days first. Expand to view every day in the selected window. A day with 0 metered calls means no metered attempt was recorded that day; it does not mean earlier usage was measured as zero before the ledger existed.',
+      sortOldestFirst: 'Sort by date, oldest first',
+      sortNewestFirst: 'Sort by date, newest first',
+      today: 'Today',
+      yesterday: 'Yesterday',
       showAllDays: 'View all dates in the selected range ({{count}} days)',
       collapseRecentDays: 'Show only the latest {{count}} days',
       monthlySeries: 'Monthly usage',

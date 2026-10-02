@@ -1393,6 +1393,10 @@ export default {
       dailySeries: '按日用量',
       dailySeriesHint:
         '默认先显示最近 7 天，展开后查看所选时间范围内的全部日期。某日受计量调用次数为 0，仅表示当天未记录到受计量调用，并不代表账本建立前的用量被计为 0',
+      sortOldestFirst: '按日期从早到晚排序',
+      sortNewestFirst: '按日期从晚到早排序',
+      today: '今天',
+      yesterday: '昨天',
       showAllDays: '查看所选范围全部日期（共 {{count}} 天）',
       collapseRecentDays: '收起至最近 {{count}} 天',
       monthlySeries: '按月用量',

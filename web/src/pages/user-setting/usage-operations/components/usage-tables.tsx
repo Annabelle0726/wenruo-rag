@@ -30,7 +30,8 @@ import {
 } from '@/interfaces/database/workspace-usage';
 import { cn } from '@/lib/utils';
 import { getRoleDisplayConfig } from '@/utils/tenant-role';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import dayjs from 'dayjs';
+import { ArrowDown, ArrowUp, ChevronDown, ChevronUp } from 'lucide-react';
 import { Fragment, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatCount, resolveCostDisplay } from './usage-format';
@@ -60,7 +61,7 @@ function CostCell({
   }
 
   return (
-    <span className="flex items-baseline gap-1.5">
+    <span className="flex items-baseline justify-end gap-1.5">
       {display.usd}
       {display.kind === 'partial' && (
         <span className="text-xs text-state-warning">
@@ -109,6 +110,7 @@ export function UsageSeriesTable({
   previewLimit?: number;
 }) {
   const { t } = useTranslation();
+  const [descending, setDescending] = useState(true);
   const [expanded, setExpanded] = useState(false);
   const tableId = useId();
   // Choose the latest periods FIRST, then present them newest first, so a preview is
@@ -118,7 +120,12 @@ export function UsageSeriesTable({
   );
   const visible =
     previewLimit && !expanded ? newestFirst.slice(0, previewLimit) : newestFirst;
+  const rows = descending ? visible : [...visible].reverse();
+  const today = dayjs().format('YYYY-MM-DD');
+  const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+  const toggleSort = () => setDescending((value) => !value);
   const toggleExpanded = () => setExpanded((value) => !value);
+  const SortIcon = descending ? ArrowDown : ArrowUp;
   const ExpandIcon = expanded ? ChevronUp : ChevronDown;
 
   return (
@@ -129,8 +136,19 @@ export function UsageSeriesTable({
       >
         <TableHeader className="bg-table-header">
           <TableRow className="border-b border-table-border hover:bg-table-header">
-            <TableHead className="settings-table-head-cell">
-              {granularity === 'day' ? t('usage.day') : t('usage.month')}
+            <TableHead
+              className="settings-table-head-cell text-left"
+              aria-sort={descending ? 'descending' : 'ascending'}
+            >
+              <button
+                type="button"
+                className="inline-flex h-8 items-center gap-1.5 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-primary"
+                onClick={toggleSort}
+                aria-label={t(descending ? 'usage.sortOldestFirst' : 'usage.sortNewestFirst')}
+              >
+                {granularity === 'day' ? t('usage.day') : t('usage.month')}
+                <SortIcon size={14} aria-hidden="true" />
+              </button>
             </TableHead>
             <TableHead className="settings-table-head-cell text-end">
               {t('usage.attemptedCalls')}
@@ -145,9 +163,19 @@ export function UsageSeriesTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {visible.map((bucket) => (
+          {rows.map((bucket) => (
             <TableRow key={bucket.period} className={settingsRow}>
-              <TableCell className="settings-table-cell tabular-nums">{bucket.period}</TableCell>
+              <TableCell className="settings-table-cell text-left tabular-nums">
+                <span className="flex items-center gap-1.5 whitespace-nowrap">
+                  {bucket.period}
+                  {granularity === 'day' &&
+                    (bucket.period === today || bucket.period === yesterday) && (
+                      <span className="settings-tag shrink-0 text-text-secondary">
+                        {t(bucket.period === today ? 'usage.today' : 'usage.yesterday')}
+                      </span>
+                    )}
+                </span>
+              </TableCell>
               <TableCell className="settings-table-cell text-end tabular-nums">
                 {formatCount(bucket.attempted_calls)}
               </TableCell>
