@@ -24,15 +24,31 @@ class TestGeminiQuotaWording:
     @pytest.mark.parametrize(
         "detail",
         [
-            "429 ResourceExhausted: quota exceeded",
-            "You have exceeded your quota for this model",
             "embedding quota exhausted",
+            "Embedding quota exhausted for models/gemini-embedding-001",
             "Daily quota exhausted",
-            "the account is out of quota",
         ],
     )
     def test_every_quota_wording_is_a_quota_class(self, detail):
         assert model_errors.classify(detail) == model_errors.EMBEDDING_QUOTA_EXHAUSTED
+
+    def test_quota_exceeded_alone_is_NOT_a_spent_account(self):
+        # The regression this guards, and the reason only ONE marker was added:
+        # Google's PER-MINUTE refusal says "Quota exceeded for metric:
+        # generativelanguage.googleapis.com/embed_content_free_tier_requests"
+        # and carries a `retryDelay`, so calling it a spent account tells an
+        # operator to rotate a working key for a problem that clears in 20s.
+        gemini_rate_limit = (
+            "429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Quota exceeded for metric: "
+            "generativelanguage.googleapis.com/embed_content_free_tier_requests, limit: 100, "
+            "model: gemini-embedding-1.0', 'status': 'RESOURCE_EXHAUSTED', 'details': "
+            "[{'quotaId': 'EmbedContentRequestsPerMinutePerProjectPerModel-FreeTier', 'retryDelay': '20s'}]}}"
+        )
+
+        assert (
+            model_errors.classify(gemini_rate_limit)
+            == model_errors.EMBEDDING_RATE_LIMITED
+        )
 
     def test_a_bare_resource_exhausted_stays_ambiguous_and_is_a_rate_limit(self):
         # `RESOURCE_EXHAUSTED` alone is Google's status for BOTH a per-minute

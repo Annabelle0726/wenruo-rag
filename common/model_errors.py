@@ -68,16 +68,18 @@ QUOTA_EXHAUSTED_MARKERS = (
     "per day",
     "daily quota",
     "daily limit",
-    # A body that states outright that the QUOTA is exhausted has said this is not
-    # a pacing problem, whichever status carried it. Google's `RESOURCE_EXHAUSTED`
-    # is deliberately NOT listed here: it is returned for a per-minute limit AND
-    # for a spent daily quota, so alone it stays ambiguous and keeps falling
-    # through to the rate limit below. What makes a Gemini refusal a quota
-    # incident is the wording beside it, which is what these capture.
+    # A body that states the quota IS exhausted has said this is not a pacing
+    # problem, whichever status carried it. This is the ONE phrase of the four
+    # tried that survives contact with the real payloads: it catches the live
+    # GeminiEmbed refusal ("Embedding quota exhausted") and matches no existing
+    # fixture. `quota exceeded` was REMOVED because it does not mean "spent" -
+    # Google's PER-MINUTE refusal reads "Quota exceeded for metric:
+    # embed_content_free_tier_requests ... PerMinutePerProjectPerModel" with a
+    # `retryDelay`, i.e. pacing - so matching it reported a spent account for a
+    # problem that clears in 20 seconds. `exceeded your quota` and `out of quota`
+    # matched nothing at all, so they were dropped rather than kept as unproven
+    # risk.
     "quota exhausted",
-    "quota exceeded",
-    "exceeded your quota",
-    "out of quota",
 )
 
 #: Fragments of a provider refusal that mean the caller is asking too fast. The
