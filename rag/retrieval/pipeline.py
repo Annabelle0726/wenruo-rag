@@ -49,6 +49,7 @@ from rag.retrieval.planner import (
     KIND_CLAUSE,
     KIND_DIMENSION,
     KIND_SIDE,
+    MAX_PLAN_ROUTES,
     cache_scope,
     compile_retrieval_plan,
     resolve_plan_cache,
@@ -61,6 +62,7 @@ from rag.retrieval.health_bridge import (
 )
 from rag.retrieval.query_router import route_question
 from rag.retrieval.rerank import DEFAULT_FINAL_TOP_N, rerank_chunks, resolve_final_top_n
+from rag.retrieval.route_expansion import MAX_SUPPLEMENTAL_ROUTES, supplemental_routes
 
 _LOG = logging.getLogger(__name__)
 
@@ -68,6 +70,12 @@ _LOG = logging.getLogger(__name__)
 #: round trip, and the atomic sub-queries are the ones that find a standard's
 #: individual clauses, so they are served first.
 MAX_CORE_DOCUMENT_ROUTES = 3
+
+#: The total route allowance for one question: the compiled plan's own cap plus the deterministic
+#: supplemental cross product. A question already at the plan cap therefore has room for the
+#: supplemental routes and nothing more, which is what keeps the entity x fact-type rule from
+#: growing the route count without limit.
+ROUTE_BUDGET = MAX_PLAN_ROUTES + MAX_SUPPLEMENTAL_ROUTES
 
 #: How thin a standard's PROSE may be before a clause question triggers the
 #: document-scoped follow-up regardless of what the auxiliary documents did. Two
@@ -426,14 +434,41 @@ async def retrieve_multi_route(
     sub_queries = list(plan.of_kind(KIND_DIMENSION))
     side_routes = list(plan.of_kind(KIND_SIDE))
     targeted = next(iter(plan.of_kind(KIND_CLAUSE)), None)
+    # P1-1: a question that enumerates BOTH an entity axis and a fact-type axis gets the bounded
+    # cross product as deterministic supplemental routes, so its per-fact-type coverage no longer
+    # depends on how granular the decomposition model happened to be in this session. Measured:
+    # for "…（终端与接头）的设计使用寿命与结构有何要求" the model produced four narrow routes in
+    # one session (design-life table recalled) and two composite routes in another (zero
+    # design-life passages), which is the same question on the same build. This rule is additive -
+    # every plan route is kept - and holds no domain vocabulary of its own; see
+    # `rag.retrieval.route_expansion`.
+    supplemental, expansion = supplemental_routes(
+        question,
+        existing_routes=routes,
+        budget=max(0, ROUTE_BUDGET - len(routes)),
+    )
+    if supplemental:
+        routes.extend(supplemental)
+        # The follow-up passes prefer the routes that carry the question's narrower intents, so the
+        # supplemental ones join that preference list rather than being retrieval-only.
+        sub_queries.extend(supplemental)
     _LOG.info(
-        "[Multi-route] question=%r -> %d compiled route(s) (plan_hash=%s, slots=%s, cache=%s): %s",
+        "[Multi-route] question=%r -> %d route(s) (%d compiled + %d supplemental %s; expansion=%s): %s",
         question[:80],
         len(routes),
+        len(routes) - len(supplemental),
+        len(supplemental),
+        supplemental,
+        expansion.get("reason"),
+        routes,
+    )
+    _LOG.info(
+        "[Multi-route] question=%r -> %d compiled route(s) (plan_hash=%s, slots=%s, cache=%s)",
+        question[:80],
+        len(plan.texts),
         plan.plan_hash,
         [route.slot_id for route in plan.routes],
         plan.provenance.cache_state,
-        routes,
     )
 
     async def _retrieve(queries, doc_scope):
