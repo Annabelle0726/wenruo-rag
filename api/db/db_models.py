@@ -1797,6 +1797,12 @@ class ProviderHealthEvent(DataBaseModel):
     three page batches is therefore one incident with `occurrence_count = 3`, and
     the notification surface counts INCIDENTS, so a badge reads 1 rather than 3.
 
+    The key covers the workspace, the provider AND the provider instance, the
+    capability, the error class and the HTTP status. The instance is part of it
+    because two instances of one provider are two endpoints with their own
+    credentials: keying without it would let whichever instance refused first own
+    the shared row, so a healthy instance could close an incident it never raised.
+
     What is deliberately NOT here, because the fact must be safe to persist and to
     serve to a browser: the API key, the raw provider response body, the prompt,
     the chunk text, the request payload, and any per-page/per-batch error text.

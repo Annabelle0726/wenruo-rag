@@ -17,6 +17,7 @@ import logging
 import os
 import enum
 import json
+from typing import NamedTuple
 from common import settings
 from common.exceptions import WorkspaceAccessDenied
 from common.workspace_context import execution_user
@@ -383,6 +384,74 @@ def get_model_config_from_provider_instance(tenant_id, model_type: str | enum.En
         return model_config
     else:
         raise LookupError(f"Model {model_name} not found for model {model_type_val}")
+
+
+class ModelIdentity(NamedTuple):
+    """Who a ``tenant_model`` row belongs to, and nothing else.
+
+    The shape is the guarantee. A call site that watches provider failures needs
+    to say WHICH provider failed, and it must not be able to hand anything else
+    along with that - no key, no base URL, no resolved model config. So identity
+    travels as these five scalars, and a function that returns this type has no
+    field in which a credential could be carried.
+    """
+
+    tenant_id: str
+    provider_id: str
+    instance_id: str
+    provider_name: str
+    capability: str
+
+
+def resolve_model_identity_by_id(tenant_id: str, model_type: str | enum.Enum, model_id: str | None) -> ModelIdentity | None:
+    """The provider identity a ``tenant_model`` id proves, or ``None``.
+
+    Only a PRIMARY KEY proves identity here. This resolver never splits a
+    composite name (``model@instance@provider``) and never looks a provider up by
+    name, because a provider name is shared by every workspace that configured
+    that provider: a fact derived from one could name another workspace's
+    provider. A caller holding only a name is therefore told ``None`` - an
+    unrecorded observation is better than a misattributed one.
+
+    It returns ``None`` rather than raising for every way identity can fail to
+    resolve, because its callers are side-channels that must stay fail-open on
+    the path they observe.
+    """
+    if not tenant_id or not model_id:
+        return None
+
+    try:
+        if execution_user.get():
+            # The same normalisation ``get_model_config_by_id`` applies, so the
+            # identity describes the config the caller actually received.
+            tenant_id = TenantService.resolve_config_tenant_id(execution_user.get(), tenant_id)
+
+        exist, model_obj = TenantModelService.get_by_id(model_id)
+        if not exist:
+            return None
+
+        ok, provider_obj = TenantModelProviderService.get_by_id(model_obj.provider_id)
+        if not ok or provider_obj.tenant_id != tenant_id:
+            return None
+
+        ok, instance_obj = TenantModelInstanceService.get_by_id(model_obj.instance_id)
+        if not ok or instance_obj.provider_id != provider_obj.id:
+            return None
+
+        return ModelIdentity(
+            tenant_id=tenant_id,
+            provider_id=provider_obj.id,
+            instance_id=instance_obj.id,
+            provider_name=provider_obj.provider_name or "",
+            # A plain lower-case word, never the enum member. ``LLMType`` is a str
+            # subclass, so an enum would compare equal and store correctly while
+            # still being the wrong type for a field every reader and filter
+            # treats as text - and ``capability`` is a group key, not a label.
+            capability=model_type.value if isinstance(model_type, enum.Enum) else str(model_type),
+        )
+    except Exception as exc:
+        logger.warning("Provider identity could not be resolved for tenant_model id=%s: %s", model_id, exc)
+        return None
 
 
 def get_model_config_by_id(tenant_id: str, model_type: str | enum.Enum, model_id: str):

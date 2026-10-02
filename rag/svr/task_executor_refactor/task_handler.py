@@ -44,7 +44,9 @@ from api.db.joint_services.tenant_model_service import (
     get_tenant_default_model_by_type,
     resolve_model_config,
     get_model_config_by_id,
+    resolve_model_identity_by_id,
 )
+from api.db.services import provider_health_service
 from api.db.services.llm_service import LLMBundle
 from api.db.services.task_service import GRAPH_RAPTOR_FAKE_DOC_ID, abort_doc_chunking_counter
 from common.constants import LLMType
@@ -81,6 +83,46 @@ def _embedding_config_has_missing_credentials(model_config: dict) -> bool:
     factory = model_config.get("llm_factory")
     has_credential = bool(model_config.get("api_key") or model_config.get("api_key_payload"))
     return factory in _EMBEDDING_FACTORIES_REQUIRING_API_KEY and not has_credential
+
+
+def _observe_embedding_calls(embedding_model, tenant_id: str, identity_ref: str | None) -> None:
+    """Let Provider Health watch this task's embedding calls. Purely a side-channel.
+
+    The parse worker is the first layer that can name the provider it is about to
+    call: the task carries a ``tenant_model`` id, and that id - not the model's
+    name and not the factory string - is what identifies a workspace's provider
+    instance. Identity is resolved ONCE here, from that id alone, and handed to the
+    observer as explicit scalars; the resolved model config (which holds the API
+    key) is never involved.
+
+    Everything about this is fail-open, because the alternative - a document that
+    cannot be parsed because a health observation could not be prepared - is worse
+    than a missing notification. No id, an id that does not resolve, or a resolver
+    that raises all mean the same thing: the embedding calls run unobserved and the
+    parse is exactly what it would have been.
+    """
+    if not identity_ref:
+        # No reference, no proof. Never fall back to the provider NAME: it belongs
+        # to every workspace that configured that provider.
+        return
+
+    try:
+        identity = resolve_model_identity_by_id(tenant_id, LLMType.EMBEDDING, identity_ref)
+        if identity is None:
+            logging.info(
+                "Provider health observation skipped for tenant %s: embedding reference %s proves no provider identity",
+                tenant_id,
+                identity_ref,
+            )
+            return
+        provider_health_service.observe_calls(
+            embedding_model,
+            identity,
+            capability=provider_health_service.CAPABILITY_EMBEDDING,
+            methods=provider_health_service.EMBEDDING_CALL_METHODS,
+        )
+    except Exception:
+        logging.exception("Provider health observation could not be installed for tenant %s", tenant_id)
 
 
 def _parser_config_compilation_template_ids(parser_config, tenant_id: str) -> list[str]:
@@ -346,6 +388,12 @@ class TaskHandler:
         task_tenant_id = ctx.tenant_id
         task_embedding_id = ctx.embd_id
         task_language = ctx.language
+        # Which reference actually produced the config below. Provider Health may
+        # only report the provider a tenant_model ID proves, so the fallback chains
+        # record the branch that won instead of re-deriving identity from
+        # `llm_factory`/`llm_name` afterwards - a name is shared by every workspace
+        # that configured that provider and cannot identify one of them.
+        identity_ref = None
 
         try:
             if ctx.tenant_embd_id:
@@ -361,9 +409,11 @@ class TaskHandler:
                     )
                     if task_embedding_id:
                         embd_model_config = resolve_model_config(task_tenant_id, LLMType.EMBEDDING, task_embedding_id)
+                        identity_ref = task_embedding_id
                     else:
                         embd_model_config = get_tenant_default_model_by_type(task_tenant_id, LLMType.EMBEDDING)
                 else:
+                    identity_ref = ctx.tenant_embd_id
                     if _embedding_config_has_missing_credentials(embd_model_config):
                         logging.info(
                             "Refreshing embedding model credentials for tenant %s with model %s",
@@ -372,16 +422,20 @@ class TaskHandler:
                         )
                         if task_embedding_id:
                             embd_model_config = resolve_model_config(task_tenant_id, LLMType.EMBEDDING, task_embedding_id)
+                            identity_ref = task_embedding_id
                         else:
                             # Queued tasks without a model name must follow the current tenant default.
                             embd_model_config = get_tenant_default_model_by_type(task_tenant_id, LLMType.EMBEDDING)
+                            identity_ref = None
             elif task_embedding_id:
                 embd_model_config = resolve_model_config(task_tenant_id, LLMType.EMBEDDING, task_embedding_id)
+                identity_ref = task_embedding_id
             else:
                 embd_model_config = get_tenant_default_model_by_type(task_tenant_id, LLMType.EMBEDDING)
             if _embedding_config_has_missing_credentials(embd_model_config):
                 raise LookupError("Embedding model credentials are missing after resolving the current configuration")
             embedding_model = LLMBundle(task_tenant_id, embd_model_config, lang=task_language)
+            _observe_embedding_calls(embedding_model, task_tenant_id, identity_ref)
             vts, _ = embedding_model.encode(["ok"])
             return embedding_model, len(vts[0])
         except Exception as e:

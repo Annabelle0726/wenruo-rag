@@ -214,6 +214,27 @@ def recording_context():
 
 
 @pytest.fixture(autouse=True)
+def stubbed_provider_identity():
+    """Keep Provider Health's identity lookup off the database in unit tests.
+
+    ``TaskHandler._bind_embedding_model`` resolves the provider identity behind the
+    task's ``tenant_model`` id, so that a health observation can name the provider
+    it is about to call. That resolution is a real database read, and the tests in
+    this package fake the MODEL boundary rather than the database, so it is stubbed
+    to "no identity" by default.
+
+    This is a no-op for the behaviour under test: the side-channel is fail-open, so
+    an unresolved identity means the parse runs exactly as it did before Provider
+    Health existed. Tests that assert on the observation patch this themselves,
+    which takes precedence over this fixture.
+    """
+    from rag.svr.task_executor_refactor import task_handler as _task_handler
+
+    with patch.object(_task_handler, "resolve_model_identity_by_id", return_value=None):
+        yield
+
+
+@pytest.fixture(autouse=True)
 def cleanup_resources(request):
     """Global resource cleanup fixture.
 
