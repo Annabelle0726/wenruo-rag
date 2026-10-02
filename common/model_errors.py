@@ -68,6 +68,16 @@ QUOTA_EXHAUSTED_MARKERS = (
     "per day",
     "daily quota",
     "daily limit",
+    # A body that states outright that the QUOTA is exhausted has said this is not
+    # a pacing problem, whichever status carried it. Google's `RESOURCE_EXHAUSTED`
+    # is deliberately NOT listed here: it is returned for a per-minute limit AND
+    # for a spent daily quota, so alone it stays ambiguous and keeps falling
+    # through to the rate limit below. What makes a Gemini refusal a quota
+    # incident is the wording beside it, which is what these capture.
+    "quota exhausted",
+    "quota exceeded",
+    "exceeded your quota",
+    "out of quota",
 )
 
 #: Fragments of a provider refusal that mean the caller is asking too fast. The
