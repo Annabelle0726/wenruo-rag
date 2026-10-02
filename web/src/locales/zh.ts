@@ -1435,10 +1435,29 @@ export default {
       providerStatusNotObserved: '状态：尚无观测',
       providerHealthEmptyTitle: '尚未记录任何供应商健康事实',
       providerHealthEmptyDescription:
-        '供应商健康需要带脱敏失败分类的真实 dispatch 观测，本版本尚未采集。因此不显示任何状态，也不用假定状态填充',
-      providerHealthPendingObservation: '按供应商实例的被动成功/失败观测',
-      providerHealthPendingFailureClass: '脱敏后的失败分类及其时间',
-      providerHealthPendingCapability: '按能力维度的可用性',
+        '供应商调用发生可识别故障后，事件会显示在这里，并标明受影响的能力。这里不会用假定的状态填补空白，空列表也不代表供应商健康',
+      providerHealthIdleTitle: '正在确定当前工作区',
+      providerHealthIdleDescription:
+        '供应商健康按工作区读取；在确定当前工作区之前不会发起请求',
+      providerHealthErrorTitle: '无法读取供应商健康事件',
+      providerHealthErrorDescription:
+        '请求失败，因此这里没有显示任何事件。这是读取失败，不是没有事件',
+      providerHealthRefusedTitle: '您无权查看此工作区的供应商健康',
+      providerHealthRefusedDescription:
+        '仅工作区所有者或管理员可以查看本工作区的供应商事件',
+      providerHealthResolvedWindow:
+        '“最近已恢复”仅覆盖最近 {{days}} 天；更早的已恢复事件仍保留在服务端，但不属于本视图',
+      providerIncidentsActiveHeading: '进行中的事件',
+      providerIncidentsActiveHint: '{{count}} 个进行中',
+      providerIncidentsResolvedHeading: '最近已恢复',
+      providerIncidentsResolvedHint: '{{count}} 个已恢复',
+      providerIncidentSeverityError: '错误',
+      providerIncidentSeverityWarning: '警告',
+      providerIncidentStateActive: '处理中',
+      providerIncidentStateResolved: '已恢复',
+      providerIncidentOccurrences: '发生 {{count}} 次',
+      providerIncidentLastSeen: '最近 {{time}}',
+      providerIncidentResolvedAt: '恢复时间：{{time}}',
       providerHealthNotShownTitle: '刻意不显示',
       providerHealthNotShownStatus: '不显示任何供应商的健康、降级或不可用状态',
       providerHealthNotShownBalance:
@@ -1464,10 +1483,12 @@ export default {
       open: '打开',
       emptyTitle: '暂无通知',
       emptyDescription:
-        '运维通知将在后端事实源就绪后出现：用量阈值、供应商健康与检索健康。本版本只显示服务器真实报告的内容。',
+        '供应商事件在进行中时会出现在这里。其余运维通知将在其后端事实源就绪后出现：用量阈值与检索健康。本版本只显示服务器真实报告的内容。',
       deliveryScope: '仅站内。不发送邮件、短信或 webhook。',
       workspaceInvitationTitle: '有待处理的工作区邀请',
       workspaceInvitationDescription: '您尚未处理加入 {{workspace}} 的邀请。',
+      providerIncidentTitle: '{{provider}} {{capability}}服务异常',
+      providerIncidentMeta: '发生 {{count}} 次',
     },
     setting: {
       usageOperations: '用量与运维',

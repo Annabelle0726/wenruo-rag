@@ -23,13 +23,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { useFetchProviderIncidents } from '@/hooks/use-provider-health-request';
 import { useListTenant } from '@/hooks/use-user-setting-request';
 import { IWorkspaceNotification } from '@/interfaces/notification';
 import { cn } from '@/lib/utils';
 import { TenantRole } from '@/pages/user-setting/constants';
 import { Routes } from '@/routes';
+import { providerIncidentNotifications } from '@/utils/provider-incident';
 import { BellRing } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import {
@@ -39,13 +41,16 @@ import {
 } from './notification-store';
 
 /**
- * The ONE real notification source this release has.
+ * The two real notification sources this release has.
  *
  * A workspace invitation the caller has not answered yet is an operational fact
  * the server already reports on `GET /tenants`, and the header already used it to
- * decorate the bell. Nothing else is constructed: a category whose backend source
- * does not exist yet (usage thresholds, provider health, retrieval health - U5 to
- * U7) produces NO entry rather than a placeholder.
+ * decorate the bell. A provider incident is the other one, and it comes from the
+ * SAME read the Provider Health page uses - the drawer holds no provider-health
+ * state model of its own, sums no occurrences and reclassifies no error.
+ *
+ * Nothing else is constructed: a category whose backend source does not exist
+ * (usage thresholds, retrieval health) produces NO entry rather than a placeholder.
  */
 const useInvitationNotifications = (): IWorkspaceNotification[] => {
   const { data: tenants } = useListTenant();
@@ -135,9 +140,20 @@ function NotificationEntry({
           />
         )}
       </div>
-      {notification.descriptionKey && (
+      {notification.descriptionText ? (
         <p className="text-xs text-text-secondary">
-          {t(notification.descriptionKey, notification.params)}
+          {notification.descriptionText}
+        </p>
+      ) : (
+        notification.descriptionKey && (
+          <p className="text-xs text-text-secondary">
+            {t(notification.descriptionKey, notification.params)}
+          </p>
+        )
+      )}
+      {notification.metaKey && (
+        <p className="text-xs text-text-secondary">
+          {t(notification.metaKey, notification.metaParams)}
         </p>
       )}
       {/* No timestamp is rendered when the record does not carry one. */}
@@ -186,10 +202,35 @@ export function NotificationCenter({ className }: { className?: string }) {
   const markRead = useNotificationStore((state) => state.markRead);
   const markAllRead = useNotificationStore((state) => state.markAllRead);
   const invitations = useInvitationNotifications();
+  const { data: providerHealth, refetch: refetchProviderHealth } =
+    useFetchProviderIncidents();
+  const translate = useCallback((key: string) => t(key), [t]);
+  const incidents = useMemo(
+    () =>
+      providerIncidentNotifications(
+        providerHealth,
+        translate,
+        `${Routes.UserSetting}${Routes.Usage}/provider-health`,
+      ),
+    [providerHealth, translate],
+  );
 
   useEffect(() => {
     syncSource('workspace_invitation', invitations);
   }, [invitations, syncSource]);
+
+  useEffect(() => {
+    syncSource('provider_incident', incidents);
+  }, [incidents, syncSource]);
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (next) {
+      // Opening the drawer is the refresh trigger - not a timer. A failed read
+      // leaves the entries as they are; it never empties them.
+      void refetchProviderHealth();
+    }
+  };
 
   const handleOpen = (notification: IWorkspaceNotification) => {
     markRead(notification.id, new Date().toISOString());
@@ -208,13 +249,13 @@ export function NotificationCenter({ className }: { className?: string }) {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <Button
         variant="ghost"
         size="icon"
         className={cn('relative size-8 shrink-0 p-0', className)}
         aria-label={t('notification.openDrawer')}
-        onClick={() => setOpen(true)}
+        onClick={() => handleOpenChange(true)}
         data-testid="notification-bell"
       >
         <BellRing className="size-[1.05rem]" />

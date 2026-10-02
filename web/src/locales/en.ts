@@ -1568,14 +1568,31 @@ export default {
       providerConfiguredModels: '{{count}} model(s): {{models}}',
       providerConnection: 'Connection: {{instances}}',
       providerStatusNotObserved: 'Status: not observed yet',
-      providerHealthEmptyTitle: 'No provider health facts are recorded yet',
+      providerHealthEmptyTitle: 'No provider health fact is recorded yet',
       providerHealthEmptyDescription:
-        'Provider health needs observed dispatches with a sanitized failure classification, which this release does not collect. Nothing is shown rather than an assumed status.',
-      providerHealthPendingObservation:
-        'A passive success or failure observation per provider instance',
-      providerHealthPendingFailureClass:
-        'A sanitized failure class and its time',
-      providerHealthPendingCapability: 'Capability-level availability',
+        'Once a provider call fails in a way this platform can classify, the event appears here with the capability it affected. Nothing is shown rather than an assumed status, and an empty list never means the provider is healthy.',
+      providerHealthIdleTitle: 'Resolving the workspace',
+      providerHealthIdleDescription:
+        'Provider health is read for one workspace, so nothing is requested until the active workspace is known.',
+      providerHealthErrorTitle: 'Provider health could not be read',
+      providerHealthErrorDescription:
+        'The request failed, so no incidents are shown. This is a failed read, not an empty result.',
+      providerHealthRefusedTitle: 'You cannot read provider health here',
+      providerHealthRefusedDescription:
+        'Only the workspace owner or an administrator may read this workspace\u2019s provider incidents.',
+      providerHealthResolvedWindow:
+        'Recently resolved covers the last {{days}} day(s). Older resolved incidents are kept on the server but are not part of this view.',
+      providerIncidentsActiveHeading: 'Active incidents',
+      providerIncidentsActiveHint: '{{count}} active',
+      providerIncidentsResolvedHeading: 'Recently resolved',
+      providerIncidentsResolvedHint: '{{count}} resolved',
+      providerIncidentSeverityError: 'Error',
+      providerIncidentSeverityWarning: 'Warning',
+      providerIncidentStateActive: 'In progress',
+      providerIncidentStateResolved: 'Recovered',
+      providerIncidentOccurrences: 'Occurred {{count}} time(s)',
+      providerIncidentLastSeen: 'Last seen {{time}}',
+      providerIncidentResolvedAt: 'Recovered at {{time}}',
       providerHealthNotShownTitle: 'Deliberately not shown',
       providerHealthNotShownStatus:
         'No healthy, degraded or unavailable status for any provider.',
@@ -1605,11 +1622,13 @@ export default {
       open: 'Open',
       emptyTitle: 'No notifications',
       emptyDescription:
-        'Operational notifications arrive once their backend source exists: usage thresholds, provider health and retrieval health. This release shows only what the server actually reports.',
+        'Provider incidents now feed this drawer while they are active. Other operational notifications arrive once their backend source exists: usage thresholds and retrieval health. This release shows only what the server actually reports.',
       deliveryScope: 'In-product only. No email, SMS or webhook.',
       workspaceInvitationTitle: 'Workspace invitation pending',
       workspaceInvitationDescription:
         'You have not answered the invitation to {{workspace}} yet.',
+      providerIncidentTitle: '{{provider}} {{capability}} issue',
+      providerIncidentMeta: 'Occurred {{count}} time(s)',
     },
     setting: {
       usageOperations: 'Usage & operations',

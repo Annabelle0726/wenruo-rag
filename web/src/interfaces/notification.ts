@@ -39,8 +39,13 @@ export type NotificationSeverity = 'info' | 'warning' | 'error';
  * Where a notification came from. Recorded so a reader can tell an OBSERVED fact
  * from anything else, and so a future source is added explicitly rather than by
  * broadening an existing one.
+ *
+ * - `workspace_invitation`: an invitation the caller has not answered yet.
+ * - `provider_incident`: an ACTIVE provider incident the read API reports. The
+ *   entry exists while the incident is active and disappears when the server
+ *   resolves it - the bell never decides that a provider recovered.
  */
-export type NotificationSource = 'workspace_invitation';
+export type NotificationSource = 'workspace_invitation' | 'provider_incident';
 
 export interface IWorkspaceNotification {
   id: string;
@@ -49,8 +54,26 @@ export interface IWorkspaceNotification {
   /** Translation key, resolved by the caller: the model stores keys, not copy. */
   titleKey: string;
   descriptionKey?: string;
+  /**
+   * Server-authored body copy, used INSTEAD of `descriptionKey`.
+   *
+   * A provider incident's text is the server's own safe sentence for the
+   * classified failure, already capability-aware. Re-deriving it here from
+   * `error_class` would be a second failure taxonomy on the client, which is
+   * exactly what the classification contract forbids, so the sentence is carried
+   * through verbatim. A source that has no server copy keeps using a key.
+   */
+  descriptionText?: string;
   /** Interpolation values for the keys above. */
   params?: Record<string, string | number>;
+  /**
+   * The supplementary line under the body, as a translation key (e.g. "occurred
+   * {{count}} times"). Optional: a source with nothing to add renders no line.
+   */
+  metaKey?: string;
+  /** Interpolation values for `metaKey` alone, so a count cannot leak into copy
+   * that does not expect one. */
+  metaParams?: Record<string, string | number>;
   /**
    * ISO timestamp of the underlying record. Optional because a source that does
    * not report a time must not be decorated with an invented one - the drawer

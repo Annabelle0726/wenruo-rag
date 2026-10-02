@@ -15,6 +15,7 @@
  */
 
 import { registerNextServer } from '@/utils/register-server';
+import { READ_QUERY_OPTIONS } from '@/utils/read-query-options';
 
 /** The seven U1 usage views, as the server's own path suffixes. */
 export const WORKSPACE_USAGE_ENDPOINTS = [
@@ -164,17 +165,9 @@ export default workspaceUsageService;
 /**
  * Retry policy for the usage reads.
  *
- * A usage read is an idempotent GET, but retrying a REFUSAL or a MISSING ROUTE
- * cannot succeed and only multiplies the noise - React Query's default of three
- * retries turns one unreachable read model into four requests per endpoint. A
- * transient failure (a timeout, a 503, a dropped connection) is worth exactly one
- * more attempt; after that the view reports the failure and offers a retry.
+ * The policy itself lives in `@/utils/read-query-options`, because the
+ * provider-health read is a workspace read model with exactly the same
+ * requirements and two copies of it would drift. The name is kept so every
+ * existing caller and its documentation stay true.
  */
-export const USAGE_QUERY_OPTIONS = {
-  retry: (failureCount: number, error: unknown) => {
-    const status =
-      (error as { response?: { status?: number } })?.response?.status ?? 0;
-    const permanent = status >= 400 && status !== 503;
-    return !permanent && failureCount < 1;
-  },
-};
+export const USAGE_QUERY_OPTIONS = READ_QUERY_OPTIONS;
