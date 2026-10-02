@@ -28,6 +28,7 @@ from api.db.services.doc_metadata_service import DocMetadataService
 from api.db.services.knowledgebase_service import KnowledgebaseService
 from api.db.services.llm_service import LLMBundle
 from api.db.joint_services.tenant_model_service import get_tenant_default_model_by_type, resolve_model_config
+from api.db.joint_services.provider_health_observation import observe_embedding_calls
 from common.metadata_utils import meta_filter, convert_conditions
 from api.apps import login_required
 from api.utils.api_utils import add_tenant_id_to_kwargs, build_error_result, get_request_json, get_json_result
@@ -263,6 +264,7 @@ async def retrieval(tenant_id):
             return build_error_result(message="no authorization", code=RetCode.AUTHENTICATION_ERROR)
         model_config = resolve_model_config(kb.tenant_id, LLMType.EMBEDDING, kb.embd_id)
         embd_mdl = LLMBundle(kb.tenant_id, model_config)
+        observe_embedding_calls(embd_mdl, kb.tenant_id, kb.embd_id)
         if metadata_condition:
             doc_ids.extend(meta_filter(metas, convert_conditions(metadata_condition), metadata_condition.get("logic", "and")))
         if not doc_ids and metadata_condition:

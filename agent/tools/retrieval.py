@@ -29,6 +29,7 @@ from api.db.services.llm_service import LLMBundle
 from api.db.services.memory_service import MemoryService
 from api.db.joint_services import memory_message_service
 from api.db.joint_services.tenant_model_service import get_tenant_default_model_by_type, resolve_model_config
+from api.db.joint_services.provider_health_observation import observe_embedding_calls
 from common import settings
 from common.connection_utils import timeout
 from rag.app.tag import label_question
@@ -197,6 +198,7 @@ class Retrieval(ToolBase, ABC):
             tenant_id = self._canvas.get_tenant_id()
             embd_model_config = resolve_model_config(tenant_id, LLMType.EMBEDDING, embd_id)
             embd_mdl = LLMBundle(tenant_id, embd_model_config)
+            observe_embedding_calls(embd_mdl, tenant_id, embd_id)
 
         rerank_mdl = None
         if self._param.rerank_id:

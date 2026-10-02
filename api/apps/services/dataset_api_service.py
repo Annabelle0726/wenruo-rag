@@ -23,6 +23,7 @@ from api.db import TenantPermission
 from api.db.db_models import Connector2Kb, Department, Document, File, Knowledgebase, SyncLogs, UserTenant
 from api.db.joint_services.kb_authorization_service import MEMBER_ROLES, SUBJECT_DEPARTMENT, SUBJECT_USER, get_kb_authorizations, set_dataset_authorization
 from api.db.joint_services.tenant_model_service import get_composite_model_name_by_ids, resolve_model_config, resolve_model_id
+from api.db.joint_services.provider_health_observation import observe_embedding_calls
 from api.db.services.connector_service import Connector2KbService, SyncLogsService
 from api.db.services.document_service import DocumentService, queue_raptor_o_graphrag_tasks
 from api.db.services.file2document_service import File2DocumentService
@@ -1165,6 +1166,7 @@ async def search(dataset_id: str, tenant_id: str, req: dict):
     else:
         embd_model_config = get_tenant_default_model_by_type(kb.tenant_id, LLMType.EMBEDDING)
     embd_mdl = LLMBundle(kb.tenant_id, embd_model_config)
+    observe_embedding_calls(embd_mdl, kb.tenant_id, kb.embd_id or None)
 
     rerank_mdl = None
     rerank_id = req.get("rerank_id") or search_config.get("rerank_id")
@@ -1368,6 +1370,7 @@ def check_embedding(dataset_id: str, tenant_id: str, req: dict):
 
     embd_model_config = resolve_model_config(kb.tenant_id, LLMType.EMBEDDING, embd_id)
     emb_mdl = LLMBundle(kb.tenant_id, embd_model_config)
+    observe_embedding_calls(emb_mdl, kb.tenant_id, embd_id)
 
     raw_check_num = req.get("check_num", 5)
     if type(raw_check_num) is not int:
@@ -1573,6 +1576,7 @@ async def search_datasets(tenant_id: str, req: dict):
     else:
         embd_model_config = get_tenant_default_model_by_type(kb.tenant_id, LLMType.EMBEDDING)
     embd_mdl = LLMBundle(kb.tenant_id, embd_model_config)
+    observe_embedding_calls(embd_mdl, kb.tenant_id, kb.embd_id or None)
 
     rerank_mdl = None
     rerank_id = req.get("rerank_id") or search_config.get("rerank_id")
@@ -2124,6 +2128,7 @@ async def get_dataset_structure(dataset_id: str, tenant_id: str, kind: str, keyw
         try:
             model_config = resolve_model_config(kb.tenant_id, LLMType.EMBEDDING.value, kb.embd_id)
             embd_mdl = LLMBundle(kb.tenant_id, model_config)
+            observe_embedding_calls(embd_mdl, kb.tenant_id, kb.embd_id)
         except Exception:
             logging.exception("get_dataset_structure: embedding bind failed for kb=%s", dataset_id)
             return True, empty
@@ -4001,6 +4006,7 @@ async def search_dataset_layers(
         else:
             embd_model_config = get_tenant_default_model_by_type(kb.tenant_id, LLMType.EMBEDDING)
         embd_mdl = LLMBundle(kb.tenant_id, embd_model_config)
+        observe_embedding_calls(embd_mdl, kb.tenant_id, kb.embd_id or None)
     except Exception as e:
         logging.warning(
             "search_dataset_layers: failed to create LLMBundle(EMBEDDING) for tenant=%s: %s: %s",

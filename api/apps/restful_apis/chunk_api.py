@@ -33,6 +33,7 @@ from api.db.joint_services.tenant_model_service import (
     get_tenant_default_model_by_type,
     resolve_model_config,
 )
+from api.db.joint_services.provider_health_observation import observe_embedding_calls
 from api.db.services.doc_metadata_service import DocMetadataService
 from api.db.services.document_counter_service import release_reparse_counters
 from api.db.services.document_service import DocumentService
@@ -525,6 +526,7 @@ async def retrieval_test(tenant_id, dataset_id=None):
             return get_error_data_result(message="Dataset not found!")
         embd_model_config = resolve_model_config(kb.tenant_id, LLMType.EMBEDDING, kb.embd_id)
         embd_mdl = LLMBundle(kb.tenant_id, embd_model_config)
+        observe_embedding_calls(embd_mdl, kb.tenant_id, kb.embd_id)
 
         rerank_mdl = None
         if req.get("rerank_id"):
@@ -907,6 +909,7 @@ async def get_document_structure_graph(tenant_id, dataset_id, document_id):
             embd_id = DocumentService.get_embd_id(document_id)
             model_config = resolve_model_config(dataset_tenant_id, LLMType.EMBEDDING.value, embd_id)
             embd_mdl = LLMBundle(dataset_tenant_id, model_config)
+            observe_embedding_calls(embd_mdl, dataset_tenant_id, embd_id)
         except Exception:
             logging.exception("structure graph: embedding bind failed for doc=%s", document_id)
             return get_result(data=_response([]))

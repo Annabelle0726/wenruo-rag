@@ -34,6 +34,7 @@ import pytest
 from peewee import SqliteDatabase
 
 from api.db.db_models import ProviderHealthEvent
+from api.db.joint_services import provider_health_observation
 from api.db.joint_services.tenant_model_service import ModelIdentity
 from api.db.services import provider_health_service as health
 from common import model_errors
@@ -169,7 +170,7 @@ def parse_boundary(bundle, *, identity=IDENTITY, identity_error=None):
         return identity
 
     with (
-        patch.object(task_handler_module, "resolve_model_identity_by_id", _resolve),
+        patch.object(provider_health_observation, "resolve_model_identity_by_id", _resolve),
         patch.object(task_handler_module, "get_model_config_by_id", return_value=MODEL_CONFIG),
         patch.object(task_handler_module, "resolve_model_config", return_value=MODEL_CONFIG),
         patch.object(task_handler_module, "get_tenant_default_model_by_type", return_value=MODEL_CONFIG),

@@ -228,9 +228,9 @@ def stubbed_provider_identity():
     Health existed. Tests that assert on the observation patch this themselves,
     which takes precedence over this fixture.
     """
-    from rag.svr.task_executor_refactor import task_handler as _task_handler
+    from api.db.joint_services import provider_health_observation
 
-    with patch.object(_task_handler, "resolve_model_identity_by_id", return_value=None):
+    with patch.object(provider_health_observation, "resolve_model_identity_by_id", return_value=None):
         yield
 
 

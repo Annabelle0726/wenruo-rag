@@ -37,6 +37,7 @@ from common.metadata_utils import apply_meta_data_filter
 from api.db.services.search_service import SearchService
 from api.db.services.user_service import UserTenantService
 from api.db.joint_services.tenant_model_service import get_default_rerank_model_config, get_tenant_default_model_by_type, resolve_model_config
+from api.db.joint_services.provider_health_observation import observe_embedding_calls
 from api.db.services.llm_service import resolve_llm_setting
 from common.misc_utils import thread_pool_exec
 from api.utils.api_utils import get_error_data_result, get_json_result, add_tenant_id_to_kwargs, get_result, get_request_json, server_error_response, validate_request
@@ -440,6 +441,7 @@ async def retrieval_test_embedded(tenant_id=None):
             _question = await cross_languages(kb.tenant_id, None, _question, langs)
         embd_model_config = await thread_pool_exec(resolve_model_config, kb.tenant_id, LLMType.EMBEDDING, kb.embd_id)
         embd_mdl = LLMBundle(kb.tenant_id, embd_model_config)
+        observe_embedding_calls(embd_mdl, kb.tenant_id, kb.embd_id)
 
         rerank_mdl = None
         if rerank_id:
