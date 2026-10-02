@@ -495,6 +495,9 @@ def test_the_observer_cannot_be_handed_a_config_at_all():
         "instance_id",
         "provider_name",
         "capability",
+        # A connector's failure MARKER is a constant string, not content: it is what
+        # opts chat into returned-failure detection, and it carries nothing.
+        "failure_marker",
     }
     for forbidden in ("model_config", "raw_message", "api_key", "identity", "exc", "error"):
         assert forbidden not in observer_params

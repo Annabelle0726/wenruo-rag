@@ -28,6 +28,7 @@ fact per task, and an explicit scalar-only hand-off into the store.
 
 import functools
 import hashlib
+import inspect
 import logging
 from datetime import datetime, timezone as utc_timezone
 from uuid import uuid4
@@ -43,11 +44,28 @@ RESOLUTION_OBSERVED_SUCCESS = "observed_success"
 #: The capability an incident is grouped by. Lowercase and identical to the
 #: matching ``LLMType`` value, so a filter and a reader use the same word.
 CAPABILITY_EMBEDDING = "embedding"
+CAPABILITY_CHAT = "chat"
 
-#: The two calls an embedding bundle exposes. Observed together because a provider
+#: The calls an embedding bundle exposes. Observed together because a provider
 #: that refuses a batch and a provider that refuses a query are the same provider
 #: failing the same capability.
 EMBEDDING_CALL_METHODS = ("encode", "encode_queries")
+
+#: The calls a chat bundle exposes: the awaited answer and the two streaming
+#: shapes. All three dispatch one provider capability, so a refusal through any of
+#: them is the same problem - and a workspace answering a stream is the same
+#: recovery as answering an awaited call.
+CHAT_CALL_METHODS = ("async_chat", "async_chat_streamly", "async_chat_streamly_delta")
+
+#: Sentences that name the capability the reader actually lost. The shared
+#: taxonomy's own messages speak about the vectorization service, which is wrong
+#: for a chat incident and right for an embedding one - so only the pairings that
+#: would read wrong are overridden, and `MESSAGES` keeps its one meaning for every
+#: existing consumer (the API error responses among them).
+CAPABILITY_SAFE_MESSAGES: dict[tuple[str, str], str] = {
+    (model_errors.EMBEDDING_QUOTA_EXHAUSTED, CAPABILITY_CHAT): "AI 对话服务额度已耗尽，请更换 API Key 或等待额度重置后重试。",
+    (model_errors.EMBEDDING_RATE_LIMITED, CAPABILITY_CHAT): "AI 对话服务请求过于频繁，请稍后重试。",
+}
 
 #: How serious a class is. A spent quota or a rejected credential needs a person;
 #: a pacing limit or a timeout usually clears itself.
@@ -91,6 +109,17 @@ def severity_of(error_class):
 
 def safe_message_of(error_class):
     return model_errors.MESSAGES.get(error_class) or GENERIC_MESSAGE
+
+
+def safe_message_for(error_class, capability):
+    """The sentence a reader may see for a class, worded for the lost capability.
+
+    ``MESSAGES`` is the shared taxonomy's vocabulary and keeps its one meaning - the
+    API error responses read from it too, so a capability-flavoured rewrite there
+    would change what a client is told. Only Provider Health's own wording is
+    adjusted, and only where the shared sentence would name the wrong service.
+    """
+    return CAPABILITY_SAFE_MESSAGES.get((error_class, capability)) or safe_message_of(error_class)
 
 
 def _now(now=None):
@@ -143,7 +172,7 @@ def emit_failure(
                     resolved_at=None,
                     resolution_kind=None,
                     severity=severity_of(error_class),
-                    user_safe_message=user_safe_message or safe_message_of(error_class),
+                    user_safe_message=user_safe_message or safe_message_for(error_class, capability),
                 ).where(ProviderHealthEvent.id == incident.id).execute()
                 return incident.id
 
@@ -169,7 +198,7 @@ def emit_failure(
                 last_seen_at=moment,
                 occurrence_count=1,
                 affected_operation=affected_operation or "",
-                user_safe_message=user_safe_message or safe_message_of(error_class),
+                user_safe_message=user_safe_message or safe_message_for(error_class, capability),
                 dedupe_key=key,
                 state=ACTIVE,
             )
@@ -250,18 +279,22 @@ class CapabilityObserver:
       through this object.
     """
 
-    def __init__(self, *, tenant_id, provider_id, instance_id, provider_name, capability):
+    def __init__(self, *, tenant_id, provider_id, instance_id, provider_name, capability, failure_marker=None):
         self._tenant_id = tenant_id
         self._provider_id = provider_id
         self._instance_id = instance_id
         self._provider_name = provider_name
         self._capability = capability
+        # When set, a RETURNED string that carries the connector's own failure
+        # marker is a failure too. Left None for capabilities whose connector
+        # raises, so nothing about their behaviour changes.
+        self._failure_marker = failure_marker
         # One success and one failure per task, not per call.
         self._resolved = False
         self._recorded = False
 
     @classmethod
-    def from_identity(cls, identity, capability):
+    def from_identity(cls, identity, capability, failure_marker=None):
         """Build an observer from a resolved identity, field by field.
 
         Each field is named on purpose: ``**identity`` (or forwarding the object
@@ -274,15 +307,49 @@ class CapabilityObserver:
             instance_id=identity.instance_id,
             provider_name=identity.provider_name,
             capability=capability,
+            failure_marker=failure_marker,
         )
+
+    def returned_failure(self, value):
+        """The class of a failure the connector RETURNED as its answer, or ``None``.
+
+        Some connectors do not raise at all: they catch the provider refusal, format
+        it with their own marker and hand it back as the answer - so at this
+        boundary the failure is a VALUE, not an exception. Three conditions must all
+        hold before that value is treated as a provider failure:
+
+        1. it has the connector's failure SHAPE - a string, which is what those
+           connectors return where a healthy answer is one too;
+        2. it STARTS WITH the connector's own marker, read from the connector
+           itself so a rename cannot silently disable this;
+        3. the shared classifier recognises a provider class in it.
+
+        The marker alone is not enough and the classifier alone would be far worse:
+        an ordinary answer that discusses "429" or "quota exhausted" is a sentence,
+        not a refusal, and must never raise an incident. The text is read here and
+        discarded - only the class leaves this function.
+        """
+        if not self._failure_marker or not isinstance(value, str):
+            return None
+        if not value.startswith(self._failure_marker):
+            return None
+        return model_errors.classify(value)
 
     def wrap(self, call):
         """Return *call* with this observer around it, signature untouched.
 
-        Returns a plain function, so it is still usable exactly where the original
-        method was - including handed to a thread pool as a bare callable - and it
-        carries the original's name, docstring and signature, so nothing that
-        introspects the bundle can tell that it is being observed.
+        A model bundle answers in three shapes and each one is observed where its
+        outcome actually lands:
+
+        * a plain call, which has already succeeded when it returns;
+        * a coroutine, observed when it is awaited - the provider call has not
+          happened yet at the moment it is created;
+        * an async iterator (the streaming chat calls), observed item by item,
+          because that is when the provider's refusal surfaces.
+
+        The returned object keeps the original's name, docstring and signature, and
+        keeps its KIND, so callers can still ``await`` it, ``async for`` over it, or
+        hand it to a thread pool exactly as before.
         """
 
         @functools.wraps(call)
@@ -298,10 +365,69 @@ class CapabilityObserver:
                     self.failure(exc)
                 finally:
                     raise
+            if inspect.isasyncgen(result):
+                return self._observe_stream(result)
+            if inspect.isawaitable(result):
+                return self._observe_awaitable(result)
             self.success()
             return result
 
         return observed
+
+    async def _observe_awaitable(self, awaitable):
+        """Await *awaitable*, observing the provider's answer when it lands.
+
+        An answer that IS a refusal - the connector returned its failure marker
+        instead of raising - is recorded as a failure and is NOT a recovery, so it
+        can never close the incident it belongs to.
+        """
+        try:
+            value = await awaitable
+        except Exception as exc:
+            try:
+                self.failure(exc)
+            finally:
+                raise
+        returned = self.returned_failure(value)
+        if returned is not None:
+            self.failure_class(returned)
+        else:
+            self.success()
+        return value
+
+    async def _observe_stream(self, stream):
+        """Yield *stream* through, observing the provider's answer as it arrives.
+
+        The first item is proof the capability answered, so success is claimed
+        there - a stream that is abandoned halfway is a caller's decision, not a
+        provider failure, and it is not recorded as one. A refusal, by contrast,
+        only surfaces while iterating, which is exactly why observing the call
+        rather than the call's creation is what makes streaming observable at all.
+
+        A refusal can also arrive as a yielded VALUE, so the items are inspected:
+        once a returned refusal is seen, this stream reports nothing but failures -
+        the trailing token sentinel and any later item cannot turn it into a
+        recovery. The suppression is per stream, so a LATER call that answers
+        normally still resolves the incident.
+        """
+        returned_failure = False
+        try:
+            async for item in stream:
+                if not returned_failure:
+                    returned = self.returned_failure(item)
+                    if returned is not None:
+                        returned_failure = True
+                        self.failure_class(returned)
+                    else:
+                        self.success()
+                yield item
+        except Exception as exc:
+            try:
+                self.failure(exc)
+            finally:
+                raise
+        if not returned_failure:
+            self.success()
 
     def success(self):
         """The capability answered; close its incidents once per task.
@@ -323,21 +449,22 @@ class CapabilityObserver:
             logging.warning("Provider recovery could not be recorded: %s", exc)
 
     def failure(self, exc):
-        """Record one recognised provider failure, once per task.
+        """Record one recognised provider failure raised as an EXCEPTION.
 
         The class comes from the exception's own typed field first, then from the
         shared classifier reading its text - the same precedence the client-facing
         error path uses, so a fact and the message a user saw never disagree. The
         text is only ever READ here; it is not a parameter of the store.
+        """
+        error_class = getattr(exc, "error_type", None) or model_errors.classify(str(exc))
+        self.failure_class(error_class)
+
+    def failure_class(self, error_class):
+        """Record one occurrence of a class already recognised by the caller.
 
         Never raises, for the same reason ``emit_failure`` never raises.
         """
-        if self._recorded:
-            return
-
-        error_class = getattr(exc, "error_type", None) or model_errors.classify(str(exc))
-        if not error_class:
-            # An unrecognised failure is a bug, not a provider health fact.
+        if self._recorded or not error_class:
             return
 
         self._recorded = True
@@ -354,13 +481,18 @@ class CapabilityObserver:
             logging.warning("Provider failure could not be recorded: %s", store_exc)
 
 
-def observe_calls(target, identity, *, capability, methods):
+def observe_calls(target, identity, *, capability, methods, failure_marker=None):
     """Shadow *methods* on *target* with a ``CapabilityObserver``.
 
     Returns the observer, or ``None`` when nothing could be installed - an
     identity that does not resolve, a target without those methods, or an object
     that refuses the assignment. Every one of those is a missing observation, not
     a broken call: the caller keeps working on the unobserved path.
+
+    ``failure_marker`` opts the observed methods into returned-failure detection,
+    for a connector that reports a refusal as its answer rather than as an
+    exception. It is off by default, so a capability whose connector raises is
+    observed exactly as before.
 
     The methods are shadowed on the INSTANCE rather than the object being wrapped,
     so every other use of it is untouched: ``isinstance``, attribute access and the
@@ -371,7 +503,7 @@ def observe_calls(target, identity, *, capability, methods):
         return None
 
     try:
-        observer = CapabilityObserver.from_identity(identity, capability)
+        observer = CapabilityObserver.from_identity(identity, capability, failure_marker)
     except Exception as exc:  # noqa: BLE001 - a side-channel never blocks the path
         logging.warning("Provider call observation could not be prepared: %s", exc)
         return None

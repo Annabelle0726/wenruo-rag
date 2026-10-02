@@ -31,6 +31,7 @@ from api.db.joint_services.tenant_model_service import (
     resolve_model_type,
 )
 from api.db.services.dialog_service import _stream_with_think_delta
+from api.db.joint_services.provider_health_observation import observe_chat_calls
 from api.db.services.llm_service import LLMBundle
 from common.connection_utils import timeout
 from common.constants import LLMType
@@ -102,6 +103,7 @@ class LLM(ComponentBase):
         model_type = "chat" if "chat" in model_types else model_types[0]
         chat_model_config = resolve_model_config(self._canvas.get_tenant_id(), model_type, self._param.llm_id)
         self.chat_mdl = LLMBundle(self._canvas.get_tenant_id(), chat_model_config, max_retries=self._param.max_retries, retry_interval=self._param.delay_after_error)
+        observe_chat_calls(self.chat_mdl, self._canvas.get_tenant_id(), self._param.llm_id)
         self.imgs = []
 
     def get_input_form(self) -> dict[str, dict]:
@@ -338,6 +340,7 @@ class LLM(ComponentBase):
         model_config = resolve_model_config(self._canvas.get_tenant_id(), model_type, self._param.llm_id)
         if self.imgs:
             self.chat_mdl = LLMBundle(self._canvas.get_tenant_id(), model_config, max_retries=self._param.max_retries, retry_interval=self._param.delay_after_error)
+            observe_chat_calls(self.chat_mdl, self._canvas.get_tenant_id(), self._param.llm_id)
 
         msg, sys_prompt = self._sys_prompt_and_msg(self._canvas.get_history(self._param.message_history_window_size)[:-1], args)
 

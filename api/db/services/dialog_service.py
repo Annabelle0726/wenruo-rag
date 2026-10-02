@@ -44,6 +44,7 @@ from api.utils.reference_metadata_utils import (
     resolve_reference_metadata_preferences,
 )
 from api.db.joint_services.tenant_model_service import get_default_rerank_model_config, get_tenant_default_model_by_type, resolve_model_config, resolve_model_type, get_model_config_by_id
+from api.db.joint_services.provider_health_observation import observe_chat_calls
 from common.time_utils import current_timestamp, datetime_format
 from common.text_utils import normalize_arabic_digits
 from rag.advanced_rag.knowlege_compile.mind_map_extractor import MindMapExtractor
@@ -310,24 +311,32 @@ async def async_chat_solo(dialog, messages, stream=True, session_id=None):
                 llm_types = resolve_model_type(dialog.tenant_id, dialog.llm_id)
                 if "chat" in llm_types:
                     model_config = get_model_config_by_id(dialog.tenant_id, LLMType.CHAT, dialog.tenant_llm_id)
+                    chat_identity_ref = dialog.tenant_llm_id
                 else:
+                    # The vision branch resolves from the NAME reference, so that is
+                    # the only reference that can prove which provider this is.
                     model_config = resolve_model_config(dialog.tenant_id, LLMType.VISION, dialog.llm_id)
+                    chat_identity_ref = dialog.llm_id
             except LookupError:
                 llm_types = resolve_model_type(dialog.tenant_id, dialog.llm_id)
                 if "chat" in llm_types:
                     model_config = resolve_model_config(dialog.tenant_id, LLMType.CHAT, dialog.llm_id)
                 else:
                     model_config = resolve_model_config(dialog.tenant_id, LLMType.VISION, dialog.llm_id)
+                chat_identity_ref = dialog.llm_id
         else:
             llm_types = resolve_model_type(dialog.tenant_id, dialog.llm_id)
             if "chat" in llm_types:
                 model_config = resolve_model_config(dialog.tenant_id, LLMType.CHAT, dialog.llm_id)
             else:
                 model_config = resolve_model_config(dialog.tenant_id, LLMType.VISION, dialog.llm_id)
+            chat_identity_ref = dialog.llm_id
     else:
         model_config = get_tenant_default_model_by_type(dialog.tenant_id, LLMType.CHAT)
+        chat_identity_ref = None
 
     chat_mdl = LLMBundle(dialog.tenant_id, model_config, langfuse_session_id=session_id)
+    observe_chat_calls(chat_mdl, dialog.tenant_id, chat_identity_ref)
     factory = model_config.get("llm_factory", "") if model_config else ""
 
     text_attachments_content, image_attachments, image_files = get_files_content(messages[-1], model_config["model_type"])
@@ -385,12 +394,20 @@ def get_models(dialog, trace_context=None, langfuse_session_id=None):
                 chat_model_config = get_model_config_by_id(dialog.tenant_id, LLMType.CHAT, dialog.tenant_llm_id)
             except LookupError:
                 chat_model_config = resolve_model_config(dialog.tenant_id, LLMType.CHAT, dialog.llm_id)
+                chat_identity_ref = dialog.llm_id
+            else:
+                chat_identity_ref = dialog.tenant_llm_id
         else:
             chat_model_config = resolve_model_config(dialog.tenant_id, LLMType.CHAT, dialog.llm_id)
+            chat_identity_ref = dialog.llm_id
     else:
+        # The workspace default's own id is not observable at this layer, so this
+        # binding gets no provider identity rather than a guessed one.
         chat_model_config = get_tenant_default_model_by_type(dialog.tenant_id, LLMType.CHAT)
+        chat_identity_ref = None
 
     chat_mdl = LLMBundle(dialog.tenant_id, chat_model_config, trace_context=trace_context, langfuse_session_id=langfuse_session_id)
+    observe_chat_calls(chat_mdl, dialog.tenant_id, chat_identity_ref)
 
     # Rerank degrades instead of failing: the assistant's own reranker first, then
     # the workspace default, then no reranking at all (the fused hybrid order the
@@ -1946,6 +1963,7 @@ async def async_ask(question, kb_ids, tenant_id, chat_llm_name=None, search_conf
     embd_mdl = LLMBundle(embd_owner_tenant_id, embd_model_config)
     chat_model_config = resolve_model_config(tenant_id, LLMType.CHAT, chat_llm_name)
     chat_mdl = LLMBundle(tenant_id, chat_model_config)
+    observe_chat_calls(chat_mdl, tenant_id, chat_llm_name)
     rerank_mdl = _search_rerank_model(tenant_id, search_config)
     max_tokens = chat_mdl.max_length
     tenant_ids = list(set([kb.tenant_id for kb in kbs]))
@@ -2061,6 +2079,7 @@ async def gen_mindmap(question, kb_ids, tenant_id, search_config={}):
     else:
         chat_model_config = get_tenant_default_model_by_type(tenant_id, LLMType.CHAT)
     chat_mdl = LLMBundle(tenant_id, chat_model_config)
+    observe_chat_calls(chat_mdl, tenant_id, chat_id or None)
     rerank_mdl = _search_rerank_model(tenant_id, search_config)
 
     if meta_data_filter:
