@@ -44,7 +44,15 @@ type UsageQuery = Record<string, string | number | boolean | undefined>;
 const withQuery = (path: string, query: UsageQuery = {}) => {
   const search = new URLSearchParams();
   Object.entries(query).forEach(([key, value]) => {
-    if (key === 'skipGlobalErrorNotification' || key === 'tenantId') {
+    // `tenantId` travels in the path, `skipGlobalErrorNotification` in the request config,
+    // and `memberUserId` is a CLIENT-side cache key: the server names a member with
+    // `user_id`, and a second name for the same thing is refused as an unknown parameter
+    // rather than ignored, so it must never reach the wire.
+    if (
+      key === 'skipGlobalErrorNotification' ||
+      key === 'tenantId' ||
+      key === 'memberUserId'
+    ) {
       return;
     }
     if (value !== undefined && value !== null && value !== '') {
