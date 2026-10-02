@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" fill="none" aria-hidden="true">
+  <!--
+    The console's post-login page canvas.
+
+    This is the SAME artwork the sign-in page draws inline (see the cable trace
+    and cable flow groups in pages/login-next/index.tsx): the four cable traces
+    and the four dashed flow lines that follow them, at the same coordinates.
+    Nothing new is drawn here. The app shell repeats this one tile behind the
+    content (the shell canvas layer), so the sign-in screen and every screen
+    after it share one background language.
+
+    It is consumed as a CSS mask image, not as a picture: only the alpha of
+    these strokes matters, and the paint colour comes from the brand colour
+    token, so the tile itself carries no colour and light/dark are one token
+    apart. The group opacities mirror the sign-in page's own weights (traces
+    faint, flows stronger); the overall weight is the layer's own opacity.
+
+    Note for editors: an XML comment may not contain two consecutive hyphens,
+    so CSS variable names cannot be written literally inside this comment. A
+    double hyphen here makes the file unparseable, the mask fails to load, and
+    the layer then paints NOTHING (a failed mask hides everything).
+  -->
+  <g stroke="#000000" stroke-width="2.5" stroke-linecap="round" opacity="0.55">
+    <path d="M-120 704C214 704 286 178 636 178s328 526 638 526 346-282 446-282" />
+    <path d="M-120 716C236 716 298 190 636 190s314 526 638 526 334-282 446-282" />
+    <path d="M-120 728C258 728 310 202 636 202s300 526 638 526 322-282 446-282" />
+    <path d="M-120 740C280 740 322 214 636 214s286 526 638 526 310-282 446-282" />
+  </g>
+  <g stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="32 168" opacity="0.9">
+    <path d="M-120 704C214 704 286 178 636 178s328 526 638 526 346-282 446-282" />
+    <path d="M-120 716C236 716 298 190 636 190s314 526 638 526 334-282 446-282" />
+    <path d="M-120 728C258 728 310 202 636 202s300 526 638 526 322-282 446-282" />
+    <path d="M-120 740C280 740 322 214 636 214s286 526 638 526 310-282 446-282" />
+  </g>
+</svg>

@@ -3,1325 +3,1393 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 19%;
-
-    --muted: 220 16% 96%;
-    --muted-foreground: 220 6% 46%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 19%;
-
-    --border: 220 13% 87%;
-    --input: 220 13% 87%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 19%;
-
-    --primary: 161 100% 24%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 220 16% 96%;
-    --secondary-foreground: 0 0% 19%;
-
-    --accent: 220 16% 96%;
-    --accent-foreground: 0 0% 19%;
-
-    --destructive: 0 78% 63%;
-    --destructive-foreground: 0 0% 100%;
-
-    --ring: 161 100% 24%;
-
-    /* 工业级直角：全局圆角上限 2px */
-    --radius: 2px;
-
-    --background-inverse-standard: rgba(0, 122, 83, 0.08);
-    --background-inverse-standard-foreground: #303133;
-    --colors-background-neutral-standard: white;
-
-    /* 主操作绿：国网正绿 */
-    --button-blue-text: #007a53;
-
-    --colors-outline-sentiment-primary: #007a53;
-    --colors-outline-neutral-strong: #dcdfe6;
-    --colors-outline-neutral-standard: #e4e7ed;
-
-    --colors-text-neutral-strong: #303133;
-    --colors-text-neutral-standard: #909399;
-
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 19%;
-    --sidebar-primary: 161 100% 24%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 16% 96%;
-    --sidebar-accent-foreground: 0 0% 19%;
-    --sidebar-border: 220 13% 87%;
-    --sidebar-ring: 161 100% 24%;
-
-    --background-inverse-strong: rgba(0, 122, 83, 0.12);
-
-    --text-badge: #909399;
-
-    --text-title: #303133;
-    --text-sub-title: #909399;
-    --text-sub-title-invert: #606266;
-
-    --background-header-bar: #007a53;
-    --text-title-invert: #ffffff;
-    --background-card: #f5f7fa;
-
-    --background-highlight: #e6f2ef;
-
-    --input-border: #dcdfe6;
-
-    --metallic: #46464a;
-
-    --bg-title: #f5f7fa;
-    /* design colors */
-
-    --bg-base: #f0f2f5;
-    /* The shared card row's height. `HomeCard` builds its box from this token and
-       the page-size calculation reads it back (`useListCapacity`) to work out how
-       many complete card rows a region holds BEFORE any card has rendered - which
-       is what lets a list page ask the API for the right number on its first
-       request instead of fetching a default and correcting later. One value, two
-       readers, so the two cannot drift. */
-    --list-card-height: 112px;
-    /* card color , dividing line */
-    --bg-card: #ffffff;
-    --bg-component: #ffffff;
-    --bg-input: #ffffff;
-    --bg-canvas: 240 242 245;
-    --bg-list: 245 247 250;
-    /* Button ,Body text, Input completed text */
-
-    /* #303133 */
-    --text-primary: 48 49 51;
-    --text-secondary: 96 98 102;
-    --text-disabled: #c0c4cc;
-    /* Input default color */
-    --border-default: #dcdfe6;
-    /* Input accent color */
-    --border-accent: #007a53;
-    --border-button: #dcdfe6;
-    /* Regulators, parsing, switches, variables */
-    --accent-primary: 0 122 83;
-    /* Output Variables Box */
-    --bg-accent: #e6f2ef;
-
-    --state-success: 103 194 58;
-    --state-warning: 230 162 60;
-    --state-error: 245 108 108;
-
-    --team-group: #007a53;
-    --team-member: #007a53;
-    --team-department: #e6a23c;
-    --bg-member: #e6f2ef;
-
-    /* --*-inverse: colors in dark mode */
-    --text-primary-inverse: 255 255 255;
-    --text-secondary-inverse: 178 181 183;
-
-    --content-primary: #303133;
-    --content-secondary: #606266;
-    --content-tertiary: #909399;
-
-    /* 页面背景：政企标准灰纯色，取消一切径向渐变 */
-    --cable-page-from: #f0f2f5;
-    --cable-page-to: #f0f2f5;
-    --cable-page-edge: #f0f2f5;
-    --page-accent-bloom: transparent;
-    --page-accent-bloom-soft: transparent;
-    --page-gradient: none;
-
-    --cable-surface: #ffffff;
-    --cable-surface-muted: #f5f7fa;
-    --cable-surface-border: #dcdfe6;
-    --cable-surface-border-hover: #007a53;
-
-    /* 核心品牌色：国网绿 */
-    --cable-brand: #007a53;
-    --cable-brand-soft: #e6f2ef;
-    --cable-accent: #007a53;
-    --cable-copper: #e6a23c;
-    --cable-icon-surface: #e6f2ef;
-    --cable-icon-foreground: #007a53;
-    --cable-divider: #e4e7ed;
-    --cable-muted: var(--content-tertiary);
-    --cable-hairline: #dcdfe6;
-    /* 悬浮阴影统一归零：区域靠 1px 实线边框划分 */
-    --cable-shadow: none;
-    --cable-shadow-hover: none;
-    --cable-drawer-shadow: none;
-    --cable-backdrop: rgba(0, 0, 0, 0.35);
-    --cable-avatar-surface: #007a53;
-    --cable-avatar-foreground: #ffffff;
-
-    --accent-color: #007a53;
-    --accent-color-strong: #005c3f;
-    --accent-color-soft: #e6f2ef;
-
-    /* 取消毛玻璃：一律不透明实色 + 实线边框 */
-    --glass-bg: #ffffff;
-    --glass-border: #dcdfe6;
-    --glass-blur: 0px;
-    --glass-highlight: transparent;
-
-    --hero-title-from: #303133;
-    --hero-title-via: #303133;
-    --hero-title-to: #303133;
-    --hero-card-bg: #ffffff;
-    --hero-card-bg-hover: #ffffff;
-    --hero-card-border: #dcdfe6;
-    --hero-icon: #007a53;
-    --hero-badge-bg: #e6f2ef;
-    --hero-badge-border: #007a53;
-    --hero-badge-text: #007a53;
-    --hero-glow: none;
-
-    --login-card-edge: #dcdfe6;
-    --login-card-glow: none;
-
-    /* 登录按钮：实色，无渐变、无倒角反光、无多层阴影 */
-    --login-cta-bg: #007a53;
-    --login-cta-bg-hover: #005c3f;
-    --login-cta-bg-active: #00452f;
-    --login-cta-fg: #ffffff;
-    --login-cta-sheen: none;
-    --login-cta-text-shadow: none;
-    --login-cta-shadow: none;
-    --login-cta-shadow-hover: none;
-    --login-cta-shadow-active: none;
-
-    --ceramic-surface: #ffffff;
-    --ceramic-highlight: transparent;
-    --ceramic-border: #dcdfe6;
-    --ceramic-border-hover: #007a53;
-    --ceramic-track-surface: #f5f7fa;
-    --ceramic-track-border: #dcdfe6;
-    --ceramic-track-inset: none;
-    --ceramic-pill-surface: #ffffff;
-    --ceramic-pill-edge: #dcdfe6;
-    --ceramic-pill-shadow: none;
-    --ceramic-hover-surface: #f5f7fa;
-    --ceramic-recess: none;
-    --ceramic-switch-shadow: none;
-    --ceramic-switch-thumb-surface: #007a53;
-    --ceramic-switch-thumb-elevation: none;
-    --ceramic-switch-icon-glow: transparent;
-
-    /* 状态/类型标签：#F0F9EB 浅绿底 + #007A53 绿边框与文字 */
-    --badge-surface: #f0f9eb;
-    --badge-border: #007a53;
-    --badge-ink: #007a53;
-    --badge-shadow: none;
-    --badge-surface-hover: #e6f2ef;
-    --field-border: #dcdfe6;
-    --field-border-focus: #007a53;
-
-    --dot-live-glow: none;
-
-    --ceramic-shadow: none;
-    --ceramic-shadow-hover: none;
-    --ceramic-groove-highlight: transparent;
-    --ceramic-groove-shadow: transparent;
-    --ceramic-elevation: none;
-    --ceramic-elevation-hover: none;
-
-    --scrollbar-track: transparent;
-    --scrollbar-thumb: #c8ccd4;
-    --scrollbar-thumb-hover: #a8adb8;
-
-    --brand-hover-border: #007a53;
-    --brand-glow: transparent;
-
-    --table-header-bg: #f5f7fa;
-    --table-row-hover: #e1efe8;
-    --table-row-base: #ffffff;
-    --table-row-alternate: #f0f7f3;
-
-    --ceramic-relief-highlight: transparent;
-    --ceramic-relief-shade: transparent;
-    --ceramic-relief-shadow: none;
-    --ceramic-relief-shadow-hover: none;
-    --ceramic-relief-shadow-active: none;
-    --ceramic-relief-elevation: none;
-    --ceramic-relief-elevation-hover: none;
-    --ceramic-relief-elevation-active: none;
-
-    --ceramic-well-border: #dcdfe6;
-    --ceramic-well-inset: none;
-
-    --category-bom-glow: transparent;
-    --category-standard-glow: transparent;
-    --category-spec-glow: transparent;
-    --category-quality-glow: transparent;
-    --category-general-glow: transparent;
-    --category-custom-glow: transparent;
-    --category-spec-ink: #007a53;
-    --category-quality-ink: #67c23a;
-    --category-custom-ink: #e6a23c;
-
-    --shadow-accent: transparent;
-    --surface-hover-bg: #f5f7fa;
-    --surface-hover-border: #007a53;
-    --accent-contrast: #ffffff;
-
-    /* 深绿顶栏：全宽实心 */
-    --gov-header-bg: #007a53;
-    --gov-header-hover: #005c3f;
-    --gov-header-fg: #ffffff;
-    --gov-header-border: #005c3f;
-
-    /* ---- 系统外壳（顶栏分区 / 页面上下文栏 / 系统底栏）----
-       外壳是内容的框架，不是内容本身，所以它的“立体感”只有三种手段：1px 细线、
-       一级色阶、1–2px 的极浅投影。三者都写在这里，组件里不再出现任何字面色值。 */
-    --shell-header-ink: rgba(255, 255, 255, 0.86);
-    --shell-header-ink-strong: #ffffff;
-    /* 顶栏内部分区竖线与工具组描边：白线一档，够分组、不抢眼。 */
-    --shell-header-rail: rgba(255, 255, 255, 0.22);
-    --shell-header-wash: rgba(255, 255, 255, 0.1);
-    --shell-header-active-bg: rgba(255, 255, 255, 0.16);
-    /* 选中态底边：品牌亮绿，在 #007a53 上是 4.1:1，足以读作一条线。 */
-    --shell-header-indicator: #b6eeda;
-    /* 顶栏自身的上高光与落影：让绿色实心块压在页面之上，而不是与页面齐平。 */
-    --shell-header-topline: rgba(255, 255, 255, 0.12);
-    --shell-header-shadow: 0 1px 2px rgba(16, 24, 32, 0.12);
-
-    /* 页面上下文栏：比页面底色高一级的白带，用 1px 细线与 2px 落影分层。 */
-    --shell-context-bg: #ffffff;
-    --shell-context-shadow: 0 1px 2px rgba(16, 24, 32, 0.06);
-    --shell-context-marker: #007a53;
-
-    /* 系统底栏：它是工作区画布的收尾，不是一个“面板”。所以底栏没有任何实色底，
-       只有一条从画布本色出发、向下加深 3.5% 的极浅渐变 —— 工作区因此自然过渡到
-       底边，页面底部不会突然多出一块亮色矩形。 */
-    --shell-footer-tint-from: rgba(16, 24, 32, 0);
-    --shell-footer-tint-to: rgba(16, 24, 32, 0.035);
-    --shell-footer-rule: #dcdfe6;
-
-    /* 数据表格：表头 #F5F7FA / 行高 38px / 行分隔线 */
-    --panel-border: #dcdfe6;
-    --table-border: #d5e5dc;
-    --table-head-ink: #303133;
-
-    --status-available-surface: #f0f9eb;
-    --status-available-ink: #007a53;
-    --status-available-border: #007a53;
-    --status-archived-surface: #f4f4f5;
-    --status-archived-ink: #909399;
-    --status-archived-border: #dcdfe6;
-
-    /* 白底页面上的导航/分页/切卡文字：中灰，选中为国网绿。顶栏在其容器上局部
-       覆盖这三个变量（见 header.tsx 的 headerNavTokens），因此同一组 token 在
-       绿底顶栏是半透明白字，在白底页面仍是 #606266。 */
-    --cable-nav-text: #606266;
-    --cable-nav-text-hover: #303133;
-    --cable-nav-hover-bg: #f5f7fa;
-    --cable-nav-active-text: #007a53;
-    --cable-nav-active-bg: #e6f2ef;
-    --cable-nav-indicator: #007a53;
-  }
-
-  .dark {
-    /* --- 工业哑光防疲劳暗色配色 (Industrial Low-Contrast Dark) --- */
-    --background: 220 14% 16%;
-    --foreground: 220 14% 84%;
-
-    --muted: 220 13% 22%;
-    --muted-foreground: 220 12% 64%;
-
-    --accent: 220 13% 22%;
-    --accent-foreground: 220 13% 89%;
-
-    --popover: 220 13% 19%;
-    --popover-foreground: 220 14% 84%;
-
-    --border: 220 13% 27%;
-    --input: 220 13% 27%;
-
-    --card: 220 13% 19%;
-    --card-foreground: 220 14% 84%;
-
-    --primary: 161 45% 38%;
-    --primary-foreground: 0 0% 95%;
-
-    --secondary: 220 13% 22%;
-    --secondary-foreground: 220 14% 84%;
-
-    --destructive: 0 45% 45%;
-    --destructive-foreground: 0 0% 95%;
-
-    --ring: 161 45% 38%;
-
-    --radius: 2px;
-
-    --background-inverse-standard: rgba(255, 255, 255, 0.05);
-    --background-inverse-standard-foreground: #d0d4dc;
-
-    --background-inverse-strong: rgba(255, 255, 255, 0.08);
-    --background-inverse-strong-foreground: #e5e7eb;
-
-    --text-badge: #98a0ae;
-
-    --colors-background-neutral-standard: #23272f;
-
-    --colors-outline-sentiment-primary: #26a67b;
-    --colors-outline-neutral-strong: #3c424e;
-    --colors-outline-neutral-standard: #363b45;
-
-    --colors-text-neutral-strong: #d0d4dc;
-    --colors-text-neutral-standard: #98a0ae;
-
-    --sidebar-background: 220 13% 19%;
-    --sidebar-foreground: 220 14% 84%;
-    --sidebar-primary: 161 45% 38%;
-    --sidebar-primary-foreground: 0 0% 95%;
-    --sidebar-accent: 220 13% 22%;
-    --sidebar-accent-foreground: 220 13% 86%;
-    --sidebar-border: 220 13% 27%;
-    --sidebar-ring: 161 45% 38%;
-
-    --text-title: #d0d4dc;
-    --text-sub-title: #98a0ae;
-    --text-sub-title-invert: #afb5c0;
-
-    /* 核心修改 1：顶栏暗化为低调的墨绿，不再刺眼 */
-    --background-header-bar: #14382c;
-
-    --text-title-invert: #23272f;
-
-    --background-card: #2a2e37;
-
-    --background-highlight: rgba(38, 166, 123, 0.12);
-
-    --input-border: #3c424e;
-
-    --metallic: #494f5a;
-
-    --bg-title: #2a2e37;
-
-    /* 核心修改 2：底色与卡片采用极微小梯度（23272f -> 2a2e37），零强烈对比 */
-    --bg-base: #23272f;
-    --bg-card: #2a2e37;
-    --bg-component: #2a2e37;
-    --bg-input: #31363f;
-    /* RGB channel triples, not hsl() triples: these two are consumed as
-       rgb(var(--bg-canvas) / <alpha-value>) in tailwind.config.js and as
-       rgb(var(--bg-canvas)) in components/canvas/background.tsx, so an HSL
-       triple here resolves channel-wise to rgb(220, 36, 41) - a red canvas. */
-    --bg-canvas: 35 39 47; /* #23272f - same level as --bg-base, as in light */
-    --bg-list: 42 46 55; /* #2a2e37 - one step up, same as --bg-card */
-
-    --text-primary: 208 212 220; /* #d0d4dc 柔和哑光文字 */
-    --text-secondary: 152 160 174; /* #98a0ae 暗淡次要文字 */
-    --text-disabled: #606876;
-    --border-default: #3c424e;
-    --border-accent: #26a67b;
-    --border-button: #3c424e;
-
-    --team-group: #26a67b;
-    --team-member: #26a67b;
-    --team-department: #d9923b;
-    --bg-member: rgba(38, 166, 123, 0.12);
-
-    --text-primary-inverse: 35 39 47;
-    --text-secondary-inverse: 152 160 174;
-
-    --content-primary: #d0d4dc;
-    --content-secondary: #98a0ae;
-    --content-tertiary: #717b8e;
-
-    --cable-page-from: #23272f;
-    --cable-page-to: #23272f;
-    --cable-page-edge: #23272f;
-
-    --cable-surface: #2a2e37;
-    --cable-surface-muted: #31363f;
-    --cable-surface-border: #3c424e;
-    --cable-surface-border-hover: #26a67b;
-
-    --cable-brand: #26a67b;
-    --cable-brand-soft: rgba(38, 166, 123, 0.12);
-    --cable-accent: #26a67b;
-    --cable-copper: #d9923b;
-    --cable-icon-surface: rgba(38, 166, 123, 0.12);
-    --cable-icon-foreground: #26a67b;
-    --cable-divider: #363b45;
-    --cable-muted: var(--content-tertiary);
-    --cable-hairline: #3c424e;
-    --cable-shadow: none;
-    --cable-shadow-hover: none;
-
-    --accent-color: #26a67b;
-    --accent-color-strong: #1d8260;
-    --accent-color-soft: rgba(38, 166, 123, 0.12);
-
-    --glass-bg: #2a2e37;
-    --glass-border: #3c424e;
-
-    --hero-title-from: #d0d4dc;
-    --hero-title-via: #d0d4dc;
-    --hero-title-to: #d0d4dc;
-    --hero-card-bg: #2a2e37;
-    --hero-card-bg-hover: #31363f;
-    --hero-card-border: #3c424e;
-    --hero-icon: #26a67b;
-    --hero-badge-bg: rgba(38, 166, 123, 0.12);
-    --hero-badge-border: #26a67b;
-    --hero-badge-text: #26a67b;
-
-    --login-card-edge: #3c424e;
-
-    --ceramic-surface: #2a2e37;
-    --ceramic-border: #3c424e;
-    --ceramic-border-hover: #26a67b;
-    --ceramic-pill-surface: #31363f;
-    --ceramic-pill-edge: #3c424e;
-    --ceramic-track-surface: #31363f;
-    --ceramic-track-border: #3c424e;
-    --ceramic-hover-surface: #31363f;
-
-    --badge-surface: rgba(38, 166, 123, 0.12);
-    --badge-border: #26a67b;
-    --badge-ink: #26a67b;
-    --badge-surface-hover: rgba(38, 166, 123, 0.2);
-    --field-border: #3c424e;
-    --field-border-focus: #26a67b;
-
-    --scrollbar-thumb: #494f5a;
-    --scrollbar-thumb-hover: #5c6370;
-
-    --table-header-bg: #2a2e37;
-    --table-row-hover: #2f413b;
-    --table-row-base: #232f2b;
-    --table-row-alternate: #273430;
-
-    --surface-hover-bg: #31363f;
-    --surface-hover-border: #26a67b;
-
-    /* 核心修改 3：顶栏配置同步修改为沉稳暗绿 */
-    --gov-header-bg: #14382c;
-    --gov-header-hover: #194537;
-    --gov-header-fg: #c5cbd3;
-    --gov-header-border: #1d4d3d;
-
-    /* 暗色外壳：同一套结构，投影换成黑色（暗色下的“浅色投影”看不见），
-       上下文栏抬到卡片那一级（#2a2e37）与页面 #23272f 分开；底栏不抬级，只用
-       一道极浅的提亮渐变收尾。 */
-    --shell-header-ink: rgba(255, 255, 255, 0.84);
-    --shell-header-ink-strong: #ffffff;
-    --shell-header-rail: rgba(255, 255, 255, 0.16);
-    --shell-header-wash: rgba(255, 255, 255, 0.09);
-    --shell-header-active-bg: rgba(255, 255, 255, 0.15);
-    --shell-header-indicator: #4ecfa4;
-    --shell-header-topline: rgba(255, 255, 255, 0.06);
-    --shell-header-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-
-    --shell-context-bg: #2a2e37;
-    --shell-context-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
-    --shell-context-marker: #26a67b;
-
-    /* 暗色底栏同样是“提亮 3.5%”的渐变而不是一块浅色面板，暗色模式下不会在页面
-       底部出现一块突兀的亮矩形。 */
-    --shell-footer-tint-from: rgba(255, 255, 255, 0);
-    --shell-footer-tint-to: rgba(255, 255, 255, 0.035);
-    --shell-footer-rule: #3c424e;
-
-    --panel-border: #3c424e;
-    --table-border: #3a5146;
-    --table-head-ink: #d0d4dc;
-
-    --status-available-surface: rgba(38, 166, 123, 0.12);
-    --status-available-ink: #26a67b;
-    --status-available-border: #26a67b;
-
-    --cable-nav-text: #98a0ae;
-    --cable-nav-text-hover: #d0d4dc;
-    --cable-nav-hover-bg: rgba(255, 255, 255, 0.06);
-    --cable-nav-active-text: #26a67b;
-    --cable-nav-active-bg: rgba(38, 166, 123, 0.12);
-    --cable-nav-indicator: #26a67b;
-  }
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 0 0% 19%;
+
+        --muted: 220 16% 96%;
+        --muted-foreground: 220 6% 46%;
+
+        --popover: 0 0% 100%;
+        --popover-foreground: 0 0% 19%;
+
+        --border: 220 13% 87%;
+        --input: 220 13% 87%;
+
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 19%;
+
+        --primary: 161 100% 24%;
+        --primary-foreground: 0 0% 100%;
+
+        --secondary: 220 16% 96%;
+        --secondary-foreground: 0 0% 19%;
+
+        --accent: 220 16% 96%;
+        --accent-foreground: 0 0% 19%;
+
+        --destructive: 0 78% 63%;
+        --destructive-foreground: 0 0% 100%;
+
+        --ring: 161 100% 24%;
+
+        /* 工业级直角：全局圆角上限 2px */
+        --radius: 2px;
+
+        --background-inverse-standard: rgba(0, 122, 83, 0.08);
+        --background-inverse-standard-foreground: #303133;
+        --colors-background-neutral-standard: white;
+
+        /* 主操作绿：国网正绿 */
+        --button-blue-text: #007a53;
+
+        --colors-outline-sentiment-primary: #007a53;
+        --colors-outline-neutral-strong: #dcdfe6;
+        --colors-outline-neutral-standard: #e4e7ed;
+
+        --colors-text-neutral-strong: #303133;
+        --colors-text-neutral-standard: #909399;
+
+        --sidebar-background: 0 0% 100%;
+        --sidebar-foreground: 0 0% 19%;
+        --sidebar-primary: 161 100% 24%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 220 16% 96%;
+        --sidebar-accent-foreground: 0 0% 19%;
+        --sidebar-border: 220 13% 87%;
+        --sidebar-ring: 161 100% 24%;
+
+        --background-inverse-strong: rgba(0, 122, 83, 0.12);
+
+        --text-badge: #909399;
+
+        --text-title: #303133;
+        --text-sub-title: #909399;
+        --text-sub-title-invert: #606266;
+
+        --background-header-bar: #007a53;
+        --text-title-invert: #ffffff;
+        --background-card: #f5f7fa;
+
+        --background-highlight: #e6f2ef;
+
+        --input-border: #dcdfe6;
+
+        --metallic: #46464a;
+
+        --bg-title: #f5f7fa;
+        /* design colors */
+
+        --bg-base: #f0f2f5;
+        /* The shared card row's height. `HomeCard` builds its box from this token and
+           the page-size calculation reads it back (`useListCapacity`) to work out how
+           many complete card rows a region holds BEFORE any card has rendered - which
+           is what lets a list page ask the API for the right number on its first
+           request instead of fetching a default and correcting later. One value, two
+           readers, so the two cannot drift. */
+        --list-card-height: 112px;
+        /* card color , dividing line */
+        --bg-card: #ffffff;
+        --bg-component: #ffffff;
+        --bg-input: #ffffff;
+        --bg-canvas: 240 242 245;
+        --bg-list: 245 247 250;
+        /* Button ,Body text, Input completed text */
+
+        /* #303133 */
+        --text-primary: 48 49 51;
+        --text-secondary: 96 98 102;
+        --text-disabled: #c0c4cc;
+        /* Input default color */
+        --border-default: #dcdfe6;
+        /* Input accent color */
+        --border-accent: #007a53;
+        --border-button: #dcdfe6;
+        /* Regulators, parsing, switches, variables */
+        --accent-primary: 0 122 83;
+        /* Output Variables Box */
+        --bg-accent: #e6f2ef;
+
+        --state-success: 103 194 58;
+        --state-warning: 230 162 60;
+        --state-error: 245 108 108;
+
+        --team-group: #007a53;
+        --team-member: #007a53;
+        --team-department: #e6a23c;
+        --bg-member: #e6f2ef;
+
+        /* --*-inverse: colors in dark mode */
+        --text-primary-inverse: 255 255 255;
+        --text-secondary-inverse: 178 181 183;
+
+        --content-primary: #303133;
+        --content-secondary: #606266;
+        --content-tertiary: #909399;
+
+        /* 页面背景：政企标准灰纯色，取消一切径向渐变 */
+        --cable-page-from: #f0f2f5;
+        --cable-page-to: #f0f2f5;
+        --cable-page-edge: #f0f2f5;
+        --page-accent-bloom: transparent;
+        --page-accent-bloom-soft: transparent;
+        --page-gradient: none;
+
+        --cable-surface: #ffffff;
+        --cable-surface-muted: #f5f7fa;
+        --cable-surface-border: #dcdfe6;
+        --cable-surface-border-hover: #007a53;
+
+        /* 核心品牌色：国网绿 */
+        --cable-brand: #007a53;
+        --cable-brand-soft: #e6f2ef;
+        --cable-accent: #007a53;
+        --cable-copper: #e6a23c;
+        --cable-icon-surface: #e6f2ef;
+        --cable-icon-foreground: #007a53;
+        --cable-divider: #e4e7ed;
+        --cable-muted: var(--content-tertiary);
+        --cable-hairline: #dcdfe6;
+        /* 悬浮阴影统一归零：区域靠 1px 实线边框划分 */
+        --cable-shadow: none;
+        --cable-shadow-hover: none;
+        --cable-drawer-shadow: none;
+        --cable-backdrop: rgba(0, 0, 0, 0.35);
+        --cable-avatar-surface: #007a53;
+        --cable-avatar-foreground: #ffffff;
+
+        --accent-color: #007a53;
+        --accent-color-strong: #005c3f;
+        --accent-color-soft: #e6f2ef;
+
+        /* 取消毛玻璃：一律不透明实色 + 实线边框 */
+        --glass-bg: #ffffff;
+        --glass-border: #dcdfe6;
+        --glass-blur: 0px;
+        --glass-highlight: transparent;
+
+        --hero-title-from: #303133;
+        --hero-title-via: #303133;
+        --hero-title-to: #303133;
+        --hero-card-bg: #ffffff;
+        --hero-card-bg-hover: #ffffff;
+        --hero-card-border: #dcdfe6;
+        --hero-icon: #007a53;
+        --hero-badge-bg: #e6f2ef;
+        --hero-badge-border: #007a53;
+        --hero-badge-text: #007a53;
+        --hero-glow: none;
+
+        --login-card-edge: #dcdfe6;
+        --login-card-glow: none;
+
+        /* 登录按钮：实色，无渐变、无倒角反光、无多层阴影 */
+        --login-cta-bg: #007a53;
+        --login-cta-bg-hover: #005c3f;
+        --login-cta-bg-active: #00452f;
+        --login-cta-fg: #ffffff;
+        --login-cta-sheen: none;
+        --login-cta-text-shadow: none;
+        --login-cta-shadow: none;
+        --login-cta-shadow-hover: none;
+        --login-cta-shadow-active: none;
+
+        --ceramic-surface: #ffffff;
+        --ceramic-highlight: transparent;
+        --ceramic-border: #dcdfe6;
+        --ceramic-border-hover: #007a53;
+        --ceramic-track-surface: #f5f7fa;
+        --ceramic-track-border: #dcdfe6;
+        --ceramic-track-inset: none;
+        --ceramic-pill-surface: #ffffff;
+        --ceramic-pill-edge: #dcdfe6;
+        --ceramic-pill-shadow: none;
+        --ceramic-hover-surface: #f5f7fa;
+        --ceramic-recess: none;
+        --ceramic-switch-shadow: none;
+        --ceramic-switch-thumb-surface: #007a53;
+        --ceramic-switch-thumb-elevation: none;
+        --ceramic-switch-icon-glow: transparent;
+
+        /* 状态/类型标签：#F0F9EB 浅绿底 + #007A53 绿边框与文字 */
+        --badge-surface: #f0f9eb;
+        --badge-border: #007a53;
+        --badge-ink: #007a53;
+        --badge-shadow: none;
+        --badge-surface-hover: #e6f2ef;
+        --field-border: #dcdfe6;
+        --field-border-focus: #007a53;
+
+        --dot-live-glow: none;
+
+        --ceramic-shadow: none;
+        --ceramic-shadow-hover: none;
+        --ceramic-groove-highlight: transparent;
+        --ceramic-groove-shadow: transparent;
+        --ceramic-elevation: none;
+        --ceramic-elevation-hover: none;
+
+        --scrollbar-track: transparent;
+        --scrollbar-thumb: #c8ccd4;
+        --scrollbar-thumb-hover: #a8adb8;
+
+        --brand-hover-border: #007a53;
+        --brand-glow: transparent;
+
+        --table-header-bg: #f5f7fa;
+        --table-row-hover: #e1efe8;
+        --table-row-base: #ffffff;
+        --table-row-alternate: #f0f7f3;
+
+        --ceramic-relief-highlight: transparent;
+        --ceramic-relief-shade: transparent;
+        --ceramic-relief-shadow: none;
+        --ceramic-relief-shadow-hover: none;
+        --ceramic-relief-shadow-active: none;
+        --ceramic-relief-elevation: none;
+        --ceramic-relief-elevation-hover: none;
+        --ceramic-relief-elevation-active: none;
+
+        --ceramic-well-border: #dcdfe6;
+        --ceramic-well-inset: none;
+
+        --category-bom-glow: transparent;
+        --category-standard-glow: transparent;
+        --category-spec-glow: transparent;
+        --category-quality-glow: transparent;
+        --category-general-glow: transparent;
+        --category-custom-glow: transparent;
+        --category-spec-ink: #007a53;
+        --category-quality-ink: #67c23a;
+        --category-custom-ink: #e6a23c;
+
+        --shadow-accent: transparent;
+        --surface-hover-bg: #f5f7fa;
+        --surface-hover-border: #007a53;
+        --accent-contrast: #ffffff;
+
+        /* 深绿顶栏：全宽实心 */
+        --gov-header-bg: #007a53;
+        --gov-header-hover: #005c3f;
+        --gov-header-fg: #ffffff;
+        --gov-header-border: #005c3f;
+
+        /* ---- 系统外壳（顶栏分区 / 页面上下文栏 / 系统底栏）----
+           外壳是内容的框架，不是内容本身，所以它的“立体感”只有三种手段：1px 细线、
+           一级色阶、1–2px 的极浅投影。三者都写在这里，组件里不再出现任何字面色值。 */
+        --shell-header-ink: rgba(255, 255, 255, 0.86);
+        --shell-header-ink-strong: #ffffff;
+        /* 顶栏内部分区竖线与工具组描边：白线一档，够分组、不抢眼。 */
+        --shell-header-rail: rgba(255, 255, 255, 0.22);
+        --shell-header-wash: rgba(255, 255, 255, 0.1);
+        --shell-header-active-bg: rgba(255, 255, 255, 0.16);
+        /* 选中态底边：品牌亮绿，在 #007a53 上是 4.1:1，足以读作一条线。 */
+        --shell-header-indicator: #b6eeda;
+        /* 顶栏自身的上高光与落影：让绿色实心块压在页面之上，而不是与页面齐平。 */
+        --shell-header-topline: rgba(255, 255, 255, 0.12);
+        --shell-header-shadow: 0 1px 2px rgba(16, 24, 32, 0.12);
+
+        /* 页面上下文栏：比页面底色高一级的白带，用 1px 细线与 2px 落影分层。 */
+        --shell-context-bg: #ffffff;
+        --shell-context-shadow: 0 1px 2px rgba(16, 24, 32, 0.06);
+        --shell-context-marker: #007a53;
+
+        /* 系统底栏：它是工作区画布的收尾，不是一个“面板”。所以底栏没有任何实色底，
+           只有一条从画布本色出发、向下加深 3.5% 的极浅渐变 —— 工作区因此自然过渡到
+           底边，页面底部不会突然多出一块亮色矩形。 */
+        --shell-footer-tint-from: rgba(16, 24, 32, 0);
+        --shell-footer-tint-to: rgba(16, 24, 32, 0.035);
+        --shell-footer-rule: #dcdfe6;
+
+        /* 登录后全站画布的线缆底纹（见 .shell-canvas）：图案颜色取自 --cable-brand，
+           透明度按主题分开 —— 浅色底要更深一档才“淡而可见”，暗色底只需提亮一点点。 */
+        --shell-canvas-pattern-opacity: 0.055;
+        --shell-canvas-pattern-secondary-opacity: 0.035;
+        --panel-border: #dcdfe6;
+        --table-border: #d5e5dc;
+        --table-head-ink: #303133;
+
+        --status-available-surface: #f0f9eb;
+        --status-available-ink: #007a53;
+        --status-available-border: #007a53;
+        --status-archived-surface: #f4f4f5;
+        --status-archived-ink: #909399;
+        --status-archived-border: #dcdfe6;
+
+        /* 白底页面上的导航/分页/切卡文字：中灰，选中为国网绿。顶栏在其容器上局部
+           覆盖这三个变量（见 header.tsx 的 headerNavTokens），因此同一组 token 在
+           绿底顶栏是半透明白字，在白底页面仍是 #606266。 */
+        --cable-nav-text: #606266;
+        --cable-nav-text-hover: #303133;
+        --cable-nav-hover-bg: #f5f7fa;
+        --cable-nav-active-text: #007a53;
+        --cable-nav-active-bg: #e6f2ef;
+        --cable-nav-indicator: #007a53;
+    }
+
+    .dark {
+        /* --- 工业哑光防疲劳暗色配色 (Industrial Low-Contrast Dark) --- */
+        --background: 220 14% 16%;
+        --foreground: 220 14% 84%;
+
+        --muted: 220 13% 22%;
+        --muted-foreground: 220 12% 64%;
+
+        --accent: 220 13% 22%;
+        --accent-foreground: 220 13% 89%;
+
+        --popover: 220 13% 19%;
+        --popover-foreground: 220 14% 84%;
+
+        --border: 220 13% 27%;
+        --input: 220 13% 27%;
+
+        --card: 220 13% 19%;
+        --card-foreground: 220 14% 84%;
+
+        --primary: 161 45% 38%;
+        --primary-foreground: 0 0% 95%;
+
+        --secondary: 220 13% 22%;
+        --secondary-foreground: 220 14% 84%;
+
+        --destructive: 0 45% 45%;
+        --destructive-foreground: 0 0% 95%;
+
+        --ring: 161 45% 38%;
+
+        --radius: 2px;
+
+        --background-inverse-standard: rgba(255, 255, 255, 0.05);
+        --background-inverse-standard-foreground: #d0d4dc;
+
+        --background-inverse-strong: rgba(255, 255, 255, 0.08);
+        --background-inverse-strong-foreground: #e5e7eb;
+
+        --text-badge: #98a0ae;
+
+        --colors-background-neutral-standard: #23272f;
+
+        --colors-outline-sentiment-primary: #26a67b;
+        --colors-outline-neutral-strong: #3c424e;
+        --colors-outline-neutral-standard: #363b45;
+
+        --colors-text-neutral-strong: #d0d4dc;
+        --colors-text-neutral-standard: #98a0ae;
+
+        --sidebar-background: 220 13% 19%;
+        --sidebar-foreground: 220 14% 84%;
+        --sidebar-primary: 161 45% 38%;
+        --sidebar-primary-foreground: 0 0% 95%;
+        --sidebar-accent: 220 13% 22%;
+        --sidebar-accent-foreground: 220 13% 86%;
+        --sidebar-border: 220 13% 27%;
+        --sidebar-ring: 161 45% 38%;
+
+        --text-title: #d0d4dc;
+        --text-sub-title: #98a0ae;
+        --text-sub-title-invert: #afb5c0;
+
+        /* 核心修改 1：顶栏暗化为低调的墨绿，不再刺眼 */
+        --background-header-bar: #14382c;
+
+        --text-title-invert: #23272f;
+
+        --background-card: #2a2e37;
+
+        --background-highlight: rgba(38, 166, 123, 0.12);
+
+        --input-border: #3c424e;
+
+        --metallic: #494f5a;
+
+        --bg-title: #2a2e37;
+
+        /* 核心修改 2：底色与卡片采用极微小梯度（23272f -> 2a2e37），零强烈对比 */
+        --bg-base: #23272f;
+        --bg-card: #2a2e37;
+        --bg-component: #2a2e37;
+        --bg-input: #31363f;
+        /* RGB channel triples, not hsl() triples: these two are consumed as
+           rgb(var(--bg-canvas) / <alpha-value>) in tailwind.config.js and as
+           rgb(var(--bg-canvas)) in components/canvas/background.tsx, so an HSL
+           triple here resolves channel-wise to rgb(220, 36, 41) - a red canvas. */
+        --bg-canvas: 35 39 47; /* #23272f - same level as --bg-base, as in light */
+        --bg-list: 42 46 55; /* #2a2e37 - one step up, same as --bg-card */
+
+        --text-primary: 208 212 220; /* #d0d4dc 柔和哑光文字 */
+        --text-secondary: 152 160 174; /* #98a0ae 暗淡次要文字 */
+        --text-disabled: #606876;
+        --border-default: #3c424e;
+        --border-accent: #26a67b;
+        --border-button: #3c424e;
+
+        --team-group: #26a67b;
+        --team-member: #26a67b;
+        --team-department: #d9923b;
+        --bg-member: rgba(38, 166, 123, 0.12);
+
+        --text-primary-inverse: 35 39 47;
+        --text-secondary-inverse: 152 160 174;
+
+        --content-primary: #d0d4dc;
+        --content-secondary: #98a0ae;
+        --content-tertiary: #717b8e;
+
+        --cable-page-from: #23272f;
+        --cable-page-to: #23272f;
+        --cable-page-edge: #23272f;
+
+        --cable-surface: #2a2e37;
+        --cable-surface-muted: #31363f;
+        --cable-surface-border: #3c424e;
+        --cable-surface-border-hover: #26a67b;
+
+        --cable-brand: #26a67b;
+        --cable-brand-soft: rgba(38, 166, 123, 0.12);
+        --cable-accent: #26a67b;
+        --cable-copper: #d9923b;
+        --cable-icon-surface: rgba(38, 166, 123, 0.12);
+        --cable-icon-foreground: #26a67b;
+        --cable-divider: #363b45;
+        --cable-muted: var(--content-tertiary);
+        --cable-hairline: #3c424e;
+        --cable-shadow: none;
+        --cable-shadow-hover: none;
+
+        --accent-color: #26a67b;
+        --accent-color-strong: #1d8260;
+        --accent-color-soft: rgba(38, 166, 123, 0.12);
+
+        --glass-bg: #2a2e37;
+        --glass-border: #3c424e;
+
+        --hero-title-from: #d0d4dc;
+        --hero-title-via: #d0d4dc;
+        --hero-title-to: #d0d4dc;
+        --hero-card-bg: #2a2e37;
+        --hero-card-bg-hover: #31363f;
+        --hero-card-border: #3c424e;
+        --hero-icon: #26a67b;
+        --hero-badge-bg: rgba(38, 166, 123, 0.12);
+        --hero-badge-border: #26a67b;
+        --hero-badge-text: #26a67b;
+
+        --login-card-edge: #3c424e;
+
+        --ceramic-surface: #2a2e37;
+        --ceramic-border: #3c424e;
+        --ceramic-border-hover: #26a67b;
+        --ceramic-pill-surface: #31363f;
+        --ceramic-pill-edge: #3c424e;
+        --ceramic-track-surface: #31363f;
+        --ceramic-track-border: #3c424e;
+        --ceramic-hover-surface: #31363f;
+
+        --badge-surface: rgba(38, 166, 123, 0.12);
+        --badge-border: #26a67b;
+        --badge-ink: #26a67b;
+        --badge-surface-hover: rgba(38, 166, 123, 0.2);
+        --field-border: #3c424e;
+        --field-border-focus: #26a67b;
+
+        --scrollbar-thumb: #494f5a;
+        --scrollbar-thumb-hover: #5c6370;
+
+        --table-header-bg: #2a2e37;
+        --table-row-hover: #2f413b;
+        --table-row-base: #232f2b;
+        --table-row-alternate: #273430;
+
+        --surface-hover-bg: #31363f;
+        --surface-hover-border: #26a67b;
+
+        /* 核心修改 3：顶栏配置同步修改为沉稳暗绿 */
+        --gov-header-bg: #14382c;
+        --gov-header-hover: #194537;
+        --gov-header-fg: #c5cbd3;
+        --gov-header-border: #1d4d3d;
+
+        /* 暗色外壳：同一套结构，投影换成黑色（暗色下的“浅色投影”看不见），
+           上下文栏抬到卡片那一级（#2a2e37）与页面 #23272f 分开；底栏不抬级，只用
+           一道极浅的提亮渐变收尾。 */
+        --shell-header-ink: rgba(255, 255, 255, 0.84);
+        --shell-header-ink-strong: #ffffff;
+        --shell-header-rail: rgba(255, 255, 255, 0.16);
+        --shell-header-wash: rgba(255, 255, 255, 0.09);
+        --shell-header-active-bg: rgba(255, 255, 255, 0.15);
+        --shell-header-indicator: #4ecfa4;
+        --shell-header-topline: rgba(255, 255, 255, 0.06);
+        --shell-header-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+
+        --shell-context-bg: #2a2e37;
+        --shell-context-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
+        --shell-context-marker: #26a67b;
+
+        /* 暗色底栏同样是“提亮 3.5%”的渐变而不是一块浅色面板，暗色模式下不会在页面
+           底部出现一块突兀的亮矩形。 */
+        --shell-footer-tint-from: rgba(255, 255, 255, 0);
+        --shell-footer-tint-to: rgba(255, 255, 255, 0.035);
+        --shell-footer-rule: #3c424e;
+
+        /* 暗色画布是 #23272f，品牌绿在其上已经是亮色，所以底纹比浅色主题略低一点，
+           只做“能看出有线缆走向”的程度。 */
+        --shell-canvas-pattern-opacity: 0.07;
+
+        --panel-border: #3c424e;
+        --table-border: #3a5146;
+        --table-head-ink: #d0d4dc;
+
+        --status-available-surface: rgba(38, 166, 123, 0.12);
+        --status-available-ink: #26a67b;
+        --status-available-border: #26a67b;
+
+        --cable-nav-text: #98a0ae;
+        --cable-nav-text-hover: #d0d4dc;
+        --cable-nav-hover-bg: rgba(255, 255, 255, 0.06);
+        --cable-nav-active-text: #26a67b;
+        --cable-nav-active-bg: rgba(38, 166, 123, 0.12);
+        --cable-nav-indicator: #26a67b;
+    }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-bg-base text-text-primary;
-    background-image: var(--page-gradient);
-    background-attachment: fixed;
-    background-repeat: no-repeat;
-    font-feature-settings:
-      'rlig' 1,
-      'calt' 1;
-    font-size: 14px;
-    line-height: 1.5;
-    letter-spacing: 0;
-  }
+    * {
+        @apply border-border;
+    }
 
-  h1 {
-    @apply text-2xl font-bold;
-  }
-  h2 {
-    @apply text-xl font-semibold;
-  }
-  h3 {
-    @apply text-lg font-medium;
-  }
-  h4 {
-    @apply text-base font-normal;
-  }
+    body {
+        @apply bg-bg-base text-text-primary;
+        background-image: var(--page-gradient);
+        background-attachment: fixed;
+        background-repeat: no-repeat;
+        font-feature-settings: 'rlig' 1,
+        'calt' 1;
+        font-size: 14px;
+        line-height: 1.5;
+        letter-spacing: 0;
+    }
 
-  img,
-  video {
-    max-width: none;
-  }
+    h1 {
+        @apply text-2xl font-bold;
+    }
+
+    h2 {
+        @apply text-xl font-semibold;
+    }
+
+    h3 {
+        @apply text-lg font-medium;
+    }
+
+    h4 {
+        @apply text-base font-normal;
+    }
+
+    img,
+    video {
+        max-width: none;
+    }
 }
 
 @layer base {
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-  }
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    }
 
-  html {
-    font-family: var(--font-sans);
-  }
+    html {
+        font-family: var(--font-sans);
+    }
 
-  a,
-  button,
-  [role='button'],
-  [role='tab'],
-  summary {
-    transition-property:
-      color, background-color, border-color, opacity, box-shadow;
-    transition-duration: 200ms;
-    transition-timing-function: ease-in-out;
-  }
+    a,
+    button,
+    [role='button'],
+    [role='tab'],
+    summary {
+        transition-property: color, background-color, border-color, opacity, box-shadow;
+        transition-duration: 200ms;
+        transition-timing-function: ease-in-out;
+    }
 }
 
 @layer components {
-  .page-gutter {
-    margin-inline: auto;
-    width: 100%;
-    max-width: 1280px;
-    padding-inline: 1rem;
-  }
-
-  /* The vertical half of the page frame the card lists share: the toolbar row
-     sitting under the 32px breadcrumb bar, and the footer that closes the list on
-     its pagination. Both were written out per page as `mb-4 … pt-8` and
-     `mt-4 pb-5`, which is how a rhythm drifts — one of the six pages had already
-     dropped its `min-w-0`. `page-gutter` supplies the horizontal half, so a page
-     uses the two together. The gap under the breadcrumb is a section gap: the bar
-     is only 32px tall, and 32px of air below it pushed the first card row down by
-     more than the row is tall. */
-  .page-toolbar {
-    padding-top: 1rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .page-list-footer {
-    margin-top: 0.75rem;
-    padding-bottom: 1rem;
-  }
-
-  .glass-panel {
-    background-color: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-
-  .glass-surface {
-    background-color: var(--glass-bg);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    box-shadow: none;
-  }
-
-  .brand-entry {
-    border: 1px solid transparent;
-    border-radius: 2px;
-    transition:
-      background-color 200ms ease,
-      border-color 200ms ease;
-  }
-
-  .brand-entry:hover {
-    background-color: var(--gov-header-hover);
-    border-color: transparent;
-    box-shadow: none;
-  }
-
-  .brand-entry:focus-visible {
-    outline: none;
-    border-color: var(--gov-header-fg);
-    box-shadow: none;
-  }
-
-  .brand-entry-mark {
-    transition: filter 200ms ease;
-  }
-
-  .brand-entry:hover .brand-entry-mark,
-  .brand-entry:focus-visible .brand-entry-mark {
-    filter: none;
-  }
-
-  .ceramic-pill {
-    background-color: var(--ceramic-surface);
-    border: 1px solid var(--ceramic-border);
-    border-radius: 2px;
-    box-shadow: none;
-  }
-
-  .ceramic-segmented {
-    background-color: var(--ceramic-track-surface);
-    border: 1px solid var(--ceramic-track-border);
-    border-radius: 2px;
-    overflow: clip;
-    overflow-clip-margin: 0;
-    box-shadow: none;
-  }
-
-  .ceramic-segment-idle {
-    border-radius: 2px;
-    transition:
-      background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
-      color 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .ceramic-segment-idle:hover {
-    background-color: var(--ceramic-hover-surface);
-  }
-
-  .ceramic-segment-pill {
-    background-color: var(--ceramic-pill-surface);
-    border: 1px solid var(--ceramic-pill-edge);
-    border-radius: 2px;
-    box-shadow: none;
-    transition:
-      top 200ms cubic-bezier(0.4, 0, 0.2, 1),
-      left 200ms cubic-bezier(0.4, 0, 0.2, 1),
-      width 200ms cubic-bezier(0.4, 0, 0.2, 1),
-      height 200ms cubic-bezier(0.4, 0, 0.2, 1),
-      background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
-      border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .category-tone-bom {
-    --category-glow: var(--category-bom-glow);
-    --category-ink: var(--cable-copper);
-  }
-
-  .category-tone-standard {
-    --category-glow: var(--category-standard-glow);
-    --category-ink: var(--accent-color);
-  }
-
-  .category-tone-spec {
-    --category-glow: var(--category-spec-glow);
-    --category-ink: var(--category-spec-ink);
-  }
-
-  .category-tone-quality {
-    --category-glow: var(--category-quality-glow);
-    --category-ink: var(--category-quality-ink);
-  }
-
-  .category-tone-general {
-    --category-glow: var(--category-general-glow);
-    --category-ink: var(--cable-muted);
-  }
-
-  .category-tone-custom {
-    --category-glow: var(--category-custom-glow);
-    --category-ink: var(--category-custom-ink);
-  }
-
-  /* 取消光晕：类型标记只保留描边与文字色 */
-  .category-halo {
-    background-image: none;
-  }
-
-  .category-ink {
-    color: var(--category-ink);
-  }
-
-  /* 全宽实心深绿顶栏。上沿 1px 内高光 + 2px 落影：绿块因此压在页面之上，
-     而不是与页面齐平；两者都不改变高度（内高光在里面，落影不占布局），
-     所以页面不会因为外壳加厚而抖动。
-     `position/z-index` 只为一个目的：这一行的落影要落在它下面那一行（上下文栏）
-     上面，否则会被后绘制的兄弟节点背景盖掉。z-index 2 让整个顶栏（含它内部的
-     知识库弹出面板）作为一个整体参与层级，仍低于任何模态层（z-50）。 */
-  .glass-header {
-    position: relative;
-    z-index: 2;
-    background-color: var(--gov-header-bg);
-    border-bottom: 1px solid var(--gov-header-border);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    box-shadow:
-      inset 0 1px 0 var(--shell-header-topline),
-      var(--shell-header-shadow);
-  }
-
-  /* 顶栏分区竖线：品牌区 / 主导航 / 工具区之间的一条 1px 白线。只有 24px 高、
-     两端不顶格，所以它读作“分组”，而不是表格的一列。 */
-  .shell-header-rail {
-    width: 1px;
-    height: 1.5rem;
-    flex: none;
-    background-color: var(--shell-header-rail);
-  }
-
-  /* 顶栏工具区：三个 32px 图标按钮共用一个 1px 描边容器，读作一块仪表板，
-     而不是散落的三个按钮。总高 38px，在 56px 栏里上下各留 9px。 */
-  .shell-header-instruments {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    padding: 2px;
-    border: 1px solid var(--shell-header-rail);
-    border-radius: 2px;
-  }
-
-  /* 顶栏控件（语言 / 通知 / 主题 / 账号）：32px 方阵、图标居中，hover 与
-     focus-visible 用同一层白色蒙层，focus-visible 另加 2px 内描边 —— 焦点可见，
-     且不产生任何位移。Button 的 ghost hover 工具类在 utilities 层，会压过单类
-     选择器，所以这里写双类（理由同 .ceramic-relief）。 */
-  .shell-header-control.shell-header-control {
-    width: 2rem;
-    height: 2rem;
-    padding: 0;
-    color: var(--shell-header-ink);
-    border-radius: 2px;
-    background-color: transparent;
-    transition:
-      background-color 160ms ease-in-out,
-      color 160ms ease-in-out,
-      box-shadow 160ms ease-in-out;
-  }
-
-  .shell-header-control.shell-header-control:hover,
-  .shell-header-control.shell-header-control:focus-visible {
-    background-color: var(--shell-header-wash);
-    color: var(--shell-header-ink-strong);
-  }
-
-  .shell-header-control.shell-header-control:focus-visible {
-    outline: none;
-    box-shadow: inset 0 0 0 2px var(--shell-header-ink-strong);
-  }
-
-  /* 账号入口：与仪表板分开的一格。描边画在盒子外面（outline 不占布局、也不吃
-     头像边上的一个像素），hover/focus 时由 1px 收到 2px，位置与尺寸都不变。 */
-  .shell-header-account.shell-header-account {
-    position: relative;
-    display: inline-flex;
-    width: 2rem;
-    height: 2rem;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    border-radius: 2px;
-    outline: 1px solid var(--shell-header-rail);
-    outline-offset: 0;
-    transition:
-      outline-color 160ms ease-in-out,
-      outline-width 160ms ease-in-out;
-  }
-
-  .shell-header-account.shell-header-account:hover,
-  .shell-header-account.shell-header-account:focus-visible {
-    outline: 2px solid var(--shell-header-ink-strong);
-  }
-
-  /* 顶栏机构名：与图标同基线，字距收紧一档，让它读作机构名而不是页面标题。 */
-  .shell-header-brand {
-    color: var(--shell-header-ink-strong);
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-  }
-
-  /* 页面上下文栏：贴顶栏下沿的一条 32px 页眉带（暗色模式抬到卡片那一级），只用
-     1px 下边线与 2px 落影与主内容分层，因此路径读作外壳的一部分，又不占用主内容的
-     高度。z-index 1 让这条 2px 落影落在主内容之上。 */
-  .shell-context-bar {
-    position: relative;
-    z-index: 1;
-    background-color: var(--shell-context-bg);
-    border-bottom: 1px solid var(--panel-border);
-    box-shadow: var(--shell-context-shadow);
-  }
-
-  /* 上下文栏最左侧的 2px 品牌竖条：把路径锚在内容列的左边缘上。 */
-  .shell-context-marker {
-    width: 2px;
-    height: 0.875rem;
-    flex: none;
-    background-color: var(--shell-context-marker);
-  }
-
-  /* 路径上的父级：次级灰，hover 转品牌色。左右各 2px 内衬（用负外边距补偿）
-     只为 focus 描边留出一点空隙，不改变文本起始位置。 */
-  .shell-context-link {
-    padding-inline: 2px;
-    margin-inline: -2px;
-    color: var(--content-secondary);
-    border-radius: 2px;
-    transition:
-      color 160ms ease-in-out,
-      background-color 160ms ease-in-out;
-  }
-
-  .shell-context-link:hover {
-    color: var(--cable-brand);
-  }
-
-  .shell-context-link:focus-visible {
-    outline: none;
-    color: var(--cable-brand);
-    box-shadow: inset 0 0 0 1px var(--cable-brand);
-  }
-
-  /* 当前层级：这一行里唯一带底色的元素。浅绿底 + 品牌色文字，父级与当前页
-     因此不靠颜色深浅去猜，中英文、明暗两种主题下都成立。 */
-  .shell-context-current {
-    background-color: var(--cable-brand-soft);
-    color: var(--cable-brand);
-    padding: 1px 7px;
-    margin-inline: -2px;
-    border-radius: 2px;
-    font-weight: 600;
-  }
-
-  /* 系统底栏：页面的收尾，不是一块面板 —— 没有实色底、没有投影，只有一条向下加深
-     3.5% 的极浅渐变（暗色模式反向提亮 3.5%）。渐变从透明出发，所以底栏上沿与工作区
-     之间不存在硬边，两种主题下都不会在底部多出一块亮/暗矩形。上边线自身两端渐隐，
-     只留作一条结构提示，而不是把页面切成两块的横线。 */
-  .shell-footer {
-    position: relative;
-    background-color: transparent;
-    background-image: linear-gradient(
-      to bottom,
-      var(--shell-footer-tint-from),
-      var(--shell-footer-tint-to)
-    );
-  }
-
-  .shell-footer::before {
-    content: '';
-    pointer-events: none;
-    position: absolute;
-    top: 0;
-    inset-inline: 0;
-    height: 1px;
-    background-image: linear-gradient(
-      to right,
-      transparent 0%,
-      var(--shell-footer-rule) 14%,
-      var(--shell-footer-rule) 86%,
-      transparent 100%
-    );
-  }
-
-  /* ==========================================================================
-     Settings · 设置模块的共用外壳
-
-     设置页此前把同一个 `ceramic-relief` 用在了从指标格子到导航行的所有元素上，
-     于是"表面"不再表示任何层级：每一块都是同一张卡，边界反而看不清，整页读作
-     一大片灰白。这里把设置模块的表面收敛成四种，并且只用两种手段——1px 细线
-     和一个中性色阶：
-       section  分区：细线框、无填充（表格、表单组、用量块）
-       tile     安静的表面：细线 + 一档中性底（指标格、空态、说明）
-       notice   空态/失败态：与 tile 同底，带图标位
-       table    数据表：细线框 + 表头带 + 斑马行 + 统一行高
-     颜色全部取自既有 token（--cable-hairline / --cable-surface-muted /
-     --table-* / --accent-color-soft），因此明暗两套主题不需要第二份定义，
-     也不会出现"暗色下比页面更亮的一块砖"。 */
-  .settings-body {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    min-height: 0;
-    padding: 1rem 1.25rem 1.25rem;
-  }
-
-  /* 目的页标题：与外壳的 56px 顶栏、32px 上下文栏同一套克制关系 —— 18px/600
-     足够作为面板内的第一层，又不会在已经有两级外壳的情况下变成第二个页头。 */
-  .settings-title {
-    color: var(--content-primary);
-    font-size: 18px;
-    font-weight: 600;
-    line-height: 1.35;
-  }
-
-  .settings-description {
-    color: var(--content-secondary);
-    font-size: 12px;
-    line-height: 1.5;
-  }
-
-  /* 分区：只有一条 1px 细线，没有填充，所以它划出的是"范围"而不是"又一张卡"。 */
-  .settings-section {
-    overflow: hidden;
-    border: 1px solid var(--cable-hairline);
-    border-radius: 2px;
-    background-color: transparent;
-  }
-
-  .settings-section-head {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.625rem 0.875rem;
-    border-bottom: 1px solid var(--cable-hairline);
-  }
-
-  .settings-section-title {
-    color: var(--content-primary);
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.4;
-  }
-
-  .settings-section-hint {
-    color: var(--content-secondary);
-    font-size: 12px;
-  }
-
-  .settings-section-body {
-    padding: 0.875rem;
-  }
-
-  /* 安静的表面：一档中性底 + 细线。指标格、设置说明、空态都用它，所以它们之间
-     不存在"哪个更重要"的颜色暗示，重要性由文字层级和位置表达。 */
-  .settings-tile {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    border: 1px solid var(--cable-hairline);
-    border-radius: 2px;
-    background-color: var(--cable-surface-muted);
-    padding: 0.75rem;
-  }
-
-  .settings-tile-label {
-    color: var(--content-secondary);
-    font-size: 12px;
-    line-height: 1.4;
-  }
-
-  .settings-tile-value {
-    color: var(--content-primary);
-    font-size: 20px;
-    font-weight: 600;
-    line-height: 1.2;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .settings-tile-hint {
-    color: var(--content-tertiary);
-    font-size: 12px;
-    line-height: 1.4;
-  }
-
-  .settings-notice {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    border: 1px solid var(--cable-hairline);
-    border-radius: 2px;
-    background-color: var(--cable-surface-muted);
-    padding: 0.875rem;
-  }
-
-  .settings-notice-title {
-    color: var(--content-primary);
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.4;
-  }
-
-  .settings-notice-body {
-    color: var(--content-secondary);
-    font-size: 12px;
-    line-height: 1.5;
-  }
-
-  /* 数据表：一条细线划定表格，表头带 + 斑马行 + 固定行高承担可读性。行高固定
-     也是角色标签与角色选择器能对齐的前提——两者都是 32px 的控件。
-     这三个类写成双类：`Table` 原语自己带了 `bg-bg-card` / `h-14` / `px-4 py-3`
-     等工具类，而 twMerge 不认识自定义类名、不会替我们摘掉它们，只有提高选择器
-     权重才能让表格的统一几何真正生效（行高、内衬、表头文字色）。 */
-  .settings-table.settings-table {
-    position: relative;
-    width: 100%;
-    overflow: auto;
-    border: 1px solid var(--table-border);
-    border-radius: 2px;
-    background-color: var(--table-row-base);
-    scrollbar-width: thin;
-  }
-
-  .settings-table-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.5rem 0.875rem;
-    border-bottom: 1px solid var(--table-border);
-    background-color: var(--cable-surface-muted);
-  }
-
-  .settings-table-head-cell.settings-table-head-cell {
-    height: 2.5rem;
-    padding: 0 0.875rem;
-    color: var(--table-head-ink);
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.4;
-    white-space: nowrap;
-  }
-
-  .settings-table-row.settings-table-row {
-    height: 2.75rem;
-    border-bottom: 1px solid var(--table-border);
-    background-color: var(--table-row-base);
-  }
-
-  .settings-table-row.settings-table-row:nth-child(even) {
-    background-color: var(--table-row-alternate);
-  }
-
-  .settings-table-row.settings-table-row:hover {
-    background-color: var(--table-row-hover);
-  }
-
-  .settings-table-cell.settings-table-cell {
-    height: 2.75rem;
-    padding: 0 0.875rem;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    vertical-align: middle;
-  }
-
-  /* `Table` 原语给首列 24px、末列 24px 的内衬（`first-of-type:pl-6`），而设置表格的
-     格子统一 14px —— 与分区标题同一条竖线。原语那两条也是 0,2,0 权重且在后，所以
-     这里必须再高一级（0,3,0）才能把内衬收回到同一条网格线上。 */
-  .settings-table-head-cell.settings-table-head-cell:first-of-type,
-  .settings-table-cell.settings-table-cell:first-of-type {
-    padding-inline-start: 0.875rem;
-  }
-
-  .settings-table-head-cell.settings-table-head-cell:last-of-type,
-  .settings-table-cell.settings-table-cell:last-of-type {
-    padding-inline-end: 0.875rem;
-  }
-
-  /* 表单节奏：标签、控件、说明三段固定间距；横向字段的标签列宽度固定，所以一行
-     里所有控件左边缘对齐，中英文标签都不会把控件推来推去。 */
-  .settings-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-    min-width: 0;
-  }
-
-  .settings-field-row {
-    display: grid;
-    grid-template-columns: 9.5rem minmax(0, 1fr);
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .settings-field-label {
-    color: var(--content-secondary);
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 1.5;
-  }
-
-  .settings-field-hint {
-    color: var(--content-tertiary);
-    font-size: 12px;
-    line-height: 1.45;
-  }
-
-  /* 必填标记固定在标签右上角，因此有它没它都不移动标签本身。 */
-  .settings-required {
-    color: rgb(var(--state-error));
-    margin-inline-end: 0.125rem;
-  }
-
-  /* 小方标签：角色、能力、维度共用一种形状与高度，表格里因此不会出现三种
-     高度不同的"胶囊"。 */
-  .settings-tag {
-    display: inline-flex;
-    align-items: center;
-    height: 1.25rem;
-    padding-inline: 0.375rem;
-    border: 1px solid var(--cable-hairline);
-    border-radius: 2px;
-    font-size: 11px;
-    font-weight: 500;
-    line-height: 1;
-    white-space: nowrap;
-  }
-
-  /* 设置侧栏：一级项、二级项、选中态各只有一种表达，并且选中态在两级上用同一种
-     语言——左侧 2px 品牌色竖标 + 一档中性底，因此层级靠缩进读，不靠颜色猜。
-     一级项的水平内衬与对齐由调用方给出（紧凑屏幕上要摘掉它们），这里只固定
-     高度、墨色、圆角与选中态。 */
-  .settings-rail-item.settings-rail-item {
-    position: relative;
-    gap: 0.625rem;
-    height: 2.25rem;
-    border-radius: 2px;
-    color: var(--content-secondary);
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  .settings-rail-item.settings-rail-item:hover {
-    background-color: var(--surface-hover-bg);
-    color: var(--content-primary);
-  }
-
-  .settings-rail-item.settings-rail-item:focus-visible {
-    outline: none;
-    box-shadow: inset 0 0 0 1px var(--accent-color);
-  }
-
-  .settings-rail-item-active.settings-rail-item-active {
-    background-color: var(--cable-surface-muted);
-    color: var(--content-primary);
-    font-weight: 600;
-    box-shadow: inset 2px 0 0 var(--accent-color);
-  }
-
-  .settings-rail-child.settings-rail-child {
-    justify-content: flex-start;
-    height: 1.75rem;
-    padding-inline: 0.5rem;
-    border-radius: 2px;
-    color: var(--content-secondary);
-    font-size: 13px;
-    font-weight: 400;
-  }
-
-  /* One step lighter than the active fill (`--accent-color-soft`) and the same wash
-     the Dataset configuration row uses for its own hover, so a child row answers the
-     pointer in the rail's own green rather than in the neutral hover of the shell.
-     Both rails that use `.settings-rail-child` (Settings and the Dataset
-     configuration submenu) therefore hover identically. */
-  .settings-rail-child.settings-rail-child:hover {
-    background-color: rgb(var(--accent-primary) / 0.05);
-    color: var(--content-primary);
-  }
-
-  .settings-rail-child-active.settings-rail-child-active {
-    background-color: var(--accent-color-soft);
-    color: var(--accent-color);
-    font-weight: 500;
-  }
-
-  .card-interactive {
-    cursor: pointer;
-    transition:
-      background-color 200ms ease-in-out,
-      border-color 200ms ease-in-out,
-      opacity 200ms ease-in-out;
-  }
-
-  .card-interactive:hover {
-    background-color: var(--surface-hover-bg);
-    border-color: var(--surface-hover-border);
-  }
-
-  .glow-accent {
-    box-shadow: none;
-  }
-
-  .focus-glow:focus-visible,
-  .focus-glow:focus-within {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: none;
-  }
-
-  /* 渐变一律退化为实色 */
-  .accent-gradient {
-    background-image: none;
-    background-color: var(--accent-color);
-    color: var(--accent-contrast);
-  }
-
-  .accent-gradient:hover {
-    background-image: none;
-    background-color: var(--accent-color-strong);
-  }
-
-  /* 顶栏导航项。颜色走 --cable-nav-* token，而顶栏容器把这组 token 局部覆盖成
-     白色系（见 header.tsx 的 headerNavTokens），所以页面内的 Segmented / 分页
-     沿用同一组 class 时仍然是白底上的中灰字，不会跟着顶栏变白。
-     三个状态是一条色阶：静止（无底）→ hover（一层 10% 白）→ 选中（16% 白 +
-     2px 品牌亮绿底边 + 加粗）。底边在 hover/focus 时也画出来，切换状态时不跳动。 */
-  .gov-nav-link {
-    color: var(--cable-nav-text);
-    border-radius: 2px;
-    transition:
-      background-color 160ms ease-in-out,
-      color 160ms ease-in-out,
-      box-shadow 160ms ease-in-out;
-  }
-
-  .gov-nav-link:hover,
-  .gov-nav-link:focus-visible {
-    background-color: var(--cable-nav-hover-bg);
-    color: var(--cable-nav-text-hover);
-    outline: none;
-  }
-
-  /* 焦点必须看得见，且不能位移：内描边画在盒子里，尺寸仍是 36x36。 */
-  .gov-nav-link:focus-visible {
-    box-shadow: inset 0 0 0 2px var(--cable-nav-indicator);
-  }
-
-  /* 选中态：比 hover 深一档的蒙层 + 2px 品牌亮绿底边 + 加粗。 */
-  .gov-nav-link-active.gov-nav-link-active {
-    background-color: var(--cable-nav-active-bg);
-    color: var(--cable-nav-active-text);
-    font-weight: 700;
-    box-shadow: inset 0 -2px 0 var(--cable-nav-indicator);
-  }
-
-  .gov-nav-link-active.gov-nav-link-active:hover,
-  .gov-nav-link-active.gov-nav-link-active:focus-visible {
-    background-color: var(--cable-nav-active-bg);
-    color: var(--cable-nav-active-text);
-    box-shadow: inset 0 -2px 0 var(--cable-nav-indicator);
-  }
+    .page-gutter {
+        margin-inline: auto;
+        width: 100%;
+        max-width: 1280px;
+        padding-inline: 1rem;
+    }
+
+    /* The vertical half of the page frame the card lists share: the toolbar row
+       sitting under the 32px breadcrumb bar, and the footer that closes the list on
+       its pagination. Both were written out per page as `mb-4 … pt-8` and
+       `mt-4 pb-5`, which is how a rhythm drifts — one of the six pages had already
+       dropped its `min-w-0`. `page-gutter` supplies the horizontal half, so a page
+       uses the two together. The gap under the breadcrumb is a section gap: the bar
+       is only 32px tall, and 32px of air below it pushed the first card row down by
+       more than the row is tall. */
+    .page-toolbar {
+        padding-top: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .page-list-footer {
+        margin-top: 0.75rem;
+        padding-bottom: 1rem;
+    }
+
+    .glass-panel {
+        background-color: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    .glass-surface {
+        background-color: var(--glass-bg);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        box-shadow: none;
+    }
+
+    .brand-entry {
+        border: 1px solid transparent;
+        border-radius: 2px;
+        transition: background-color 200ms ease,
+        border-color 200ms ease;
+    }
+
+    .brand-entry:hover {
+        background-color: var(--gov-header-hover);
+        border-color: transparent;
+        box-shadow: none;
+    }
+
+    .brand-entry:focus-visible {
+        outline: none;
+        border-color: var(--gov-header-fg);
+        box-shadow: none;
+    }
+
+    .brand-entry-mark {
+        transition: filter 200ms ease;
+    }
+
+    .brand-entry:hover .brand-entry-mark,
+    .brand-entry:focus-visible .brand-entry-mark {
+        filter: none;
+    }
+
+    .ceramic-pill {
+        background-color: var(--ceramic-surface);
+        border: 1px solid var(--ceramic-border);
+        border-radius: 2px;
+        box-shadow: none;
+    }
+
+    .ceramic-segmented {
+        background-color: var(--ceramic-track-surface);
+        border: 1px solid var(--ceramic-track-border);
+        border-radius: 2px;
+        overflow: clip;
+        overflow-clip-margin: 0;
+        box-shadow: none;
+    }
+
+    .ceramic-segment-idle {
+        border-radius: 2px;
+        transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+        color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ceramic-segment-idle:hover {
+        background-color: var(--ceramic-hover-surface);
+    }
+
+    .ceramic-segment-pill {
+        background-color: var(--ceramic-pill-surface);
+        border: 1px solid var(--ceramic-pill-edge);
+        border-radius: 2px;
+        box-shadow: none;
+        transition: top 200ms cubic-bezier(0.4, 0, 0.2, 1),
+        left 200ms cubic-bezier(0.4, 0, 0.2, 1),
+        width 200ms cubic-bezier(0.4, 0, 0.2, 1),
+        height 200ms cubic-bezier(0.4, 0, 0.2, 1),
+        background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .category-tone-bom {
+        --category-glow: var(--category-bom-glow);
+        --category-ink: var(--cable-copper);
+    }
+
+    .category-tone-standard {
+        --category-glow: var(--category-standard-glow);
+        --category-ink: var(--accent-color);
+    }
+
+    .category-tone-spec {
+        --category-glow: var(--category-spec-glow);
+        --category-ink: var(--category-spec-ink);
+    }
+
+    .category-tone-quality {
+        --category-glow: var(--category-quality-glow);
+        --category-ink: var(--category-quality-ink);
+    }
+
+    .category-tone-general {
+        --category-glow: var(--category-general-glow);
+        --category-ink: var(--cable-muted);
+    }
+
+    .category-tone-custom {
+        --category-glow: var(--category-custom-glow);
+        --category-ink: var(--category-custom-ink);
+    }
+
+    /* 取消光晕：类型标记只保留描边与文字色 */
+    .category-halo {
+        background-image: none;
+    }
+
+    .category-ink {
+        color: var(--category-ink);
+    }
+
+    /* 全宽实心深绿顶栏。上沿 1px 内高光 + 2px 落影：绿块因此压在页面之上，
+       而不是与页面齐平；两者都不改变高度（内高光在里面，落影不占布局），
+       所以页面不会因为外壳加厚而抖动。
+       `position/z-index` 只为一个目的：这一行的落影要落在它下面那一行（上下文栏）
+       上面，否则会被后绘制的兄弟节点背景盖掉。z-index 2 让整个顶栏（含它内部的
+       知识库弹出面板）作为一个整体参与层级，仍低于任何模态层（z-50）。 */
+    .glass-header {
+        position: relative;
+        z-index: 2;
+        background-color: var(--gov-header-bg);
+        border-bottom: 1px solid var(--gov-header-border);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        box-shadow: inset 0 1px 0 var(--shell-header-topline),
+        var(--shell-header-shadow);
+    }
+
+    /* 顶栏分区竖线：品牌区 / 主导航 / 工具区之间的一条 1px 白线。只有 24px 高、
+       两端不顶格，所以它读作“分组”，而不是表格的一列。 */
+    .shell-header-rail {
+        width: 1px;
+        height: 1.5rem;
+        flex: none;
+        background-color: var(--shell-header-rail);
+    }
+
+    /* 顶栏工具区：三个 32px 图标按钮共用一个 1px 描边容器，读作一块仪表板，
+       而不是散落的三个按钮。总高 38px，在 56px 栏里上下各留 9px。 */
+    .shell-header-instruments {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 2px;
+        border: 1px solid var(--shell-header-rail);
+        border-radius: 2px;
+    }
+
+    /* 顶栏控件（语言 / 通知 / 主题 / 账号）：32px 方阵、图标居中，hover 与
+       focus-visible 用同一层白色蒙层，focus-visible 另加 2px 内描边 —— 焦点可见，
+       且不产生任何位移。Button 的 ghost hover 工具类在 utilities 层，会压过单类
+       选择器，所以这里写双类（理由同 .ceramic-relief）。 */
+    .shell-header-control.shell-header-control {
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        color: var(--shell-header-ink);
+        border-radius: 2px;
+        background-color: transparent;
+        transition: background-color 160ms ease-in-out,
+        color 160ms ease-in-out,
+        box-shadow 160ms ease-in-out;
+    }
+
+    .shell-header-control.shell-header-control:hover,
+    .shell-header-control.shell-header-control:focus-visible {
+        background-color: var(--shell-header-wash);
+        color: var(--shell-header-ink-strong);
+    }
+
+    .shell-header-control.shell-header-control:focus-visible {
+        outline: none;
+        box-shadow: inset 0 0 0 2px var(--shell-header-ink-strong);
+    }
+
+    /* 账号入口：与仪表板分开的一格。描边画在盒子外面（outline 不占布局、也不吃
+       头像边上的一个像素），hover/focus 时由 1px 收到 2px，位置与尺寸都不变。 */
+    .shell-header-account.shell-header-account {
+        position: relative;
+        display: inline-flex;
+        width: 2rem;
+        height: 2rem;
+        flex: none;
+        align-items: center;
+        justify-content: center;
+        border-radius: 2px;
+        outline: 1px solid var(--shell-header-rail);
+        outline-offset: 0;
+        transition: outline-color 160ms ease-in-out,
+        outline-width 160ms ease-in-out;
+    }
+
+    .shell-header-account.shell-header-account:hover,
+    .shell-header-account.shell-header-account:focus-visible {
+        outline: 2px solid var(--shell-header-ink-strong);
+    }
+
+    /* 顶栏机构名：与图标同基线，字距收紧一档，让它读作机构名而不是页面标题。 */
+    .shell-header-brand {
+        color: var(--shell-header-ink-strong);
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+    }
+
+    /* 页面上下文栏：贴顶栏下沿的一条 32px 页眉带（暗色模式抬到卡片那一级），只用
+       1px 下边线与 2px 落影与主内容分层，因此路径读作外壳的一部分，又不占用主内容的
+       高度。z-index 1 让这条 2px 落影落在主内容之上。 */
+    .shell-context-bar {
+        position: relative;
+        z-index: 1;
+        background-color: var(--shell-context-bg);
+        border-bottom: 1px solid var(--panel-border);
+        box-shadow: var(--shell-context-shadow);
+    }
+
+    /* 上下文栏最左侧的 2px 品牌竖条：把路径锚在内容列的左边缘上。 */
+    .shell-context-marker {
+        width: 2px;
+        height: 0.875rem;
+        flex: none;
+        background-color: var(--shell-context-marker);
+    }
+
+    /* 路径上的父级：次级灰，hover 转品牌色。左右各 2px 内衬（用负外边距补偿）
+       只为 focus 描边留出一点空隙，不改变文本起始位置。 */
+    .shell-context-link {
+        padding-inline: 2px;
+        margin-inline: -2px;
+        color: var(--content-secondary);
+        border-radius: 2px;
+        transition: color 160ms ease-in-out,
+        background-color 160ms ease-in-out;
+    }
+
+    .shell-context-link:hover {
+        color: var(--cable-brand);
+    }
+
+    .shell-context-link:focus-visible {
+        outline: none;
+        color: var(--cable-brand);
+        box-shadow: inset 0 0 0 1px var(--cable-brand);
+    }
+
+    /* 当前层级：这一行里唯一带底色的元素。浅绿底 + 品牌色文字，父级与当前页
+       因此不靠颜色深浅去猜，中英文、明暗两种主题下都成立。 */
+    .shell-context-current {
+        background-color: var(--cable-brand-soft);
+        color: var(--cable-brand);
+        padding: 1px 7px;
+        margin-inline: -2px;
+        border-radius: 2px;
+        font-weight: 600;
+    }
+
+    /* 系统底栏：页面的收尾，不是一块面板 —— 没有实色底、没有投影，只有一条向下加深
+       3.5% 的极浅渐变（暗色模式反向提亮 3.5%）。渐变从透明出发，所以底栏上沿与工作区
+       之间不存在硬边，两种主题下都不会在底部多出一块亮/暗矩形。上边线自身两端渐隐，
+       只留作一条结构提示，而不是把页面切成两块的横线。 */
+    .shell-footer {
+        position: relative;
+        background-color: transparent;
+        background-image: linear-gradient(
+                to bottom,
+                var(--shell-footer-tint-from),
+                var(--shell-footer-tint-to)
+        );
+    }
+
+    .shell-footer::before {
+        content: '';
+        pointer-events: none;
+        position: absolute;
+        top: 0;
+        inset-inline: 0;
+        height: 1px;
+        background-image: linear-gradient(
+                to right,
+                transparent 0%,
+                var(--shell-footer-rule) 14%,
+                var(--shell-footer-rule) 86%,
+                transparent 100%
+        );
+    }
+
+    /* ==========================================================================
+       登录后全站画布：线缆底纹
+
+       登录页把一条线缆描线（`pages/login-next/index.tsx` 的 .login-cable-traces /
+       .login-cable-flows，同一份 `d`）画在自己的整屏容器里。登录之后的每个页面都
+       挂在外壳上（RootLayoutContainer），所以底纹铺在这里而不是每一页里：
+       `.shell-canvas` 就是外壳的那张画布，底纹作为它自己的 ::before 层平铺重复。
+
+       实现要点（每一条都决定它不会动到内容）：
+         · 层是 `position: absolute; inset: 0`，且只有 1px 高的一层——它不参与布局，
+           所以不会改变任何页面的位置，也不会把滚动条带进来；
+         · `z-index: -1` 配上 `isolation: isolate`：外壳自建层叠上下文，于是这一层
+           画在外壳自己的底色之上、所有子内容（含它们的背景）之下。文字、卡片、表格
+           永远在它上面，卡片这类有实色底的表面会把它完全盖住，底纹只在画布露出的
+           地方可见；
+         · `pointer-events: none`：不接管任何点击，交互控件不受影响；
+         · 图案走 `mask-image`，颜色由 `--cable-brand` 给、浓淡由
+           `--shell-canvas-pattern-opacity` 给，因此明暗两套主题共用同一份 SVG，
+           不需要第二张图，也不会在暗色下变成一块亮矩形。
+       `mask-size` 保持图案 16:9 不被拉扯（560×315）；平铺取 repeat，于是同一段线缆
+       走向在整张画布上重复，而不是只在登录页出现一次。 */
+    /* 登录后全站画布：线缆底纹 + 轻柔主题光 */
+    .shell-canvas {
+        position: relative;
+        isolation: isolate;
+        background-color: var(--cable-page-to);
+        background-image: radial-gradient(
+                ellipse at 12% 8%,
+                color-mix(in srgb, var(--cable-brand) 8%, transparent),
+                transparent 38%
+        ),
+        radial-gradient(
+                ellipse at 88% 82%,
+                color-mix(in srgb, var(--cable-brand) 5%, transparent),
+                transparent 34%
+        );
+    }
+
+    .shell-canvas::before,
+    .shell-canvas::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background-color: var(--cable-brand);
+        -webkit-mask-image: url('./src/assets/svg/cable-trace-tile.svg');
+        mask-image: url('./src/assets/svg/cable-trace-tile.svg');
+        -webkit-mask-repeat: repeat;
+        mask-repeat: repeat;
+    }
+
+    .shell-canvas::before {
+        opacity: var(--shell-canvas-pattern-opacity, 0.1);
+        -webkit-mask-position: 0 0;
+        mask-position: 0 0;
+        -webkit-mask-size: 560px 315px;
+        mask-size: 560px 315px;
+    }
+
+    .shell-canvas::after {
+        opacity: var(--shell-canvas-pattern-secondary-opacity, 0.035);
+        -webkit-mask-position: 230px 145px;
+        mask-position: 230px 145px;
+        -webkit-mask-size: 920px 517.5px;
+        mask-size: 920px 517.5px;
+    }
+
+    /* ==========================================================================
+       Settings · 设置模块的共用外壳
+
+       设置页此前把同一个 `ceramic-relief` 用在了从指标格子到导航行的所有元素上，
+       于是"表面"不再表示任何层级：每一块都是同一张卡，边界反而看不清，整页读作
+       一大片灰白。这里把设置模块的表面收敛成四种，并且只用两种手段——1px 细线
+       和一个中性色阶：
+         section  分区：细线框、无填充（表格、表单组、用量块）
+         tile     安静的表面：细线 + 一档中性底（指标格、空态、说明）
+         notice   空态/失败态：与 tile 同底，带图标位
+         table    数据表：细线框 + 表头带 + 斑马行 + 统一行高
+       颜色全部取自既有 token（--cable-hairline / --cable-surface-muted /
+       --table-* / --accent-color-soft），因此明暗两套主题不需要第二份定义，
+       也不会出现"暗色下比页面更亮的一块砖"。 */
+    .settings-body {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        min-height: 0;
+        padding: 1rem 1.25rem 1.25rem;
+    }
+
+    /* 目的页标题：与外壳的 56px 顶栏、32px 上下文栏同一套克制关系 —— 18px/600
+       足够作为面板内的第一层，又不会在已经有两级外壳的情况下变成第二个页头。 */
+    .settings-title {
+        color: var(--content-primary);
+        font-size: 18px;
+        font-weight: 600;
+        line-height: 1.35;
+    }
+
+    .settings-description {
+        color: var(--content-secondary);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    /* 分区：只有一条 1px 细线，没有填充，所以它划出的是"范围"而不是"又一张卡"。 */
+    .settings-section {
+        overflow: hidden;
+        border: 1px solid var(--cable-hairline);
+        border-radius: 2px;
+        background-color: transparent;
+    }
+
+    .settings-section-head {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.625rem 0.875rem;
+        border-bottom: 1px solid var(--cable-hairline);
+    }
+
+    .settings-section-title {
+        color: var(--content-primary);
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    .settings-section-hint {
+        color: var(--content-secondary);
+        font-size: 12px;
+    }
+
+    .settings-section-body {
+        padding: 0.875rem;
+    }
+
+    /* 安静的表面：一档中性底 + 细线。指标格、设置说明、空态都用它，所以它们之间
+       不存在"哪个更重要"的颜色暗示，重要性由文字层级和位置表达。 */
+    .settings-tile {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        border: 1px solid var(--cable-hairline);
+        border-radius: 2px;
+        background-color: var(--cable-surface-muted);
+        padding: 0.75rem;
+    }
+
+    .settings-tile-label {
+        color: var(--content-secondary);
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .settings-tile-value {
+        color: var(--content-primary);
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 1.2;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .settings-tile-hint {
+        color: var(--content-tertiary);
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .settings-notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        border: 1px solid var(--cable-hairline);
+        border-radius: 2px;
+        background-color: var(--cable-surface-muted);
+        padding: 0.875rem;
+    }
+
+    .settings-notice-title {
+        color: var(--content-primary);
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    .settings-notice-body {
+        color: var(--content-secondary);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    /* 数据表：一条细线划定表格，表头带 + 斑马行 + 固定行高承担可读性。行高固定
+       也是角色标签与角色选择器能对齐的前提——两者都是 32px 的控件。
+       这三个类写成双类：`Table` 原语自己带了 `bg-bg-card` / `h-14` / `px-4 py-3`
+       等工具类，而 twMerge 不认识自定义类名、不会替我们摘掉它们，只有提高选择器
+       权重才能让表格的统一几何真正生效（行高、内衬、表头文字色）。 */
+    .settings-table.settings-table {
+        position: relative;
+        width: 100%;
+        overflow: auto;
+        border: 1px solid var(--table-border);
+        border-radius: 2px;
+        background-color: var(--table-row-base);
+        scrollbar-width: thin;
+    }
+
+    .settings-table-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.5rem 0.875rem;
+        border-bottom: 1px solid var(--table-border);
+        background-color: var(--cable-surface-muted);
+    }
+
+    .settings-table-head-cell.settings-table-head-cell {
+        height: 2.5rem;
+        padding: 0 0.875rem;
+        color: var(--table-head-ink);
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.4;
+        white-space: nowrap;
+    }
+
+    .settings-table-row.settings-table-row {
+        height: 2.75rem;
+        border-bottom: 1px solid var(--table-border);
+        background-color: var(--table-row-base);
+    }
+
+    .settings-table-row.settings-table-row:nth-child(even) {
+        background-color: var(--table-row-alternate);
+    }
+
+    .settings-table-row.settings-table-row:hover {
+        background-color: var(--table-row-hover);
+    }
+
+    .settings-table-cell.settings-table-cell {
+        height: 2.75rem;
+        padding: 0 0.875rem;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+    }
+
+    /* `Table` 原语给首列 24px、末列 24px 的内衬（`first-of-type:pl-6`），而设置表格的
+       格子统一 14px —— 与分区标题同一条竖线。原语那两条也是 0,2,0 权重且在后，所以
+       这里必须再高一级（0,3,0）才能把内衬收回到同一条网格线上。 */
+    .settings-table-head-cell.settings-table-head-cell:first-of-type,
+    .settings-table-cell.settings-table-cell:first-of-type {
+        padding-inline-start: 0.875rem;
+    }
+
+    .settings-table-head-cell.settings-table-head-cell:last-of-type,
+    .settings-table-cell.settings-table-cell:last-of-type {
+        padding-inline-end: 0.875rem;
+    }
+
+    /* 表单节奏：标签、控件、说明三段固定间距；横向字段的标签列宽度固定，所以一行
+       里所有控件左边缘对齐，中英文标签都不会把控件推来推去。 */
+    .settings-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.375rem;
+        min-width: 0;
+    }
+
+    .settings-field-row {
+        display: grid;
+        grid-template-columns: 9.5rem minmax(0, 1fr);
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .settings-field-label {
+        color: var(--content-secondary);
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.5;
+    }
+
+    .settings-field-hint {
+        color: var(--content-tertiary);
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+    /* 必填标记固定在标签右上角，因此有它没它都不移动标签本身。 */
+    .settings-required {
+        color: rgb(var(--state-error));
+        margin-inline-end: 0.125rem;
+    }
+
+    /* 小方标签：角色、能力、维度共用一种形状与高度，表格里因此不会出现三种
+       高度不同的"胶囊"。 */
+    .settings-tag {
+        display: inline-flex;
+        align-items: center;
+        height: 1.25rem;
+        padding-inline: 0.375rem;
+        border: 1px solid var(--cable-hairline);
+        border-radius: 2px;
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    /* 设置侧栏：一级项、二级项、选中态各只有一种表达，并且选中态在两级上用同一种
+       语言——左侧 2px 品牌色竖标 + 一档中性底，因此层级靠缩进读，不靠颜色猜。
+       一级项的水平内衬与对齐由调用方给出（紧凑屏幕上要摘掉它们），这里只固定
+       高度、墨色、圆角与选中态。 */
+    .settings-rail-item.settings-rail-item {
+        position: relative;
+        gap: 0.625rem;
+        height: 2.25rem;
+        border-radius: 2px;
+        color: var(--content-secondary);
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .settings-rail-item.settings-rail-item:hover {
+        background-color: var(--surface-hover-bg);
+        color: var(--content-primary);
+    }
+
+    .settings-rail-item.settings-rail-item:focus-visible {
+        outline: none;
+        box-shadow: inset 0 0 0 1px var(--accent-color);
+    }
+
+    .settings-rail-item-active.settings-rail-item-active {
+        background-color: var(--cable-surface-muted);
+        color: var(--content-primary);
+        font-weight: 600;
+        box-shadow: inset 2px 0 0 var(--accent-color);
+    }
+
+    .settings-rail-child.settings-rail-child {
+        justify-content: flex-start;
+        height: 1.75rem;
+        padding-inline: 0.5rem;
+        border-radius: 2px;
+        color: var(--content-secondary);
+        font-size: 13px;
+        font-weight: 400;
+    }
+
+    /* One step lighter than the active fill (`--accent-color-soft`) and the same wash
+       the Dataset configuration row uses for its own hover, so a child row answers the
+       pointer in the rail's own green rather than in the neutral hover of the shell.
+       Both rails that use `.settings-rail-child` (Settings and the Dataset
+       configuration submenu) therefore hover identically. */
+    .settings-rail-child.settings-rail-child:hover {
+        background-color: rgb(var(--accent-primary) / 0.05);
+        color: var(--content-primary);
+    }
+
+    .settings-rail-child-active.settings-rail-child-active {
+        background-color: var(--accent-color-soft);
+        color: var(--accent-color);
+        font-weight: 500;
+    }
+
+    .card-interactive {
+        cursor: pointer;
+        transition: background-color 200ms ease-in-out,
+        border-color 200ms ease-in-out,
+        opacity 200ms ease-in-out;
+    }
+
+    .card-interactive:hover {
+        background-color: var(--surface-hover-bg);
+        border-color: var(--surface-hover-border);
+    }
+
+    .glow-accent {
+        box-shadow: none;
+    }
+
+    .focus-glow:focus-visible,
+    .focus-glow:focus-within {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: none;
+    }
+
+    /* 渐变一律退化为实色 */
+    .accent-gradient {
+        background-image: none;
+        background-color: var(--accent-color);
+        color: var(--accent-contrast);
+    }
+
+    .accent-gradient:hover {
+        background-image: none;
+        background-color: var(--accent-color-strong);
+    }
+
+    /* 顶栏导航项。颜色走 --cable-nav-* token，而顶栏容器把这组 token 局部覆盖成
+       白色系（见 header.tsx 的 headerNavTokens），所以页面内的 Segmented / 分页
+       沿用同一组 class 时仍然是白底上的中灰字，不会跟着顶栏变白。
+       三个状态是一条色阶：静止（无底）→ hover（一层 10% 白）→ 选中（16% 白 +
+       2px 品牌亮绿底边 + 加粗）。底边在 hover/focus 时也画出来，切换状态时不跳动。 */
+    .gov-nav-link {
+        color: var(--cable-nav-text);
+        border-radius: 2px;
+        transition: background-color 160ms ease-in-out,
+        color 160ms ease-in-out,
+        box-shadow 160ms ease-in-out;
+    }
+
+    .gov-nav-link:hover,
+    .gov-nav-link:focus-visible {
+        background-color: var(--cable-nav-hover-bg);
+        color: var(--cable-nav-text-hover);
+        outline: none;
+    }
+
+    /* 焦点必须看得见，且不能位移：内描边画在盒子里，尺寸仍是 36x36。 */
+    .gov-nav-link:focus-visible {
+        box-shadow: inset 0 0 0 2px var(--cable-nav-indicator);
+    }
+
+    /* 选中态：比 hover 深一档的蒙层 + 2px 品牌亮绿底边 + 加粗。 */
+    .gov-nav-link-active.gov-nav-link-active {
+        background-color: var(--cable-nav-active-bg);
+        color: var(--cable-nav-active-text);
+        font-weight: 700;
+        box-shadow: inset 0 -2px 0 var(--cable-nav-indicator);
+    }
+
+    .gov-nav-link-active.gov-nav-link-active:hover,
+    .gov-nav-link-active.gov-nav-link-active:focus-visible {
+        background-color: var(--cable-nav-active-bg);
+        color: var(--cable-nav-active-text);
+        box-shadow: inset 0 -2px 0 var(--cable-nav-indicator);
+    }
 }
 
 @media (min-width: 640px) {
-  .page-gutter {
-    padding-inline: 1.5rem;
-  }
+    .page-gutter {
+        padding-inline: 1.5rem;
+    }
 }
 
 @media (min-width: 768px) {
-  .page-gutter {
-    padding-inline: 2rem;
-  }
+    .page-gutter {
+        padding-inline: 2rem;
+    }
 }
 
 /*@media (min-width: 1024px) {*/
@@ -1331,220 +1399,213 @@
 /*}*/
 
 @layer utilities {
-  .ceramic-cta.ceramic-cta {
-    background-color: var(--accent-color);
-    color: var(--accent-contrast);
-    box-shadow: none;
-    transition:
-      background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
-      color 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
+    .ceramic-cta.ceramic-cta {
+        background-color: var(--accent-color);
+        color: var(--accent-contrast);
+        box-shadow: none;
+        transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+        color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-  .ceramic-cta.ceramic-cta:hover,
-  .ceramic-cta.ceramic-cta:focus-visible {
-    background-color: var(--accent-color-strong);
-    box-shadow: none;
-  }
+    .ceramic-cta.ceramic-cta:hover,
+    .ceramic-cta.ceramic-cta:focus-visible {
+        background-color: var(--accent-color-strong);
+        box-shadow: none;
+    }
 
-  .ceramic-cta.ceramic-cta:active {
-    background-color: var(--accent-color-strong);
-    box-shadow: none;
-  }
+    .ceramic-cta.ceramic-cta:active {
+        background-color: var(--accent-color-strong);
+        box-shadow: none;
+    }
 
-  .ceramic-relief.ceramic-relief {
-    background-color: var(--glass-bg);
-    border: 1px solid var(--cable-hairline);
-    box-shadow: none;
-    transition:
-      background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
-      border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
+    .ceramic-relief.ceramic-relief {
+        background-color: var(--glass-bg);
+        border: 1px solid var(--cable-hairline);
+        box-shadow: none;
+        transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-  .ceramic-relief.ceramic-relief:hover {
-    /* The background has to be declared here, not left to the primitive: a flat
-       control rendered through `Button` also carries the ink variant's
-       `hover:bg-text-primary/90`, and a `:hover` utility outranks a plain class.
-       This rule already wins on specificity (two classes plus the pseudo-class),
-       so naming the wash here is what stops the ink fill from taking over. */
-    background-color: var(--ceramic-hover-surface);
-    border-color: var(--ceramic-border-hover);
-    box-shadow: none;
-  }
+    .ceramic-relief.ceramic-relief:hover {
+        /* The background has to be declared here, not left to the primitive: a flat
+           control rendered through `Button` also carries the ink variant's
+           `hover:bg-text-primary/90`, and a `:hover` utility outranks a plain class.
+           This rule already wins on specificity (two classes plus the pseudo-class),
+           so naming the wash here is what stops the ink fill from taking over. */
+        background-color: var(--ceramic-hover-surface);
+        border-color: var(--ceramic-border-hover);
+        box-shadow: none;
+    }
 
-  .ceramic-relief.ceramic-relief:focus-visible,
-  .ceramic-relief.ceramic-relief:focus-within {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: none;
-  }
+    .ceramic-relief.ceramic-relief:focus-visible,
+    .ceramic-relief.ceramic-relief:focus-within {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: none;
+    }
 
-  .ceramic-relief.ceramic-relief:active {
-    box-shadow: none;
-  }
+    .ceramic-relief.ceramic-relief:active {
+        box-shadow: none;
+    }
 
-  .ceramic-well.ceramic-well {
-    background-color: var(--glass-bg);
-    border: 1px solid var(--ceramic-well-border);
-    box-shadow: none;
-    transition:
-      background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
-      border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
+    .ceramic-well.ceramic-well {
+        background-color: var(--glass-bg);
+        border: 1px solid var(--ceramic-well-border);
+        box-shadow: none;
+        transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-  .ceramic-well.ceramic-well:focus-visible,
-  .ceramic-well.ceramic-well:focus-within {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: none;
-  }
+    .ceramic-well.ceramic-well:focus-visible,
+    .ceramic-well.ceramic-well:focus-within {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: none;
+    }
 
-  .ceramic-switch.ceramic-switch {
-    background-color: var(--glass-bg);
-    border: 1px solid var(--cable-hairline);
-    box-shadow: none;
-  }
+    .ceramic-switch.ceramic-switch {
+        background-color: var(--glass-bg);
+        border: 1px solid var(--cable-hairline);
+        box-shadow: none;
+    }
 
-  .ceramic-switch-thumb.ceramic-switch-thumb {
-    background-color: var(--ceramic-switch-thumb-surface);
-    box-shadow: none;
-  }
+    .ceramic-switch-thumb.ceramic-switch-thumb {
+        background-color: var(--ceramic-switch-thumb-surface);
+        box-shadow: none;
+    }
 
-  .ceramic-rail.ceramic-rail {
-    background-color: var(--glass-bg);
-  }
+    .ceramic-rail.ceramic-rail {
+        background-color: var(--glass-bg);
+    }
 
-  .ceramic-seam-r.ceramic-seam-r {
-    border-right: 1px solid var(--cable-hairline);
-    box-shadow: none;
-  }
+    .ceramic-seam-r.ceramic-seam-r {
+        border-right: 1px solid var(--cable-hairline);
+        box-shadow: none;
+    }
 
-  .ceramic-nav-item.ceramic-nav-item {
-    color: var(--text-secondary);
-    transition:
-      background-color 200ms ease-in-out,
-      border-color 200ms ease-in-out,
-      color 200ms ease-in-out;
-  }
+    .ceramic-nav-item.ceramic-nav-item {
+        color: var(--text-secondary);
+        transition: background-color 200ms ease-in-out,
+        border-color 200ms ease-in-out,
+        color 200ms ease-in-out;
+    }
 
-  .ceramic-nav-item.ceramic-nav-item:hover {
-    background-color: var(--ceramic-hover-surface);
-    color: var(--text-primary);
-  }
+    .ceramic-nav-item.ceramic-nav-item:hover {
+        background-color: var(--ceramic-hover-surface);
+        color: var(--text-primary);
+    }
 
-  .ceramic-nav-item-active.ceramic-nav-item-active {
-    background-color: var(--ceramic-surface);
-    border-color: var(--ceramic-border-hover);
-    color: var(--text-primary);
-    box-shadow: none;
-  }
+    .ceramic-nav-item-active.ceramic-nav-item-active {
+        background-color: var(--ceramic-surface);
+        border-color: var(--ceramic-border-hover);
+        color: var(--text-primary);
+        box-shadow: none;
+    }
 
-  .ceramic-list-row.ceramic-list-row {
-    color: var(--text-secondary);
-    transition:
-      background-color 200ms ease-in-out,
-      color 200ms ease-in-out;
-  }
+    .ceramic-list-row.ceramic-list-row {
+        color: var(--text-secondary);
+        transition: background-color 200ms ease-in-out,
+        color 200ms ease-in-out;
+    }
 
-  .ceramic-list-row.ceramic-list-row:hover {
-    background-color: var(--ceramic-hover-surface);
-    color: var(--text-primary);
-  }
+    .ceramic-list-row.ceramic-list-row:hover {
+        background-color: var(--ceramic-hover-surface);
+        color: var(--text-primary);
+    }
 
-  .ceramic-list-row-active.ceramic-list-row-active {
-    background-color: var(--glass-bg);
-    color: var(--text-primary);
-    box-shadow: none;
-  }
+    .ceramic-list-row-active.ceramic-list-row-active {
+        background-color: var(--glass-bg);
+        color: var(--text-primary);
+        box-shadow: none;
+    }
 
-  .ceramic-badge.ceramic-badge {
-    background-color: var(--badge-surface);
-    border: 1px solid var(--badge-border);
-    box-shadow: none;
-    color: var(--badge-ink);
-  }
+    .ceramic-badge.ceramic-badge {
+        background-color: var(--badge-surface);
+        border: 1px solid var(--badge-border);
+        box-shadow: none;
+        color: var(--badge-ink);
+    }
 
-  .ceramic-field.ceramic-field {
-    background-color: var(--glass-bg);
-    border: 1px solid var(--field-border);
-    border-radius: 2px;
-    box-shadow: none;
-    transition:
-      background-color 200ms ease-in-out,
-      border-color 200ms ease-in-out;
-  }
+    .ceramic-field.ceramic-field {
+        background-color: var(--glass-bg);
+        border: 1px solid var(--field-border);
+        border-radius: 2px;
+        box-shadow: none;
+        transition: background-color 200ms ease-in-out,
+        border-color 200ms ease-in-out;
+    }
 
-  .ceramic-field.ceramic-field:focus-visible,
-  .ceramic-field.ceramic-field:focus-within {
-    outline: none;
-    border-color: var(--field-border-focus);
-    box-shadow: none;
-  }
+    .ceramic-field.ceramic-field:focus-visible,
+    .ceramic-field.ceramic-field:focus-within {
+        outline: none;
+        border-color: var(--field-border-focus);
+        box-shadow: none;
+    }
 
-  .ceramic-cta-soft.ceramic-cta-soft {
-    background-color: var(--badge-surface);
-    border: 1px solid var(--badge-border);
-    box-shadow: none;
-    color: var(--badge-ink);
-    transition:
-      background-color 200ms ease-in-out,
-      border-color 200ms ease-in-out,
-      color 200ms ease-in-out;
-  }
+    .ceramic-cta-soft.ceramic-cta-soft {
+        background-color: var(--badge-surface);
+        border: 1px solid var(--badge-border);
+        box-shadow: none;
+        color: var(--badge-ink);
+        transition: background-color 200ms ease-in-out,
+        border-color 200ms ease-in-out,
+        color 200ms ease-in-out;
+    }
 
-  .ceramic-cta-soft.ceramic-cta-soft:hover,
-  .ceramic-cta-soft.ceramic-cta-soft:focus-visible {
-    background-color: var(--badge-surface-hover);
-    border-color: var(--field-border-focus);
-  }
+    .ceramic-cta-soft.ceramic-cta-soft:hover,
+    .ceramic-cta-soft.ceramic-cta-soft:focus-visible {
+        background-color: var(--badge-surface-hover);
+        border-color: var(--field-border-focus);
+    }
 
-  .ceramic-dot-live.ceramic-dot-live {
-    background-color: rgb(var(--state-success));
-    box-shadow: none;
-  }
+    .ceramic-dot-live.ceramic-dot-live {
+        background-color: rgb(var(--state-success));
+        box-shadow: none;
+    }
 
-  .scrollbar-gutter-stable {
-    scrollbar-gutter: stable;
-  }
+    .scrollbar-gutter-stable {
+        scrollbar-gutter: stable;
+    }
 
-  .bg-cable-page {
-    background-color: var(--cable-page-to);
-    background-image: none;
-  }
+    .bg-cable-page {
+        background-color: var(--cable-page-to);
+        background-image: none;
+    }
 
-  /* 标题渐变退化为纯色 */
-  .text-cable-gradient {
-    background-image: none;
-    color: var(--cable-brand);
-  }
+    /* 标题渐变退化为纯色 */
+    .text-cable-gradient {
+        background-image: none;
+        color: var(--cable-brand);
+    }
 
-  .bg-card-soft {
-    background-color: var(--bg-card);
-    background-color: color-mix(in srgb, var(--bg-card) 50%, transparent);
-  }
+    .bg-card-soft {
+        background-color: var(--bg-card);
+        background-color: color-mix(in srgb, var(--bg-card) 50%, transparent);
+    }
 
-  .scrollbar-auto {
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-  }
+    .scrollbar-auto {
+        scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    }
 
-  .scrollbar-auto::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
+    .scrollbar-auto::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
 
-  .scrollbar-auto::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
+    .scrollbar-auto::-webkit-scrollbar-track {
+        background: var(--scrollbar-track);
+    }
 
-  .scrollbar-auto::-webkit-scrollbar-thumb {
-    background-color: var(--scrollbar-thumb);
-    border-radius: 0;
-    transition: background-color 0.2s ease;
-  }
+    .scrollbar-auto::-webkit-scrollbar-thumb {
+        background-color: var(--scrollbar-thumb);
+        border-radius: 0;
+        transition: background-color 0.2s ease;
+    }
 
-  .scrollbar-auto:hover::-webkit-scrollbar-thumb,
-  .scrollbar-auto:focus::-webkit-scrollbar-thumb,
-  .scrollbar-auto:active::-webkit-scrollbar-thumb {
-    background-color: var(--scrollbar-thumb-hover);
-  }
+    .scrollbar-auto:hover::-webkit-scrollbar-thumb,
+    .scrollbar-auto:focus::-webkit-scrollbar-thumb,
+    .scrollbar-auto:active::-webkit-scrollbar-thumb {
+        background-color: var(--scrollbar-thumb-hover);
+    }
 }
