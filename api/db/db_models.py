@@ -1788,6 +1788,57 @@ class WorkspaceAudit(DataBaseModel):
         db_table = "workspace_audit"
 
 
+class ProviderHealthEvent(DataBaseModel):
+    """One durable provider-health INCIDENT, not one provider failure.
+
+    A burst of failures from one provider capability is ONE row: `occurrence_count`
+    and `last_seen_at` are updated in place while the incident is active, and
+    `dedupe_key` is what makes that possible. A quota-exhausted burst that failed
+    three page batches is therefore one incident with `occurrence_count = 3`, and
+    the notification surface counts INCIDENTS, so a badge reads 1 rather than 3.
+
+    What is deliberately NOT here, because the fact must be safe to persist and to
+    serve to a browser: the API key, the raw provider response body, the prompt,
+    the chunk text, the request payload, and any per-page/per-batch error text.
+    `user_safe_message` is the class sentence from `common.model_errors`; the raw
+    body stays in the log where it already was.
+
+    The table is created by `init_database_tables()`' dynamic discovery of every
+    `DataBaseModel` subclass, which is how every other table in this module is
+    created, so no `alter_db_*` entry is added and the append-only migration
+    sequence is untouched.
+    """
+
+    id = CharField(max_length=64, primary_key=True)
+    tenant_id = CharField(max_length=32, index=True)
+    # IDS ONLY: a provider's credential lives on the instance row and is never
+    # read, copied or hydrated in order to record a health fact.
+    provider_id = CharField(max_length=32, index=True, default="")
+    instance_id = CharField(max_length=32, default="")
+    # Copied at emit time, so a renamed or deleted provider does not erase what the
+    # incident was about.
+    provider_name = CharField(max_length=128, default="")
+    capability = CharField(max_length=16, index=True, default="")
+    error_class = CharField(max_length=64, index=True, default="")
+    http_status = IntegerField(null=True)
+    severity = CharField(max_length=16, default="warning")
+    occurred_at = DateTimeField()
+    last_seen_at = DateTimeField()
+    occurrence_count = IntegerField(default=1)
+    affected_operation = CharField(max_length=32, default="")
+    user_safe_message = CharField(max_length=512, default="")
+    dedupe_key = CharField(max_length=64, unique=True, index=True)
+    # active | resolved
+    state = CharField(max_length=16, default="active", index=True)
+    resolved_at = DateTimeField(null=True)
+    # observed_success (a later dispatch of the same provider+capability worked)
+    # | acknowledged (an operator closed it). Never "the bell was opened".
+    resolution_kind = CharField(max_length=32, null=True)
+
+    class Meta:
+        db_table = "provider_health_event"
+
+
 class CanvasTemplate(DataBaseModel):
     id = CharField(max_length=32, primary_key=True)
     avatar = TextField(null=True, help_text="avatar base64 string")
