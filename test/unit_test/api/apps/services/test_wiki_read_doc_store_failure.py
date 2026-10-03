@@ -38,23 +38,39 @@ from unittest.mock import MagicMock
 
 pytestmark = pytest.mark.p2
 
-service = importlib.import_module("api.apps.services.dataset_api_service")
+#: The event loop this graph leaves behind, captured when the module is first imported.
+_STRAY_LOOP = {"loop": None}
 
-# Importing this graph asks asyncio for an event loop and never runs it. The loop is not
-# ours and no test uses it, but leaving it unclosed makes pytest report an unraisable
-# ResourceWarning as a session-level error at `pytest_unconfigure`, which fails the file
-# however green its own tests are. Hold the reference — so nothing collects it early —
-# and close it once the session is done with it.
-try:
-    _LOOP_LEFT_BY_THE_IMPORT = asyncio.get_event_loop_policy().get_event_loop()
-except Exception:  # noqa: BLE001 - no loop means there is nothing to close
-    _LOOP_LEFT_BY_THE_IMPORT = None
+
+@pytest.fixture(scope="module")
+def service():
+    """The real service module, imported when these tests run rather than at collection.
+
+    pytest imports every test module before it runs any test, and this file would then be
+    the first thing in the session to pull `dataset_api_service`'s real import graph in.
+    The older tests in this directory load that module against ``sys.modules`` doubles
+    instead (they cannot be run alone for the same reason), so importing it at collection
+    time changes what they see and takes thirty of them down with it. Importing it inside
+    the tests keeps this file's reach to itself.
+    """
+    module = importlib.import_module("api.apps.services.dataset_api_service")
+
+    # The import asks asyncio for an event loop and never runs or closes it. The loop is
+    # not ours and no test uses it, but leaving it unclosed makes pytest report an
+    # unraisable ResourceWarning as a session-level error at `pytest_unconfigure`, which
+    # fails the file however green its own tests are. Hold the reference — so nothing
+    # collects it early — and close it once the session is done with it.
+    try:
+        _STRAY_LOOP["loop"] = asyncio.get_event_loop_policy().get_event_loop()
+    except Exception:  # noqa: BLE001 - no loop means there is nothing to close
+        _STRAY_LOOP["loop"] = None
+    return module
 
 
 @pytest.fixture(scope="session", autouse=True)
 def _close_loop_left_by_the_import():
     yield
-    loop = _LOOP_LEFT_BY_THE_IMPORT
+    loop = _STRAY_LOOP["loop"]
     if loop is not None and not loop.is_running() and not loop.is_closed():
         loop.close()
 
@@ -72,7 +88,7 @@ class _FakeConnection:
 
 
 @pytest.fixture
-def doc_store(monkeypatch):
+def doc_store(monkeypatch, service):
     """The doc store the Wiki reads ask, with the strict probe this change added.
 
     ``index_exist_strict`` answering ``True`` means "the index is there"; an exception
@@ -110,18 +126,20 @@ def test_base_index_exist_strict_delegates_to_index_exist():
 
 
 @pytest.mark.asyncio
-async def test_topics_reports_unreachable_store_as_failure(monkeypatch, doc_store):
+async def test_topics_reports_unreachable_store_as_failure(monkeypatch, doc_store, service):
     doc_store.index_exist_strict = MagicMock(side_effect=RuntimeError("connection refused"))
 
     success, result = await service.list_wiki_topics("kb-1", "tenant-1")
 
     assert success is False
     assert str(result) == "The knowledge compilation store is unavailable"
-    assert getattr(result, "code", None) == 500
+    # The routes report a plain service message as RetCode.SERVER_ERROR, which is
+    # what the live probe saw the API answer (HTTP 200, code 500) with the store down.
+    assert result == "The knowledge compilation store is unavailable"
 
 
 @pytest.mark.asyncio
-async def test_topics_keeps_a_missing_index_as_an_empty_success(monkeypatch, doc_store):
+async def test_topics_keeps_a_missing_index_as_an_empty_success(monkeypatch, doc_store, service):
     doc_store.index_exist_strict = MagicMock(return_value=False)
 
     success, result = await service.list_wiki_topics("kb-1", "tenant-1")
@@ -131,58 +149,68 @@ async def test_topics_keeps_a_missing_index_as_an_empty_success(monkeypatch, doc
 
 
 @pytest.mark.asyncio
-async def test_topics_reports_a_failing_aggregation_as_failure(monkeypatch, doc_store):
+async def test_topics_reports_a_failing_aggregation_as_failure(monkeypatch, doc_store, service):
     """The store can also fail after the index was found, mid-request."""
     doc_store.search = MagicMock(side_effect=RuntimeError("aggregation blew up"))
 
     success, result = await service.list_wiki_topics("kb-1", "tenant-1")
 
     assert success is False
-    assert getattr(result, "code", None) == 500
+    # The routes report a plain service message as RetCode.SERVER_ERROR, which is
+    # what the live probe saw the API answer (HTTP 200, code 500) with the store down.
+    assert result == "The knowledge compilation store is unavailable"
 
 
 @pytest.mark.asyncio
-async def test_pages_reports_unreachable_store_as_failure(monkeypatch, doc_store):
+async def test_pages_reports_unreachable_store_as_failure(monkeypatch, doc_store, service):
     doc_store.index_exist_strict = MagicMock(side_effect=RuntimeError("connection refused"))
 
     success, result = await service.list_wiki_pages("kb-1", "tenant-1")
 
     assert success is False
-    assert getattr(result, "code", None) == 500
+    # The routes report a plain service message as RetCode.SERVER_ERROR, which is
+    # what the live probe saw the API answer (HTTP 200, code 500) with the store down.
+    assert result == "The knowledge compilation store is unavailable"
 
 
 @pytest.mark.asyncio
-async def test_pages_reports_a_failing_search_as_failure(monkeypatch, doc_store):
+async def test_pages_reports_a_failing_search_as_failure(monkeypatch, doc_store, service):
     doc_store.search = MagicMock(side_effect=RuntimeError("search blew up"))
 
     success, result = await service.list_wiki_pages("kb-1", "tenant-1")
 
     assert success is False
-    assert getattr(result, "code", None) == 500
+    # The routes report a plain service message as RetCode.SERVER_ERROR, which is
+    # what the live probe saw the API answer (HTTP 200, code 500) with the store down.
+    assert result == "The knowledge compilation store is unavailable"
 
 
 @pytest.mark.asyncio
-async def test_page_reports_unreachable_store_as_failure(monkeypatch, doc_store):
+async def test_page_reports_unreachable_store_as_failure(monkeypatch, doc_store, service):
     doc_store.index_exist_strict = MagicMock(side_effect=RuntimeError("connection refused"))
 
     success, result = await service.get_wiki_page("kb-1", "tenant-1", "wiki", "overview")
 
     assert success is False
-    assert getattr(result, "code", None) == 500
+    # The routes report a plain service message as RetCode.SERVER_ERROR, which is
+    # what the live probe saw the API answer (HTTP 200, code 500) with the store down.
+    assert result == "The knowledge compilation store is unavailable"
 
 
 @pytest.mark.asyncio
-async def test_page_reports_a_failing_search_as_failure(monkeypatch, doc_store):
+async def test_page_reports_a_failing_search_as_failure(monkeypatch, doc_store, service):
     doc_store.search = MagicMock(side_effect=RuntimeError("search blew up"))
 
     success, result = await service.get_wiki_page("kb-1", "tenant-1", "wiki", "overview")
 
     assert success is False
-    assert getattr(result, "code", None) == 500
+    # The routes report a plain service message as RetCode.SERVER_ERROR, which is
+    # what the live probe saw the API answer (HTTP 200, code 500) with the store down.
+    assert result == "The knowledge compilation store is unavailable"
 
 
 @pytest.mark.asyncio
-async def test_page_keeps_a_missing_row_as_an_empty_success(monkeypatch, doc_store):
+async def test_page_keeps_a_missing_row_as_an_empty_success(monkeypatch, doc_store, service):
     """A page that is genuinely not there is not a failure: the console shows nothing."""
     success, result = await service.get_wiki_page("kb-1", "tenant-1", "wiki", "overview")
 
@@ -191,7 +219,7 @@ async def test_page_keeps_a_missing_row_as_an_empty_success(monkeypatch, doc_sto
 
 
 @pytest.mark.asyncio
-async def test_permission_denial_is_not_reported_as_a_store_failure(monkeypatch, doc_store):
+async def test_permission_denial_is_not_reported_as_a_store_failure(monkeypatch, doc_store, service):
     monkeypatch.setattr(service.KnowledgebaseService, "accessible", MagicMock(return_value=False))
     doc_store.index_exist_strict = MagicMock(side_effect=RuntimeError("connection refused"))
 

@@ -1642,17 +1642,10 @@ _SKILL_COMPILE_KWD = "skill"
 _SKILL_ALL_COMPILE_KWD = "skill_all"
 
 
-class CompiledStoreUnavailableMessage(str):
-    """A doc-store read failure, reported as a server error rather than as an empty result.
-
-    "This knowledge base has no compiled pages yet" and "the compilation store could not
-    be read" are different answers, and the Wiki reads used to give the same one for
-    both: an empty list. Wrapping the message the way ``PermissionDeniedMessage`` does
-    reports ``code=500`` for it, so a caller can tell the two apart instead of rendering
-    a failed read as an empty knowledge base.
-    """
-
-    code = RetCode.SERVER_ERROR
+#: The one sentence that says the compiled pages could not be read, as opposed to not
+#: existing. The routes report a plain message from a service as `RetCode.SERVER_ERROR`,
+#: which is the answer a caller needs here.
+COMPILED_STORE_UNAVAILABLE = "The knowledge compilation store is unavailable"
 
 
 def _compiled_index_or_none(tenant_id: str, kb_id: str):
@@ -1683,7 +1676,7 @@ def _compiled_index_or_failure(tenant_id: str, kb_id: str):
         exists = settings.docStoreConn.index_exist_strict(index_nm, kb_id)
     except Exception:
         logging.exception("compiled index lookup failed: doc store unreachable for kb=%s", kb_id)
-        return None, CompiledStoreUnavailableMessage("The knowledge compilation store is unavailable")
+        return None, COMPILED_STORE_UNAVAILABLE
     if not exists:
         return None, None
     return (index_nm, _rag_search), None
@@ -2872,7 +2865,7 @@ async def list_wiki_pages(
             items = matched_items[offset : offset + page_size]
     except Exception:
         logging.exception("list_wiki_pages: docStore search failed for kb=%s", dataset_id)
-        return False, CompiledStoreUnavailableMessage("The knowledge compilation store is unavailable")
+        return False, COMPILED_STORE_UNAVAILABLE
 
     return True, {"total": int(total or 0), "items": items}
 
@@ -2919,7 +2912,7 @@ async def list_wiki_topics(
         buckets = settings.docStoreConn.get_aggregation(agg_res, "topic_kwd")
     except Exception:
         logging.exception("list_wiki_topics: docStore aggregation failed for kb=%s", dataset_id)
-        return False, CompiledStoreUnavailableMessage("The knowledge compilation store is unavailable")
+        return False, COMPILED_STORE_UNAVAILABLE
 
     counts = {t: int(c) for t, c in (buckets or []) if isinstance(t, str) and t and int(c or 0) > 0}
     if not counts:
@@ -3046,7 +3039,7 @@ async def get_wiki_page(
             dataset_id,
             full_slug,
         )
-        return False, CompiledStoreUnavailableMessage("The knowledge compilation store is unavailable")
+        return False, COMPILED_STORE_UNAVAILABLE
 
     if not field_map:
         return True, None
