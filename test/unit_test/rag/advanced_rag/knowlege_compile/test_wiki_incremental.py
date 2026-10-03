@@ -2122,3 +2122,74 @@ def test_contextual_hints_accepts_native_string_relations():
 
     assert "[[entity/Beta]] — related" in hints
     assert "[[concept/Gamma]] — related" in hints
+
+
+def test_refine_failure_entity_names_survives_a_page_that_does_not_exist_yet():
+    """A first-generation page records its title, not an AttributeError.
+
+    ``existing_page`` is present-and-None for every page that has not been written yet, and
+    the failure handler used to chain ``.get("existing_page", {}).get(...)`` — a default that
+    does not cover a stored None. The handler raised, so the failure it was recording was
+    lost and the run aborted on the error path instead of past it.
+    """
+    names = _wiki._wiki_refine_failure_entity_names(
+        {"existing_page": None, "page_title": "中压电缆绝缘与屏蔽"},
+        "concept/mv-cable-insulation",
+    )
+
+    assert names == ["中压电缆绝缘与屏蔽"]
+
+
+def test_refine_failure_entity_names_falls_back_to_the_page_id():
+    names = _wiki._wiki_refine_failure_entity_names(
+        {"existing_page": None, "page_title": ""}, "concept/untitled"
+    )
+
+    assert names == ["concept/untitled"]
+
+
+def test_refine_failure_entity_names_prefers_the_existing_page_entities():
+    names = _wiki._wiki_refine_failure_entity_names(
+        {
+            "existing_page": {"entity_names_kwd": ["交联聚乙烯", "  ", "中压电缆"]},
+            "page_title": "中压电缆绝缘与屏蔽",
+        },
+        "concept/mv-cable-insulation",
+    )
+
+    assert names == ["交联聚乙烯", "中压电缆"]
+
+
+def test_refine_failure_entity_names_accepts_a_scalar_entity_name():
+    """The doc store hands back a bare string when a row has exactly one entity."""
+    names = _wiki._wiki_refine_failure_entity_names(
+        {"existing_page": {"entity_names_kwd": "中压电缆"}, "page_title": "ignored"},
+        "concept/mv-cable-overview",
+    )
+
+    assert names == ["中压电缆"]
+
+
+@pytest.mark.asyncio
+async def test_refine_failure_is_recorded_without_raising_for_a_new_page():
+    """The whole point: the handler completes, so the run can continue past the page."""
+    recorded = {}
+
+    async def _fake_record(tenant_id, kb_id, page_id, entity_names=None, error=""):
+        recorded.update(
+            {"tenant_id": tenant_id, "kb_id": kb_id, "page_id": page_id,
+             "entity_names": entity_names, "error": error}
+        )
+
+    entry = {"existing_page": None, "page_title": "中压电缆绝缘与屏蔽"}
+    with patch.object(_wiki, "_wiki_record_refine_failure", _fake_record):
+        await _wiki._wiki_record_refine_failure(
+            "t1",
+            "kb1",
+            "concept/mv-cable-insulation",
+            _wiki._wiki_refine_failure_entity_names(entry, "concept/mv-cable-insulation"),
+            error="embedding call failed",
+        )
+
+    assert recorded["entity_names"] == ["中压电缆绝缘与屏蔽"]
+    assert recorded["error"] == "embedding call failed"

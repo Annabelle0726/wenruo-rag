@@ -365,6 +365,28 @@ async def _wiki_load_refine_failures(tenant_id: str, kb_id: str) -> dict[str, di
     return failures
 
 
+def _wiki_refine_failure_entity_names(entry: dict, page_id: str) -> list[str]:
+    """The entity names to record alongside a failed page refinement.
+
+    ``entry["existing_page"]`` is explicitly ``None`` for a page that does not exist yet —
+    which is the ordinary case for a first generation — so the fallback has to read
+    ``entry.get("existing_page") or {}``: a ``.get(key, {})`` default only covers a MISSING
+    key, and the stored ``None`` would reach ``.get`` and raise ``AttributeError``. That is
+    what happened in production-like runs: the error handler itself raised, so the failure
+    it was trying to record was never recorded, the real error (a datastore/driver failure
+    underneath) was replaced by an AttributeError in the log, and the whole compile task
+    aborted instead of continuing past the one page.
+    """
+    existing = entry.get("existing_page") or {}
+    names = existing.get("entity_names_kwd")
+    if isinstance(names, str):
+        names = [names]
+    cleaned = [str(name).strip() for name in (names or []) if str(name).strip()]
+    if cleaned:
+        return cleaned
+    return [str(entry.get("page_title") or page_id)]
+
+
 async def _wiki_record_refine_failure(
     tenant_id: str,
     kb_id: str,
@@ -4112,7 +4134,7 @@ async def _wiki_mode_a_run(
                     tenant_id,
                     kb_id,
                     pid,
-                    entry.get("existing_page", {}).get("entity_names_kwd") or [entry.get("page_title", pid)],
+                    _wiki_refine_failure_entity_names(entry, pid),
                     error=str(exc),
                 )
                 summary["errors"].append(f"REFINE_FAILED:{pid}")
