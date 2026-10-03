@@ -28,9 +28,12 @@ export function useWikiDetailContent({
 }: UseWikiDetailContentOptions) {
   const isVersionView = !!selectedVersion;
 
-  const { data: pageData, loading: pageLoading } = useFetchArtifactPage(
-    isVersionView ? null : selectedArtifact,
-  );
+  const {
+    data: pageData,
+    loading: pageLoading,
+    error: pageError,
+    refetch: reloadPage,
+  } = useFetchArtifactPage(isVersionView ? null : selectedArtifact);
   const { data: commitDetail, loading: commitLoading } = useFetchWikiCommit(
     selectedVersion?.id ?? null,
   );
@@ -194,6 +197,10 @@ export function useWikiDetailContent({
     previousEntryTitle,
     linkNavLoading: false,
     loading,
+    // A failed read of the page itself, as opposed to a page that is genuinely
+    // absent: the pane must not render an empty editor for it.
+    pageError,
+    reloadPage,
     editedContent,
     isDirty,
     referenceDocuments,

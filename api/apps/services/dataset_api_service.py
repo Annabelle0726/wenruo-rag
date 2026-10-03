@@ -1642,6 +1642,19 @@ _SKILL_COMPILE_KWD = "skill"
 _SKILL_ALL_COMPILE_KWD = "skill_all"
 
 
+class CompiledStoreUnavailableMessage(str):
+    """A doc-store read failure, reported as a server error rather than as an empty result.
+
+    "This knowledge base has no compiled pages yet" and "the compilation store could not
+    be read" are different answers, and the Wiki reads used to give the same one for
+    both: an empty list. Wrapping the message the way ``PermissionDeniedMessage`` does
+    reports ``code=500`` for it, so a caller can tell the two apart instead of rendering
+    a failed read as an empty knowledge base.
+    """
+
+    code = RetCode.SERVER_ERROR
+
+
 def _compiled_index_or_none(tenant_id: str, kb_id: str):
     """Return (index_name, search_module) when the tenant index exists,
     else ``None``. Avoids 500s on brand-new tenants whose ES index hasn't
@@ -1652,6 +1665,28 @@ def _compiled_index_or_none(tenant_id: str, kb_id: str):
     if not settings.docStoreConn.index_exist(index_nm, kb_id):
         return None
     return index_nm, _rag_search
+
+
+def _compiled_index_or_failure(tenant_id: str, kb_id: str):
+    """``(pack, failure)`` — the tenant index, or why the doc store could not be asked.
+
+    ``_compiled_index_or_none`` answers ``None`` both for an index that has not been
+    created yet and for a doc store that is unreachable, which makes an outage look
+    exactly like an empty knowledge base. This variant asks the strict question
+    (``index_exist_strict``) so the caller can report the second case as a failure
+    while leaving the first as the legitimate empty result it is.
+    """
+    from rag.nlp import search as _rag_search
+
+    index_nm = _rag_search.index_name(tenant_id)
+    try:
+        exists = settings.docStoreConn.index_exist_strict(index_nm, kb_id)
+    except Exception:
+        logging.exception("compiled index lookup failed: doc store unreachable for kb=%s", kb_id)
+        return None, CompiledStoreUnavailableMessage("The knowledge compilation store is unavailable")
+    if not exists:
+        return None, None
+    return (index_nm, _rag_search), None
 
 
 def _wiki_index_or_none(tenant_id: str, kb_id: str):
@@ -2732,7 +2767,9 @@ async def list_wiki_pages(
         return False, PermissionDeniedMessage("no authorization")
     _, kb = KnowledgebaseService.get_by_id(dataset_id)
 
-    pack = _wiki_index_or_none(kb.tenant_id, dataset_id)
+    pack, failure = _compiled_index_or_failure(kb.tenant_id, dataset_id)
+    if failure is not None:
+        return False, failure
     if pack is None:
         return True, {"total": 0, "items": []}
     index_nm, _ = pack
@@ -2835,7 +2872,7 @@ async def list_wiki_pages(
             items = matched_items[offset : offset + page_size]
     except Exception:
         logging.exception("list_wiki_pages: docStore search failed for kb=%s", dataset_id)
-        return True, {"total": 0, "items": []}
+        return False, CompiledStoreUnavailableMessage("The knowledge compilation store is unavailable")
 
     return True, {"total": int(total or 0), "items": items}
 
@@ -2852,7 +2889,9 @@ async def list_wiki_topics(
         return False, PermissionDeniedMessage("no authorization")
     _, kb = KnowledgebaseService.get_by_id(dataset_id)
 
-    pack = _wiki_index_or_none(kb.tenant_id, dataset_id)
+    pack, failure = _compiled_index_or_failure(kb.tenant_id, dataset_id)
+    if failure is not None:
+        return False, failure
     if pack is None:
         return True, {"total": 0, "items": []}
     index_nm, _ = pack
@@ -2880,7 +2919,7 @@ async def list_wiki_topics(
         buckets = settings.docStoreConn.get_aggregation(agg_res, "topic_kwd")
     except Exception:
         logging.exception("list_wiki_topics: docStore aggregation failed for kb=%s", dataset_id)
-        return True, {"total": 0, "items": []}
+        return False, CompiledStoreUnavailableMessage("The knowledge compilation store is unavailable")
 
     counts = {t: int(c) for t, c in (buckets or []) if isinstance(t, str) and t and int(c or 0) > 0}
     if not counts:
@@ -2959,7 +2998,9 @@ async def get_wiki_page(
         return False, PermissionDeniedMessage("no authorization")
     _, kb = KnowledgebaseService.get_by_id(dataset_id)
 
-    pack = _wiki_index_or_none(kb.tenant_id, dataset_id)
+    pack, failure = _compiled_index_or_failure(kb.tenant_id, dataset_id)
+    if failure is not None:
+        return False, failure
     if pack is None:
         return True, None
     index_nm, _ = pack
@@ -3005,7 +3046,7 @@ async def get_wiki_page(
             dataset_id,
             full_slug,
         )
-        return True, None
+        return False, CompiledStoreUnavailableMessage("The knowledge compilation store is unavailable")
 
     if not field_map:
         return True, None

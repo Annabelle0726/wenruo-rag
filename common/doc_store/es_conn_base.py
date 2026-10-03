@@ -228,6 +228,16 @@ class ESConnectionBase(DocStoreConnection):
                 break
         return False
 
+    def index_exist_strict(self, index_name: str, dataset_id: str = None) -> bool:
+        """``index_exist`` without the retry-and-swallow.
+
+        A single attempt, and a transport failure is raised rather than answered. The
+        retry loop in ``index_exist`` is right for a caller that only wants to know
+        whether it can read, and wrong for one that must not confuse a doc store it
+        could not reach with an index that has not been created yet.
+        """
+        return Index(index_name, self.es).exists()
+
     """
     CRUD operations
     """

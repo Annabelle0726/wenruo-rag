@@ -88,6 +88,8 @@ export function useWikiNavigation() {
     loading: artifactLoading,
     handleScroll: handleArtifactScroll,
     hasMore: artifactHasMore,
+    error: artifactError,
+    refetch: reloadArtifacts,
   } = useFetchArtifactList({
     keywords: debouncedSearchString,
     topic: showArtifacts ? (selectedTopicPath ?? undefined) : undefined,
@@ -151,6 +153,10 @@ export function useWikiNavigation() {
       visibleTopics,
       showArtifacts,
       artifacts,
+      // The artifact list of the selected topic failed to load, as opposed to
+      // being empty: the list region has to say which of the two it is.
+      artifactError,
+      reloadArtifacts,
       loading,
       hasMore,
       handleSearchChange,
@@ -167,6 +173,8 @@ export function useWikiNavigation() {
       visibleTopics,
       showArtifacts,
       artifacts,
+      artifactError,
+      reloadArtifacts,
       loading,
       hasMore,
       handleSearchChange,

@@ -189,6 +189,21 @@ class DocStoreConnection(ABC):
         """
         raise NotImplementedError("Not implemented")
 
+    def index_exist_strict(self, index_name: str, dataset_id: str = None) -> bool:
+        """Check if an index exists, raising when the doc store cannot be asked.
+
+        ``index_exist`` folds every failure into ``False``: it retries, reconnects, and
+        answers "no such index" for a doc store that is simply unreachable. A caller
+        that only wants to know whether it can read is well served by that, but a
+        caller that MUST tell an index which has not been created yet from a doc store
+        that is down cannot be — the two are different answers and it has no way to
+        choose between them afterwards. This is that second question.
+
+        The default keeps the swallowing behaviour, for backends that have no cheaper
+        way to tell the two apart; Elasticsearch overrides it.
+        """
+        return self.index_exist(index_name, dataset_id)
+
     """
     CRUD operations
     """

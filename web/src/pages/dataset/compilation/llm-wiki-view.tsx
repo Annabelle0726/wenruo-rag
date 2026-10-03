@@ -25,6 +25,7 @@ import CompilationEmptyState from './empty-state';
 import { useCompilationArtifact } from './hooks/use-compilation-artifact';
 import { useRunEndEffect } from './hooks/use-run-end-effect';
 import { CompilationLoadingCard } from './loading-card';
+import { CompilationReadFailure } from './read-failure';
 import { canGenerateWiki } from './wiki-generation-eligibility';
 import { WikiDetailContent } from './wiki-detail-content';
 import { WikiLeftPanel } from './wiki-left-panel';
@@ -34,7 +35,12 @@ export function LlmWikiView() {
   const queryClient = useQueryClient();
   const [leftTab, setLeftTab] = useState<LeftPanelTab>(LeftPanelTab.Contents);
   const { data: knowledgeBase } = useFetchKnowledgeBaseConfiguration();
-  const { topics, loading: topicListLoading } = useFetchArtifactTopicList();
+  const {
+    topics,
+    loading: topicListLoading,
+    error: topicListError,
+    refetch: reloadTopics,
+  } = useFetchArtifactTopicList();
   const {
     selectedArtifact,
     selectedVersion,
@@ -66,10 +72,18 @@ export function LlmWikiView() {
 
   const canGenerate = canGenerateWiki(knowledgeBase);
   const isLoading = topicListLoading && topics.length === 0;
-  const isEmpty = topics.length === 0 && !topicListLoading;
+  // Checked before the empty state: an empty list means "nothing compiled yet"
+  // only when the read itself succeeded, and a failed one used to be
+  // indistinguishable from it.
+  const readFailed = Boolean(topicListError) && topics.length === 0;
+  const isEmpty = topics.length === 0 && !topicListLoading && !readFailed;
 
   if (isLoading) {
     return <CompilationLoadingCard />;
+  }
+
+  if (readFailed) {
+    return <CompilationReadFailure onRetry={reloadTopics} />;
   }
 
   if (isEmpty) {

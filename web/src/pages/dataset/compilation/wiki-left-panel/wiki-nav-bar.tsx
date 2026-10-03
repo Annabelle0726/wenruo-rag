@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 
 import { CreateDirectoryDialog } from '../create-directory-dialog';
 import { useCreateDirectory } from '../hooks/use-create-directory';
+import { CompilationReadFailure } from '../read-failure';
 import { useWikiNavigation } from './hooks/use-wiki-navigation';
 import { WikiArtifactList } from './wiki-artifact-list';
 import { WikiTopicList } from './wiki-topic-list';
@@ -37,6 +38,8 @@ export function WikiNavBar({
     visibleTopics,
     showArtifacts,
     artifacts,
+    artifactError,
+    reloadArtifacts,
     loading,
     hasMore,
     handleSearchChange,
@@ -130,7 +133,11 @@ export function WikiNavBar({
         className="flex-1 min-h-0 overflow-y-auto pb-3"
         onScroll={handleScroll}
       >
-        {showArtifacts ? (
+        {showArtifacts && artifactError ? (
+          <div className="h-full flex">
+            <CompilationReadFailure compact onRetry={reloadArtifacts} />
+          </div>
+        ) : showArtifacts ? (
           <WikiArtifactList
             artifacts={artifacts}
             selectedArtifact={selectedArtifact}

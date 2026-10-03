@@ -658,40 +658,53 @@ export const useFetchArtifactList = (
   const { keywords = '', topic, pageType, enabled = true } = options;
   const knowledgeBaseId = useKnowledgeBaseId();
 
-  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useInfiniteQuery<{
-      artifacts: IArtifact[];
-      total: number;
-    }>({
-      queryKey: ArtifactKeys.list(knowledgeBaseId, keywords, topic, pageType),
-      enabled: !!knowledgeBaseId && enabled && !!topic,
-      gcTime: 0,
-      initialPageParam: 1,
-      queryFn: async ({ pageParam }) => {
-        const page = pageParam as number;
-        const { data } = await listArtifacts(knowledgeBaseId, {
-          page,
-          page_size: 30,
-          keywords,
-          topic,
-          page_type: pageType,
-        });
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    error,
+    refetch,
+  } = useInfiniteQuery<{
+    artifacts: IArtifact[];
+    total: number;
+  }>({
+    queryKey: ArtifactKeys.list(knowledgeBaseId, keywords, topic, pageType),
+    enabled: !!knowledgeBaseId && enabled && !!topic,
+    gcTime: 0,
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }) => {
+      const page = pageParam as number;
+      const { data } = await listArtifacts(knowledgeBaseId, {
+        page,
+        page_size: 30,
+        keywords,
+        topic,
+        page_type: pageType,
+      });
 
-        const responseData = data?.data;
+      // A refused read is not an empty list: the caller has to be able to tell
+      // "this topic has no pages" from "this could not be read".
+      if (data?.code !== 0) {
+        throw new Error(data?.message || 'Failed to read artifacts');
+      }
 
-        return {
-          artifacts: responseData?.items ?? [],
-          total: responseData?.total ?? 0,
-        };
-      },
-      getNextPageParam: (lastPage, allPages) => {
-        const loadedCount = allPages.reduce(
-          (sum, page) => sum + page.artifacts.length,
-          0,
-        );
-        return loadedCount < lastPage.total ? allPages.length + 1 : undefined;
-      },
-    });
+      const responseData = data?.data;
+
+      return {
+        artifacts: responseData?.items ?? [],
+        total: responseData?.total ?? 0,
+      };
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const loadedCount = allPages.reduce(
+        (sum, page) => sum + page.artifacts.length,
+        0,
+      );
+      return loadedCount < lastPage.total ? allPages.length + 1 : undefined;
+    },
+  });
 
   const artifacts = useMemo(
     () => data?.pages.flatMap((page) => page.artifacts) ?? [],
@@ -720,6 +733,8 @@ export const useFetchArtifactList = (
     loading,
     handleScroll,
     hasMore: !!hasNextPage,
+    error,
+    refetch,
   };
 };
 
@@ -734,38 +749,52 @@ export const useFetchArtifactTopicList = (
   const { keywords = '', enabled = true } = options;
   const knowledgeBaseId = useKnowledgeBaseId();
 
-  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useInfiniteQuery<{
-      topics: IArtifactTopic[];
-      total: number;
-    }>({
-      queryKey: ArtifactTopicKeys.list(knowledgeBaseId, keywords),
-      enabled: !!knowledgeBaseId && enabled,
-      gcTime: 0,
-      initialPageParam: 1,
-      queryFn: async ({ pageParam }) => {
-        const page = pageParam as number;
-        const { data } = await listArtifactTopics(knowledgeBaseId, {
-          page,
-          page_size: 30,
-          keywords,
-        });
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    error,
+    refetch,
+  } = useInfiniteQuery<{
+    topics: IArtifactTopic[];
+    total: number;
+  }>({
+    queryKey: ArtifactTopicKeys.list(knowledgeBaseId, keywords),
+    enabled: !!knowledgeBaseId && enabled,
+    gcTime: 0,
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }) => {
+      const page = pageParam as number;
+      const { data } = await listArtifactTopics(knowledgeBaseId, {
+        page,
+        page_size: 30,
+        keywords,
+      });
 
-        const responseData = data?.data;
+      // The server answers a failed read with a non-zero code rather than an
+      // empty list; without this the Wiki view cannot tell a datastore outage
+      // from a knowledge base that has nothing compiled yet.
+      if (data?.code !== 0) {
+        throw new Error(data?.message || 'Failed to read artifact topics');
+      }
 
-        return {
-          topics: responseData?.items ?? [],
-          total: responseData?.total ?? 0,
-        };
-      },
-      getNextPageParam: (lastPage, allPages) => {
-        const loadedCount = allPages.reduce(
-          (sum, page) => sum + page.topics.length,
-          0,
-        );
-        return loadedCount < lastPage.total ? allPages.length + 1 : undefined;
-      },
-    });
+      const responseData = data?.data;
+
+      return {
+        topics: responseData?.items ?? [],
+        total: responseData?.total ?? 0,
+      };
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const loadedCount = allPages.reduce(
+        (sum, page) => sum + page.topics.length,
+        0,
+      );
+      return loadedCount < lastPage.total ? allPages.length + 1 : undefined;
+    },
+  });
 
   const topics = useMemo(
     () => data?.pages.flatMap((page) => page.topics) ?? [],
@@ -794,6 +823,8 @@ export const useFetchArtifactTopicList = (
     loading,
     handleScroll,
     hasMore: !!hasNextPage,
+    error,
+    refetch,
   };
 };
 
@@ -805,16 +836,27 @@ export function useFetchArtifactPage(
   const pageType = artifact?.page_type ?? '';
   const slug = artifact?.slug ?? '';
 
-  const { data, isFetching: loading } = useQuery<IArtifactPage | null>({
+  const {
+    data,
+    isFetching: loading,
+    error,
+    refetch,
+  } = useQuery<IArtifactPage | null>({
     queryKey: ArtifactKeys.detail(knowledgeBaseId, pageType, slug),
     enabled: !!knowledgeBaseId && !!artifact && !!pageType && !!slug && enabled,
     queryFn: async () => {
       const { data } = await getArtifactPage(knowledgeBaseId, pageType, slug);
+      // `null` data means the page is not there; a non-zero code means the read
+      // failed, and the detail pane must not present that as an empty page the
+      // reader could start writing into.
+      if (data?.code !== 0) {
+        throw new Error(data?.message || 'Failed to read artifact page');
+      }
       return data?.data ?? null;
     },
   });
 
-  return { data, loading };
+  return { data, loading, error, refetch };
 }
 
 export const useUpdateArtifactPage = () => {

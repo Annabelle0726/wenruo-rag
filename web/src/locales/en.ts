@@ -2823,6 +2823,9 @@ export default {
       noStructureGraph: 'No graph yet',
       noStructureMindmap: 'No mind map yet',
       noStructureTimeline: 'No timeline yet',
+      readFailedTitle: 'Could not read the artifacts',
+      readFailedDescription:
+        'These artifacts could not be read, so it is not known whether this dataset has any.',
       contents: 'Navigation',
       topics: 'Topics',
       searchEntity: 'Search entity',

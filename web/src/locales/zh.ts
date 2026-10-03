@@ -2429,6 +2429,9 @@ export default {
       noStructureGraph: '暂无 Graph',
       noStructureMindmap: '暂无 Mindmap',
       noStructureTimeline: '暂无 Timeline',
+      readFailedTitle: '知识成果读取失败',
+      readFailedDescription:
+        '暂时无法读取知识成果，因此无法确认该数据集是否已有内容。',
       contents: '导航',
       topics: 'Topic',
       searchEntity: '搜索 Entity',
