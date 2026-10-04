@@ -1,3 +1,4 @@
+from common.wiki_generation import serialize_wiki_edit
 #
 #  Copyright 2026 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -618,6 +619,12 @@ def run_index(dataset_id: str, tenant_id: str, index_type: str):
     ok, kb = KnowledgebaseService.get_by_id(dataset_id)
     if not ok:
         return False, "Invalid Dataset ID"
+
+    if index_type == "wiki":
+        from api.db.services.wiki_readiness_service import wiki_readiness
+        readiness = wiki_readiness(kb, tenant_id)
+        if not readiness["ready"]:
+            return False, "知识成果尚未准备就绪或正在生成，请检查准备状态；旧版成果已保留。 / Wiki is not ready or is building; previous results are preserved."
 
     task_type = _INDEX_TYPE_TO_TASK_TYPE[index_type]
     task_id_field = _INDEX_TYPE_TO_TASK_ID_FIELD[index_type]
@@ -1683,7 +1690,12 @@ def _compiled_index_or_failure(tenant_id: str, kb_id: str):
 
 
 def _wiki_index_or_none(tenant_id: str, kb_id: str):
-    return _compiled_index_or_none(tenant_id, kb_id)
+    from common.wiki_generation import readable_index
+    from rag.nlp import search
+    index = readable_index(tenant_id, kb_id)
+    if not settings.docStoreConn.index_exist(index, kb_id):
+        return None
+    return index, search
 
 
 def _compilation_template_kind(kind) -> str:
@@ -4811,6 +4823,7 @@ async def _enrich_nav_items(dataset_id: str, tenant_id: str, items: list[dict]) 
     return clusters + standalone_docs
 
 
+@serialize_wiki_edit
 async def update_wiki_page(
     dataset_id: str,
     tenant_id: str,
@@ -5532,6 +5545,7 @@ async def get_wiki_graph(
     return True, _response(list(entities.values()), relations)
 
 
+@serialize_wiki_edit
 async def clear_wiki(dataset_id: str, tenant_id: str):
     """Wipe every artifact-related row from ES for this KB.
 

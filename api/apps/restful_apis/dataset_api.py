@@ -1625,3 +1625,18 @@ async def update_auto_metadata(tenant_id, dataset_id):
     except Exception as e:
         logging.exception(e)
         return get_error_data_result(message="Internal server error")
+
+
+@manager.route("/datasets/<dataset_id>/artifacts/readiness", methods=["GET"])
+@login_required
+@add_tenant_id_to_kwargs
+def wiki_readiness(tenant_id, dataset_id):
+    if not KnowledgebaseService.accessible(dataset_id, tenant_id):
+        return get_error_permission_result(message="no authorization")
+    _, kb = KnowledgebaseService.get_by_id(dataset_id)
+    try:
+        from api.db.services.wiki_readiness_service import wiki_readiness as check
+        return get_result(data=check(kb, tenant_id))
+    except Exception:
+        logging.exception("Wiki readiness lookup failed")
+        return get_error_data_result(message="暂时无法检查生成准备状态，旧版成果不受影响。 / Preparation check unavailable; previous results are unaffected.")

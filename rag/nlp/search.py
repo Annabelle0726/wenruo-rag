@@ -97,7 +97,8 @@ def build_fusion_expr(topn: int, vector_similarity_weight: float = 0.3) -> Fusio
 
 
 def index_name(uid):
-    return f"ragflow_{uid}"
+    from common.wiki_generation import scoped_index
+    return scoped_index(uid)
 
 
 def _chunk_scalar(value) -> str:

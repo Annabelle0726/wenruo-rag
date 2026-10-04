@@ -83,7 +83,7 @@ def _unified_diff(before: str, after: str, slug: str) -> str:
     )
 
 
-def _store_content_after(kb_id: str, content: str) -> tuple[str, str]:
+def _store_content_after(kb_id: str, content: str, *, strict: bool = False) -> tuple[str, str]:
     """Persist ``content`` per :data:`WIKI_CONTENT_STORAGE`. Returns
     ``(storage_kind, location)`` for the row's persistence columns.
 
@@ -99,7 +99,11 @@ def _store_content_after(kb_id: str, content: str) -> tuple[str, str]:
             storage = settings.STORAGE_IMPL
             if storage is not None:
                 storage.put(kb_id, location, content_bytes)
+            elif strict:
+                raise RuntimeError("Wiki content storage is unavailable")
         except Exception:
+            if strict:
+                raise
             logging.exception(
                 "record_page_edit: MinIO put failed for kb=%s hash=%s",
                 kb_id,
@@ -122,8 +126,12 @@ def _store_content_after(kb_id: str, content: str) -> tuple[str, str]:
             "available_int": 0,
         }
         try:
-            settings.docStoreConn.insert([payload], index, kb_id)
+            errors = settings.docStoreConn.insert([payload], index, kb_id)
+            if strict and errors:
+                raise RuntimeError("Wiki version content write failed")
         except Exception:
+            if strict:
+                raise
             logging.exception(
                 "record_page_edit: ES insert failed for kb=%s hash=%s",
                 kb_id,
@@ -733,6 +741,7 @@ class FileCommitService(CommonService):
         title: Optional[str] = None,
         comments: Optional[str] = None,
         user_id: Optional[str] = None,
+        strict: bool = False,
     ) -> Optional[str]:
         """Persist one artifact-page edit as a FileCommit + FileCommitItem.
 
@@ -743,6 +752,10 @@ class FileCommitService(CommonService):
         real ``File`` row backing them and don't participate in the
         workspace ``tree_state`` snapshot chain.
         """
+        from common.wiki_generation import BUILD
+        build = BUILD.get()
+        if build and build.kb_id == kb_id:
+            return None  # Published transaction records validated page changes.
         diff_text = _unified_diff(content_before or "", content_after or "", slug)
         if not diff_text:
             return None
@@ -758,7 +771,9 @@ class FileCommitService(CommonService):
         # Persist the post-save markdown per the configured storage.
         # A failure here logs but doesn't block the commit row — the diff
         # is still meaningful without content_after.
-        storage_kind, location = _store_content_after(kb_id, content_after or "")
+        storage_kind, location = _store_content_after(kb_id, content_after or "", strict=strict)
+        if strict and (not storage_kind or not location):
+            raise RuntimeError("Wiki version content could not be stored")
 
         # Chain to the previous commit for this page so the history stays
         # ordered even under concurrent writes (auto-regen + user edit).
@@ -811,6 +826,8 @@ class FileCommitService(CommonService):
                     update_date=now_dt,
                 ).save(force_insert=True)
         except Exception:
+            if strict:
+                raise
             logging.exception(
                 "record_page_edit: insert failed for kb=%s slug=%s",
                 kb_id,
@@ -830,6 +847,9 @@ class FileCommitService(CommonService):
         page must remove both rows instead of leaving an orphaned history
         that can reappear when the same slug is generated again.
         """
+        from common.wiki_generation import BUILD
+        if BUILD.get() is not None:
+            return 0  # Never delete published history during a private build.
         file_id = _wiki_file_id(kb_id, slug)
         commit_ids = [
             row.commit_id

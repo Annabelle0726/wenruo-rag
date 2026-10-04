@@ -18,6 +18,7 @@ import { WikiGraphPanel } from './wiki-graph-panel';
 import { WikiNavBar } from './wiki-nav-bar';
 
 type WikiLeftPanelProps = {
+  canGenerate?: boolean;
   tab: LeftPanelTab;
   onTabChange: (value: string) => void;
   selectedArtifact: IArtifact | null;
@@ -30,6 +31,7 @@ type WikiLeftPanelProps = {
 };
 
 export function WikiLeftPanel({
+  canGenerate = false,
   tab,
   onTabChange,
   selectedArtifact,
@@ -64,8 +66,8 @@ export function WikiLeftPanel({
     if (status === GenerateStatus.Running) {
       return;
     }
-    await handleUpdate();
-  }, [status, handleUpdate, onUpdateSheetOpenChange]);
+    if (canGenerate) await handleUpdate();
+  }, [status, handleUpdate, onUpdateSheetOpenChange, canGenerate]);
 
   return (
     <aside className="size-full flex flex-col p-5">
@@ -74,12 +76,15 @@ export function WikiLeftPanel({
           <CompilationUpdateButton
             traceData={traceData}
             generateType={GenerateType.Artifact}
-            hasChanges={hasChanges}
+            hasChanges={hasChanges || canGenerate}
             newlyUploaded={newlyUploaded}
             removed={removed}
             changed={changed}
             retryPageCount={retryPageCount}
-            loading={updateLoading}
+            loading={
+              updateLoading ||
+              (!canGenerate && status !== GenerateStatus.Running)
+            }
             tooltip={t('knowledgeCompilation.updateTooltip', {
               newlyUploaded,
               removed,
