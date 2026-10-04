@@ -76,3 +76,15 @@ test('failed preparation check does not claim readiness', () => {
   );
   expect(screen.queryAllByRole('link')).toHaveLength(0);
 });
+
+test('missing Compiler remains visible independently of the configured embedding', () => {
+  render(<WikiPreparation failed={false} data={{ ...prepared, ready: false,
+    checks: { ...prepared.checks, models: false },
+    model_details: [
+      { role: 'Compiler', source: 'pipeline_explicit', model: '', provider: '', configured: false },
+      { role: 'Embedding', source: 'knowledgebase_model_id', model: 'bge-m3', provider: 'SILICONFLOW', configured: true },
+    ],
+  }} />);
+  expect(screen.getByText(/Compiler:/)).toHaveTextContent('knowledgeCompilation.preparationMissing');
+  expect(screen.getByText(/Embedding:/)).toHaveTextContent('bge-m3');
+});

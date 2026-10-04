@@ -1,14 +1,11 @@
-import BackButton from '@/components/back-button';
 import {
   SelectWithSearch,
   type SelectWithSearchFlagOptionType,
 } from '@/components/originui/select-with-search';
 import { DatasetIdentityMark } from '@/components/dataset-category';
-import { useNavigatePage } from '@/hooks/logic-hooks/navigate-hooks';
 import { useFetchKnowledgeBaseConfiguration } from '@/hooks/use-knowledge-request';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router';
 
 import {
   StructureKinds,
@@ -23,8 +20,6 @@ import { SkillsView } from './skills-view';
 
 export default function Compilation() {
   const { t } = useTranslation();
-  const { id } = useParams();
-  const { navigateToDataFile } = useNavigatePage();
   const { data: knowledgeBase } = useFetchKnowledgeBaseConfiguration();
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.LlmWiki);
 
@@ -44,10 +39,6 @@ export default function Compilation() {
   return (
     <section className="flex flex-col p-4 gap-4 h-full">
       <header className="space-y-5">
-        <BackButton onClick={navigateToDataFile(id!)}>
-          {t('common.back')}
-        </BackButton>
-
         <section className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* The knowledge base's card mark, so the third-level header names the

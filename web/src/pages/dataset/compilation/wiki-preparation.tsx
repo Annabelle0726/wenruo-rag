@@ -14,6 +14,14 @@ interface Preparation {
   pipeline_id?: string;
   checks: Record<'parsed' | 'pipeline' | 'template' | 'models', boolean>;
   models: string[];
+  model_details?: {
+    role: string;
+    reference?: string;
+    source: string;
+    model: string;
+    provider: string;
+    configured: boolean;
+  }[];
   stored_dimensions?: number[];
   compatibility: string;
 }
@@ -47,7 +55,9 @@ export function WikiPreparation({
       ? `/agent/${data.pipeline_id}`
       : `/dataset/configuration/${id}/parsing`,
     template: data?.pipeline_id ? `/agent/${data.pipeline_id}` : '/agents',
-    models: '/user-setting/model',
+    models: data?.pipeline_id
+      ? `/agent/${data.pipeline_id}`
+      : '/user-setting/model',
   };
   return (
     <section
@@ -79,9 +89,7 @@ export function WikiPreparation({
                 )}
                 {key === 'parsed' &&
                   ` (${data.parsed_files}/${data.total_files})`}
-                {(key === 'models'
-                  ? data.can_manage_models
-                  : data.can_write) && (
+                {data.can_write && (
                   <Link
                     className="ml-2 text-accent-primary underline"
                     to={links[key]}
@@ -99,6 +107,27 @@ export function WikiPreparation({
               ? ` · ${data.stored_dimensions.join('/')}D`
               : ''}
           </p>
+          {data.model_details?.map((model, index) => (
+            <p key={`${model.role}-${index}`}>
+              {model.role}:{' '}
+              {model.model || t('knowledgeCompilation.preparationMissing')}
+              {model.provider ? ` (${model.provider})` : ''} ·{' '}
+              {t(`knowledgeCompilation.modelSource_${model.source}`)} ·{' '}
+              {t(
+                model.configured
+                  ? 'knowledgeCompilation.preparationReady'
+                  : 'knowledgeCompilation.preparationMissing',
+              )}
+            </p>
+          ))}
+          {data.can_manage_models && (
+            <Link
+              className="text-accent-primary underline"
+              to="/user-setting/model"
+            >
+              {t('knowledgeCompilation.adminModelSettings')}
+            </Link>
+          )}
           <p>
             {t(
               data.can_write

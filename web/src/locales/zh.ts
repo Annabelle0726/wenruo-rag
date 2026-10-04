@@ -2362,7 +2362,12 @@ export default {
     knowledgeCompilation: {
       preparationTitle: '生成准备与使用说明',
       preparationHelp:
-        '先上传并解析文件，再绑定包含 Compiler 的数据管道和 Wiki 编译模板。管道与聊天 Agent 共用编辑入口，但不是聊天助手；已有管道直接检查和使用，无需重建。',
+        '管理员先配置工作区模型服务；知识库创建者配置一次 Compiler 数据管道和 Wiki 模板。用户上传并解析文件后生成或更新。Compiler 必须显式选择模型，不自动使用工作区默认聊天模型；嵌入采用知识库绑定。管道与聊天 Agent 共用编辑入口，已有管道无需重建。',
+      adminModelSettings: '管理员：配置工作区模型服务',
+      modelSource_pipeline_explicit: '管道显式模型',
+      modelSource_knowledgebase_model_id: '知识库模型绑定',
+      modelSource_knowledgebase_reference: '知识库模型引用（回退）',
+      modelSource_workspace_default: '工作区默认模型（回退）',
       preparationUnavailable:
         '暂时无法检查准备状态，生成已暂停；已有成果仍可阅读。',
       preparationChecking: '正在检查生成准备状态…',

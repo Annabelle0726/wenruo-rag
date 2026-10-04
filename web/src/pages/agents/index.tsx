@@ -17,6 +17,8 @@ import { useGoToPreviousPageOnEmpty } from '@/hooks/logic-hooks';
 import { useNavigatePage } from '@/hooks/logic-hooks/navigate-hooks';
 import { useFetchAgentListByPage } from '@/hooks/use-agent-request';
 import { useDeleteCompilationTemplateGroup } from '@/hooks/use-compilation-template-group-request';
+import { useFetchTenantInfo } from '@/hooks/use-user-setting-request';
+import { canManageTenant } from '@/utils/tenant-role';
 import { Routes } from '@/routes';
 import { pick } from 'lodash';
 import { Clipboard, ClipboardPlus, FileInput, Plus } from 'lucide-react';
@@ -79,6 +81,8 @@ export default function Agents() {
   } = useHandleImportJsonFile();
 
   const { deleteGroup } = useDeleteCompilationTemplateGroup();
+  const { data: tenant } = useFetchTenantInfo();
+  const canManageTemplates = canManageTenant(tenant.role);
 
   const filters = useSelectFilters();
 
@@ -204,7 +208,9 @@ export default function Agents() {
                   key={x.id}
                   data={x}
                   onClick={handleEditCompilation(x.id)}
-                  onDelete={handleDeleteCompilation}
+                  onDelete={
+                    canManageTemplates ? handleDeleteCompilation : undefined
+                  }
                 />
               ) : (
                 <AgentCard

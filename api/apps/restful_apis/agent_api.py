@@ -65,6 +65,7 @@ from api.utils.api_utils import (
     get_request_json,
     server_error_response,
     validate_request,
+    requested_tenant_id,
 )
 from api.utils.pagination_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, validate_rest_api_ids, validate_rest_api_page, validate_rest_api_page_size
 from common import settings
@@ -767,10 +768,11 @@ def list_agents(tenant_id):
         effective_owner_ids = list(requested_owner_ids)
     else:
         effective_owner_ids = list(authorized_owner_ids)
-    include_template_groups = tenant_id in effective_owner_ids
+    template_workspace_id = TenantService.resolve_active_tenant_id(tenant_id, requested_tenant_id())
+    include_template_groups = template_workspace_id in effective_owner_ids or tenant_id in effective_owner_ids
 
     # Groups-only: when ``compilation_template_group`` is the only selected
-    # category, return just the caller's template groups (no agents) via
+    # category, return the active workspace's template groups (no agents) via
     # list_saved, so the frontend can render a dedicated tab. list_saved
     # paginates in Python.
     if canvas_category_list == [_COMPILATION_TEMPLATE_GROUP_CATEGORY]:
@@ -779,7 +781,7 @@ def list_agents(tenant_id):
         groups = []
         if include_template_groups:
             try:
-                groups = CompilationTemplateGroupService.list_saved(tenant_id, keywords, "", order_by, desc)
+                groups = CompilationTemplateGroupService.list_saved(template_workspace_id, keywords, "", order_by, desc)
             except Exception:
                 logging.exception("list_agents: compilation template group list failed for tenant=%s", tenant_id)
         for group in groups:
@@ -818,12 +820,12 @@ def list_agents(tenant_id):
             tags,
             canvas_type,
         )
-        # Groups are owner-only (no team sharing), so they're scoped to the
-        # caller. Keyword filters the group name; scope is left unfiltered.
+        # Templates belong to the active workspace; members may select them,
+        # while the template routes enforce administrator-only management.
         groups = []
         if include_template_groups:
             try:
-                groups = CompilationTemplateGroupService.list_saved(tenant_id, keywords, "", order_by, desc)
+                groups = CompilationTemplateGroupService.list_saved(template_workspace_id, keywords, "", order_by, desc)
             except Exception:
                 logging.exception("list_agents: compilation template group merge failed for tenant=%s", tenant_id)
 
@@ -868,7 +870,7 @@ def list_agents(tenant_id):
         groups = []
         if include_template_groups:
             try:
-                groups = CompilationTemplateGroupService.list_saved(tenant_id, keywords, "", order_by, desc)
+                groups = CompilationTemplateGroupService.list_saved(template_workspace_id, keywords, "", order_by, desc)
             except Exception:
                 logging.exception("list_agents: compilation template group mixed failed for tenant=%s", tenant_id)
 

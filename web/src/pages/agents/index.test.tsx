@@ -6,6 +6,10 @@ import Agents from './index';
 const mockShowCreatingModal = jest.fn();
 const mockImportJson = jest.fn();
 
+jest.mock('@/hooks/use-user-setting-request', () => ({
+  useFetchTenantInfo: () => ({ data: { role: 'owner' } }),
+}));
+
 // The route table builds a browser router on import, which jsdom cannot host;
 // only the paths this page links to are needed here.
 jest.mock('@/routes', () => ({

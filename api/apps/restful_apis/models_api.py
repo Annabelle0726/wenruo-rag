@@ -25,6 +25,7 @@ from api.utils.api_utils import (
     get_error_argument_result,
     get_error_data_result,
     get_result,
+    get_error_permission_result,
 )
 
 
@@ -91,7 +92,7 @@ def get_added_models(tenant_id: str):
                 joined_tenants = TenantService.get_joined_tenants_by_user_id(tenant_id)
                 allowed_tenant_ids = {tenant_id, *(tenant["tenant_id"] for tenant in joined_tenants)}
                 if owner_tenant_id not in allowed_tenant_ids:
-                    return get_error_data_result(message="Permission denied")
+                    return get_error_permission_result(message="Permission denied")
             target_tenant_id = owner_tenant_id
 
         success, result = models_api_service.list_tenant_added_models(target_tenant_id, model_type_filter)

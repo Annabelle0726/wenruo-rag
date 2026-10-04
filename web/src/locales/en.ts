@@ -2759,7 +2759,12 @@ export default {
     knowledgeCompilation: {
       preparationTitle: 'Preparation and usage',
       preparationHelp:
-        'Upload and parse files, then bind a data pipeline with a Compiler and a Wiki template. Pipelines share the Agent editor but are not chat assistants. Check and reuse an existing pipeline; do not recreate it.',
+        'An administrator configures workspace model services; the dataset creator binds a Compiler pipeline and Wiki template once. Upload and parse files, then Generate or Update. Compiler requires an explicit model; the workspace chat default does not replace it. Embedding follows the dataset binding. Pipelines share the Agent editor; reuse an existing pipeline.',
+      adminModelSettings: 'Administrator: workspace model services',
+      modelSource_pipeline_explicit: 'Explicit pipeline model',
+      modelSource_knowledgebase_model_id: 'Dataset model binding',
+      modelSource_knowledgebase_reference: 'Dataset model reference (fallback)',
+      modelSource_workspace_default: 'Workspace default (fallback)',
       preparationUnavailable:
         'Preparation check unavailable. Generation is disabled; existing results remain readable.',
       preparationChecking: 'Checking preparation…',
