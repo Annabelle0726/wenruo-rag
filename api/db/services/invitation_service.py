@@ -110,6 +110,77 @@ class InvitationService:
         return invite
 
     @staticmethod
+    def _pending_for_email(email):
+        """The newest pending invitation addressed to an email, or None.
+
+        Used by the OAuth/OIDC path, which knows the address the identity provider
+        authenticated but never sees an invitation token: without a pending invitation for
+        that address there is nothing to register the account INTO, so the caller must
+        refuse rather than create a workspace of its own.
+        """
+        email = normalize_email(email)
+        return (
+            TenantInvite.select()
+            .where(
+                fn.LOWER(TenantInvite.email) == email,
+                TenantInvite.status == "pending",
+                TenantInvite.expires_at > utcnow(),
+            )
+            .order_by(TenantInvite.create_time.desc())
+            .first()
+        )
+
+    @staticmethod
+    def _claim_and_create(invite, nickname, *, password=None, login_channel="password", avatar=""):
+        """Claim ONE pending invitation and create its account and membership.
+
+        The conditional UPDATE is the single-use claim: two racing redemptions cannot both
+        see ``pending``, and any later failure inside the transaction rolls the claim back.
+        The workspace, the role and the department all come from the invitation record — the
+        caller supplies a nickname and (for password sign-up) a password, nothing else.
+        """
+        error, _ = validate_nickname(nickname)
+        if error:
+            raise ValueError(error)
+        try:
+            with DB.atomic():
+                # Re-read inside the transaction: the row checked a moment ago may be gone.
+                row = TenantInvite.get_or_none(
+                    TenantInvite.id == invite.id,
+                    TenantInvite.status == "pending",
+                    TenantInvite.expires_at > utcnow(),
+                )
+                if row is None:
+                    raise PermissionError("Invitation is invalid, expired, or already accepted.")
+                _validate_scope(row.tenant_id, row.invited_by, row.role, row.department_id)
+                claimed = (
+                    TenantInvite.update(status="accepted")
+                    .where(
+                        TenantInvite.id == row.id,
+                        TenantInvite.status == "pending",
+                        TenantInvite.expires_at > utcnow(),
+                    )
+                    .execute()
+                )
+                if not claimed or User.select().where(fn.LOWER(User.email) == row.email).exists():
+                    raise PermissionError("Invitation cannot be redeemed. Ask the administrator to invite again.")
+                user = User.create(
+                    id=get_uuid(),
+                    email=row.email,
+                    nickname=nickname.strip(),
+                    password=password or "",
+                    avatar=avatar or "",
+                    access_token=get_uuid(),
+                    current_tenant_id=row.tenant_id,
+                    login_channel=login_channel,
+                    last_login_time=utcnow(),
+                )
+                UserTenant.create(id=get_uuid(), user_id=user.id, tenant_id=row.tenant_id, role=row.role, department_id=row.department_id, invited_by=row.invited_by, status="1")
+                return user
+        except IntegrityError:
+            raise PermissionError("Invitation cannot be redeemed. Ask the administrator to invite again.") from None
+
+    @staticmethod
     @DB.connection_context()
     def metadata(token):
         invite = InvitationService._pending(token)
@@ -119,36 +190,28 @@ class InvitationService:
     @staticmethod
     @DB.connection_context()
     def accept(token, nickname, password):
+        invite = InvitationService._pending(token)
+        return InvitationService._claim_and_create(
+            invite, nickname, password=generate_password_hash(password_value(password))
+        )
+
+    @staticmethod
+    @DB.connection_context()
+    def accept_oauth(email, nickname, login_channel, avatar=""):
+        """Register the identity provider's address, but only into a workspace that invited it.
+
+        There is no password: the account authenticates through the provider from now on, so
+        the password column stays empty rather than holding a hash of something the user never
+        chose. An unusable nickname (the provider may send none, or one this product rejects)
+        falls back to the address' local part, because a missing display name must not turn an
+        otherwise valid invitation into a failed registration.
+        """
+        invite = InvitationService._pending_for_email(email)
+        if invite is None:
+            raise PermissionError("No pending invitation for this address.")
         error, _ = validate_nickname(nickname)
         if error:
-            raise ValueError(error)
-        encoded = password_value(password)
-        try:
-            with DB.atomic():
-                invite = InvitationService._pending(token)
-                # Conditional write is the single-use claim. Any later failure rolls it back.
-                claimed = (
-                    TenantInvite.update(status="accepted")
-                    .where(
-                        TenantInvite.id == invite.id,
-                        TenantInvite.status == "pending",
-                        TenantInvite.expires_at > utcnow(),
-                    )
-                    .execute()
-                )
-                if not claimed or User.select().where(fn.LOWER(User.email) == invite.email).exists():
-                    raise PermissionError("Invitation cannot be redeemed. Ask the administrator to invite again.")
-                user = User.create(
-                    id=get_uuid(),
-                    email=invite.email,
-                    nickname=nickname.strip(),
-                    password=generate_password_hash(encoded),
-                    access_token=get_uuid(),
-                    current_tenant_id=invite.tenant_id,
-                    login_channel="password",
-                    last_login_time=utcnow(),
-                )
-                UserTenant.create(id=get_uuid(), user_id=user.id, tenant_id=invite.tenant_id, role=invite.role, department_id=invite.department_id, invited_by=invite.invited_by, status="1")
-                return user
-        except IntegrityError:
-            raise PermissionError("Invitation cannot be redeemed. Ask the administrator to invite again.") from None
+            nickname = str(email).split("@", 1)[0]
+        return InvitationService._claim_and_create(
+            invite, nickname, password="", login_channel=login_channel, avatar=avatar
+        )

@@ -1,3 +1,16 @@
+# RETIRED 2026-09-30 — HISTORICAL RECORD ONLY. DO NOT EXECUTE.
+#
+# The pinned target `my-wenruorag:rollback-pre-p0-20260927` =
+# sha256:c50436820cb99f0244b29d2443c9de184b97896c82c060ac8bd58ef04aa190b0 no longer exists: the image
+# and its tag were deleted on 2026-09-30 08:26 +08:00 by an explicit DockerDesktopUI
+# `DELETE /images/my-wenruorag:rollback-pre-p0-20260927` call, and no local archive of it was ever
+# taken — the 2026-09-30 `docker save` archives cover only the current production and the two
+# surviving rollbacks — so this image is NOT recoverable on this machine.
+#
+# Running the command below now fails with "image not found" instead of restoring anything.
+# Do NOT substitute another digest for the original target: repointing this rail would silently
+# change which build the procedure restores, which is worse than a hard failure.
+#
 # Phase B P0-B ROLLBACK override — restores the verified pre-P0 production image.
 #
 # Used because the candidate image 99d0ee210004 failed the live negative control
@@ -7,4 +20,5 @@
 # Applied as:  docker compose -f docker/docker-compose.yml -f <this file> up -d --force-recreate --no-deps wenruo-rag-cpu
 services:
   wenruo-rag-cpu:
+    # RETIRED — image deleted 2026-09-30; see the header. DO NOT EXECUTE.
     image: my-wenruorag:rollback-pre-p0-20260927

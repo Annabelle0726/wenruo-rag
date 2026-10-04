@@ -1,3 +1,17 @@
+# RETIRED 2026-09-30 — HISTORICAL RECORD ONLY. DO NOT EXECUTE.
+#
+# The pinned target `my-wenruorag:p0b-891572a71` =
+# sha256:99d0ee210004d3ebcc5ed333261b1971aa96ce2208e9fa477c134626fc619b82 no longer exists: the image
+# and its tag were deleted on 2026-09-30 08:26 +08:00 by an explicit DockerDesktopUI
+# `DELETE /images/my-wenruorag:p0b-891572a71` call, and no local archive of it was ever taken — the
+# 2026-09-30 `docker save` archives cover only the current production and the two surviving
+# rollbacks — so this image is NOT recoverable on this machine. The failed-candidate regression
+# fixture it was retained for is therefore gone as well.
+#
+# Running the command below now fails with "image not found" instead of recreating the service.
+# Do NOT substitute another digest for the original target: repointing this rail would silently
+# deploy a different build under a failed candidate's name.
+#
 # Phase B P0-B deployment override — pins the verified candidate image.
 #
 # Purpose: recreate the wenruo-rag-cpu service onto the immutable candidate tag
@@ -8,4 +22,5 @@
 # Applied as:  docker compose -f docker/docker-compose.yml -f <this file> up -d --force-recreate --no-deps wenruo-rag-cpu
 services:
   wenruo-rag-cpu:
+    # RETIRED — image deleted 2026-09-30; see the header. DO NOT EXECUTE.
     image: my-wenruorag:p0b-891572a71
