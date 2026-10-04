@@ -18,15 +18,15 @@ admin:
 mysql:
   name: '${MYSQL_DBNAME:-rag_flow}'
   user: '${MYSQL_USER:-root}'
-  password: '${MYSQL_PASSWORD:-infini_rag_flow}'
+  password: '${MYSQL_PASSWORD:-}'
   host: '${MYSQL_HOST:-mysql}'
   port: ${MYSQL_PORT:-3306}
   max_connections: 900
   stale_timeout: 300
   max_allowed_packet: ${MYSQL_MAX_PACKET:-1073741824}
 minio:
-  user: '${MINIO_USER:-rag_flow}'
-  password: '${MINIO_PASSWORD:-infini_rag_flow}'
+  user: '${MINIO_USER:-wenruo}'
+  password: '${MINIO_PASSWORD:-}'
   host: '${MINIO_HOST:-minio}:9000'
   bucket: '${MINIO_BUCKET:-}'
   prefix_path: '${MINIO_PREFIX_PATH:-}'
@@ -37,11 +37,11 @@ minio:
 es:
   hosts: 'http://${ES_HOST:-es01}:9200'
   username: '${ES_USER:-elastic}'
-  password: '${ELASTIC_PASSWORD:-infini_rag_flow}'
+  password: '${ELASTIC_PASSWORD:-}'
 os:
   hosts: 'http://${OS_HOST:-opensearch01}:9201'
   username: '${OS_USER:-admin}'
-  password: '${OPENSEARCH_PASSWORD:-infini_rag_flow_OS_01}'
+  password: '${OPENSEARCH_PASSWORD:-}'
   # Optional hybrid (BM25 + KNN) search tuning. The connector self-provisions the
   # normalization search pipeline on start-up (requires OpenSearch >= 2.10).
   # hybrid_search_pipeline: 'ragflow_hybrid_pipeline'
@@ -54,14 +54,14 @@ serenedb:
   host: '${SERENEDB_HOST:-serenedb}'
   port: 7890
   user: '${SERENEDB_USER:-postgres}'
-  password: '${SERENEDB_PASSWORD:-infini_rag_flow}'
+  password: '${SERENEDB_PASSWORD:-}'
   db_name: '${SERENEDB_DBNAME:-postgres}'
 oceanbase:
   scheme: 'oceanbase' # set 'mysql' to create connection using mysql config
   config:
     db_name: '${OCEANBASE_DOC_DBNAME:-test}'
     user: '${OCEANBASE_USER:-root@ragflow}'
-    password: '${OCEANBASE_PASSWORD:-infini_rag_flow}'
+    password: '${OCEANBASE_PASSWORD:-}'
     host: '${OCEANBASE_HOST:-oceanbase}'
     port: ${OCEANBASE_PORT:-2881}
 gaussdb:
@@ -76,13 +76,13 @@ seekdb:
   config:
     db_name: '${SEEKDB_DOC_DBNAME:-ragflow_doc}'
     user: '${SEEKDB_USER:-root}'
-    password: '${SEEKDB_PASSWORD:-infini_rag_flow}'
+    password: '${SEEKDB_PASSWORD:-}'
     host: '${SEEKDB_HOST:-seekdb}'
     port: ${SEEKDB_PORT:-2881}
 redis:
   db: 1
   username: '${REDIS_USERNAME:-}'
-  password: '${REDIS_PASSWORD:-infini_rag_flow}'
+  password: '${REDIS_PASSWORD:-}'
   host: '${REDIS_HOST:-redis}:6379'
 nats:
   host: ${NATS_HOST:-0.0.0.0}
@@ -91,7 +91,7 @@ clickhouse:
   host: '${CLICKHOUSE_HOST:-clickhouse}'
   port: ${CLICKHOUSE_TCP_PORT:-9000}
   user: '${CLICKHOUSE_USER:-ragflow}'
-  password: '${CLICKHOUSE_PASSWORD:-infini_rag_flow}'
+  password: '${CLICKHOUSE_PASSWORD:-}'
   database: '${CLICKHOUSE_DATABASE:-ragflow}'
 otel:
   host: ${OTEL_HOST:-0.0.0.0}
@@ -114,7 +114,7 @@ user_default_llm:
 # postgres:
 #   name: '${POSTGRES_DBNAME:-rag_flow}'
 #   user: '${POSTGRES_USER:-rag_flow}'
-#   password: '${POSTGRES_PASSWORD:-infini_rag_flow}'
+#   password: '${POSTGRES_PASSWORD:-}'
 #   host: '${POSTGRES_HOST:-postgres}'
 #   port: 5432
 #   max_connections: 100

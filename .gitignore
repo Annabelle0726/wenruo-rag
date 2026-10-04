@@ -303,3 +303,6 @@ phase/*_snapshot_*
 phase/*.log
 phase/*.tmp
 phase/*.out
+# Private deployment credentials and rendered runtime configuration
+/conf/service_conf.yaml
+/delivery-private/
