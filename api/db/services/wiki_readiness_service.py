@@ -42,7 +42,7 @@ def wiki_readiness(kb, user_id):
         from common.wiki_generation import readable_index
         result = settings.docStoreConn.es.search(index=readable_index(kb.tenant_id, kb.id),
             query={"bool": {"filter": [{"term": {"kb_id": kb.id}}, {"term": {"compile_kwd": "wiki_page"}}]}},
-            size=1, source_includes=["q_*_vec"])
+            size=1, ignore_unavailable=True, source_includes=["q_*_vec"])
         for hit in result.get("hits", {}).get("hits", []):
             dimensions = sorted({len(v) for k, v in hit.get("_source", {}).items() if k.startswith("q_") and k.endswith("_vec") and isinstance(v, list)})
     return {

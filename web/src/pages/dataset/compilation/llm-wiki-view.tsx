@@ -96,11 +96,13 @@ export function LlmWikiView() {
     return (
       <div className="flex flex-1 min-h-0 flex-col">
         {guide}
-        <CompilationEmptyState
-          type={ViewMode.LlmWiki}
-          disabled={!canGenerate}
-          data={artifactRunData}
-        />
+        <div className="flex flex-1 min-h-48">
+          <CompilationEmptyState
+            type={ViewMode.LlmWiki}
+            disabled={!canGenerate}
+            data={artifactRunData}
+          />
+        </div>
       </div>
     );
   }
@@ -108,7 +110,7 @@ export function LlmWikiView() {
   return (
     <div className="flex flex-1 min-h-0 flex-col">
       {guide}
-      <Card className="flex-1 min-h-0 overflow-hidden flex border-border-button rounded-xl flex-col">
+      <Card className="flex-1 min-h-64 overflow-hidden flex border-border-button rounded-xl flex-col">
         <ResizablePanelGroup direction="horizontal" className="flex-1">
           <ResizablePanel id="wiki-left" order={1} defaultSize={50}>
             <WikiLeftPanel

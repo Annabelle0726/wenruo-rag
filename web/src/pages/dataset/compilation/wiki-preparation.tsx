@@ -51,7 +51,7 @@ export function WikiPreparation({
   };
   return (
     <section
-      className="mb-3 rounded-xl border border-border-button p-4 text-sm text-text-secondary"
+      className="mb-3 shrink-0 rounded-xl border border-border-button p-4 text-sm text-text-secondary"
       data-testid="wiki-preparation"
     >
       <p className="font-medium text-text-primary">
