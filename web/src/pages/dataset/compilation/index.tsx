@@ -37,8 +37,8 @@ export default function Compilation() {
   const structureKind = StructureKinds.find((kind) => kind === viewMode);
 
   return (
-    <section className="flex flex-col p-4 gap-4 h-full">
-      <header className="space-y-5">
+    <section className="flex min-h-0 flex-col p-4 gap-3 h-full">
+      <header className="shrink-0">
         <section className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* The knowledge base's card mark, so the third-level header names the

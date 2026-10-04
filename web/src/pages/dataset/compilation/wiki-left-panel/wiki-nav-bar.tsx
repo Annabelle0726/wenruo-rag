@@ -64,6 +64,7 @@ export function WikiNavBar({
   return (
     <div className="size-full flex flex-col gap-3">
       <SearchInput
+        className="h-9"
         placeholder={t('common.search')}
         value={searchString}
         onChange={handleSearchChange}

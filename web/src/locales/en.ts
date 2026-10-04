@@ -2757,6 +2757,10 @@ export default {
       nameRequired: 'Please input name!',
     },
     knowledgeCompilation: {
+      preparationSummary: 'Configure once, then upload and parse files to generate or update the Wiki.',
+      preparationExpand: 'Usage and model details',
+      preparationCollapse: 'Hide details',
+      preparationSafetyBrief: 'The current Wiki stays readable during updates and is retained on failure. Clear is not an update.',
       preparationTitle: 'Preparation and usage',
       preparationHelp:
         'An administrator configures workspace model services; the dataset creator binds a Compiler pipeline and Wiki template once. Upload and parse files, then Generate or Update. Compiler requires an explicit model; the workspace chat default does not replace it. Embedding follows the dataset binding. Pipelines share the Agent editor; reuse an existing pipeline.',

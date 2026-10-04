@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { WikiPreparation } from '../wiki-preparation';
 
 jest.mock('react-i18next', () => ({
@@ -29,7 +29,16 @@ const prepared = {
 test('reuses an existing pipeline and shows actual parsed count and dimensions', () => {
   render(<WikiPreparation data={prepared} failed={false} />);
   expect(screen.getByText(/\(6\/6\)/)).toBeInTheDocument();
+  expect(screen.queryByText(/1024D/)).not.toBeInTheDocument();
+  const toggle = screen.getByRole('button', {
+    name: 'knowledgeCompilation.preparationExpand',
+  });
+  expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  fireEvent.click(toggle);
   expect(screen.getByText(/1024D/)).toBeInTheDocument();
+  expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  fireEvent.click(toggle);
+  expect(screen.queryByText(/1024D/)).not.toBeInTheDocument();
   const links = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
   expect(links).toContain('/agent/existing-pipeline');
   expect(links).not.toContain('/agents');
@@ -78,13 +87,39 @@ test('failed preparation check does not claim readiness', () => {
 });
 
 test('missing Compiler remains visible independently of the configured embedding', () => {
-  render(<WikiPreparation failed={false} data={{ ...prepared, ready: false,
-    checks: { ...prepared.checks, models: false },
-    model_details: [
-      { role: 'Compiler', source: 'pipeline_explicit', model: '', provider: '', configured: false },
-      { role: 'Embedding', source: 'knowledgebase_model_id', model: 'bge-m3', provider: 'SILICONFLOW', configured: true },
-    ],
-  }} />);
-  expect(screen.getByText(/Compiler:/)).toHaveTextContent('knowledgeCompilation.preparationMissing');
+  render(
+    <WikiPreparation
+      failed={false}
+      data={{
+        ...prepared,
+        ready: false,
+        checks: { ...prepared.checks, models: false },
+        model_details: [
+          {
+            role: 'Compiler',
+            source: 'pipeline_explicit',
+            model: '',
+            provider: '',
+            configured: false,
+          },
+          {
+            role: 'Embedding',
+            source: 'knowledgebase_model_id',
+            model: 'bge-m3',
+            provider: 'SILICONFLOW',
+            configured: true,
+          },
+        ],
+      }}
+    />,
+  );
+  fireEvent.click(
+    screen.getByRole('button', {
+      name: 'knowledgeCompilation.preparationExpand',
+    }),
+  );
+  expect(screen.getByText(/Compiler:/)).toHaveTextContent(
+    'knowledgeCompilation.preparationMissing',
+  );
   expect(screen.getByText(/Embedding:/)).toHaveTextContent('bge-m3');
 });

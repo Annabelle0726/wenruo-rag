@@ -2360,6 +2360,10 @@ export default {
       nameRequired: '请输入名称！',
     },
     knowledgeCompilation: {
+      preparationSummary: '管理员配置一次，用户上传并解析文件后即可生成或更新。',
+      preparationExpand: '使用说明与模型详情',
+      preparationCollapse: '收起详情',
+      preparationSafetyBrief: '更新期间旧版可读；成功后切换，失败保留。请勿用清空代替更新。',
       preparationTitle: '生成准备与使用说明',
       preparationHelp:
         '管理员先配置工作区模型服务；知识库创建者配置一次 Compiler 数据管道和 Wiki 模板。用户上传并解析文件后生成或更新。Compiler 必须显式选择模型，不自动使用工作区默认聊天模型；嵌入采用知识库绑定。管道与聊天 Agent 共用编辑入口，已有管道无需重建。',
