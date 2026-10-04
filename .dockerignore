@@ -69,3 +69,5 @@ conf/service_conf.yaml
 deploy/repair_gates/
 .freebuff/
 .git
+
+delivery-private/

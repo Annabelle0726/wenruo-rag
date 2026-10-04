@@ -4,17 +4,18 @@ Run inside the application container. Read the password from stdin; never put
 it in an image, Git, command-line argument or startup environment.
 """
 import argparse
+from datetime import datetime
 import json
 import sys
 
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from api.common.base64 import encode_to_base64
 from api.db import UserTenantRole
 from api.db.db_models import DB, Tenant, User, UserTenant
-from api.db.services.user_service import TenantService, UserService, UserTenantService
 from common import settings
 from common.misc_utils import get_uuid
+from common.time_utils import current_timestamp, datetime_format
 
 
 def seed_admin(email, nickname, password, workspace_id=None):
@@ -22,6 +23,9 @@ def seed_admin(email, nickname, password, workspace_id=None):
         raise ValueError("Use a password of at least 12 characters.")
     if "@" not in email or not nickname.strip():
         raise ValueError("Email and nickname are required.")
+    timestamp = current_timestamp()
+    date = datetime_format(datetime.now())
+    timestamps = dict(create_time=timestamp, update_time=timestamp, create_date=date, update_date=date)
     with DB.connection_context(), DB.atomic():
         workspace = None
         if workspace_id:
@@ -50,20 +54,20 @@ def seed_admin(email, nickname, password, workspace_id=None):
                 raise ValueError("The seed account's own workspace is inconsistent.")
         else:
             user_id = get_uuid()
-            UserService.save(
+            User.create(
                 id=user_id, email=email, nickname=nickname,
-                password=encode_to_base64(password), login_channel="deployment-seed",
+                password=generate_password_hash(encode_to_base64(password)), login_channel="deployment-seed",
                 is_superuser=True, language="Chinese", status="1",
-                current_tenant_id=workspace_id or user_id,
+                current_tenant_id=workspace_id or user_id, **timestamps,
             )
-            TenantService.insert(
+            Tenant.create(
                 id=user_id, name="Wenruo Administration",
                 llm_id="", embd_id="", asr_id="", img2txt_id="", rerank_id="",
-                parser_ids=settings.PARSERS,
+                parser_ids=settings.PARSERS, **timestamps,
             )
-            UserTenantService.insert(
+            UserTenant.create(
                 id=get_uuid(), user_id=user_id, tenant_id=user_id,
-                invited_by=user_id, role=UserTenantRole.OWNER,
+                invited_by=user_id, role=UserTenantRole.OWNER, **timestamps,
             )
             user = User.get_by_id(user_id)
 
@@ -76,9 +80,9 @@ def seed_admin(email, nickname, password, workspace_id=None):
                 if membership.role not in (UserTenantRole.ADMIN, UserTenantRole.OWNER) or membership.status != "1":
                     raise ValueError("Existing membership is not an active administrator; no implicit promotion.")
             else:
-                UserTenantService.insert(
+                UserTenant.create(
                     id=get_uuid(), user_id=user.id, tenant_id=workspace_id,
-                    invited_by=workspace_id, role=UserTenantRole.ADMIN,
+                    invited_by=workspace_id, role=UserTenantRole.ADMIN, **timestamps,
                 )
                 membership_created = True
         return {
