@@ -63,3 +63,9 @@ htmlcov/
 
 # ── Docker env (contains secrets) ───────────────────────────────────────────
 docker/.env
+
+# Local runtime credentials and diagnostic captures are not build inputs.
+conf/service_conf.yaml
+deploy/repair_gates/
+.freebuff/
+.git

@@ -10,6 +10,7 @@ services:
       dockerfile: Dockerfile
       args:
         WEB_DIST_MODE: ${WEB_DIST_MODE:-build}
+        SOURCE_COMMIT: ${SOURCE_COMMIT:-local}
         WEB_BUILD_HEAP_MB: ${WEB_BUILD_HEAP_MB:-4096}
     image: ${RAGFLOW_IMAGE:-my-wenruorag:latest}
     container_name: wenruo-rag-cpu
@@ -59,6 +60,7 @@ services:
       dockerfile: Dockerfile
       args:
         WEB_DIST_MODE: ${WEB_DIST_MODE:-build}
+        SOURCE_COMMIT: ${SOURCE_COMMIT:-local}
         WEB_BUILD_HEAP_MB: ${WEB_BUILD_HEAP_MB:-4096}
     image: ${RAGFLOW_IMAGE:-my-wenruorag:latest} # 镜像名修改
     container_name: wenruo-rag-gpu                # 容器名修改
