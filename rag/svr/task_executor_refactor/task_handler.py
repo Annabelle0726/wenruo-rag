@@ -399,8 +399,14 @@ class TaskHandler:
             return embedding_model, len(vts[0])
         except Exception as e:
             error_message = f"Fail to bind embedding model: {str(e)}"
+            if ctx.task_type == "wiki":
+                rate_limited = any(word in str(e).lower() for word in ("429", "quota", "resource_exhausted", "rate limit"))
+                error_message = ("模型服务限流，请稍后重试。 / Model service rate limited. " if rate_limited else "模型暂时不可用，生成未完成。 / Model unavailable; generation incomplete. ") + "旧版成果已保留。 / Previous results are preserved."
+
             ctx.progress_cb(-1, msg=error_message)
             logging.exception(error_message)
+            if ctx.task_type == "wiki":
+                raise RuntimeError(error_message) from None
             raise
 
     async def _run_raptor(

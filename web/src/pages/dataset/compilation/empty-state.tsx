@@ -116,7 +116,7 @@ export function CompilationEmptyState({
             )}
             <div className="flex items-center gap-2 text-text-primary">
               <span>{t(ViewModeLabelKeyMap[type])}</span>
-              {!isGo && status === 'failed' && (
+              {!isGo && status === 'failed' && !disabled && (
                 <span className="cursor-pointer" onClick={handleGenerate}>
                   <IconFontFill
                     name="reparse"

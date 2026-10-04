@@ -4,6 +4,11 @@ import { LlmWikiView } from '../llm-wiki-view';
 import { WikiDetailContent } from '../wiki-detail-content';
 import { WikiNavBar } from '../wiki-left-panel/wiki-nav-bar';
 
+jest.mock('../wiki-preparation', () => ({
+  useWikiPreparation: () => ({ data: undefined, isError: false }),
+  WikiPreparation: () => null,
+}));
+
 // The three reads under test, held in `mock*`-named objects because a jest.mock
 // factory may only close over names it is allowed to see.
 const mockTopicsState = {

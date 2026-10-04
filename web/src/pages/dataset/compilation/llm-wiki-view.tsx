@@ -1,3 +1,4 @@
+import { WikiPreparation, useWikiPreparation } from './wiki-preparation';
 import { Card } from '@/components/ui/card';
 import {
   ResizableHandle,
@@ -70,7 +71,12 @@ export function LlmWikiView() {
     setLeftTab(value as LeftPanelTab);
   }, []);
 
-  const canGenerate = canGenerateWiki(knowledgeBase);
+  const preparation = useWikiPreparation();
+  const canGenerate =
+    canGenerateWiki(knowledgeBase) && preparation.data?.ready === true;
+  const guide = (
+    <WikiPreparation data={preparation.data} failed={preparation.isError} />
+  );
   const isLoading = topicListLoading && topics.length === 0;
   // Checked before the empty state: an empty list means "nothing compiled yet"
   // only when the read itself succeeded, and a failed one used to be
@@ -88,44 +94,53 @@ export function LlmWikiView() {
 
   if (isEmpty) {
     return (
-      <CompilationEmptyState
-        type={ViewMode.LlmWiki}
-        disabled={!canGenerate}
-        data={artifactRunData}
-      />
+      <div className="flex flex-1 min-h-0 flex-col">
+        {guide}
+        <div className="flex flex-1 min-h-48">
+          <CompilationEmptyState
+            type={ViewMode.LlmWiki}
+            disabled={!canGenerate}
+            data={artifactRunData}
+          />
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="flex-1 min-h-0 overflow-hidden flex border-border-button rounded-xl flex-col">
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
-        <ResizablePanel id="wiki-left" order={1} defaultSize={50}>
-          <WikiLeftPanel
-            tab={leftTab}
-            onTabChange={handleLeftTabChange}
-            selectedArtifact={selectedArtifact}
-            onSelectArtifact={handleSelectArtifact}
-            onClearArtifact={clearSelectedArtifact}
-            onClearWiki={clearSelectedArtifact}
-            updateSheetOpen={updateSheetOpen}
-            onUpdateSheetOpenChange={setUpdateSheetOpen}
-            traceData={artifactRunData}
-          />
-        </ResizablePanel>
-        {selectedArtifact && (
-          <>
-            <ResizableHandle withHandle />
-            <ResizablePanel id="wiki-detail" order={2}>
-              <WikiDetailContent
-                selectedArtifact={selectedArtifact}
-                selectedVersion={selectedVersion}
-                onSelectVersion={selectVersion}
-                onSelectArtifact={handleSelectArtifact}
-              />
-            </ResizablePanel>
-          </>
-        )}
-      </ResizablePanelGroup>
-    </Card>
+    <div className="flex flex-1 min-h-0 flex-col">
+      {guide}
+      <Card className="flex-1 min-h-64 overflow-hidden flex border-border-button rounded-xl flex-col">
+        <ResizablePanelGroup direction="horizontal" className="flex-1">
+          <ResizablePanel id="wiki-left" order={1} defaultSize={50}>
+            <WikiLeftPanel
+              canGenerate={canGenerate}
+              tab={leftTab}
+              onTabChange={handleLeftTabChange}
+              selectedArtifact={selectedArtifact}
+              onSelectArtifact={handleSelectArtifact}
+              onClearArtifact={clearSelectedArtifact}
+              onClearWiki={clearSelectedArtifact}
+              updateSheetOpen={updateSheetOpen}
+              onUpdateSheetOpenChange={setUpdateSheetOpen}
+              traceData={artifactRunData}
+            />
+          </ResizablePanel>
+          {selectedArtifact && (
+            <>
+              <ResizableHandle withHandle />
+              <ResizablePanel id="wiki-detail" order={2}>
+                <WikiDetailContent
+                  selectedArtifact={selectedArtifact}
+                  selectedVersion={selectedVersion}
+                  onSelectVersion={selectVersion}
+                  onSelectArtifact={handleSelectArtifact}
+                />
+              </ResizablePanel>
+            </>
+          )}
+        </ResizablePanelGroup>
+      </Card>
+    </div>
   );
 }

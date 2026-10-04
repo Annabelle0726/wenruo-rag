@@ -226,9 +226,9 @@ RUN --mount=type=cache,id=ragflow_npm,target=/root/.npm,sharing=locked \
         cd web && NODE_OPTIONS="--max-old-space-size=${WEB_BUILD_HEAP_MB}" VITE_BUILD_SOURCEMAP=false VITE_MINIFY=esbuild npm run build; \
     fi
 
-RUN --mount=type=bind,source=.git,target=/ragflow/.git \
-    version_info=$(git describe --tags --match=v* --first-parent --always) && \
-    echo "$version_info" > /ragflow/VERSION
+# Build from a clean, explicit commit; works for managed worktrees as well.
+ARG SOURCE_COMMIT
+RUN test -n "$SOURCE_COMMIT" && printf '%s\n' "$SOURCE_COMMIT" > /ragflow/VERSION
 
 # production stage
 FROM base AS production

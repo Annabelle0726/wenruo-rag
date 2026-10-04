@@ -16,7 +16,7 @@ import { FlowType, FlowTypeConfig } from './constant';
 type CompilationTemplateCardProps = {
   data: ICompilationTemplateGroup;
   onClick?: () => void;
-  onDelete: (id: string) => void;
+  onDelete?: (id: string) => void;
 };
 
 const CompilerConfig = FlowTypeConfig[FlowType.Compiler];
@@ -62,9 +62,11 @@ export function CompilationTemplateCard({
               <CompilerIcon style={{ color: CompilerConfig.color }} />
             </Button>
 
-            <CompilationTemplateDropdown data={data} onDelete={onDelete}>
-              <MoreButton />
-            </CompilationTemplateDropdown>
+            {onDelete && (
+              <CompilationTemplateDropdown data={data} onDelete={onDelete}>
+                <MoreButton />
+              </CompilationTemplateDropdown>
+            )}
           </section>
 
           <TruncatedText

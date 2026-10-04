@@ -1329,6 +1329,17 @@ class TenantLangfuse(DataBaseModel):
         db_table = "tenant_langfuse"
 
 
+class WikiGeneration(DataBaseModel):
+    """Publication pointer; unfinished builds never replace the readable Wiki."""
+    kb_id = CharField(max_length=32, primary_key=True)
+    tenant_id = CharField(max_length=32, index=True)
+    active_index = CharField(max_length=160, default="")
+    building_token = CharField(max_length=32, default="")
+
+    class Meta:
+        db_table = "wiki_generation"
+
+
 class Knowledgebase(DataBaseModel):
     id = CharField(max_length=32, primary_key=True)
     avatar = TextField(null=True, help_text="avatar base64 string")

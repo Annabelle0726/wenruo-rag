@@ -16,7 +16,9 @@
 
 from quart import Response, request
 
-from api.apps import current_user, login_required
+from api.apps import current_user, login_required, require_tenant_admin
+from api.db.services.user_service import TenantService
+from common.exceptions import WorkspaceAccessDenied
 from api.apps.restful_apis.utils.compilation_template_validation import validate_template_payload
 from api.db.services.compilation_template_group_service import (
     CompilationTemplateGroupService,
@@ -28,12 +30,19 @@ from api.utils.api_utils import (
     get_request_json,
     server_error_response,
     validate_request,
+    requested_tenant_id,
+    add_tenant_id_to_kwargs,
+    get_error_permission_result,
 )
 from api.utils.pagination_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, validate_rest_api_page, validate_rest_api_page_size
 
 
 _GROUP_NAME_MAX = 128
 _GROUP_DESCRIPTION_MAX = 1024
+
+
+def _workspace_id():
+    return TenantService.resolve_active_tenant_id(current_user.id, requested_tenant_id())
 
 
 def _validate_group_payload(req: dict, require_all: bool = True) -> str:
@@ -77,11 +86,13 @@ def list_groups() -> Response:
     desc = request.args.get("desc", "true").lower() != "false"
 
     try:
-        groups = CompilationTemplateGroupService.list_saved(current_user.id, keywords, scope, orderby, desc)
+        groups = CompilationTemplateGroupService.list_saved(_workspace_id(), keywords, scope, orderby, desc)
         total = len(groups)
         if page_number and items_per_page:
             groups = groups[(page_number - 1) * items_per_page : page_number * items_per_page]
         return get_json_result(data={"groups": groups, "total": total})
+    except WorkspaceAccessDenied:
+        return get_error_permission_result(message="no authorization")
     except Exception as exc:
         return server_error_response(exc)
 
@@ -90,30 +101,35 @@ def list_groups() -> Response:
 @login_required
 def detail(group_id: str) -> Response:
     try:
-        group = CompilationTemplateGroupService.get_saved(group_id, current_user.id)
+        group = CompilationTemplateGroupService.get_saved(group_id, _workspace_id())
         if group is None:
-            return get_data_error_result(message=f"Cannot find compilation template group {group_id}.")
+            return get_error_permission_result(message="Template group unavailable in this workspace.")
         return get_json_result(data=group)
+    except WorkspaceAccessDenied:
+        return get_error_permission_result(message="no authorization")
     except Exception as exc:
         return server_error_response(exc)
 
 
 @manager.route("/compilation-template-groups", methods=["POST"])  # noqa: F821
 @login_required
+@add_tenant_id_to_kwargs
+@require_tenant_admin
 @validate_request("name", "templates")
-async def create() -> Response:
+async def create(tenant_id=None) -> Response:
     req = await get_request_json()
     error = _validate_group_payload(req)
     if error:
         return get_data_error_result(message=error)
 
     name = req["name"].strip()
-    if CompilationTemplateGroupService.name_exists(current_user.id, name):
+    workspace_id = _workspace_id()
+    if CompilationTemplateGroupService.name_exists(workspace_id, name):
         return get_data_error_result(message="Duplicated compilation template group name.")
 
     try:
         saved = CompilationTemplateGroupService.create_group(
-            tenant_id=current_user.id,
+            tenant_id=workspace_id,
             name=name,
             description=req.get("description", ""),
             templates=req["templates"],
@@ -127,32 +143,35 @@ async def create() -> Response:
 
 @manager.route("/compilation-template-groups/<group_id>", methods=["PUT"])  # noqa: F821
 @login_required
-async def update(group_id: str) -> Response:
+@add_tenant_id_to_kwargs
+@require_tenant_admin
+async def update(group_id: str, tenant_id=None) -> Response:
     req = await get_request_json()
     error = _validate_group_payload(req, require_all=False)
     if error:
         return get_data_error_result(message=error)
 
-    existing = CompilationTemplateGroupService.get_saved(group_id, current_user.id)
+    workspace_id = _workspace_id()
+    existing = CompilationTemplateGroupService.get_saved(group_id, workspace_id)
     if existing is None:
-        return get_data_error_result(message=f"Cannot find compilation template group {group_id}.")
+        return get_error_permission_result(message="Template group unavailable in this workspace.")
 
     name = req.get("name")
     if isinstance(name, str):
         name = name.strip()
-        if CompilationTemplateGroupService.name_exists(current_user.id, name, group_id):
+        if CompilationTemplateGroupService.name_exists(workspace_id, name, group_id):
             return get_data_error_result(message="Duplicated compilation template group name.")
 
     try:
         updated = CompilationTemplateGroupService.update_group(
             group_id=group_id,
-            tenant_id=current_user.id,
+            tenant_id=workspace_id,
             name=name if isinstance(name, str) else None,
             description=req.get("description") if "description" in req else None,
             templates=req.get("templates") if "templates" in req else None,
         )
         if updated is None:
-            return get_data_error_result(message=f"Cannot find compilation template group {group_id}.")
+            return get_error_permission_result(message="Template group unavailable in this workspace.")
         return get_json_result(data=updated)
     except GroupValidationError as exc:
         return get_data_error_result(message=str(exc))
@@ -162,11 +181,13 @@ async def update(group_id: str) -> Response:
 
 @manager.route("/compilation-template-groups/<group_id>", methods=["DELETE"])  # noqa: F821
 @login_required
-def delete(group_id: str) -> Response:
+@add_tenant_id_to_kwargs
+@require_tenant_admin
+def delete(group_id: str, tenant_id=None) -> Response:
     try:
-        ok = CompilationTemplateGroupService.delete_group(group_id, current_user.id)
+        ok = CompilationTemplateGroupService.delete_group(group_id, _workspace_id())
         if not ok:
-            return get_data_error_result(message=f"Cannot find compilation template group {group_id}.")
+            return get_error_permission_result(message="Template group unavailable in this workspace.")
         return get_json_result(data=True)
     except Exception as exc:
         return server_error_response(exc)

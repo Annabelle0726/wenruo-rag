@@ -19,6 +19,8 @@ import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { CompilationTemplateKind } from '@/constants/compilation';
 import { useFetchCompilationTemplateGroup } from '@/hooks/use-compilation-template-group-request';
+import { useFetchTenantInfo } from '@/hooks/use-user-setting-request';
+import { canManageTenant } from '@/utils/tenant-role';
 import { Routes } from '@/routes';
 import { useCallback, useMemo } from 'react';
 import { useWatch } from 'react-hook-form';
@@ -36,6 +38,8 @@ const agentsUrl = Routes.Agents;
 export default function EditNextCompilationTemplate() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { data: tenant } = useFetchTenantInfo();
+  const canManage = canManageTenant(tenant.role);
 
   const navigateToAgents = useCallback(() => {
     navigate(agentsUrl);
@@ -71,7 +75,10 @@ export default function EditNextCompilationTemplate() {
       </header>
 
       <Form {...form}>
-        <form className="flex-1 min-h-0 flex flex-col" onSubmit={handleSave}>
+        <form
+          className="flex-1 min-h-0 flex flex-col"
+          onSubmit={canManage ? handleSave : (event) => event.preventDefault()}
+        >
           <TemplateConfiguration
             form={form}
             builtins={builtins}
@@ -91,7 +98,7 @@ export default function EditNextCompilationTemplate() {
             <Button type="button" variant="outline" onClick={navigateToAgents}>
               {t('common.back')}
             </Button>
-            <Button type="submit" loading={isLoading}>
+            <Button type="submit" loading={isLoading} disabled={!canManage}>
               {t('common.save')}
             </Button>
           </footer>

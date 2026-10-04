@@ -665,11 +665,13 @@ export default {
       retrievalTestingDescription:
         'Verify that this dataset can retrieve content relevant to the question',
       testQuestion: 'Test question',
-      testQuestionPlaceholder: 'For example: What are the insulation requirements for 220 kV submarine cables?',
+      testQuestionPlaceholder:
+        'For example: What are the insulation requirements for 220 kV submarine cables?',
       testQuestionShortcut: 'Enter to run · Shift + Enter for a new line',
       retrievalParameters: 'Retrieval parameters',
       advancedSettings: 'Advanced settings',
-      rerankCandidateValidationHint: 'Rerank candidates must be greater than or equal to Top N.',
+      rerankCandidateValidationHint:
+        'Rerank candidates must be greater than or equal to Top N.',
       retrievalLoading: 'Retrieving…',
       retrievalError: 'Retrieval failed',
       Parse: 'Parse',
@@ -890,9 +892,11 @@ export default {
       parsingMethod: 'Parsing method',
       /* The parser page's four section headings: one line each, no closing stop. */
       parsingMode: 'Parsing mode',
-      parsingModeTip: 'Use a built-in parser, or hand the work to a data pipeline',
+      parsingModeTip:
+        'Use a built-in parser, or hand the work to a data pipeline',
       documentParsing: 'Document parsing',
-      documentParsingTip: 'How a document becomes text, and how that text is split',
+      documentParsingTip:
+        'How a document becomes text, and how that text is split',
       multimodalContent: 'Multimodal and structured content',
       multimodalContentTip: 'How sub-chunks, images and tables are handled',
       intelligentEnrichment: 'Intelligent enrichment',
@@ -2753,6 +2757,37 @@ export default {
       nameRequired: 'Please input name!',
     },
     knowledgeCompilation: {
+      preparationSummary: 'Configure once, then upload and parse files to generate or update the Wiki.',
+      preparationExpand: 'Usage and model details',
+      preparationCollapse: 'Hide details',
+      preparationSafetyBrief: 'The current Wiki stays readable during updates and is retained on failure. Clear is not an update.',
+      preparationTitle: 'Preparation and usage',
+      preparationHelp:
+        'An administrator configures workspace model services; the dataset creator binds a Compiler pipeline and Wiki template once. Upload and parse files, then Generate or Update. Compiler requires an explicit model; the workspace chat default does not replace it. Embedding follows the dataset binding. Pipelines share the Agent editor; reuse an existing pipeline.',
+      adminModelSettings: 'Administrator: workspace model services',
+      modelSource_pipeline_explicit: 'Explicit pipeline model',
+      modelSource_knowledgebase_model_id: 'Dataset model binding',
+      modelSource_knowledgebase_reference: 'Dataset model reference (fallback)',
+      modelSource_workspace_default: 'Workspace default (fallback)',
+      preparationUnavailable:
+        'Preparation check unavailable. Generation is disabled; existing results remain readable.',
+      preparationChecking: 'Checking preparation…',
+      preparation_parsed: 'Parsed files',
+      preparation_pipeline: 'Generation pipeline',
+      preparation_template: 'Compiler template',
+      preparation_models: 'Model configuration',
+      preparationReady: 'Ready',
+      preparationMissing: 'Needs setup',
+      preparationConfigure: 'View settings',
+      preparationCompatibility:
+        'Compatibility: build a separate version when models change; never mix vector spaces. Configuration checks do not prove provider quota availability. Models / previous vector dimensions:',
+      preparationSafety:
+        'Choose Generate for the first build, then Update after parsing changed files. Previous results remain readable until the new version passes validation. Retry failures; do not Clear to update.',
+      preparationReadOnly:
+        'Read-only access. Ask the dataset creator or a workspace administrator to generate/update. Administrators configure model services.',
+      preparationBuilding:
+        'A new version is building in the background. Previous results remain readable.',
+
       addTemplateGroup: 'Add template',
       editTemplateGroup: 'Edit template',
       deleteTemplateGroupTitle: 'Delete template group',

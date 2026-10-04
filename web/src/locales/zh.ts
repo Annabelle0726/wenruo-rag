@@ -2360,6 +2360,36 @@ export default {
       nameRequired: '请输入名称！',
     },
     knowledgeCompilation: {
+      preparationSummary: '管理员配置一次，用户上传并解析文件后即可生成或更新。',
+      preparationExpand: '使用说明与模型详情',
+      preparationCollapse: '收起详情',
+      preparationSafetyBrief: '更新期间旧版可读；成功后切换，失败保留。请勿用清空代替更新。',
+      preparationTitle: '生成准备与使用说明',
+      preparationHelp:
+        '管理员先配置工作区模型服务；知识库创建者配置一次 Compiler 数据管道和 Wiki 模板。用户上传并解析文件后生成或更新。Compiler 必须显式选择模型，不自动使用工作区默认聊天模型；嵌入采用知识库绑定。管道与聊天 Agent 共用编辑入口，已有管道无需重建。',
+      adminModelSettings: '管理员：配置工作区模型服务',
+      modelSource_pipeline_explicit: '管道显式模型',
+      modelSource_knowledgebase_model_id: '知识库模型绑定',
+      modelSource_knowledgebase_reference: '知识库模型引用（回退）',
+      modelSource_workspace_default: '工作区默认模型（回退）',
+      preparationUnavailable:
+        '暂时无法检查准备状态，生成已暂停；已有成果仍可阅读。',
+      preparationChecking: '正在检查生成准备状态…',
+      preparation_parsed: '已解析文件',
+      preparation_pipeline: '生成管道',
+      preparation_template: '编译模板',
+      preparation_models: '模型配置',
+      preparationReady: '已就绪',
+      preparationMissing: '待配置',
+      preparationConfigure: '查看配置',
+      preparationCompatibility:
+        '模型兼容性：新版本独立生成，模型变化时重建，不混用向量。配置检查不代表服务配额可用。当前模型 / 旧成果维度：',
+      preparationSafety:
+        '首次点击“生成”；文件解析完成后点击“更新”。生成期间旧版持续可读，验证成功后才切换；失败可重试。请勿用“清空”代替更新。',
+      preparationReadOnly:
+        '当前为只读权限，可阅读成果。请联系知识库创建者或工作区管理员生成/更新；模型服务由管理员配置。',
+      preparationBuilding: '正在后台生成新版本，旧版成果仍可阅读。',
+
       addTemplateGroup: '添加模板',
       editTemplateGroup: '编辑模板',
       deleteTemplateGroupTitle: '删除模板分组',

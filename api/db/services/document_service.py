@@ -34,6 +34,7 @@ from common.constants import ParserType, StatusEnum, TaskStatus, SVR_CONSUMER_GR
 from common.doc_store.doc_store_base import OrderByExpr
 from common.misc_utils import get_uuid
 from common.time_utils import current_timestamp, get_format_time
+from common.workspace_context import execution_user
 
 from rag.nlp import search
 from rag.utils.redis_conn import REDIS_CONN
@@ -1285,6 +1286,10 @@ def queue_raptor_o_graphrag_tasks(sample_doc, ty, priority, fake_doc_id="", doc_
         }
 
     task = new_task()
+    if ty == "wiki":
+        # Persist the authenticated member before enqueueing. A tracing user
+        # supplied by the client must not replace the billing/revocation subject.
+        task["initiator_user_id"] = execution_user.get() or None
     for field in ["doc_id", "from_page", "to_page"]:
         hasher.update(str(task.get(field, "")).encode("utf-8"))
     hasher.update(ty.encode("utf-8"))

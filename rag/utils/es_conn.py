@@ -103,6 +103,27 @@ class ESConnection(ESConnectionBase):
     CRUD operations
     """
 
+    def index_exist(self, index_name: str, dataset_id: str = None):
+        result = super().index_exist(index_name, dataset_id)
+        from common.wiki_generation import BUILD, mark_failed
+        if BUILD.get() is not None and not result:
+            mark_failed()
+        return result
+
+    def get(self, doc_id: str, index_name: str, dataset_ids: list[str]):
+        from common.wiki_generation import active_indexes, wiki_row
+        row = super().get(doc_id, index_name, dataset_ids)
+        if not index_name.startswith("ragflow_") or (row and not wiki_row(row)):
+            return row
+        active = active_indexes([index_name[len("ragflow_"):]], dataset_ids)
+        for kb_id, index in active.items():
+            candidate = super().get(doc_id, index, [kb_id])
+            if candidate and candidate.get("kb_id") == kb_id:
+                return candidate
+        if row and row.get("kb_id") in active:
+            return None
+        return row
+
     def refresh_idx(self, index_name: str) -> bool:
         self.es.indices.refresh(index=index_name)
         return True
@@ -197,8 +218,10 @@ class ESConnection(ESConnectionBase):
             index_names = index_names.split(",")
         assert isinstance(index_names, list) and len(index_names) > 0
         assert "_id" not in condition
+        from common.wiki_generation import read_plan
+        index_names, excluded_wiki = read_plan(index_names, knowledgebase_ids, condition)
 
-        bool_query = Q("bool", must=[])
+        bool_query = Q("bool", must=[], must_not=excluded_wiki)
         condition["kb_id"] = knowledgebase_ids
         for k, v in condition.items():
             if k == "available_int":
@@ -348,10 +371,14 @@ class ESConnection(ESConnectionBase):
                 self.logger.debug(f"ESConnection.search {index_names!s} res: " + str(res))
                 return res
             except ConnectionTimeout:
+                from common.wiki_generation import mark_failed
+                mark_failed()
                 self.logger.exception("ES request timeout")
                 self._connect()
                 continue
             except Exception as e:
+                from common.wiki_generation import mark_failed
+                mark_failed()
                 # Only log debug for NotFoundError(accepted when metadata index doesn't exist)
                 if "NotFound" in str(e):
                     self.logger.debug(f"ESConnection.search {index_names!s} query: " + str(q) + " - " + str(e))
@@ -387,16 +414,25 @@ class ESConnection(ESConnectionBase):
                     for action in ["create", "delete", "index", "update"]:
                         if action in item and "error" in item[action]:
                             res.append(str(item[action]["_id"]) + ":" + str(item[action]["error"]))
+                if res:
+                    from common.wiki_generation import mark_failed
+                    mark_failed()
                 return res
             except ConnectionTimeout:
+                from common.wiki_generation import mark_failed
+                mark_failed()
                 self.logger.exception("ES request timeout")
                 time.sleep(3)
                 self._connect()
                 continue
             except Exception as e:
+                from common.wiki_generation import mark_failed
+                mark_failed()
                 res.append(str(e))
                 self.logger.warning("ESConnection.insert got exception: " + str(e))
 
+        from common.wiki_generation import mark_failed
+        mark_failed()
         return res
 
     def update(self, condition: dict, new_value: dict, index_name: str, knowledgebase_id: str) -> bool:
@@ -417,6 +453,8 @@ class ESConnection(ESConnectionBase):
                     try:
                         self.es.update(index=index_name, id=chunk_id, script=f'ctx._source.remove("{k}");')
                     except Exception:
+                        from common.wiki_generation import mark_failed
+                        mark_failed()
                         self.logger.exception(f"ESConnection.update(index={index_name}, id={chunk_id}, doc={json.dumps(condition, ensure_ascii=False)}) got exception")
                 try:
                     if remove_field is not None:
@@ -444,6 +482,8 @@ class ESConnection(ESConnectionBase):
                     if remove_field is not None or remove_dict is not None or doc_part:
                         return True
                 except Exception as e:
+                    from common.wiki_generation import mark_failed
+                    mark_failed()
                     self.logger.exception(f"ESConnection.update(index={index_name}, id={chunk_id}, doc={json.dumps(condition, ensure_ascii=False)}) got exception: " + str(e))
                     break
             return False
@@ -509,11 +549,15 @@ class ESConnection(ESConnectionBase):
                 _ = ubq.execute()
                 return True
             except ConnectionTimeout:
+                from common.wiki_generation import mark_failed
+                mark_failed()
                 self.logger.exception("ES request timeout")
                 time.sleep(3)
                 self._connect()
                 continue
             except Exception as e:
+                from common.wiki_generation import mark_failed
+                mark_failed()
                 self.logger.error("ESConnection.update got exception: " + str(e) + "\n".join(scripts))
                 break
         return False
@@ -555,11 +599,15 @@ class ESConnection(ESConnectionBase):
                 )
                 return True
             except ConnectionTimeout:
+                from common.wiki_generation import mark_failed
+                mark_failed()
                 self.logger.exception("ES request timeout")
                 time.sleep(3)
                 self._connect()
                 continue
             except Exception as e:
+                from common.wiki_generation import mark_failed
+                mark_failed()
                 self.logger.exception(
                     "ESConnection.adjust_chunk_pagerank_fea(index=%s, id=%s): %s",
                     index_name,
@@ -619,11 +667,15 @@ class ESConnection(ESConnectionBase):
                 res = self.es.delete_by_query(index=index_name, body=Search().query(qry).to_dict(), refresh=True)
                 return res["deleted"]
             except ConnectionTimeout:
+                from common.wiki_generation import mark_failed
+                mark_failed()
                 self.logger.exception("ES request timeout")
                 time.sleep(3)
                 self._connect()
                 continue
             except Exception as e:
+                from common.wiki_generation import mark_failed
+                mark_failed()
                 self.logger.warning("ESConnection.delete got exception: " + str(e))
                 if re.search(r"(not_found)", str(e), re.IGNORECASE):
                     return 0

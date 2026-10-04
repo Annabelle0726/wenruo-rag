@@ -41,6 +41,7 @@ from typing import AsyncIterator, Callable, Dict, List
 import xxhash
 
 from common import settings
+from common.wiki_generation import mark_failed
 from common.constants import LLMType
 from common.misc_utils import thread_pool_exec
 from rag.nlp import search
@@ -171,6 +172,7 @@ def _extract_pipeline_compiler_group_ids(dsl) -> list[str]:
         try:
             dsl = json.loads(dsl)
         except Exception:
+            mark_failed()
             return []
     if not isinstance(dsl, dict):
         return []
@@ -240,6 +242,7 @@ def _pipeline_compiler_llm_id(pipeline_id: str) -> str | None:
         try:
             dsl = json.loads(dsl)
         except Exception:
+            mark_failed()
             return None
     if not isinstance(dsl, dict) or not isinstance(dsl.get("components"), dict):
         return None
@@ -388,6 +391,7 @@ async def _wiki_has_compiled_pages(tenant_id: str, kb_id: str) -> bool | None:
         )
         return bool(settings.docStoreConn.get_total(res))
     except Exception:
+        mark_failed()
         logging.exception("wiki: page existence probe failed for kb=%s", kb_id)
         return None
 
@@ -420,6 +424,7 @@ async def _wiki_delete_deleted_doc_state(
             kb_id,
         )
     except Exception:
+        mark_failed()
         logging.exception(
             "wiki: failed to delete doc_page_source rows for removed docs in kb=%s",
             kb_id,
@@ -458,6 +463,7 @@ async def _wiki_delete_deleted_doc_state(
             )
             field_map = settings.docStoreConn.get_fields(res, select_fields) or {}
         except Exception:
+            mark_failed()
             logging.exception("wiki: failed to scan derived rows for removed docs in kb=%s", kb_id)
             return
         if not field_map:
@@ -496,6 +502,7 @@ async def _wiki_delete_deleted_doc_state(
             if not isinstance(deleted_count, int) or deleted_count != len(batch_ids):
                 failed_delete_row_ids.update(batch_ids)
         except Exception:
+            mark_failed()
             logging.exception("wiki: failed to drop orphaned derived rows in kb=%s", kb_id)
             failed_delete_row_ids.update(batch_ids)
 
@@ -508,6 +515,7 @@ async def _wiki_delete_deleted_doc_state(
             try:
                 FileCommitService.delete_page_history(kb_id, page_type, slug)
             except Exception:
+                mark_failed()
                 logging.exception(
                     "wiki: failed to delete version history for removed page=%s kb=%s",
                     slug,
@@ -525,6 +533,7 @@ async def _wiki_delete_deleted_doc_state(
                 kb_id,
             )
         except Exception:
+            mark_failed()
             logging.exception("wiki: failed to shrink source_doc_ids for row=%s in kb=%s", row_id, kb_id)
 
     logging.info(
@@ -574,6 +583,7 @@ async def _wiki_load_mode(tenant_id: str, kb_id: str) -> str | None:
             if val in ("entity", "topic"):
                 return val
     except Exception:
+        mark_failed()
         logging.exception("wiki: failed to load mode meta for kb=%s", kb_id)
     return None
 
@@ -605,6 +615,7 @@ async def _wiki_load_embedding_fingerprint(tenant_id: str, kb_id: str) -> str | 
                 value = value[0] if value else ""
             return str(value).strip() or None
     except Exception:
+        mark_failed()
         logging.exception("wiki: failed to load embedding model meta for kb=%s", kb_id)
     return None
 
@@ -637,6 +648,7 @@ async def _wiki_save_mode(tenant_id: str, kb_id: str, mode: str, embedding_finge
             kb_id,
         )
     except Exception:
+        mark_failed()
         logging.exception("wiki: failed to save mode meta for kb=%s", kb_id)
 
 
@@ -675,6 +687,7 @@ async def _wiki_reset_all_wiki_state(tenant_id: str, kb_id: str) -> None:
             kb_id,
         )
     except Exception:
+        mark_failed()
         logging.exception("wiki: failed to reset all wiki state for kb=%s", kb_id)
 
 
@@ -852,6 +865,7 @@ async def persist_wiki_page_graph(
                 ctx.kb_id,
             )
         except Exception:
+            mark_failed()
             logging.debug(
                 "%s: prior delete failed; relying on id-upsert",
                 kwd,
@@ -866,6 +880,7 @@ async def persist_wiki_page_graph(
                 ctx.kb_id,
             )
         except Exception:
+            mark_failed()
             logging.exception(
                 "%s: insert failed for kb=%s (%d rows)",
                 kwd,
@@ -882,6 +897,7 @@ async def persist_wiki_page_graph(
                 ctx.kb_id,
             )
         except Exception:
+            mark_failed()
             logging.debug(
                 "wiki_page_graph: legacy blob sweep failed for kb=%s",
                 kb_id_str,
@@ -894,7 +910,7 @@ async def persist_wiki_page_graph(
     )
 
 
-async def run_wiki_incremental(
+async def _run_wiki_incremental(
     ctx: TaskContext,
     embedding_model,
     load_chunks_for_doc: Callable[..., AsyncIterator[list[dict]]],
@@ -967,11 +983,13 @@ async def run_wiki_incremental(
         types=[],
         suffix=[],
     )
+    if any(str(d.get("status", "1")) == "1" and (float(d.get("progress", 0)) < 1 or not d.get("chunk_num")) for d in all_docs):
+        raise ValueError("Files must finish parsing before Wiki generation; previous results are preserved.")
     eligible = _wiki_eligible_docs(all_docs, ctx.tenant_id, skip_doc_ids=deleted_doc_ids)
 
-    if not eligible and not is_incremental:
-        progress(1.0, _wiki_empty_eligible_message(all_docs))
-        return
+    parsed_doc_ids = {str(d["id"]) for d in all_docs if str(d.get("status", "1")) == "1" and d.get("chunk_num", 0) > 0}
+    if not eligible or parsed_doc_ids - {str(d["id"]) for d, _ in eligible}:
+        raise ValueError("Wiki template or pipeline is missing/invalid; previous results are preserved. / 编译模板或管道已失效，旧版成果已保留。")
     pipeline_chat_llm_ids = _validate_wiki_eligible_docs(eligible) if eligible else {}
 
     eligible_doc_ids = {str(doc.get("id")) for doc, _ in eligible if doc.get("id")}
@@ -1073,6 +1091,7 @@ async def run_wiki_incremental(
                 first_template_found = True
                 kb_chat_llm_id = pipeline_chat_llm_ids[str(d.get("id") or "")]
         except Exception:
+            mark_failed()
             logging.exception("wiki: config resolve failed for doc %s", d["id"])
             doc_configs[d["id"]] = {}
 
@@ -1089,6 +1108,7 @@ async def run_wiki_incremental(
             ):
                 await map_queue.put((i, doc, template_id, doc_configs.get(doc_id, {}), batch))
         except Exception:
+            mark_failed()
             logging.exception("wiki: MAP chunk loading failed for doc %s", doc_id)
 
     async def _map_worker() -> None:
@@ -1122,6 +1142,7 @@ async def run_wiki_incremental(
                     target_chunk_ids=target_chunk_ids,
                 )
             except Exception:
+                mark_failed()
                 logging.exception("wiki: MAP failed for doc %s", doc_id)
             finally:
                 map_queue.task_done()
@@ -1186,6 +1207,7 @@ async def run_wiki_incremental(
                     chunk_state=current_chunk_state,
                 )
             except Exception:
+                mark_failed()
                 logging.exception("wiki: up-to-date FINALIZE failed for kb=%s", ctx.kb_id)
 
             # (Re)materialize the canvas graph so pages built before graph
@@ -1200,6 +1222,7 @@ async def run_wiki_incremental(
                 if graph_pages:
                     await persist_wiki_page_graph(ctx=ctx, pages=graph_pages)
             except Exception:
+                mark_failed()
                 logging.exception("wiki: up-to-date page-graph persist failed for kb=%s", ctx.kb_id)
 
             await _wiki_commit_active_map_state(ctx.tenant_id, ctx.kb_id, current_chunk_state)
@@ -1249,6 +1272,7 @@ async def run_wiki_incremental(
         if graph_pages:
             await persist_wiki_page_graph(ctx=ctx, pages=graph_pages)
     except Exception:
+        mark_failed()
         logging.exception("wiki: page-graph persist failed for kb=%s", ctx.kb_id)
 
     if not summary.get("errors"):
@@ -1259,3 +1283,10 @@ async def run_wiki_incremental(
         progress(-1, f"Wiki incomplete: {len(summary['errors'])} page(s) failed; retry required.")
     else:
         progress(1.0, f"Wiki done: +{summary.get('pages_created', 0)} ~{summary.get('pages_modified', 0)} -{summary.get('pages_deleted', 0)}")
+
+
+async def run_wiki_incremental(ctx, embedding_model, load_chunks_for_doc, mode=None):
+    from common.wiki_generation import generate_safely
+    await generate_safely(ctx, lambda: _run_wiki_incremental(
+        ctx, embedding_model, load_chunks_for_doc, mode=mode,
+    ))

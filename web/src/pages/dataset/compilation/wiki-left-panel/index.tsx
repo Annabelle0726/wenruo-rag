@@ -18,6 +18,7 @@ import { WikiGraphPanel } from './wiki-graph-panel';
 import { WikiNavBar } from './wiki-nav-bar';
 
 type WikiLeftPanelProps = {
+  canGenerate?: boolean;
   tab: LeftPanelTab;
   onTabChange: (value: string) => void;
   selectedArtifact: IArtifact | null;
@@ -30,6 +31,7 @@ type WikiLeftPanelProps = {
 };
 
 export function WikiLeftPanel({
+  canGenerate = false,
   tab,
   onTabChange,
   selectedArtifact,
@@ -64,60 +66,67 @@ export function WikiLeftPanel({
     if (status === GenerateStatus.Running) {
       return;
     }
-    await handleUpdate();
-  }, [status, handleUpdate, onUpdateSheetOpenChange]);
+    if (canGenerate) await handleUpdate();
+  }, [status, handleUpdate, onUpdateSheetOpenChange, canGenerate]);
 
   return (
-    <aside className="size-full flex flex-col p-5">
-      {!isGo && (
-        <div className="flex items-center justify-between pb-5">
-          <CompilationUpdateButton
-            traceData={traceData}
-            generateType={GenerateType.Artifact}
-            hasChanges={hasChanges}
-            newlyUploaded={newlyUploaded}
-            removed={removed}
-            changed={changed}
-            retryPageCount={retryPageCount}
-            loading={updateLoading}
-            tooltip={t('knowledgeCompilation.updateTooltip', {
-              newlyUploaded,
-              removed,
-              changed,
-              defaultValue:
-                '{{newlyUploaded}} new, {{removed}} removed, {{changed}} changed documents found. Click to compile and merge into current Wiki.',
-            })}
-            onClick={handleUpdateClick}
-          />
-          <ConfirmDeleteDialog
-            open={open}
-            onOpenChange={setOpen}
-            title={t('knowledgeCompilation.clearWikiTitle')}
-            content={{ title: t('knowledgeCompilation.clearWikiDescription') }}
-            onOk={handleConfirm}
-          >
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="ml-auto"
-              disabled={loading}
-              data-testid="wiki-clear-trigger"
+    <aside className="size-full min-w-0 flex flex-col p-4 gap-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-border-button pb-3">
+        <Tabs value={tab} onValueChange={onTabChange} className="min-w-0">
+          <TabsList className="grid grid-cols-2 w-48 max-w-full">
+            <TabsTrigger value={LeftPanelTab.Contents}>
+              {t('knowledgeCompilation.contents')}
+            </TabsTrigger>
+            <TabsTrigger value={LeftPanelTab.Graph}>
+              {t('knowledgeCompilation.graph')}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        {!isGo && (
+          <div className="ml-auto flex items-center gap-2">
+            <CompilationUpdateButton
+              traceData={traceData}
+              generateType={GenerateType.Artifact}
+              hasChanges={hasChanges || canGenerate}
+              newlyUploaded={newlyUploaded}
+              removed={removed}
+              changed={changed}
+              retryPageCount={retryPageCount}
+              loading={
+                updateLoading ||
+                (!canGenerate && status !== GenerateStatus.Running)
+              }
+              tooltip={t('knowledgeCompilation.updateTooltip', {
+                newlyUploaded,
+                removed,
+                changed,
+                defaultValue:
+                  '{{newlyUploaded}} new, {{removed}} removed, {{changed}} changed documents found. Click to compile and merge into current Wiki.',
+              })}
+              onClick={handleUpdateClick}
+            />
+            <ConfirmDeleteDialog
+              open={open}
+              onOpenChange={setOpen}
+              title={t('knowledgeCompilation.clearWikiTitle')}
+              content={{
+                title: t('knowledgeCompilation.clearWikiDescription'),
+              }}
+              onOk={handleConfirm}
             >
-              <Trash2 className="size-[1em]" />
-            </Button>
-          </ConfirmDeleteDialog>
-        </div>
-      )}
-      <Tabs value={tab} onValueChange={onTabChange} className="pb-5">
-        <TabsList className="grid grid-cols-2 w-80">
-          <TabsTrigger value={LeftPanelTab.Contents}>
-            {t('knowledgeCompilation.contents')}
-          </TabsTrigger>
-          <TabsTrigger value={LeftPanelTab.Graph}>
-            {t('knowledgeCompilation.graph')}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="ml-auto"
+                disabled={loading}
+                data-testid="wiki-clear-trigger"
+              >
+                <Trash2 className="size-[1em]" />
+              </Button>
+            </ConfirmDeleteDialog>
+          </div>
+        )}
+      </div>
 
       <div className="flex-1 min-h-0 relative">
         {tab === LeftPanelTab.Contents && (
