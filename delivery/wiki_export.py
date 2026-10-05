@@ -76,7 +76,10 @@ def main(a):
     # Mapping inherited an unused tombstone field from the source chunk index.
     schema.get('properties',{}).pop('deleted_doc_id',None)
     if set(schema.get('properties',{}))-WIKI_FIELDS:raise ValueError('Unreviewed Wiki mapping fields: '+','.join(sorted(set(schema.get('properties',{}))-WIKI_FIELDS)))
-    write(output/'es'/f'{target_index}.schema.json',{'mappings':schema,'settings':{'number_of_shards':1,'number_of_replicas':0}})
+    options=es.indices.get_settings(index=source_index)[source_index]['settings']['index']
+    options={k:options[k] for k in ('analysis','similarity','number_of_shards') if k in options}
+    options['number_of_replicas']=0
+    write(output/'es'/f'{target_index}.schema.json',{'mappings':schema,'settings':options})
     kinds=collections.Counter();pages=set();refs=set();vector_dims=collections.Counter()
     with (output/'es'/f'{target_index}.jsonl').open('w',encoding='utf-8') as f:
         for h in scan(es,index=source_index):
