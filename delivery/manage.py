@@ -41,6 +41,7 @@ def initialize(args):
         ENABLE_REGISTER='0',RAGFLOW_INIT_SUPERUSER='0',SHOW_CABLE_ONLY='true',USE_DOCLING='false',LANG='zh_CN.UTF-8')
     for k in ('MYSQL_PASSWORD','MINIO_PASSWORD','ELASTIC_PASSWORD','REDIS_PASSWORD','SECRET_KEY'):
         env[k]=secrets.token_hex(32)
+    env['RAGFLOW_SECRET_KEY']=env['SECRET_KEY']
     # Marker is bound to credentials, project, image and package. Never printed.
     env['DELIVERY_INSTANCE']=hashlib.sha256(json.dumps(env,sort_keys=True).encode()).hexdigest()
     PRIVATE.mkdir(mode=0o700)

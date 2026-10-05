@@ -195,7 +195,7 @@ def _write_bootstrap_password_file(password: str) -> str | None:
         return None
 
 
-def init_default_admin():
+def init_default_admin():    if os.environ.get("RAGFLOW_INIT_SUPERUSER") == "0":        return
     # Verify that at least one active admin user exists. If not, create a default one.
     # This runs only from the explicit startup path in admin_server.py; the
     # authentication handlers below must never create accounts.
