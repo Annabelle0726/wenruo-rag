@@ -5,7 +5,7 @@
 ## 三类交付物
 
 - 源码：干净发布仓库及其源码 ZIP，含 Python 后端、Web 前端、完整 Dockerfile、迁移与隔离脚本；不含 `.git` 历史、运行配置、模型 Key、业务 PDF 或密码。
-- 镜像：由该发布源码的 Dockerfile 以 `WEB_DIST_MODE=prebuilt` 构建。镜像清单记录 SHA256；使用固定摘要，不以 `latest` 判定版本。依赖镜像也需要随离线交付包导出。
+- 镜像：由该发布源码的 Dockerfile 以 `WEB_DIST_MODE=prebuilt` 构建。镜像清单记录 SHA256；使用固定摘要，不以 `latest` 判定版本。依赖镜像也需要随离线交付包导出。`dependency-images.json` 固定依赖的注册表摘要与本地配置摘要；初始化按本地配置摘要选择镜像，离线导入丢失标签时也不会误用别的版本。
 - 业务数据：format=2 的白名单包，含 `database.json`、ES JSONL 与映射、关联对象和 SHA256 清单。不是全库 SQL dump。旧 `business-data` 不是本交付物。
 
 ## 从源码构建
@@ -33,6 +33,8 @@ python delivery/manage.py start
 启动完整依赖并等待后端 `/api/v1/system/version` 真正就绪后，脚本才恢复资料、创建唯一账号 `admin@wenruo.local`，赋予超级管理员及目标工作区 Owner 权限。密码由客户本机随机生成，存于 `delivery/private/admin-password.txt`。服务密码、会话签名密钥、登录 RSA 私钥同样只在本机生成。不要打包或上传 `delivery/private`。不要将整个工作目录交给客户。
 
 重复运行 `start` 校验恢复回执和数据，不新增账号、不重置密码。密码文件与数据库不一致时拒绝恢复。中途失败可在同一配置、同一包上重试；跨包和非空未知环境会被拒绝。不要执行 `docker compose down -v`，也不要手工改密码文件或用其他目录的 `.env` 替换。
+
+升级已审核镜像时，执行 `python delivery/manage.py set-image --image <镜像标签>`，再执行 `start`。此操作只更新镜像摘要和版本标记，保留本机密码、卷标记和恢复回执。
 
 模型名称和绑定保留，所有提供商实例凭据和地址为空；管理员须在模型设置中自行配置。未配置时应用应明确提示模型配置缺失。登录必须由页面公开获取本机公钥，不再使用仓库内固定私钥。
 

@@ -45,6 +45,11 @@ def initialize(args):
         MINIO_USER='wenruo',MINIO_HOST='minio',ES_USER='elastic',ES_HOST='es01',REDIS_HOST='redis',
         DOC_ENGINE='elasticsearch',DB_TYPE='mysql',API_PROXY_SCHEME='python',REGISTER_ENABLED='0',
         ENABLE_REGISTER='0',RAGFLOW_INIT_SUPERUSER='0',SHOW_CABLE_ONLY='true',USE_DOCLING='false',LANG='zh_CN.UTF-8')
+    # Docker save/load may drop repository digests; config IDs remain immutable.
+    for key, pinned in json.loads((ROOT/'dependency-images.json').read_text()).items():
+        actual=json.loads(docker('image','inspect',pinned['id']))[0]['Id']
+        if actual!=pinned['id']:raise ValueError('Dependency image mismatch')
+        env[key]=actual
     for k in ('MYSQL_PASSWORD','MINIO_PASSWORD','ELASTIC_PASSWORD','REDIS_PASSWORD','SECRET_KEY'):
         env[k]=secrets.token_hex(32)
     env['RAGFLOW_SECRET_KEY']=env['SECRET_KEY']

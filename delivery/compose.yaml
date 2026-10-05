@@ -43,7 +43,7 @@ services:
     restart: unless-stopped
   mysql:
     labels: {org.wenruo.delivery.instance: "${DELIVERY_INSTANCE:?Initialize delivery first}"}
-    image: mysql@sha256:d58ac93387f644e4e040c636b8f50494e78e5afc27ca0a87348b2f577da2b7ff
+    image: ${MYSQL_IMAGE:?Run delivery/manage.py init first}
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:?Run initialize-delivery.ps1 first}
       MYSQL_DATABASE: rag_flow
@@ -57,7 +57,7 @@ services:
     restart: unless-stopped
   es01:
     labels: {org.wenruo.delivery.instance: "${DELIVERY_INSTANCE:?Initialize delivery first}"}
-    image: elasticsearch@sha256:58a3a280935d830215802322e9a0373faaacdfd646477aa7e718939c2f29292a
+    image: ${ES_IMAGE:?Run delivery/manage.py init first}
     environment:
       discovery.type: single-node
       xpack.security.enabled: "true"
@@ -76,7 +76,7 @@ services:
     restart: unless-stopped
   minio:
     labels: {org.wenruo.delivery.instance: "${DELIVERY_INSTANCE:?Initialize delivery first}"}
-    image: pgsty/silo@sha256:29a498b24669cae1fed11c1a2fb2b3d73c68829a0a9c0b14e71b386671d38fac
+    image: ${MINIO_IMAGE:?Run delivery/manage.py init first}
     environment:
       MINIO_ROOT_USER: wenruo
       MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:?Run initialize-delivery.ps1 first}
@@ -85,7 +85,7 @@ services:
     restart: unless-stopped
   redis:
     labels: {org.wenruo.delivery.instance: "${DELIVERY_INSTANCE:?Initialize delivery first}"}
-    image: valkey/valkey@sha256:3fbd2e3e4b6e85e046c1e7c215e8f79087bc0357789184305806664e320996f3
+    image: ${REDIS_IMAGE:?Run delivery/manage.py init first}
     command: ["valkey-server", "--requirepass", "${REDIS_PASSWORD:?Run initialize-delivery.ps1 first}"]
     environment: {REDIS_PASSWORD: "${REDIS_PASSWORD}"}
     volumes: [redis_data:/data]
