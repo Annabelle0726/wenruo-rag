@@ -1,0 +1,548 @@
+/*
+ *  Copyright 2026 The InfiniFlow Authors. All Rights Reserved.
+ *  Modifications Copyright 2026 线缆工业智搜平台. All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+import Image, { AuthenticatedImg } from '@/components/image';
+import SvgIcon from '@/components/svg-icon';
+import { SafeImg } from '@/components/safe-img';
+import {
+  MarkdownRemarkPlugins,
+  MarkdownRemarkPluginsLite,
+} from '@/constants/markdown-remark-plugins';
+import { IReferenceChunk, IReferenceObject } from '@/interfaces/database/chat';
+import { getExtension } from '@/utils/document-util';
+import { supportsSourceLocate } from '@/utils/source-locate';
+import { downloadFileFromBlob } from '@/utils/file-util';
+import request from '@/utils/request';
+import DOMPurify from 'dompurify';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import Markdown, { defaultUrlTransform } from 'react-markdown';
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
+import { RehypeSanitizeAssistantMarkdown } from '@/constants/markdown-rehype-plugins';
+import { visitParents } from 'unist-util-visit-parents';
+
+import { useTranslation } from 'react-i18next';
+
+import 'katex/dist/katex.min.css'; // `rehype-katex` does not import the CSS for you
+
+import {
+  citedChunkIndex,
+  currentReg,
+  escapeUnmatchedAngleBrackets,
+  preprocessLaTeX,
+  promoteCaretExponentsToLaTeX,
+  replaceAgenticLogsToSection,
+  replaceRetrievingToSection,
+  replaceTextByOldReg,
+  replaceThinkToSection,
+  trimExtractionResidue,
+  unescapeAngleBrackets,
+} from '@/utils/chat';
+import { citationMarkerReg } from '@/utils/citation-utils';
+import { getDirAttribute } from '@/utils/text-direction';
+
+import { useFetchDocumentThumbnailsByIds } from '@/hooks/use-document-request';
+import { useLoadingPause } from '@/hooks/use-loading-pause';
+import { cn } from '@/lib/utils';
+import classNames from 'classnames';
+import { omit } from 'lodash';
+import pipe from 'lodash/fp/pipe';
+import reactStringReplace from 'react-string-replace';
+import CitationChip from '../citation-chip';
+import { LoadingDots } from '../loading-dots';
+import { Button } from '../ui/button';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from '../ui/hover-card';
+import message from '../ui/message';
+import styles from './index.module.less';
+
+// Chat/agentic citations are 1-based; convert to a 0-based pool index (see
+// citedChunkIndex).
+const getChunkIndex = (match: string, poolSize: number) =>
+  citedChunkIndex(match, poolSize);
+
+const isArtifactUrl = (url?: string) =>
+  Boolean(url && url.includes('/api/v1/documents/artifact/'));
+
+const fetchArtifactBlob = async (url: string): Promise<Blob> => {
+  const response = await request(url, {
+    method: 'GET',
+    responseType: 'blob',
+  });
+
+  return response.data as Blob;
+};
+
+const getArtifactName = (url?: string, fallback?: string) =>
+  fallback || url?.split('/').pop()?.split('?')[0] || 'artifact';
+
+function ArtifactLink({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const handleClick = useCallback(
+    async (e: React.MouseEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
+      try {
+        const blob = await fetchArtifactBlob(href);
+        const objectUrl = URL.createObjectURL(blob);
+        window.open(objectUrl, '_blank', 'noopener,noreferrer');
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
+      } catch {
+        message.error('Failed to open artifact');
+      }
+    },
+    [href],
+  );
+
+  return (
+    <a href={href} className={className} onClick={handleClick}>
+      {children}
+    </a>
+  );
+}
+
+function ArtifactImage({
+  src,
+  alt,
+  downloadLabel,
+}: {
+  src: string;
+  alt?: string;
+  downloadLabel: string;
+}) {
+  const [imageSrc, setImageSrc] = useState('');
+
+  useEffect(() => {
+    let objectUrl = '';
+    let active = true;
+
+    const load = async () => {
+      try {
+        const blob = await fetchArtifactBlob(src);
+        objectUrl = URL.createObjectURL(blob);
+        if (active) {
+          setImageSrc(objectUrl);
+        }
+      } catch {
+        message.error('Failed to load artifact image');
+      }
+    };
+
+    load();
+
+    return () => {
+      active = false;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [alt, src]);
+
+  const handleDownload = useCallback(async () => {
+    try {
+      const blob = await fetchArtifactBlob(src);
+      downloadFileFromBlob(blob, getArtifactName(src, alt));
+    } catch {
+      message.error('Failed to download artifact');
+    }
+  }, [alt, src]);
+
+  return (
+    <span className={styles.artifactImageWrapper}>
+      {imageSrc ? (
+        <img src={imageSrc} alt={alt || ''} className={styles.artifactImage} />
+      ) : (
+        <span className={styles.artifactImage} />
+      )}
+      <button
+        type="button"
+        className={styles.artifactDownload}
+        onClick={handleDownload}
+      >
+        {downloadLabel}
+      </button>
+    </span>
+  );
+}
+// TODO: The display of the table is inconsistent with the display previously placed in the MessageItem.
+function MarkdownContent({
+  reference,
+  clickDocumentButton,
+  content,
+  loading,
+  disableMath = false,
+}: {
+  content: string;
+  loading: boolean;
+  reference?: IReferenceObject;
+  clickDocumentButton?: (documentId: string, chunk: IReferenceChunk) => void;
+  /**
+   * When true, disables LaTeX math rendering (remark-math + rehype-katex).
+   * Use this for user-generated content where `$` should be treated as literal text.
+   */
+  disableMath?: boolean;
+}) {
+  const { t } = useTranslation();
+  const { setDocumentIds, data: fileThumbnails } =
+    useFetchDocumentThumbnailsByIds();
+  const contentWithCursor = useMemo(() => {
+    // Escape standalone < and > outside matched <...> tags
+    // so DOMPurify doesn't strip them as HTML.
+    const safeContent = escapeUnmatchedAngleBrackets(content);
+
+    let text = DOMPurify.sanitize(safeContent, {
+      ADD_TAGS: ['think', 'section', 'details', 'summary', 'retrieving'],
+      ADD_ATTR: ['class'],
+    });
+    // let text = content;
+    if (text === '') {
+      text = t('chat.searching');
+    }
+    const nextText = replaceTextByOldReg(text);
+    const thinkSummary = loading
+      ? `${t('chat.thinking')}...`
+      : t('chat.thought');
+    // Reasoning, retrieval and Agentic RAG progress output are separated from
+    // the answer into collapsed panels, so the body only shows the result.
+    const logSummary = t('chat.agenticLog');
+    return unescapeAngleBrackets(
+      pipe(
+        (value: string) => replaceThinkToSection(value, thinkSummary, logSummary),
+        (value: string) => replaceRetrievingToSection(value, t('chat.retrieving')),
+        (value: string) => replaceAgenticLogsToSection(value, logSummary),
+        trimExtractionResidue,
+        promoteCaretExponentsToLaTeX,
+        preprocessLaTeX,
+      )(nextText),
+    );
+  }, [content, loading, t]);
+
+  useEffect(() => {
+    const docAggs = reference?.doc_aggs;
+    setDocumentIds(Array.isArray(docAggs) ? docAggs.map((x) => x.doc_id) : []);
+  }, [reference, setDocumentIds]);
+
+  const handleDocumentButtonClick = useCallback(
+    (
+      documentId: string,
+      chunk: IReferenceChunk,
+      fileExtension: string,
+      documentUrl?: string,
+    ) =>
+      () => {
+        if (supportsSourceLocate(fileExtension) && clickDocumentButton) {
+          clickDocumentButton(documentId, chunk);
+          return;
+        }
+        if (!documentUrl) return;
+        window.open(
+          `/document/${documentId}?ext=${fileExtension}&resource=${'document'}`,
+          '_blank',
+        );
+      },
+    [clickDocumentButton],
+  );
+
+  const rehypeWrapReference = () => {
+    return function wrapTextTransform(tree: any) {
+      visitParents(tree, 'text', (node, ancestors) => {
+        const latestAncestor = ancestors.at(-1);
+        if (
+          latestAncestor.tagName !== 'custom-typography' &&
+          latestAncestor.tagName !== 'code'
+        ) {
+          node.type = 'element';
+          node.tagName = 'custom-typography';
+          node.properties = {};
+          node.children = [{ type: 'text', value: node.value }];
+        }
+      });
+    };
+  };
+
+  const getReferenceInfo = useCallback(
+    (chunkIndex: number) => {
+      const chunks = reference?.chunks ?? {};
+      const chunkItem = chunks[chunkIndex];
+
+      const documentList = Object.values(reference?.doc_aggs ?? {});
+      const document = documentList.find(
+        (x) => x?.doc_id === chunkItem?.document_id,
+      );
+      const documentId = document?.doc_id;
+      const documentUrl = document?.url;
+      const fileThumbnail = documentId ? fileThumbnails[documentId] : '';
+      const fileExtension = documentId ? getExtension(document?.doc_name) : '';
+      const imageId = chunkItem?.image_id;
+
+      return {
+        documentUrl,
+        fileThumbnail,
+        fileExtension,
+        imageId,
+        chunkItem,
+        documentId,
+        document,
+      };
+    },
+    [fileThumbnails, reference],
+  );
+
+  // A click on the marker opens the passage it points at — the same target the
+  // popover's document button opens. Factory-at-render, like the popover's own
+  // handler below, so no arrow is allocated per marker per render.
+  // `handleDocumentButtonClick` itself returns the click handler; return it
+  // rather than calling it, or the marker would swallow the click.
+  const handleCitationOpen = useCallback(
+    (chunkIndex: number) => {
+      const { chunkItem, documentId, fileExtension, documentUrl } =
+        getReferenceInfo(chunkIndex);
+      // A chunk whose document cannot be resolved has nothing to open, so the
+      // marker stays hover-only rather than offering a click that does nothing.
+      if (!documentId || !fileExtension) return undefined;
+      return handleDocumentButtonClick(
+        documentId,
+        chunkItem,
+        fileExtension,
+        documentUrl,
+      );
+    },
+    [getReferenceInfo, handleDocumentButtonClick],
+  );
+
+  const renderPopoverContent = useCallback(
+    (chunkIndex: number) => {
+      const {
+        documentUrl,
+        fileThumbnail,
+        fileExtension,
+        imageId,
+        chunkItem,
+        documentId,
+        document,
+      } = getReferenceInfo(chunkIndex);
+
+      return (
+        <div key={chunkItem?.id} className="flex gap-2">
+          {imageId && (
+            <HoverCard>
+              <HoverCardTrigger>
+                <Image
+                  id={imageId}
+                  className={styles.referenceChunkImage}
+                ></Image>
+              </HoverCardTrigger>
+              <HoverCardContent>
+                <Image
+                  id={imageId}
+                  className={cn(styles.referenceImagePreview)}
+                ></Image>
+              </HoverCardContent>
+            </HoverCard>
+          )}
+          <div className={'space-y-2 max-w-[40vw] w-full'}>
+            <div
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(chunkItem?.content ?? ''),
+              }}
+              className={classNames(styles.chunkContentText, 'w-full')}
+              dir="auto"
+            ></div>
+            {documentId && (
+              <div className="flex gap-1">
+                {fileThumbnail ? (
+                  <AuthenticatedImg
+                    src={fileThumbnail}
+                    alt=""
+                    className={styles.fileThumbnail}
+                  />
+                ) : (
+                  <SvgIcon
+                    name={`file-icon/${fileExtension}`}
+                    width={24}
+                  ></SvgIcon>
+                )}
+                <Button
+                  variant="link"
+                  onClick={handleDocumentButtonClick(
+                    documentId,
+                    chunkItem,
+                    fileExtension,
+                    documentUrl,
+                  )}
+                  className="text-ellipsis text-wrap"
+                >
+                  {document?.doc_name}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    },
+    [getReferenceInfo, handleDocumentButtonClick],
+  );
+
+  const renderReference = useCallback(
+    (text: string) => {
+      const pool = reference?.chunks;
+      const poolSize = Array.isArray(pool)
+        ? pool.length
+        : Object.keys(pool ?? {}).length;
+      const replacedText = reactStringReplace(text, currentReg, (match, i) => {
+        const chunkIndex = getChunkIndex(match, poolSize);
+        // No resolvable pool index — the pool is empty while an answer streams, or
+        // the marker points past it (an answer composed without retrieval, still
+        // quoting the previous turn's markers). The marker is echoed back inside
+        // its brackets and muted, never reduced to its bare digits: printing
+        // `1`,`3`,`5` glued together turned `[ID:1][ID:3][ID:5]` into `135`, which
+        // reads as one number rather than three citations and cannot be told apart
+        // from the sentence around it. It stays a non-interactive marker, because
+        // there is no chunk to open.
+        if (chunkIndex < 0) {
+          return (
+            <span
+              key={i}
+              title={t('chat.citationUnresolved')}
+              data-testid="citation-unresolved"
+              className="text-text-disabled bg-bg-card rounded-2xl px-1 mx-1 text-nowrap inline-block border border-dashed border-cable-hairline opacity-80"
+            >
+              [{match}]
+            </span>
+          );
+        }
+
+        return (
+          <CitationChip
+            key={i}
+            index={chunkIndex}
+            onOpen={handleCitationOpen(chunkIndex)}
+          >
+            {renderPopoverContent(chunkIndex)}
+          </CitationChip>
+        );
+      });
+
+      return replacedText;
+    },
+    [reference?.chunks, renderPopoverContent, handleCitationOpen, t],
+  );
+
+  const dir = getDirAttribute(content.replace(citationMarkerReg, ''));
+  const showLoadingDots = useLoadingPause(loading, content);
+
+  return (
+    <div dir={dir} className={styles.markdownContentWrapper}>
+      <Markdown
+        rehypePlugins={
+          disableMath
+            ? [rehypeRaw, RehypeSanitizeAssistantMarkdown, rehypeWrapReference]
+            : [
+                rehypeRaw,
+                RehypeSanitizeAssistantMarkdown,
+                rehypeWrapReference,
+                rehypeKatex,
+              ]
+        }
+        remarkPlugins={
+          disableMath ? MarkdownRemarkPluginsLite : MarkdownRemarkPlugins
+        }
+        urlTransform={(url, key) => {
+          if (
+            key === 'src' &&
+            /^data:image\/(png|jpe?g|gif|webp|svg\+xml);base64,/.test(url)
+          ) {
+            return url;
+          }
+          return defaultUrlTransform(url);
+        }}
+        components={
+          {
+            p: ({ children, ...props }: any) => <p {...props}>{children}</p>,
+            'custom-typography': ({ children }: { children: string }) =>
+              renderReference(children),
+            a({ href, children, ...props }: any) {
+              if (isArtifactUrl(href)) {
+                return (
+                  <ArtifactLink href={href} className={styles.artifactDownload}>
+                    {children}
+                  </ArtifactLink>
+                );
+              }
+              return (
+                <a href={href} {...omit(props, 'node')}>
+                  {children}
+                </a>
+              );
+            },
+            img({ src, alt, title }: any) {
+              if (isArtifactUrl(src)) {
+                return (
+                  <ArtifactImage
+                    src={src}
+                    alt={alt || ''}
+                    downloadLabel={t('common.download')}
+                  />
+                );
+              }
+              return <SafeImg src={src} alt={alt} title={title} />;
+            },
+            code(props: any) {
+              const { children, className, ...rest } = props;
+              const restProps = omit(rest, 'node');
+              const match = /language-(\w+)/.exec(className || '');
+              return match ? (
+                <SyntaxHighlighter
+                  {...restProps}
+                  PreTag="div"
+                  language={match[1]}
+                  wrapLongLines
+                >
+                  {String(children).replace(/\n$/, '')}
+                </SyntaxHighlighter>
+              ) : (
+                <code
+                  {...restProps}
+                  className={classNames(className, 'text-wrap')}
+                >
+                  {children}
+                </code>
+              );
+            },
+          } as any
+        }
+      >
+        {contentWithCursor}
+      </Markdown>
+      {showLoadingDots && (
+        <LoadingDots className="ml-1 inline-block text-text-secondary" />
+      )}
+    </div>
+  );
+}
+
+export default memo(MarkdownContent);

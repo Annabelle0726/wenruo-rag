@@ -1,0 +1,1681 @@
+#
+#  Copyright 2026 The InfiniFlow Authors. All Rights Reserved.
+#  Modifications Copyright 2026 线缆工业智搜平台. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+
+import json
+import logging
+import math
+import os
+import re
+import tempfile
+from copy import deepcopy
+from types import SimpleNamespace
+
+from quart import Response, request
+from werkzeug.exceptions import BadRequest
+
+from api.apps import current_user, login_required
+from api.apps.restful_apis._generation_params import merge_generation_config, pop_generation_config
+from api.db import cable_defaults
+from api.db.services.llm_service import resolve_llm_setting
+from api.db.joint_services.tenant_model_service import (
+    get_api_key,
+    get_composite_model_name_by_id,
+    get_first_tenant_model_name_by_type,
+    get_model_config_by_id,
+    get_tenant_default_model_by_type,
+    resolve_model_config,
+    resolve_model_id,
+)
+from api.db.services.chunk_feedback_service import ChunkFeedbackService
+from api.db.services.conversation_service import ConversationService, scope_dialog_datasets, structure_answer
+from api.db.services.dialog_service import DialogService, gen_mindmap, rag_agent
+from api.db.services.knowledgebase_service import KnowledgebaseService, validate_dataset_embedding_models
+from api.db.services.llm_service import LLMBundle
+from api.db.services.search_service import SearchService
+from api.db.services.user_service import TenantService
+from api.utils.api_utils import (
+    check_duplicate_ids,
+    get_data_error_result,
+    get_error_data_result,
+    get_json_result,
+    get_request_json,
+    requested_tenant_id,
+    server_error_response,
+    validate_request,
+)
+from api.utils.pagination_utils import validate_rest_api_ids, validate_rest_api_page, validate_rest_api_page_size, DEFAULT_PAGE, DEFAULT_PAGE_SIZE
+from common.constants import LLMType, RetCode, StatusEnum
+from common import settings
+from common.misc_utils import get_uuid, thread_pool_exec
+from common.text_utils import normalize_conversation_title
+from rag.prompts.generator import chunks_format
+from rag.prompts.template import load_prompt
+
+
+def _sanitize_json_floats(obj):
+    """Replace NaN/Infinity floats with None so the result is RFC 8259 JSON.
+
+    `json.dumps` emits the literal tokens `NaN`/`Infinity` by default
+    (allow_nan=True). Those tokens are valid Python JSON output but invalid
+    per the JSON spec, and downstream proxies / Go consumers reject the
+    response with `failed to encode response: json: unsupported value: NaN`
+    (fixes #15245). Retrieval scores (similarity, vector_similarity,
+    term_similarity) can become NaN when an aggregation runs over an empty
+    set or when a similarity denominator is zero, so the chat completions
+    stream is the realistic trigger.
+
+    `isinstance(obj, float)` alone catches Python float and numpy.float64
+    (a float subclass) but misses numpy.float32 / numpy.float16 and any
+    other duck-typed numeric. Probe via math.isnan/isinf in a try/except
+    so any object math can evaluate gets sanitized — without changing
+    upstream callers like chunks_format or rag/nlp/search.py.
+    """
+    try:
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+    except TypeError:
+        pass
+    if isinstance(obj, dict):
+        return {k: _sanitize_json_floats(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_json_floats(v) for v in obj]
+    if isinstance(obj, tuple):
+        return tuple(_sanitize_json_floats(v) for v in obj)
+    return obj
+
+
+_DEFAULT_PROMPT_CONFIG = {
+    # Cable vertical defaults; see api/db/cable_defaults.py for the values and
+    # why the model defaults use the same source.
+    "system": cable_defaults.SYSTEM_PROMPT,
+    "prologue": cable_defaults.PROLOGUE,
+    "parameters": [dict(parameter) for parameter in cable_defaults.PROMPT_PARAMETERS],
+    "empty_response": cable_defaults.EMPTY_RESPONSE,
+    "quote": True,
+    "tts": False,
+    "refine_multiturn": True,
+}
+_DEFAULT_DIRECT_CHAT_PROMPT_CONFIG = {
+    "system": "",
+    "prologue": "",
+    "parameters": [],
+    "empty_response": "",
+    "quote": False,
+    "tts": False,
+    "refine_multiturn": True,
+}
+_DEFAULT_RERANK_MODELS = {"BAAI/bge-reranker-v2-m3", "maidalun1020/bce-reranker-base_v1"}
+_READONLY_FIELDS = {"id", "tenant_id", "created_by", "create_time", "create_date", "update_time", "update_date"}
+_PERSISTED_FIELDS = set(DialogService.model._meta.fields)
+
+
+def _build_chat_response(chat):
+    data = chat.to_dict() if hasattr(chat, "to_dict") else dict(chat)
+    kb_ids, kb_names = _resolve_kb_names(data.get("kb_ids", []))
+    data["dataset_ids"] = kb_ids
+    data.pop("kb_ids", None)
+    data["kb_names"] = kb_names
+    return data
+
+
+def _add_card_metadata(chats):
+    """Attach the chat-card metadata: the chat's total message count.
+
+    Batched over the page, so a list request costs one aggregate rather than one
+    query per card.
+    """
+    if not chats:
+        return chats
+
+    counts = ConversationService.get_message_counts([chat.get("id") for chat in chats])
+    for chat in chats:
+        chat["message_count"] = counts.get(chat.get("id"), 0)
+    return chats
+
+
+def _resolve_kb_names(kb_ids):
+    ids, names = [], []
+    for kb_id in kb_ids or []:
+        ok, kb = KnowledgebaseService.get_by_id(kb_id)
+        if not ok or kb.status != StatusEnum.VALID.value:
+            continue
+        ids.append(kb_id)
+        names.append(kb.name)
+    return ids, names
+
+
+def _has_knowledge_placeholder(prompt_config):
+    return "{knowledge}" in (prompt_config or {}).get("system", "")
+
+
+def _validate_name(name, *, required=True):
+    if name is None:
+        if required:
+            return None, "`name` is required"
+        return None, None
+    if not isinstance(name, str):
+        return None, "chat name must be a string"
+    name = name.strip()
+    if not name:
+        return None, "`name` is required" if required else "`name` cannot be empty"
+    if len(name.encode("utf-8")) > 255:
+        return None, f"chat name length is {len(name.encode('utf-8'))} which is larger than 255"
+    return name, None
+
+
+def _validate_prompt_parameters(prompt_config):
+    parameters = prompt_config.get("parameters")
+    if not isinstance(parameters, list):
+        return None
+
+    keys = []
+    for parameter in parameters:
+        if not isinstance(parameter, dict):
+            continue
+        key = parameter.get("key")
+        if key is None:
+            continue
+        if key in keys:
+            return f"`parameters` contains duplicate key: {key}"
+        keys.append(key)
+    return None
+
+
+def _build_session_response(conv: dict) -> dict:
+    conv = dict(conv)
+    conv["chat_id"] = conv.pop("dialog_id", conv.get("chat_id"))
+    conv["messages"] = conv.pop("message", conv.get("messages", []))
+    # A conversation has no dataset set of its own: it answers from its chat's
+    # datasets. The column that once carried one is not part of the read shape
+    # either -- publishing it would offer a caller a scope nothing honours.
+    conv.pop("kb_ids", None)
+    conv.pop("dataset_ids", None)
+    return conv
+
+
+async def _accessible_chat(chat_id):
+    """The assistant row when the CALLER created it, or ``None``.
+
+    Chat is personally private. A workspace shares its models - resolved in the
+    assistant's own ``tenant_id`` - and its datasets, never the assistants built
+    on top of them, so ownership is the creator alone and there is no membership
+    branch: showing a member the assistants of the workspace (let alone letting
+    it edit or chat with them) is a data-isolation defect, not sharing.
+
+    A row (rather than a bool) is returned so a route can read the assistant's
+    own tenant, which is the subject its models must be resolved in.
+    """
+    ok, chat = await thread_pool_exec(DialogService.get_by_id, chat_id)
+    if not ok or not chat or chat.status != StatusEnum.VALID.value:
+        return None
+    if chat.created_by != current_user.id:
+        return None
+    from api.db.services.user_service import UserTenantService
+
+    if not await thread_pool_exec(UserTenantService.get_role, current_user.id, chat.tenant_id):
+        return None
+    return chat
+
+
+def _chat_denied():
+    """A refusal the client reports as an authorization failure: code 108.
+
+    109 is the AUTHENTICATION code, and it is what these routes used to answer
+    for an assistant the caller had created itself. A caller who did not create
+    the assistant is refused with 108, which is what a permission denial means
+    everywhere else in this API.
+    """
+    return get_json_result(data=False, message="no authorization", code=RetCode.PERMISSION_ERROR)
+
+
+def _active_workspace_tenant():
+    """The tenant row of the workspace the caller is working in.
+
+    A NORMAL member owns no tenant, so their user id is not a tenant id: only the
+    creator of a workspace has `tenant.id == user.id`. Reading the workspace
+    through the resolver -- the `X-Tenant-Id` the client asked for, then the
+    caller's own selection -- is what lets a member create, read and update an
+    assistant with the model defaults of the workspace they are in, instead of
+    answering `Tenant not found`.
+    """
+    active_tenant_id = TenantService.resolve_active_tenant_id(current_user.id, requested_tenant_id())
+    return TenantService.get_by_id(active_tenant_id)
+
+
+def _active_workspace_id():
+    """The id of the workspace the caller is working in, or ``None`` when there
+    is none. The single subject every assistant's models are resolved in."""
+    ok, tenant = _active_workspace_tenant()
+    return tenant.id if ok else None
+
+
+def _build_default_completion_dialog(tenant_id=None):
+    return SimpleNamespace(
+        tenant_id=tenant_id or current_user.id,
+        llm_id="",
+        tenant_llm_id=None,
+        llm_setting={},
+        prompt_config=deepcopy(_DEFAULT_DIRECT_CHAT_PROMPT_CONFIG),
+        kb_ids=[],
+        top_n=cable_defaults.TOP_N,
+        rerank_candidates_count=cable_defaults.RERANK_CANDIDATES_COUNT,
+        top_k=1024,
+        rerank_id="",
+        similarity_threshold=cable_defaults.SIMILARITY_THRESHOLD,
+        vector_similarity_weight=cable_defaults.VECTOR_SIMILARITY_WEIGHT,
+        meta_data_filter=None,
+    )
+
+
+async def _create_session_for_completion(chat_id, dialog, user_id, save_session=True):
+    conv = {
+        "id": get_uuid(),
+        "dialog_id": chat_id,
+        "name": "New session",
+        "message": [{"role": "assistant", "content": dialog.prompt_config.get("prologue", "")}],
+        "user_id": user_id,
+        "reference": [],
+    }
+    if not save_session:
+        conv["id"] = None
+        return SimpleNamespace(**conv)
+    await thread_pool_exec(ConversationService.save, **conv)
+    ok, conv_obj = await thread_pool_exec(ConversationService.get_by_id, conv["id"])
+    if not ok:
+        raise LookupError("Fail to create a session!")
+    return conv_obj
+
+
+def _get_bool_request_flag(req, *names, default=False):
+    for name in names:
+        if name not in req:
+            continue
+        value = req.pop(name)
+        if isinstance(value, str):
+            return value.strip().lower() in {"1", "true", "yes", "on"}
+        return bool(value)
+    return default
+
+
+def _normalize_completion_messages(req):
+    messages = req.get("messages")
+    if messages is None:
+        question = req.get("question")
+        if question is None:
+            return None, get_data_error_result(
+                code=RetCode.ARGUMENT_ERROR,
+                message="required argument are missing: messages",
+            )
+        messages = [{"role": "user", "content": question}]
+        if req.get("files"):
+            messages[-1]["files"] = req["files"]
+
+    if not isinstance(messages, list) or not messages:
+        return None, get_data_error_result(
+            code=RetCode.ARGUMENT_ERROR,
+            message="`messages` must be a non-empty list.",
+        )
+
+    for message in messages:
+        if not isinstance(message, dict):
+            return None, get_data_error_result(
+                code=RetCode.ARGUMENT_ERROR,
+                message="Every item in `messages` must be an object.",
+            )
+        if "role" not in message or "content" not in message:
+            return None, get_data_error_result(
+                code=RetCode.ARGUMENT_ERROR,
+                message="Every item in `messages` must include `role` and `content`.",
+            )
+
+    msg = []
+    for m in messages:
+        if m["role"] == "system":
+            continue
+        if m["role"] == "assistant" and not msg:
+            continue
+        msg.append(m)
+
+    if not msg:
+        return None, get_data_error_result(
+            code=RetCode.ARGUMENT_ERROR,
+            message="`messages` must contain a user message.",
+        )
+    if msg[-1]["role"] != "user":
+        return None, get_data_error_result(
+            code=RetCode.ARGUMENT_ERROR,
+            message="The last message must be from user.",
+        )
+    if not msg[-1].get("id"):
+        msg[-1]["id"] = get_uuid()
+
+    # till now, message and msg are sharing the same copy
+    return (messages, msg), None
+
+
+def _llm_model_type(llm_setting):
+    model_type = (llm_setting or {}).get("model_type")
+    if isinstance(model_type, list):
+        return "vision" if "vision" in model_type else "chat"
+    return model_type if isinstance(model_type, str) and model_type in {"chat", "vision"} else "chat"
+
+
+async def _normalize_model_pair(req, tenant_id, name_field, id_field, model_type):
+    """Validate and synchronize a model name with its tenant-model ID."""
+    if name_field not in req and id_field not in req:
+        return None
+
+    model_name = req.get(name_field)
+    model_id = req.get(id_field)
+    resolved_name_id = None
+
+    if model_name is not None and not isinstance(model_name, str):
+        return f"`{name_field}` must be a string"
+    if model_id is not None and not isinstance(model_id, str):
+        return f"`{id_field}` must be a tenant model id"
+
+    if model_id:
+        try:
+            await thread_pool_exec(get_model_config_by_id, tenant_id, model_type, model_id)
+        except LookupError as e:
+            logging.error("Fail to get %s config by tenant model id %s: %s", model_type, model_id, e)
+            return f"`{id_field}` must be a valid tenant model id"
+
+    if model_name:
+        if model_type == "rerank" and model_name.split("@")[0] in _DEFAULT_RERANK_MODELS:
+            if model_id:
+                return f"`{name_field}` and `{id_field}` must refer to the same model"
+        else:
+            try:
+                # A name field may already contain a tenant model ID. Resolve it
+                # strictly first, then fall back to the composite model name.
+                try:
+                    await thread_pool_exec(get_model_config_by_id, tenant_id, model_type, model_name)
+                    resolved_name_id = model_name
+                except LookupError:
+                    resolved_name_id = await thread_pool_exec(resolve_model_id, tenant_id, model_type, model_name)
+            except LookupError as e:
+                logging.error("Fail to resolve %s %s: %s", name_field, model_name, e)
+                return f"`{name_field}` {model_name} doesn't exist"
+
+    if model_id and model_name:
+        if resolved_name_id != model_id:
+            return f"`{name_field}` and `{id_field}` must refer to the same model"
+    elif model_name:
+        req[id_field] = resolved_name_id
+    elif model_id:
+        try:
+            req[name_field] = await thread_pool_exec(get_composite_model_name_by_id, model_id)
+        except LookupError as e:
+            logging.error("Fail to get composite name for %s %s: %s", id_field, model_id, e)
+            return f"`{id_field}` must be a valid tenant model id"
+    else:
+        # Clearing one side must not leave a stale ID/name on the other side.
+        req[id_field] = None
+        req[name_field] = ""
+
+    return None
+
+
+# def _validate_prompt_config(prompt_config):
+#     for parameter in prompt_config.get("parameters", []):
+#         if parameter.get("optional"):
+#             continue
+#         if prompt_config.get("system", "").find("{%s}" % parameter["key"]) < 0:
+#             return f"Parameter '{parameter['key']}' is not used"
+#     return None
+
+
+async def _validate_dataset_ids(dataset_ids, tenant_id):
+    if dataset_ids is None:
+        return []
+    if not isinstance(dataset_ids, list):
+        return "`dataset_ids` should be a list."
+
+    normalized_ids = [dataset_id for dataset_id in dataset_ids if dataset_id]
+    kbs = []
+    for dataset_id in normalized_ids:
+        if not await thread_pool_exec(KnowledgebaseService.accessible, kb_id=dataset_id, user_id=tenant_id):
+            return f"You don't own the dataset {dataset_id}"
+        matches = await thread_pool_exec(KnowledgebaseService.query, id=dataset_id)
+        if not matches:
+            return f"You don't own the dataset {dataset_id}"
+        kb = matches[0]
+        if kb.chunk_num == 0:
+            return f"The dataset {dataset_id} doesn't own parsed file"
+        kbs.append(kb)
+
+    err = validate_dataset_embedding_models(kbs)
+    if err:
+        return err
+
+    return normalized_ids
+
+
+async def _validate_bound_datasets(req, user_id):
+    """Validate the datasets an assistant is being bound to, under either name.
+
+    `dataset_ids` is the documented request field, while `kb_ids` is the name the
+    dialog row itself stores. Both reach the same column, so both have to pass
+    the same read gate: without it a caller could bind any dataset id -- including
+    one they may not read -- and then retrieve from it through the assistant.
+
+    Returns an error message, or None when the request is acceptable. `req` is
+    normalized in place so the caller only ever persists `kb_ids`.
+    """
+    if "dataset_ids" in req:
+        kb_ids = await _validate_dataset_ids(req.get("dataset_ids"), user_id)
+        if isinstance(kb_ids, str):
+            return kb_ids
+        req["kb_ids"] = kb_ids
+        req.pop("dataset_ids", None)
+        return None
+
+    if "kb_ids" in req:
+        kb_ids = await _validate_dataset_ids(req.get("kb_ids"), user_id)
+        if isinstance(kb_ids, str):
+            return kb_ids
+        req["kb_ids"] = kb_ids
+    return None
+
+
+#: Distinguishes "the request did not carry this field" from a payload of `None`.
+_MISSING = object()
+
+
+def _reject_session_dataset_ids(req):
+    """Refuse `dataset_ids` on a conversation, loudly.
+
+    The chat owns the retrieval scope: a conversation answers from the datasets
+    its chat is bound to. A request that tries to give a conversation a set of
+    its OWN is an error rather than something to ignore, because ignoring it
+    would answer from the chat's datasets while the caller believed it had
+    scoped one conversation -- and the column such a request used to write is no
+    longer read by anything.
+
+    Returns an error message, or None when the request says nothing about
+    datasets. Both names are consumed so neither reaches the ORM, where
+    `kb_ids` is still a (now inert) column of the row.
+    """
+    asked = [name for name in ("dataset_ids", "kb_ids") if req.pop(name, _MISSING) is not _MISSING]
+    if not asked:
+        return None
+    return "`dataset_ids` is not supported here: a conversation answers from its chat's datasets."
+
+
+def _apply_prompt_defaults(req):
+    prompt_config = req.setdefault("prompt_config", {})
+    kb_ids = req.get("kb_ids") or []
+    for key, value in _DEFAULT_PROMPT_CONFIG.items():
+        temp = prompt_config.get(key)
+        if (key == "system" and not temp) or key not in prompt_config:
+            if key == "system" and not kb_ids:
+                # No dataset bound: do not seed the dataset-oriented default system prompt.
+                # Its hard-coded "The answer you are looking for is not found in the dataset!"
+                # sentence would otherwise be sent verbatim to the model on the no-dataset path.
+                prompt_config[key] = ""
+            else:
+                prompt_config[key] = deepcopy(value)
+
+    if kb_ids and not prompt_config.get("parameters") and "{knowledge}" in prompt_config.get("system", ""):
+        prompt_config["parameters"] = [{"key": "knowledge", "optional": False}]
+    if not any(p.get("key") == "date" for p in prompt_config.get("parameters", [])):
+        prompt_config.setdefault("parameters", []).append({"key": "date", "optional": True})
+
+
+def _apply_retrieval_defaults(req):
+    """Fill the retrieval settings a new chat assistant is created with.
+
+    The cable values live in api/db/cable_defaults.py so the API, the persisted
+    model defaults and the Go backend all start a chat from the same numbers.
+    """
+    req.setdefault("top_n", cable_defaults.TOP_N)
+    req.setdefault("rerank_candidates_count", cable_defaults.RERANK_CANDIDATES_COUNT)
+    req.setdefault("top_k", 1024)
+    req.setdefault("rerank_id", "")
+    req.setdefault("similarity_threshold", cable_defaults.SIMILARITY_THRESHOLD)
+    req.setdefault("vector_similarity_weight", cable_defaults.VECTOR_SIMILARITY_WEIGHT)
+    # Metadata matching starts on: an assistant created without a metadata
+    # configuration gets the cable vertical's `auto` mode, while a caller that
+    # states a mode (the settings form sends `disabled`/`manual`/`semi_auto`) is
+    # taken at its word.
+    req["meta_data_filter"] = cable_defaults.meta_data_filter_with_defaults(req.get("meta_data_filter"))
+
+
+@manager.route("/chats", methods=["POST"])  # noqa: F821
+@login_required
+async def create():
+    try:
+        req = await get_request_json()
+        ok, tenant = _active_workspace_tenant()
+        if not ok:
+            return get_data_error_result(message="Tenant not found!")
+        # Every model of this assistant is resolved in the workspace it is used
+        # in, so that workspace is what it is bound to. Storing the CREATOR's
+        # user id instead (as this route used to) is only the same value for a
+        # member who owns a personal workspace: for a member of a team
+        # workspace it is not a tenant at all, and the assistant then cannot be
+        # read back (`GET /chats/<id>` answered 109), cannot have a model saved
+        # into it (102), and cannot answer.
+        workspace_id = tenant.id
+
+        # Validate tenant_id should not be provided
+        if req.get("tenant_id"):
+            return get_data_error_result(message="`tenant_id` must not be provided")
+
+        # Validate name
+        name, err = _validate_name(req.get("name"), required=True)
+        if err:
+            return get_data_error_result(message=err)
+        req["name"] = name
+
+        if "dataset_ids" in req or "kb_ids" in req:
+            err = await _validate_bound_datasets(req, current_user.id)
+            if err:
+                return get_data_error_result(message=err)
+
+        if req.get("llm_id") is None and req.get("tenant_llm_id") is None:
+            req["llm_id"] = tenant.tenant_llm_id
+        if "rerank_id" not in req and "tenant_rerank_id" not in req:
+            req["rerank_id"] = ""
+
+        err = await _normalize_model_pair(req, workspace_id, "llm_id", "tenant_llm_id", _llm_model_type(req.get("llm_setting")))
+        if err:
+            return get_data_error_result(message=err)
+        err = await _normalize_model_pair(req, workspace_id, "rerank_id", "tenant_rerank_id", "rerank")
+        if err:
+            return get_data_error_result(message=err)
+
+        if "prompt_config" in req:
+            if not isinstance(req["prompt_config"], dict):
+                return get_data_error_result(message="`prompt_config` should be an object.")
+            err = _validate_prompt_parameters(req["prompt_config"])
+            if err:
+                return get_data_error_result(message=err)
+            # err = _validate_prompt_config(req["prompt_config"])
+            # if err:
+            #     return get_data_error_result(message=err)
+
+        req.setdefault("kb_ids", [])
+        req.setdefault("llm_id", tenant.tenant_llm_id)
+        if req["llm_id"] is None:
+            req["llm_id"] = tenant.tenant_llm_id
+        req.setdefault("llm_setting", {})
+        req.setdefault("description", "A helpful Assistant")
+        req.setdefault("icon", "")
+        _apply_retrieval_defaults(req)
+        _apply_prompt_defaults(req)
+        # err = _validate_prompt_config(req["prompt_config"])
+        # if err:
+        #     return get_data_error_result(message=err)
+
+        req = {field: value for field, value in req.items() if field in _PERSISTED_FIELDS}
+        for field in _READONLY_FIELDS:
+            req.pop(field, None)
+
+        if DialogService.query(
+            name=req["name"],
+            tenant_id=workspace_id,
+            created_by=current_user.id,
+            status=StatusEnum.VALID.value,
+        ):
+            return get_data_error_result(message="duplicated chat name in creating chat")
+
+        req["id"] = get_uuid()
+        # Two different things, and both are needed. The assistant is BOUND to
+        # the workspace it is used in, because that is the tenant its chat,
+        # rerank and TTS models are resolved in and the tenant its sessions are
+        # read through. The creator is recorded separately, because chat is
+        # PERSONALLY private: `tenant_id` names the whole team, so it cannot
+        # answer "whose assistant is this" - the list and `_accessible_chat`
+        # both read `created_by` for that. Set after the `_READONLY_FIELDS` strip
+        # above, so a request can never name its own creator.
+        req["tenant_id"] = workspace_id
+        req["created_by"] = current_user.id
+        if not DialogService.save(**req):
+            return get_data_error_result(message="Failed to create chat.")
+
+        ok, chat = DialogService.get_by_id(req["id"])
+        if not ok:
+            return get_data_error_result(message="Failed to retrieve created chat.")
+        return get_json_result(data=_build_chat_response(chat))
+    except Exception as ex:
+        return server_error_response(ex)
+
+
+@manager.route("/chats", methods=["GET"])  # noqa: F821
+@login_required
+async def list_chats():
+    chat_id = request.args.get("id")
+    name = request.args.get("name")
+    keywords = request.args.get("keywords", "")
+    orderby = request.args.get("orderby", "create_time")
+    desc = request.args.get("desc", "true").lower() != "false"
+    owner_ids = request.args.getlist("owner_ids")
+    exact_filters = {"id": chat_id, "name": name}
+    if chat_id or name:
+        keywords = ""
+
+    if orderby not in ("create_time", "update_time", "name"):
+        return get_json_result(code=RetCode.ARGUMENT_ERROR, message=f"invalid orderby field: {orderby}")
+
+    try:
+        validate_rest_api_ids(owner_ids, "owner_ids")
+    except ValueError as ex:
+        return get_json_result(code=RetCode.ARGUMENT_ERROR, message=str(ex))
+
+    try:
+        # Invalid or negative pagination values fall back to defaults
+        # instead of leaking internal conversion/SQL errors.
+        page_number = validate_rest_api_page(request.args.get("page", DEFAULT_PAGE))
+        items_per_page = validate_rest_api_page_size(request.args.get("page_size", DEFAULT_PAGE_SIZE))
+
+        if owner_ids:
+            chats, total = await thread_pool_exec(
+                DialogService.get_by_tenant_ids,
+                owner_ids,
+                current_user.id,
+                0,
+                0,
+                orderby,
+                desc,
+                keywords,
+                created_by=current_user.id,
+                **exact_filters,
+            )
+            chats = [chat for chat in chats if chat["tenant_id"] in owner_ids]
+            total = len(chats)
+            if page_number and items_per_page:
+                start = (page_number - 1) * items_per_page
+                chats = chats[start : start + items_per_page]
+        else:
+            # Assistants are PERSONALLY private, so the listing is the caller's
+            # own set. It is scoped to the workspace being used as well, because
+            # that is the tenant whose models the assistants consume (and a
+            # personal workspace IS the caller's own id, so a single-account
+            # deployment is unaffected). The caller's own id still rides along
+            # in the service's tenant predicate: rows created before assistants
+            # were workspace-bound carry the creator's user id as their tenant,
+            # and their owner must keep seeing them.
+            workspace_id = _active_workspace_id()
+            chats, total = await thread_pool_exec(
+                DialogService.get_by_tenant_ids,
+                [workspace_id] if workspace_id else [],
+                current_user.id,
+                page_number,
+                items_per_page,
+                orderby,
+                desc,
+                keywords,
+                created_by=current_user.id,
+                **exact_filters,
+            )
+
+        return get_json_result(data={"chats": _add_card_metadata([_build_chat_response(chat) for chat in chats]), "total": total})
+    except Exception as ex:
+        return server_error_response(ex)
+
+
+@manager.route("/chats/<chat_id>", methods=["GET"])  # noqa: F821
+@login_required
+async def get_chat(chat_id):
+    try:
+        chat = await _accessible_chat(chat_id)
+        if not chat:
+            return _chat_denied()
+        return get_json_result(data=_build_chat_response(chat))
+    except Exception as ex:
+        return server_error_response(ex)
+
+
+@manager.route("/chats/<chat_id>", methods=["PUT"])  # noqa: F821
+@login_required
+async def update_chat(chat_id):
+    chat_row = await _accessible_chat(chat_id)
+    if not chat_row:
+        return _chat_denied()
+
+    try:
+        req = await get_request_json()
+        ok, _tenant = _active_workspace_tenant()
+        if not ok:
+            return get_data_error_result(message="Tenant not found!")
+
+        current_chat = chat_row.to_dict()
+        # The assistant's own workspace is the tenant its models belong to. A
+        # member saving a model into a team assistant would otherwise have it
+        # resolved against the member's user id, which owns no models at all --
+        # which is what answered "`llm_id` ... doesn't exist" (code 102).
+        model_tenant_id = current_chat.get("tenant_id") or current_user.id
+
+        if req.get("tenant_id"):
+            return get_data_error_result(message="`tenant_id` must not be provided")
+
+        if "name" in req:
+            name, err = _validate_name(req.get("name"), required=True)
+            if err:
+                return get_data_error_result(message=err)
+            req["name"] = name
+
+        if "dataset_ids" in req or "kb_ids" in req:
+            err = await _validate_bound_datasets(req, current_user.id)
+            if err:
+                return get_data_error_result(message=err)
+
+        effective_llm_setting = req.get("llm_setting", current_chat.get("llm_setting", {}))
+        err = await _normalize_model_pair(req, model_tenant_id, "llm_id", "tenant_llm_id", _llm_model_type(effective_llm_setting))
+        if err:
+            return get_data_error_result(message=err)
+        err = await _normalize_model_pair(req, model_tenant_id, "rerank_id", "tenant_rerank_id", "rerank")
+        if err:
+            return get_data_error_result(message=err)
+
+        if "prompt_config" in req:
+            if not isinstance(req["prompt_config"], dict):
+                return get_data_error_result(message="`prompt_config` should be an object.")
+            err = _validate_prompt_parameters(req["prompt_config"])
+            if err:
+                return get_data_error_result(message=err)
+            # err = _validate_prompt_config(req["prompt_config"])
+            # if err:
+            #     return get_data_error_result(message=err)
+
+        # prompt_config = req.get("prompt_config", {})
+        # if not prompt_config:
+        #     prompt_config = current_chat.get("prompt_config", {})
+        # kb_ids = req.get("kb_ids", current_chat.get("kb_ids", []))
+        # if not kb_ids and not prompt_config.get("tavily_api_key") and _has_knowledge_placeholder(prompt_config):
+        #     return get_data_error_result(message="Please remove `{knowledge}` in system prompt since no dataset / Tavily used here.")
+        req = {field: value for field, value in req.items() if field in _PERSISTED_FIELDS}
+        for field in _READONLY_FIELDS:
+            req.pop(field, None)
+
+        if (
+            "name" in req
+            and req["name"].lower() != current_chat["name"].lower()
+            and DialogService.query(
+                name=req["name"],
+                tenant_id=model_tenant_id,
+                status=StatusEnum.VALID.value,
+            )
+        ):
+            return get_data_error_result(message="duplicated chat name")
+
+        if not DialogService.update_by_id(chat_id, req):
+            return get_data_error_result(message="Chat not found!")
+
+        ok, chat = DialogService.get_by_id(chat_id)
+        if not ok:
+            return get_data_error_result(message="Failed to retrieve updated chat.")
+        return get_json_result(data=_build_chat_response(chat))
+    except Exception as ex:
+        return server_error_response(ex)
+
+
+@manager.route("/chats/<chat_id>", methods=["PATCH"])  # noqa: F821
+@login_required
+async def patch_chat(chat_id):
+    chat_row = await _accessible_chat(chat_id)
+    if not chat_row:
+        return _chat_denied()
+
+    try:
+        req = await get_request_json()
+        ok, _tenant = _active_workspace_tenant()
+        if not ok:
+            return get_data_error_result(message="Tenant not found!")
+
+        current_chat = chat_row.to_dict()
+        # Same subject as `update_chat`: the workspace that owns the assistant.
+        model_tenant_id = current_chat.get("tenant_id") or current_user.id
+
+        if "name" in req:
+            name, err = _validate_name(req.get("name"), required=False)
+            if err:
+                return get_data_error_result(message=err)
+            if name is not None:
+                req["name"] = name
+
+        if "dataset_ids" in req or "kb_ids" in req:
+            err = await _validate_bound_datasets(req, current_user.id)
+            if err:
+                return get_data_error_result(message=err)
+
+        if "llm_setting" in req:
+            if not isinstance(req["llm_setting"], dict):
+                return get_data_error_result(message="`llm_setting` should be an object.")
+            llm_setting = deepcopy(current_chat.get("llm_setting") or {})
+            llm_setting.update(req["llm_setting"])
+            req["llm_setting"] = llm_setting
+
+        effective_llm_setting = req.get("llm_setting", current_chat.get("llm_setting", {}))
+        err = await _normalize_model_pair(req, model_tenant_id, "llm_id", "tenant_llm_id", _llm_model_type(effective_llm_setting))
+        if err:
+            return get_data_error_result(message=err)
+        err = await _normalize_model_pair(req, model_tenant_id, "rerank_id", "tenant_rerank_id", "rerank")
+        if err:
+            return get_data_error_result(message=err)
+
+        if "prompt_config" in req:
+            if not isinstance(req["prompt_config"], dict):
+                return get_data_error_result(message="`prompt_config` should be an object.")
+            err = _validate_prompt_parameters(req["prompt_config"])
+            if err:
+                return get_data_error_result(message=err)
+            prompt_config = deepcopy(current_chat.get("prompt_config", {}))
+            prompt_config.update(req["prompt_config"])
+            req["prompt_config"] = prompt_config
+            # err = _validate_prompt_config(prompt_config)
+            # if err:
+            #     return get_data_error_result(message=err)
+
+        # if "prompt_config" in req or "kb_ids" in req:
+        #     prompt_config = req.get("prompt_config", current_chat.get("prompt_config", {}))
+        #     kb_ids = req.get("kb_ids", current_chat.get("kb_ids", []))
+        #     if not kb_ids and not prompt_config.get("tavily_api_key") and _has_knowledge_placeholder(prompt_config):
+        #         return get_data_error_result(message="Please remove `{knowledge}` in system prompt since no dataset / Tavily used here.")
+
+        req = {field: value for field, value in req.items() if field in _PERSISTED_FIELDS}
+        for field in _READONLY_FIELDS:
+            req.pop(field, None)
+
+        if (
+            "name" in req
+            and req["name"].lower() != current_chat["name"].lower()
+            and DialogService.query(
+                name=req["name"],
+                tenant_id=model_tenant_id,
+                status=StatusEnum.VALID.value,
+            )
+        ):
+            return get_data_error_result(message="duplicated chat name")
+
+        if not DialogService.update_by_id(chat_id, req):
+            return get_data_error_result(message="Failed to update chat.")
+
+        ok, chat = DialogService.get_by_id(chat_id)
+        if not ok:
+            return get_data_error_result(message="Failed to retrieve updated chat.")
+        return get_json_result(data=_build_chat_response(chat))
+    except Exception as ex:
+        return server_error_response(ex)
+
+
+@manager.route("/chats/<chat_id>", methods=["DELETE"])  # noqa: F821
+@login_required
+async def delete_chat(chat_id):
+    if not await _accessible_chat(chat_id):
+        return _chat_denied()
+
+    try:
+        if not DialogService.update_by_id(chat_id, {"status": StatusEnum.INVALID.value}):
+            return get_data_error_result(message=f"Failed to delete chat {chat_id}")
+        return get_json_result(data=True)
+    except Exception as ex:
+        return server_error_response(ex)
+
+
+@manager.route("/chats", methods=["DELETE"])  # noqa: F821
+@login_required
+async def bulk_delete_chats():
+    req = await get_request_json()
+    if not req:
+        return get_json_result(data={})
+
+    ids = req.get("ids")
+    if not ids:
+        if req.get("delete_all") is True:
+            # "All" means the same set the listing shows: the caller's OWN
+            # assistants, in the workspace it is using. The caller's own id rides
+            # along in the tenant scope because rows created before assistants
+            # were workspace-bound carry it.
+            workspace_id = _active_workspace_id()
+            scope = {workspace_id, current_user.id} - {None}
+            ids = [chat.id for chat in DialogService.query(tenant_id=scope, created_by=current_user.id, status=StatusEnum.VALID.value)]
+            if not ids:
+                return get_json_result(data={})
+        else:
+            # keep backward compatibility, DELETE with chat_id in request body
+            chat_id = req.get("chat_id")
+            if chat_id:
+                try:
+                    # The ownership guard is not optional on this path either: a
+                    # chat id alone must never be enough to delete someone
+                    # else's assistant.
+                    if not await _accessible_chat(chat_id):
+                        return _chat_denied()
+                    if not DialogService.update_by_id(chat_id, {"status": StatusEnum.INVALID.value}):
+                        return get_data_error_result(message=f"Failed to delete chat {chat_id}")
+                    return get_json_result(data=True)
+                except Exception as ex:
+                    return server_error_response(ex)
+            return get_json_result(data={})
+
+    errors = []
+    success_count = 0
+    unique_ids, duplicate_messages = check_duplicate_ids(ids, "chat")
+
+    for chat_id in unique_ids:
+        if not await _accessible_chat(chat_id):
+            errors.append(f"Chat({chat_id}) not found.")
+            continue
+        success_count += DialogService.update_by_id(chat_id, {"status": StatusEnum.INVALID.value})
+
+    all_errors = errors + duplicate_messages
+    if all_errors:
+        if success_count > 0:
+            return get_json_result(
+                data={"success_count": success_count, "errors": all_errors},
+                message=f"Partially deleted {success_count} chats with {len(all_errors)} errors",
+            )
+        return get_data_error_result(message="; ".join(all_errors))
+
+    return get_json_result(data={"success_count": success_count})
+
+
+@manager.route("/chats/<chat_id>/sessions", methods=["POST"])  # noqa: F821
+@login_required
+async def create_session(chat_id):
+    """Create a new conversation session for the given chat, owned by the authenticated user.
+
+    The conversation answers from the datasets its CHAT is bound to, which is
+    what every conversation under it inherits, so a session takes no dataset
+    field at all.
+    """
+    dia = await _accessible_chat(chat_id)
+    if not dia:
+        return _chat_denied()
+    try:
+        req = await get_request_json()
+        error = _reject_session_dataset_ids(req)
+        if error:
+            return get_data_error_result(message=error)
+        name = req.get("name", "New session")
+        if not isinstance(name, str) or not name.strip():
+            return get_data_error_result(message="`name` can not be empty")
+        name = name.strip()[:255]
+        conv = {
+            "id": get_uuid(),
+            "dialog_id": chat_id,
+            "name": name,
+            "message": [{"role": "assistant", "content": dia.prompt_config.get("prologue", "")}],
+            "user_id": current_user.id,
+            "reference": [],
+        }
+        ConversationService.save(**conv)
+        ok, conv_obj = ConversationService.get_by_id(conv["id"])
+        if not ok:
+            return get_data_error_result(message="Fail to create a session!")
+        return get_json_result(data=_build_session_response(conv_obj.to_dict()))
+    except Exception as ex:
+        return server_error_response(ex)
+
+
+@manager.route("/chats/<chat_id>/sessions", methods=["GET"])  # noqa: F821
+@login_required
+async def list_sessions(chat_id):
+    try:
+        if not await _accessible_chat(chat_id):
+            return _chat_denied()
+        # Invalid or negative pagination values fall back to defaults
+        # instead of leaking internal conversion/SQL errors.
+        page_number = validate_rest_api_page(request.args.get("page", DEFAULT_PAGE))
+        items_per_page = validate_rest_api_page_size(request.args.get("page_size", DEFAULT_PAGE_SIZE))
+        orderby = request.args.get("orderby", "create_time")
+        if orderby not in ("create_time", "update_time", "name"):
+            return get_json_result(code=RetCode.ARGUMENT_ERROR, message=f"invalid orderby field: {orderby}")
+        desc = request.args.get("desc", "true").lower() != "false"
+        session_id = request.args.get("id")
+        name = request.args.get("name")
+        user_id = request.args.get("user_id")
+        convs = ConversationService.get_list(chat_id, page_number, items_per_page, orderby, desc, session_id, name, user_id)
+        if items_per_page == 0:
+            convs = []
+        return get_json_result(data=[_build_session_response(c) for c in convs])
+    except Exception as ex:
+        return server_error_response(ex)
+
+
+@manager.route("/chats/<chat_id>/sessions/<session_id>", methods=["GET"])  # noqa: F821
+@login_required
+async def get_session(chat_id, session_id):
+    dialog = await _accessible_chat(chat_id)
+    if not dialog:
+        return _chat_denied()
+    try:
+        ok, conv = await thread_pool_exec(ConversationService.get_by_id, session_id)
+        if not ok:
+            return get_data_error_result(message="Session not found!")
+        if conv.dialog_id != chat_id:
+            return get_data_error_result(message="Session does not belong to this chat!")
+        avatar = dialog.icon or ""
+        for ref in conv.reference:
+            if isinstance(ref, list):
+                continue
+            ref["chunks"] = chunks_format(ref)
+        result = _build_session_response(conv.to_dict())
+        result["avatar"] = avatar
+        return get_json_result(data=result)
+    except Exception as ex:
+        return server_error_response(ex)
+
+
+@manager.route("/chats/<chat_id>/sessions/<session_id>", methods=["PATCH"])  # noqa: F821
+@login_required
+async def update_session(chat_id, session_id):
+    """Update a session's name, pin state or message list.
+
+    Datasets are not part of it: a conversation answers from its chat's
+    datasets, so a request that tries to bind one here is refused.
+    """
+    if not await _accessible_chat(chat_id):
+        return _chat_denied()
+    try:
+        req = await get_request_json()
+        if not ConversationService.query(id=session_id, dialog_id=chat_id):
+            return get_data_error_result(message="Session not found!")
+        error = _reject_session_dataset_ids(req)
+        if error:
+            return get_data_error_result(message=error)
+        if "message" in req or "messages" in req:
+            return get_data_error_result(message="`messages` cannot be changed")
+        if "reference" in req:
+            return get_data_error_result(message="`reference` cannot be changed")
+        name = req.get("name")
+        if name is not None:
+            if not isinstance(name, str) or not name.strip():
+                return get_data_error_result(message="`name` can not be empty")
+            req["name"] = name.strip()[:255]
+        is_pinned = req.get("is_pinned")
+        if is_pinned is not None and not isinstance(is_pinned, bool):
+            return get_data_error_result(message="`is_pinned` must be a boolean")
+        update_fields = {k: v for k, v in req.items() if k not in {"id", "dialog_id", "chat_id", "user_id"}}
+        if not ConversationService.update_by_id(session_id, update_fields):
+            return get_data_error_result(message="Session not found!")
+        ok, conv = ConversationService.get_by_id(session_id)
+        if not ok:
+            return get_data_error_result(message="Fail to update a session!")
+        return get_json_result(data=_build_session_response(conv.to_dict()))
+    except Exception as ex:
+        return server_error_response(ex)
+
+
+@manager.route("/chats/<chat_id>/sessions", methods=["DELETE"])  # noqa: F821
+@login_required
+async def delete_sessions(chat_id):
+    if not await _accessible_chat(chat_id):
+        return _chat_denied()
+    try:
+        try:
+            req = await get_request_json()
+        except BadRequest:
+            return get_json_result(code=RetCode.ARGUMENT_ERROR, message="Malformed JSON syntax: Missing commas/brackets or invalid encoding")
+        if not req:
+            return get_json_result(data={})
+
+        session_ids = req.get("ids")
+        if not session_ids:
+            if req.get("delete_all") is True:
+                session_ids = [conv.id for conv in ConversationService.query(dialog_id=chat_id)]
+                if not session_ids:
+                    return get_json_result(data={})
+            else:
+                return get_json_result(data={})
+        unique_ids, duplicate_messages = check_duplicate_ids(session_ids, "session")
+        errors = []
+        success_count = 0
+        for sid in unique_ids:
+            if not ConversationService.query(id=sid, dialog_id=chat_id):
+                errors.append(f"The chat doesn't own the session {sid}")
+                continue
+            ok, conv = ConversationService.get_by_id(sid)
+            if ok:
+                for msg in conv.message or []:
+                    for file in msg.get("files") or []:
+                        file_id = file.get("id")
+                        if not file_id:
+                            continue
+                        try:
+                            settings.STORAGE_IMPL.rm(f"{current_user.id}-downloads", file_id)
+                        except Exception:
+                            logging.warning("Failed to delete chat upload blob %s/%s", current_user.id, file_id)
+            ConversationService.delete_by_id(sid)
+            success_count += 1
+        all_errors = errors + duplicate_messages
+        if all_errors:
+            if success_count > 0:
+                return get_json_result(
+                    data={"success_count": success_count, "errors": all_errors},
+                    message=f"Partially deleted {success_count} sessions with {len(all_errors)} errors",
+                )
+            return get_data_error_result(message="; ".join(all_errors))
+        return get_json_result(data=True)
+    except Exception as ex:
+        return server_error_response(ex)
+
+
+@manager.route("/chats/<chat_id>/sessions/<session_id>/messages/<msg_id>", methods=["DELETE"])  # noqa: F821
+@login_required
+async def delete_session_message(chat_id, session_id, msg_id):
+    if not await _accessible_chat(chat_id):
+        return _chat_denied()
+    try:
+        ok, conv = ConversationService.get_by_id(session_id)
+        if not ok or conv.dialog_id != chat_id:
+            return get_data_error_result(message="Session not found!")
+        conv = conv.to_dict()
+        for i, msg in enumerate(conv["message"]):
+            if msg_id != msg.get("id", ""):
+                continue
+            assert conv["message"][i + 1]["id"] == msg_id
+            conv["message"].pop(i)
+            conv["message"].pop(i)
+            ref_index = (i - 1) // 2
+            conv["reference"].pop(ref_index)
+            break
+        ConversationService.update_by_id(conv["id"], conv)
+        return get_json_result(data=_build_session_response(conv))
+    except Exception as ex:
+        return server_error_response(ex)
+
+
+@manager.route("/chats/<chat_id>/sessions/<session_id>/messages/<msg_id>/feedback", methods=["PUT"])  # noqa: F821
+@login_required
+async def update_message_feedback(chat_id, session_id, msg_id):
+    if not await _accessible_chat(chat_id):
+        return _chat_denied()
+    try:
+        req = await get_request_json()
+        ok, conv = ConversationService.get_by_id(session_id)
+        if not ok or conv.dialog_id != chat_id:
+            return get_data_error_result(message="Session not found!")
+        thumb_raw = req.get("thumbup")
+        if not isinstance(thumb_raw, bool):
+            return get_data_error_result(message="thumbup must be a boolean")
+        feedback = req.get("feedback", "")
+        conv_dict = conv.to_dict()
+        message_index = None
+        apply_chunk_feedback = False
+        prior_thumb = None
+        for i, msg in enumerate(conv_dict["message"]):
+            if msg_id == msg.get("id", "") and msg.get("role", "") == "assistant":
+                prior_thumb = msg.get("thumbup")
+                if thumb_raw is True:
+                    msg["thumbup"] = True
+                    msg.pop("feedback", None)
+                    apply_chunk_feedback = prior_thumb is not True
+                else:
+                    msg["thumbup"] = False
+                    if feedback:
+                        msg["feedback"] = feedback
+                    apply_chunk_feedback = prior_thumb is not False
+                message_index = i
+                break
+
+        if message_index is not None and apply_chunk_feedback:
+            try:
+                ref_index = (message_index - 1) // 2
+                if 0 <= ref_index < len(conv_dict.get("reference", [])):
+                    reference = conv_dict["reference"][ref_index]
+                    if reference:
+                        if isinstance(prior_thumb, bool) and prior_thumb != thumb_raw:
+                            await thread_pool_exec(
+                                ChunkFeedbackService.apply_feedback,
+                                tenant_id=current_user.id,
+                                reference=reference,
+                                is_positive=not prior_thumb,
+                            )
+                        feedback_result = await thread_pool_exec(
+                            ChunkFeedbackService.apply_feedback,
+                            tenant_id=current_user.id,
+                            reference=reference,
+                            is_positive=thumb_raw is True,
+                        )
+                        logging.debug(
+                            "Chunk feedback applied: %s succeeded, %s failed",
+                            feedback_result["success_count"],
+                            feedback_result["fail_count"],
+                        )
+            except Exception as e:
+                logging.warning("Failed to apply chunk feedback: %s", e)
+
+        await thread_pool_exec(ConversationService.update_by_id, conv_dict["id"], conv_dict)
+        return get_json_result(data=_build_session_response(conv_dict))
+    except Exception as ex:
+        return server_error_response(ex)
+
+
+@manager.route("/chat/audio/speech", methods=["POST"])  # noqa: F821
+@login_required
+async def tts():
+    req = await get_request_json()
+    text = req["text"]
+
+    # Speech and transcription run on the workspace's models, like the answer
+    # itself. A member of a team workspace owns no tenant of its own, so reading
+    # the model off `current_user.id` found none at all.
+    model_tenant_id = _active_workspace_id() or current_user.id
+    try:
+        default_tts_model_config = get_tenant_default_model_by_type(model_tenant_id, LLMType.TTS)
+    except Exception as e:
+        return get_data_error_result(message=str(e))
+
+    tts_mdl = LLMBundle(model_tenant_id, default_tts_model_config)
+
+    def stream_audio():
+        try:
+            for txt in re.split(r"[，。/《》？；：！\n\r:;]+", text):
+                for chunk in tts_mdl.tts(txt):
+                    yield chunk
+        except Exception as e:
+            yield ("data:" + json.dumps({"code": 500, "message": str(e), "data": {"answer": "**ERROR**: " + str(e)}}, ensure_ascii=False)).encode("utf-8")
+
+    resp = Response(stream_audio(), mimetype="audio/mpeg")
+    resp.headers.add_header("Cache-Control", "no-cache")
+    resp.headers.add_header("Connection", "keep-alive")
+    resp.headers.add_header("X-Accel-Buffering", "no")
+    return resp
+
+
+@manager.route("/chat/audio/transcription", methods=["POST"])  # noqa: F821
+@login_required
+async def transcription():
+    req = await request.form
+    stream_mode = req.get("stream", "false").lower() == "true"
+    files = await request.files
+    if "file" not in files:
+        return get_data_error_result(message="Missing 'file' in multipart form-data")
+
+    uploaded = files["file"]
+
+    ALLOWED_EXTS = {
+        ".wav",
+        ".mp3",
+        ".m4a",
+        ".aac",
+        ".flac",
+        ".ogg",
+        ".webm",
+        ".opus",
+        ".wma",
+    }
+
+    filename = uploaded.filename or ""
+    suffix = os.path.splitext(filename)[-1].lower()
+    if suffix not in ALLOWED_EXTS:
+        return get_data_error_result(message=f"Unsupported audio format: {suffix}. Allowed: {', '.join(sorted(ALLOWED_EXTS))}")
+
+    fd, temp_audio_path = tempfile.mkstemp(suffix=suffix)
+    os.close(fd)
+    await uploaded.save(temp_audio_path)
+
+    try:
+        default_asr_model_config = get_tenant_default_model_by_type(_active_workspace_id() or current_user.id, LLMType.ASR)
+    except Exception as e:
+        return get_data_error_result(message=str(e))
+
+    asr_mdl = LLMBundle(_active_workspace_id() or current_user.id, default_asr_model_config)
+    if not stream_mode:
+        text = asr_mdl.transcription(temp_audio_path)
+        try:
+            os.remove(temp_audio_path)
+        except Exception as e:
+            logging.error(f"Failed to remove temp audio file: {str(e)}")
+        if "**ERROR**" in text:
+            return get_data_error_result(message=text)
+        return get_json_result(data={"text": text})
+
+    async def event_stream():
+        try:
+            for evt in asr_mdl.stream_transcription(temp_audio_path):
+                yield f"data: {json.dumps(evt, ensure_ascii=False)}\n\n"
+        except Exception as e:
+            err = {"event": "error", "text": str(e)}
+            yield f"data: {json.dumps(err, ensure_ascii=False)}\n\n"
+        finally:
+            try:
+                os.remove(temp_audio_path)
+            except Exception as e:
+                logging.error(f"Failed to remove temp audio file: {str(e)}")
+
+    return Response(event_stream(), content_type="text/event-stream")
+
+
+@manager.route("/chat/mindmap", methods=["POST"])  # noqa: F821
+@login_required
+@validate_request("question", "kb_ids")
+async def mindmap():
+    req = await get_request_json()
+    search_id = req.get("search_id", "")
+    search_app = SearchService.get_detail(search_id) if search_id else {}
+    search_config = search_app.get("search_config", {}) if search_app else {}
+    kb_ids = search_config.get("kb_ids", [])
+    kb_ids.extend(req["kb_ids"])
+    kb_ids = list(set(kb_ids))
+
+    # Every dataset named here is caller-supplied, whether directly or through a
+    # search app, so each one has to pass the read gate before retrieval.
+    for kb_id in kb_ids:
+        if not await thread_pool_exec(KnowledgebaseService.accessible, kb_id=kb_id, user_id=current_user.id):
+            return get_error_data_result(message=f"You don't own the dataset {kb_id}", code=RetCode.PERMISSION_ERROR)
+
+    # The mind map is summarised with models, so the subject is the search app's
+    # own workspace when there is one, and otherwise the workspace the caller is
+    # working in -- never the caller's user id, which owns no models for a member.
+    mind_map = await gen_mindmap(req["question"], kb_ids, search_app.get("tenant_id") or _active_workspace_id() or current_user.id, search_config)
+    if "error" in mind_map:
+        return server_error_response(Exception(mind_map["error"]))
+    return get_json_result(data=mind_map)
+
+
+@manager.route("/chat/recommendation", methods=["POST"])  # noqa: F821
+@login_required
+@validate_request("question")
+async def recommendation():
+    req = await get_request_json()
+
+    search_id = req.get("search_id", "")
+    search_config = {}
+    if search_id:
+        if search_app := SearchService.get_detail(search_id):
+            search_config = search_app.get("search_config", {})
+
+    question = req["question"]
+
+    chat_id = search_config.get("chat_id", "")
+    # The workspace the caller works in owns the models, so it is the subject for
+    # both the model reference and the bundle that carries its API key. A member
+    # that owns no tenant of its own had neither, which answered "No chat model
+    # is available" on every related-question request.
+    model_tenant_id = _active_workspace_id() or current_user.id
+    if chat_id:
+        chat_model_config = resolve_model_config(model_tenant_id, LLMType.CHAT, chat_id)
+    else:
+        chat_model_config = get_tenant_default_model_by_type(model_tenant_id, LLMType.CHAT)
+    chat_mdl = LLMBundle(model_tenant_id, chat_model_config)
+
+    gen_conf = resolve_llm_setting(search_config.get("llm_setting"))
+    if "parameter" in gen_conf:
+        del gen_conf["parameter"]
+    prompt = load_prompt("related_question")
+    ans = await chat_mdl.async_chat(
+        prompt,
+        [
+            {
+                "role": "user",
+                "content": f"\nKeywords: {question}\nRelated search terms:\n    ",
+            }
+        ],
+        gen_conf,
+    )
+    return get_json_result(data=[re.sub(r"^[0-9]\. ", "", a) for a in ans.split("\n") if re.match(r"^[0-9]\. ", a)])
+
+
+@manager.route("/chat/title", methods=["POST"])  # noqa: F821
+@login_required
+@validate_request("question")
+async def conversation_title():
+    """Summarize a conversation's first question into a short header title.
+
+    One LLM call with no retrieval, and nothing is written: the client owns the
+    session row, so a title the user renamed by hand can never be overwritten
+    here. Returns an empty title when the model produces nothing usable.
+    """
+    req = await get_request_json()
+    question = (req.get("question") or "").strip()
+    if not question:
+        return get_json_result(data={"title": ""})
+
+    # Titling runs on the workspace's models, like every other model use in a
+    # turn. A member of a team workspace owns no tenant of its own, so reading
+    # the model off `current_user.id` found none and answered "No chat model is
+    # available to title this conversation" for a workspace that has one.
+    model_tenant_id = _active_workspace_id() or current_user.id
+    chat_model_config = _resolve_title_model_config(model_tenant_id, (req.get("llm_id") or "").strip())
+    if chat_model_config is None:
+        # Naming a conversation is a cosmetic task, so a missing model must not look
+        # like a broken page — but it must be tellable apart from "the model had
+        # nothing to say", which is why this answers with the reason instead of the
+        # empty title an unresolvable model used to produce.
+        return get_data_error_result(
+            code=RetCode.ARGUMENT_ERROR,
+            message=("No chat model is available to title this conversation. " "Set a default chat model in Model settings, or pass `llm_id`."),
+        )
+
+    chat_mdl = LLMBundle(model_tenant_id, chat_model_config)
+
+    answer = await chat_mdl.async_chat(
+        load_prompt("conversation_title"),
+        [{"role": "user", "content": question}],
+        {"temperature": 0.2, "top_p": 0.3, "max_tokens": 64},
+    )
+
+    return get_json_result(data={"title": normalize_conversation_title(answer)})
+
+
+def _resolve_title_model_config(tenant_id: str, model_ref: str):
+    """The model a conversation title is summarised with, or None if there is none.
+
+    Tried in order: the model the request named (the assistant's own), the tenant's
+    default chat model, then any chat model the tenant has configured at all. The
+    last step is what keeps titling working on a tenant whose model is configured
+    and usable but never marked as the default — before it, that tenant silently got
+    its raw first question back as the title forever.
+    """
+    if model_ref:
+        try:
+            return resolve_model_config(tenant_id, LLMType.CHAT, model_ref)
+        except Exception:
+            logging.warning("Requested title model %s could not be resolved; falling back.", model_ref)
+
+    try:
+        return get_tenant_default_model_by_type(tenant_id, LLMType.CHAT)
+    except Exception:
+        logging.info("No default chat model for tenant %s; looking for any configured chat model.", tenant_id)
+
+    fallback = get_first_tenant_model_name_by_type(tenant_id, LLMType.CHAT)
+    if not fallback:
+        return None
+
+    try:
+        config = resolve_model_config(tenant_id, LLMType.CHAT, fallback)
+    except Exception:
+        logging.warning("Fallback chat model %s could not be resolved.", fallback)
+        return None
+
+    logging.warning("Titling conversations with %s because the tenant has no default chat model.", fallback)
+
+    return config
+
+
+@manager.route("/chat/completions", methods=["POST"])  # noqa: F821
+@login_required
+async def session_completion(chat_id_in_arg=""):
+    """Handle chat completion requests, streaming or non-streaming, scoped to the authenticated user."""
+    req = await get_request_json()
+    normalized, error = _normalize_completion_messages(req)
+    if error:
+        return error
+    request_messages, request_msg = normalized
+    pass_all_history_messages = _get_bool_request_flag(req, "pass_all_history_messages", "pass_all_history", default=False)
+    store_history_messages = _get_bool_request_flag(req, "store_history_messages", "store_history", default=True)
+    if not store_history_messages and not pass_all_history_messages:
+        return get_data_error_result(message="`pass_all_history_messages` must be true when `store_history_messages` is false.")
+    msg = request_msg
+    message_id = request_msg[-1].get("id")
+    chat_id = req.pop("chat_id", "") or ""
+    chat_id = chat_id or chat_id_in_arg
+    session_id = req.pop("session_id", "") or req.pop("conversation_id", "") or ""
+    chat_model_id = req.pop("llm_id", "")
+
+    chat_model_config = pop_generation_config(req)
+
+    try:
+        conv = None
+        if session_id and not chat_id:
+            return get_data_error_result(message="`chat_id` is required when `session_id` is provided.")
+
+        if chat_id:
+            dia = await _accessible_chat(chat_id)
+            if not dia:
+                return _chat_denied()
+            if session_id:
+                e, conv = await thread_pool_exec(ConversationService.get_by_id, session_id)
+                if not e:
+                    return get_data_error_result(message="Session not found!")
+                if conv.dialog_id != chat_id:
+                    return get_data_error_result(message="Session does not belong to this chat!")
+            else:
+                conv = await _create_session_for_completion(chat_id, dia, current_user.id, save_session=store_history_messages)
+                session_id = conv.id
+
+            if pass_all_history_messages:
+                conv.message = deepcopy(request_messages)
+                msg = request_msg
+            else:
+                if not conv.message:
+                    conv.message = []
+                conv.message.append(deepcopy(request_msg[-1]))
+                msg = []
+                for m in conv.message:
+                    if m["role"] == "system":
+                        continue
+                    if m["role"] == "assistant" and not msg:
+                        continue
+                    msg.append(m)
+        else:
+            # No assistant named: a direct chat still uses the models of the
+            # workspace the caller is working in, which is the tenant that owns
+            # them. A member owns none of its own.
+            dia = _build_default_completion_dialog(_active_workspace_id())
+
+        req.pop("messages", None)
+        req.pop("question", None)
+
+        if conv is not None:
+            # Every conversation answers from the CHAT's datasets, and a
+            # per-request `kb_ids` unions onto that one request's scope.
+            scope_dialog_datasets(dia, req.get("kb_ids"))
+            if not conv.reference:
+                conv.reference = []
+            conv.reference = [r for r in conv.reference if r]
+            conv.reference.append({"chunks": [], "doc_aggs": []})
+
+        if chat_model_id:
+            if not await thread_pool_exec(get_api_key, tenant_id=dia.tenant_id, model_name=chat_model_id):
+                return get_data_error_result(message=f"Cannot use specified model {chat_model_id}.")
+            dia.llm_id = chat_model_id
+            dia.tenant_llm_id = None
+            dia.llm_setting = chat_model_config
+        else:
+            if not dia.llm_id:
+                logging.info("empty chat_model_id in req, use default chat model.")
+                _, tenant_info = TenantService.get_by_id(dia.tenant_id)
+                if not tenant_info or not tenant_info.llm_id:
+                    raise LookupError("No default chat model for tenant.")
+                dia.llm_id = tenant_info.llm_id
+            merge_generation_config(dia, chat_model_config)
+
+        legacy = _get_bool_request_flag(
+            req,
+            "legacy",
+            default=False,
+        )
+        stream_mode = req.pop("stream", True)
+
+        def _format_answer(ans):
+            """Wrap a raw answer dict with session and chat identifiers."""
+            formatted = structure_answer(conv, ans, message_id, session_id)
+            if chat_id:
+                formatted["chat_id"] = chat_id
+            return formatted
+
+        async def stream():
+            """Yield SSE-formatted chunks from the async chat generator."""
+            nonlocal dia, msg, req, conv
+            try:
+                if legacy:
+                    # v0.23.0-style streaming: emit accumulated answer text and
+                    # reconstruct raw <think>...</think> markers from the newer
+                    # start_to_think/end_to_think events.
+                    legacy_answer = ""
+                    final_answer = None
+                    async for ans in rag_agent(dia, msg, True, session_id=session_id, **req):
+                        ans = _format_answer(ans)
+                        if ans.get("final"):
+                            final_answer = ans
+                            continue
+                        if ans.get("start_to_think"):
+                            legacy_answer += "<think>"
+                            legacy_chunk = {**ans, "answer": legacy_answer}
+                            legacy_chunk.pop("start_to_think", None)
+                            legacy_chunk.pop("end_to_think", None)
+                            payload = _sanitize_json_floats({"code": 0, "message": "", "data": legacy_chunk})
+                            yield "data:" + json.dumps(payload, ensure_ascii=False) + "\n\n"
+                            continue
+                        if ans.get("end_to_think"):
+                            legacy_answer += "</think>"
+                            legacy_chunk = {**ans, "answer": legacy_answer}
+                            legacy_chunk.pop("start_to_think", None)
+                            legacy_chunk.pop("end_to_think", None)
+                            payload = _sanitize_json_floats({"code": 0, "message": "", "data": legacy_chunk})
+                            yield "data:" + json.dumps(payload, ensure_ascii=False) + "\n\n"
+                            continue
+                        delta = ans.get("answer") or ""
+                        if not delta:
+                            continue
+                        legacy_answer += delta
+                        legacy_chunk = {**ans, "answer": legacy_answer}
+                        legacy_chunk.pop("start_to_think", None)
+                        legacy_chunk.pop("end_to_think", None)
+                        payload = _sanitize_json_floats({"code": 0, "message": "", "data": legacy_chunk})
+                        yield "data:" + json.dumps(payload, ensure_ascii=False) + "\n\n"
+                    if final_answer is not None:
+                        final_chunk = {**final_answer, "answer": final_answer.get("answer") or legacy_answer}
+                        final_chunk.pop("start_to_think", None)
+                        final_chunk.pop("end_to_think", None)
+                        payload = _sanitize_json_floats({"code": 0, "message": "", "data": final_chunk})
+                        yield "data:" + json.dumps(payload, ensure_ascii=False) + "\n\n"
+                else:
+                    async for ans in rag_agent(dia, msg, True, session_id=session_id, **req):
+                        ans = _format_answer(ans)
+                        payload = _sanitize_json_floats({"code": 0, "message": "", "data": ans})
+                        yield "data:" + json.dumps(payload, ensure_ascii=False) + "\n\n"
+                if conv is not None and store_history_messages:
+                    await thread_pool_exec(ConversationService.update_by_id, conv.id, conv.to_dict())
+            except Exception as ex:
+                logging.exception(ex)
+                yield "data:" + json.dumps({"code": getattr(ex, "code", 500), "message": str(ex), "data": {"answer": "**ERROR**: " + str(ex), "reference": []}}, ensure_ascii=False) + "\n\n"
+            yield "data:" + json.dumps({"code": 0, "message": "", "data": True}, ensure_ascii=False) + "\n\n"
+
+        if stream_mode:
+            resp = Response(stream(), mimetype="text/event-stream")
+            resp.headers.add_header("Cache-control", "no-cache")
+            resp.headers.add_header("Connection", "keep-alive")
+            resp.headers.add_header("X-Accel-Buffering", "no")
+            resp.headers.add_header("Content-Type", "text/event-stream; charset=utf-8")
+            return resp
+
+        answer = None
+        async for ans in rag_agent(dia, msg, False, session_id=session_id, **req):
+            answer = _format_answer(ans)
+            if conv is not None and store_history_messages:
+                await thread_pool_exec(ConversationService.update_by_id, conv.id, conv.to_dict())
+            break
+        return get_json_result(data=_sanitize_json_floats(answer))
+    except Exception as ex:
+        return server_error_response(ex)

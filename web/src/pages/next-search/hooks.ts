@@ -1,0 +1,691 @@
+/*
+ *  Copyright 2026 The InfiniFlow Authors. All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+import message from '@/components/ui/message';
+import { SharedFrom } from '@/constants/chat';
+import { useSetModalState } from '@/hooks/common-hooks';
+import {
+  useGetPaginationWithRouter,
+  useSendMessageWithSse,
+} from '@/hooks/logic-hooks';
+import { useSetPaginationParams } from '@/hooks/route-hook';
+import {
+  useKnowledgeBaseId,
+  useSelectTestingResult,
+} from '@/hooks/use-knowledge-request';
+import { ResponsePostType } from '@/interfaces/database/base';
+import { IAnswer } from '@/interfaces/database/chat';
+import { ITestingResult } from '@/interfaces/database/dataset';
+import { IAskRequestBody } from '@/interfaces/request/chat';
+import kbService from '@/services/knowledge-service';
+import chatService from '@/services/next-chat-service';
+import searchService from '@/services/search-service';
+import api from '@/utils/api';
+import { modelServiceErrorOf } from '@/utils/model-service-error';
+import { notifyRetrievalHealth } from '@/utils/retrieval-health-notice';
+import { useMutation } from '@tanstack/react-query';
+import { has, isEmpty, isEqual, trim } from 'lodash';
+import {
+  ChangeEventHandler,
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { useSearchParams } from 'react-router';
+import { ISearchAppDetailProps } from '../next-searches/hooks';
+import { useClickDrawer } from './document-preview-modal/hooks';
+import { useSearchHistoryStore } from './search-history-store';
+
+export interface ISearchingProps {
+  searchText?: string;
+  data: ISearchAppDetailProps;
+  setIsSearching?: Dispatch<SetStateAction<boolean>>;
+  setSearchText?: Dispatch<SetStateAction<string>>;
+}
+
+export type ISearchReturnProps = ReturnType<typeof useSearching>;
+
+export const useGetSharedSearchParams = () => {
+  const [searchParams] = useSearchParams();
+  const data_prefix = 'data_';
+  const data = Object.fromEntries(
+    Array.from(searchParams.entries())
+      .filter(([key]) => key.startsWith(data_prefix))
+      .map(([key, value]) => [key.replace(data_prefix, ''), value]),
+  );
+  return {
+    from: searchParams.get('from') as SharedFrom,
+    sharedId: searchParams.get('shared_id'),
+    locale: searchParams.get('locale'),
+    tenantId: searchParams.get('tenantId'),
+    data: data,
+    visibleAvatar: searchParams.get('visible_avatar')
+      ? searchParams.get('visible_avatar') !== '1'
+      : true,
+  };
+};
+
+export const useSearchFetchMindMap = () => {
+  const [searchParams] = useSearchParams();
+  const sharedId = searchParams.get('shared_id');
+  const fetchMindMapFunc = sharedId
+    ? searchService.mindmapShare
+    : chatService.chatsMindmap;
+  const {
+    data,
+    isPending: loading,
+    mutateAsync,
+  } = useMutation({
+    mutationKey: ['fetchMindMap'],
+    gcTime: 0,
+    mutationFn: async (params: IAskRequestBody) => {
+      try {
+        const ret = await fetchMindMapFunc(params);
+        // The map is generated from retrieved passages, so the vector service
+        // refusing the query is why there is no map — not an empty answer. The
+        // drawer says which one it is.
+        const errorType = modelServiceErrorOf(ret?.data);
+        if (errorType) {
+          return { error_type: errorType };
+        }
+
+        return ret?.data?.data ?? {};
+      } catch (error: any) {
+        if (has(error, 'message')) {
+          message.error(error.message);
+        }
+
+        return [];
+      }
+    },
+  });
+
+  return { data, loading, fetchMindMap: mutateAsync };
+};
+
+export const useShowMindMapDrawer = (
+  kbIds: string[],
+  question: string,
+  searchId = '',
+) => {
+  const { visible, showModal, hideModal } = useSetModalState();
+  const ref = useRef<any>();
+
+  const {
+    fetchMindMap,
+    data: mindMapData,
+    loading: mindMapLoading,
+  } = useSearchFetchMindMap();
+
+  const handleShowModal = useCallback(() => {
+    const searchParams = {
+      question: trim(question),
+      kb_ids: kbIds,
+      search_id: searchId,
+    };
+    if (
+      !isEmpty(searchParams.question) &&
+      !isEqual(searchParams, ref.current)
+    ) {
+      ref.current = searchParams;
+      fetchMindMap(searchParams);
+    }
+    showModal();
+  }, [fetchMindMap, showModal, question, kbIds, searchId]);
+
+  // A refused map is not an empty one, and the drawer renders them differently.
+  const mindMapErrorType = modelServiceErrorOf(mindMapData);
+
+  return {
+    mindMap: mindMapErrorType ? undefined : mindMapData,
+    mindMapErrorType,
+    mindMapVisible: visible,
+    mindMapLoading,
+    showMindMapModal: handleShowModal,
+    hideMindMapModal: hideModal,
+  };
+};
+
+export const useTestChunkRetrieval = (
+  tenantId?: string,
+): ResponsePostType<ITestingResult> & {
+  testChunk: (...params: any[]) => void;
+} => {
+  const knowledgeBaseId = useKnowledgeBaseId();
+  const { page, size: pageSize } = useSetPaginationParams();
+  const [searchParams] = useSearchParams();
+  const shared_id = searchParams.get('shared_id');
+  const retrievalTestFunc = shared_id
+    ? kbService.retrievalTestShare
+    : kbService.retrievalTest;
+  const {
+    data,
+    isPending: loading,
+    mutateAsync,
+  } = useMutation({
+    mutationKey: ['testChunk'], // This method is invalid
+    mutationFn: async (values: any) => {
+      const { data } = await retrievalTestFunc({
+        page,
+        page_size: pageSize,
+        ...values,
+        kb_id: values.kb_id ?? knowledgeBaseId,
+        tenant_id: tenantId,
+      });
+      if (data.code === 0) {
+        const res = data.data;
+        return {
+          ...res,
+          documents: res.doc_aggs,
+        };
+      }
+      const errorType = modelServiceErrorOf(data);
+      if (errorType) {
+        // A refusal is not "no passage matched": the page holds the place the
+        // results would have taken and names the capability that is down.
+        return { chunks: [], documents: [], total: 0, error_type: errorType };
+      }
+      return (
+        data?.data ?? {
+          chunks: [],
+          documents: [],
+          total: 0,
+        }
+      );
+    },
+  });
+
+  return {
+    data: data ?? { chunks: [], documents: [], total: 0 },
+    loading,
+    testChunk: mutateAsync,
+  };
+};
+
+export const useTestChunkAllRetrieval = (
+  tenantId?: string,
+): ResponsePostType<ITestingResult> & {
+  testChunkAll: (...params: any[]) => void;
+} => {
+  const knowledgeBaseId = useKnowledgeBaseId();
+  const { page, size: pageSize } = useSetPaginationParams();
+  const [searchParams] = useSearchParams();
+  const shared_id = searchParams.get('shared_id');
+  const retrievalTestFunc = shared_id
+    ? kbService.retrievalTestShare
+    : kbService.retrievalTest;
+  const {
+    data,
+    isPending: loading,
+    mutateAsync,
+  } = useMutation({
+    mutationKey: ['testChunkAll'], // This method is invalid
+    mutationFn: async (values: any) => {
+      const { data } = await retrievalTestFunc({
+        page,
+        page_size: pageSize,
+        ...values,
+        kb_id: values.kb_id ?? knowledgeBaseId,
+        tenant_id: tenantId,
+      });
+      if (data.code === 0) {
+        const res = data.data;
+        return {
+          ...res,
+          documents: res.doc_aggs,
+        };
+      }
+      return (
+        data?.data ?? {
+          chunks: [],
+          documents: [],
+          total: 0,
+        }
+      );
+    },
+  });
+
+  return {
+    data: data ?? { chunks: [], documents: [], total: 0 },
+    loading,
+    testChunkAll: mutateAsync,
+  };
+};
+
+export const useTestRetrieval = (
+  kbIds: string[],
+  searchStr: string,
+  sendingLoading: boolean,
+) => {
+  const { testChunk, loading } = useTestChunkRetrieval();
+  const { pagination } = useGetPaginationWithRouter();
+
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
+
+  const handleTestChunk = useCallback(() => {
+    const q = trim(searchStr);
+    if (sendingLoading || isEmpty(q)) return;
+
+    testChunk({
+      kb_id: kbIds,
+      highlight: true,
+      question: q,
+      document_ids: Array.isArray(selectedDocumentIds)
+        ? selectedDocumentIds
+        : [],
+      page: pagination.current,
+      page_size: pagination.pageSize,
+    });
+  }, [
+    sendingLoading,
+    searchStr,
+    kbIds,
+    testChunk,
+    selectedDocumentIds,
+    pagination,
+  ]);
+
+  useEffect(() => {
+    handleTestChunk();
+  }, [handleTestChunk]);
+
+  return {
+    loading,
+    selectedDocumentIds,
+    setSelectedDocumentIds,
+  };
+};
+export const useFetchRelatedQuestions = (
+  tenantId?: string,
+  searchId?: string,
+) => {
+  const [searchParams] = useSearchParams();
+  const shared_id = searchParams.get('shared_id');
+  const retrievalTestFunc = shared_id
+    ? searchService.getRelatedQuestionsShare
+    : chatService.chatsRelatedQuestions;
+  const {
+    data,
+    isPending: loading,
+    mutateAsync,
+  } = useMutation({
+    mutationKey: ['fetchRelatedQuestions'],
+    gcTime: 0,
+    mutationFn: async (question: string): Promise<string[]> => {
+      const { data } = await retrievalTestFunc({
+        question,
+        tenant_id: tenantId,
+        search_id: searchId,
+      });
+
+      return data?.data ?? [];
+    },
+  });
+
+  return { data, loading, fetchRelatedQuestions: mutateAsync };
+};
+
+export const useSendQuestion = (
+  kbIds: string[],
+  tenantId?: string,
+  searchId: string = '',
+  related_search: boolean = false,
+) => {
+  const { sharedId } = useGetSharedSearchParams();
+  const askUrl = sharedId
+    ? api.askShare
+    : searchId
+      ? api.searchCompletion(searchId)
+      : '';
+  const { send, answer, done, stopOutputMessage } = useSendMessageWithSse();
+
+  const { testChunk, loading } = useTestChunkRetrieval(tenantId);
+  const { testChunkAll } = useTestChunkAllRetrieval(tenantId);
+  const [sendingLoading, setSendingLoading] = useState(false);
+  const [currentAnswer, setCurrentAnswer] = useState({} as IAnswer);
+  const rememberQuestion = useSearchHistoryStore((state) => state.remember);
+  const { fetchRelatedQuestions, data: relatedQuestions } =
+    useFetchRelatedQuestions(tenantId, searchId);
+  const [searchStr, setSearchStr] = useState<string>('');
+  const [isFirstRender, setIsFirstRender] = useState(true);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
+  // The result page opens with the same handful of passages it renders: asking
+  // the backend for more than the reader is shown only padded the response.
+  const [pageSize, setPageSize] = useState(5);
+
+  const sendQuestion = useCallback(
+    (question: string, enableAI: boolean = true) => {
+      const q = trim(question);
+      if (isEmpty(q)) return;
+      rememberQuestion(q);
+      setIsFirstRender(false);
+      setCurrentAnswer({} as IAnswer);
+      setSelectedDocumentIds([]);
+      if (enableAI) {
+        if (!sharedId && !searchId) {
+          message.error('Search ID is required.');
+          return;
+        }
+        setSendingLoading(true);
+        send(askUrl, {
+          kb_ids: kbIds,
+          question: q,
+          tenantId,
+          search_id: searchId,
+        });
+      }
+      testChunk({
+        kb_id: kbIds,
+        highlight: true,
+        question: q,
+        page: 1,
+        page_size: pageSize,
+        search_id: searchId,
+      });
+
+      if (related_search) {
+        fetchRelatedQuestions(q);
+      }
+    },
+    [
+      send,
+      testChunk,
+      askUrl,
+      kbIds,
+      fetchRelatedQuestions,
+      pageSize,
+      tenantId,
+      searchId,
+      sharedId,
+      related_search,
+      rememberQuestion,
+    ],
+  );
+
+  const handleSearchStrChange: ChangeEventHandler<HTMLInputElement> =
+    useCallback((e) => {
+      setSearchStr(e.target.value);
+    }, []);
+
+  const handleClickRelatedQuestion = useCallback(
+    (question: string, enableAI: boolean = true) =>
+      () => {
+        if (sendingLoading) return;
+
+        setSearchStr(question);
+        sendQuestion(question, enableAI);
+      },
+    [sendQuestion, sendingLoading],
+  );
+
+  const handleTestChunk = useCallback(
+    (documentIds: string[], page: number = 1, size: number = 10) => {
+      const q = trim(searchStr);
+      if (sendingLoading || isEmpty(q)) return;
+
+      testChunk({
+        kb_id: kbIds,
+        highlight: true,
+        question: q,
+        document_ids: documentIds ?? selectedDocumentIds,
+        page,
+        page_size: size,
+        search_id: searchId,
+      });
+
+      testChunkAll({
+        kb_id: kbIds,
+        highlight: true,
+        question: q,
+        document_ids: [],
+        page,
+        page_size: size,
+        search_id: searchId,
+      });
+    },
+    [
+      searchStr,
+      sendingLoading,
+      testChunk,
+      kbIds,
+      selectedDocumentIds,
+      testChunkAll,
+      searchId,
+    ],
+  );
+
+  useEffect(() => {
+    if (isEmpty(answer)) return;
+    // The stream's terminal frame carries the pool, and therefore the retrieval
+    // health; the deltas carry neither. Disclosure is driven from here only, so a
+    // replayed answer never re-notifies.
+    notifyRetrievalHealth(answer.reference);
+    // The stream's terminal frame carries the reference and an empty answer, so
+    // replacing the state with it would wipe the summary the page just
+    // streamed: the citations would survive and the text would not.
+    setCurrentAnswer((previous) => ({
+      ...previous,
+      ...answer,
+      answer: answer.answer || previous.answer || '',
+    }));
+  }, [answer]);
+
+  useEffect(() => {
+    if (done) {
+      setSendingLoading(false);
+    }
+  }, [done]);
+
+  return {
+    sendQuestion,
+    handleSearchStrChange,
+    handleClickRelatedQuestion,
+    handleTestChunk,
+    setSelectedDocumentIds,
+    loading,
+    sendingLoading,
+    answer: currentAnswer,
+    relatedQuestions: relatedQuestions?.slice(0, 5) ?? [],
+    searchStr,
+    setSearchStr,
+    isFirstRender,
+    selectedDocumentIds,
+    isSearchStrEmpty: isEmpty(trim(searchStr)),
+    stopOutputMessage,
+    pageSize,
+    setPageSize,
+  };
+};
+
+export const useSearching = ({
+  searchText,
+  data: searchData,
+  setSearchText,
+}: ISearchingProps) => {
+  const { tenantId } = useGetSharedSearchParams();
+  const {
+    sendQuestion,
+    handleClickRelatedQuestion,
+    handleTestChunk,
+    setSelectedDocumentIds,
+    answer,
+    sendingLoading,
+    relatedQuestions,
+    searchStr,
+    loading,
+    isFirstRender,
+    selectedDocumentIds,
+    isSearchStrEmpty,
+    setSearchStr,
+    stopOutputMessage,
+    pageSize,
+    setPageSize,
+  } = useSendQuestion(
+    searchData.search_config.kb_ids,
+    tenantId as string,
+    searchData.id,
+    searchData.search_config.related_search,
+  );
+
+  const handleSearchStrChange = useCallback(
+    (value: string) => {
+      setSearchStr(value);
+    },
+    [setSearchStr],
+  );
+
+  const { visible, hideModal, documentId, selectedChunk, clickDocumentButton } =
+    useClickDrawer();
+
+  // The question typed on the search home arrives here as `searchText`, and this
+  // effect ran twice for it — React re-invokes a mount effect in development,
+  // and `sendQuestion`'s own identity changes while the parent has yet to clear
+  // the text. Two streams share one answer state, so the one that finished
+  // second blanked the summary the first had produced. One question, one stream.
+  const sentSearchTextRef = useRef('');
+  useEffect(() => {
+    if (!searchText) {
+      sentSearchTextRef.current = '';
+      return;
+    }
+    if (sentSearchTextRef.current === searchText) {
+      return;
+    }
+
+    sentSearchTextRef.current = searchText;
+    setSearchStr(searchText);
+    sendQuestion(searchText, searchData.search_config.summary);
+    setSearchText?.('');
+  }, [
+    searchText,
+    sendQuestion,
+    setSearchStr,
+    setSearchText,
+    searchData.search_config.summary,
+  ]);
+
+  const {
+    mindMapVisible,
+    hideMindMapModal,
+    showMindMapModal,
+    mindMapLoading,
+    mindMap,
+    mindMapErrorType,
+  } = useShowMindMapDrawer(
+    searchData.search_config.kb_ids,
+    searchStr,
+    searchData.id,
+  );
+  const { chunks, total, error_type } = useSelectTestingResult();
+
+  const handleSearch = useCallback(
+    (value: string) => {
+      sendQuestion(value, searchData.search_config.summary);
+      setSearchStr?.(value);
+      hideMindMapModal();
+    },
+    [
+      setSearchStr,
+      sendQuestion,
+      hideMindMapModal,
+      searchData.search_config.summary,
+    ],
+  );
+
+  const handleTopChange = useCallback(
+    (size: number) => {
+      setPageSize(size);
+      handleTestChunk(selectedDocumentIds, 1, size);
+    },
+    [handleTestChunk, selectedDocumentIds, setPageSize],
+  );
+
+  return {
+    handleClickRelatedQuestion,
+    handleSearchStrChange,
+    handleTestChunk,
+    setSelectedDocumentIds,
+    answer,
+    sendingLoading,
+    relatedQuestions,
+    searchStr,
+    loading,
+    isFirstRender,
+    selectedDocumentIds,
+    isSearchStrEmpty,
+    setSearchStr,
+    stopOutputMessage,
+
+    visible,
+    hideModal,
+    documentId,
+    selectedChunk,
+    clickDocumentButton,
+    mindMapVisible,
+    hideMindMapModal,
+    showMindMapModal,
+    mindMapLoading,
+    mindMap,
+    mindMapErrorType,
+    chunks,
+    total,
+    retrievalErrorType: modelServiceErrorOf({ error_type }),
+    handleSearch,
+    pageSize,
+    handleTopChange,
+  };
+};
+
+export const useCheckSettings = (data: ISearchAppDetailProps) => {
+  if (!data) {
+    return {
+      openSetting: false,
+    };
+  }
+  const { search_config, name } = data;
+  const { kb_ids } = search_config;
+  return {
+    openSetting: kb_ids && kb_ids.length > 0 && name ? false : true,
+  };
+};
+
+export const usePendingMindMap = () => {
+  const [count, setCount] = useState<number>(0);
+  const ref = useRef<NodeJS.Timeout>();
+
+  const setCountInterval = useCallback(() => {
+    ref.current = setInterval(() => {
+      setCount((pre) => {
+        if (pre > 40) {
+          clearInterval(ref?.current);
+        }
+        return pre + 1;
+      });
+    }, 1000);
+  }, []);
+
+  useEffect(() => {
+    setCountInterval();
+    return () => {
+      clearInterval(ref?.current);
+    };
+  }, [setCountInterval]);
+
+  return Number(((count / 43) * 100).toFixed(0));
+};

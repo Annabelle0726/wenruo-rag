@@ -1,0 +1,87 @@
+export interface ITestRetrievalRequestBody {
+  question: string;
+  page_size: number;
+  rerank_candidates_count: number;
+  similarity_threshold: number;
+  vector_similarity_weight: number;
+  rerank_id?: string;
+  use_kg?: boolean;
+  highlight?: boolean;
+  kb_id?: string[];
+  meta_data_filter?: {
+    logic?: string;
+    method?: string;
+    manual?: Array<{
+      key: string;
+      op: string;
+      value: string;
+    }>;
+    semi_auto?: string[];
+  };
+}
+
+export interface IFetchKnowledgeListRequestBody {
+  owner_ids?: string[];
+}
+
+export interface IFetchKnowledgeListRequestParams {
+  id?: string;
+  page?: number;
+  page_size?: number;
+  keywords?: string;
+  owner_ids?: string[];
+  parser_id?: string;
+}
+
+export interface IFetchDocumentListRequestBody {
+  suffix?: string[];
+  run_status?: string[];
+  return_empty_metadata?: boolean;
+  metadata?: Record<string, string[]>;
+  ids?: string[];
+}
+
+export interface IFetchArtifactListRequestParams {
+  page?: number;
+  page_size?: number;
+  keywords?: string;
+  page_type?: string;
+  topic?: string;
+}
+
+export interface IFetchArtifactTopicListRequestParams {
+  page?: number;
+  page_size?: number;
+  keywords?: string;
+}
+
+export interface IFetchArtifactGraphRequestParams {
+  node?: string;
+  keywords?: string;
+  top_n?: number;
+}
+
+export interface IUpdateArtifactPageRequestBody {
+  content_md: string;
+  comments: string;
+  title?: string;
+}
+
+export interface IUpdateArtifactPageRequestParams {
+  pageType: string;
+  slug: string;
+  body: IUpdateArtifactPageRequestBody;
+}
+
+/**
+ * The body of `PUT /datasets/<id>/authorization`.
+ *
+ * The subject lists are sent for every mode; the server stores them only for
+ * `custom` and clears them otherwise, so switching away from `custom` cannot
+ * leave grants behind.
+ */
+export interface IUpdateDatasetAuthorizationRequestBody {
+  permission: string;
+  department_ids: string[];
+  user_ids: string[];
+}

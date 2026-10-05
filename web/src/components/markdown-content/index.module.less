@@ -1,0 +1,115 @@
+/*
+ *  Copyright 2026 The InfiniFlow Authors. All Rights Reserved.
+ *  Modifications Copyright 2026 线缆工业智搜平台. All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.markdownContentWrapper {
+  line-height: 1.8;
+  /* Reasoning / Agentic RAG collapsibles are styled once in src/global.less,
+     because rehype-raw renders them as plain <details> elements. */
+  :global(p) {
+    margin: 0.4em 0;
+  }
+  :global(p:first-child) {
+    margin-top: 0;
+  }
+  :global(p:last-child) {
+    margin-bottom: 0;
+  }
+  :global(blockquote) {
+    padding-inline-start: 10px;
+    border-inline-start: 4px solid #ccc;
+  }
+  :global(ul),
+  :global(ol) {
+    margin: 0.5em 0;
+    padding-inline-start: 1.5em;
+  }
+  :global(ul) {
+    list-style-type: disc;
+  }
+  :global(ol) {
+    list-style-type: decimal;
+  }
+  :global(li) {
+    margin: 0.25em 0;
+  }
+  :global(li > p) {
+    margin: 0.15em 0;
+  }
+
+  // RTL Support
+  &[dir='rtl'] {
+    text-align: start;
+  }
+}
+
+.referencePopoverWrapper {
+  max-width: 50vw;
+}
+
+.referenceChunkImage {
+  width: 10vw;
+  object-fit: contain;
+}
+
+.referenceInnerChunkImage {
+  display: block;
+  object-fit: contain;
+  max-width: 100%;
+  max-height: 10vh;
+}
+
+.referenceImagePreview {
+  max-width: 45vw;
+  max-height: 45vh;
+}
+.chunkContentText {
+  .chunkText;
+  max-height: 45vh;
+  overflow-y: auto;
+}
+.documentLink {
+  padding: 0;
+}
+
+.referenceIcon {
+  padding: 0 6px;
+}
+
+.cursor {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  background-color: black;
+  animation: blink 0.6s infinite;
+  vertical-align: text-top;
+  @keyframes blink {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+}
+
+.fileThumbnail {
+  display: inline-block;
+  max-width: 40px;
+}

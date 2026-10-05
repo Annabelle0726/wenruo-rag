@@ -1,0 +1,145 @@
+/*
+ *  Copyright 2026 The InfiniFlow Authors. All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+import message from '@/components/ui/message';
+import { useAutoResizeTextarea } from '@/hooks/use-auto-resize-textarea';
+import { IUserInfo } from '@/interfaces/database/user-setting';
+import { cn } from '@/lib/utils';
+import { isEmpty, trim } from 'lodash';
+import { Search } from 'lucide-react';
+import { Dispatch, SetStateAction, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import './index.less';
+import { SearchBrandMark } from './search-brand-mark';
+import SearchHistory from './search-history';
+
+export default function SearchHome({
+  isSearching,
+  setIsSearching,
+  searchText,
+  setSearchText,
+  userInfo,
+  canSearch,
+}: {
+  isSearching: boolean;
+  setIsSearching: Dispatch<SetStateAction<boolean>>;
+  searchText: string;
+  setSearchText: Dispatch<SetStateAction<string>>;
+  userInfo?: IUserInfo;
+  canSearch?: boolean;
+}) {
+  const { t } = useTranslation();
+  const searchInputRef = useRef<HTMLTextAreaElement>(null);
+
+  const isMultiLine = useAutoResizeTextarea(searchInputRef, searchText);
+
+  const handleStartSearch = useCallback(() => {
+    if (canSearch === false) {
+      message.warning(t('search.chooseDataset'));
+      return;
+    }
+    if (isEmpty(trim(searchText))) {
+      return;
+    }
+    setIsSearching(!isSearching);
+  }, [canSearch, isSearching, searchText, setIsSearching, t]);
+
+  const handleSelectHistory = useCallback(
+    (question: string) => {
+      if (canSearch === false) {
+        message.warning(t('search.chooseDataset'));
+        return;
+      }
+
+      setSearchText(question);
+      setIsSearching(true);
+    },
+    [canSearch, setIsSearching, setSearchText, t],
+  );
+
+  return (
+    <section className="relative flex w-full justify-center items-center mt-[10vh]">
+      <div className="relative z-10 flex w-full max-w-[860px] flex-col items-center justify-center px-6">
+        <SearchBrandMark />
+
+        {/* 移除了原本会产生底部硬切割发光的 <Spotlight /> */}
+        <div className="relative mt-8 flex w-full flex-col items-center justify-center p-2 pb-8 text-xl text-primary">
+          <div className="flex w-full flex-col items-center justify-center">
+            {!isSearching && (
+              <>
+                <p className="mb-2 text-2xl font-medium transition-opacity">👋 Hi there</p>
+                <p className="mb-8 text-base text-text-secondary transition-opacity">
+                  {userInfo && (
+                    <>
+                      {t('search.welcomeBack')}, <span className="font-semibold text-text-primary">{userInfo.nickname}</span>
+                    </>
+                  )}
+                </p>
+              </>
+            )}
+
+            {/* 搜索输入框 */}
+            <div className="relative w-full">
+              <textarea
+                ref={searchInputRef}
+                rows={1}
+                placeholder={t('search.searchGreeting')}
+                className={cn(
+                  'w-full py-4 px-5 pr-14 text-text-primary text-lg bg-bg-base border border-border-button resize-none scrollbar-thin outline-none focus-visible:ring-1 focus-visible:ring-text-primary/50 shadow-sm transition-all',
+                  isMultiLine ? 'rounded-3xl' : 'rounded-full',
+                )}
+                value={searchText}
+                onKeyDown={(e) => {
+                  if (
+                    e.key === 'Enter' &&
+                    !e.shiftKey &&
+                    !e.nativeEvent.isComposing
+                  ) {
+                    e.preventDefault();
+                    handleStartSearch();
+                  }
+                }}
+                onChange={(e) => {
+                  if (canSearch === false) {
+                    message.warning(t('search.chooseDataset'));
+                    return;
+                  }
+                  setSearchText(e.target.value || '');
+                }}
+              />
+
+              <button
+                type="button"
+                className={cn(
+                  'absolute right-3.5 flex size-9 items-center justify-center rounded-full border-none outline-none transition-transform hover:scale-105 active:scale-95 shadow-sm',
+                  isMultiLine ? 'bottom-3' : 'top-1/2 -translate-y-1/2',
+                )}
+                onClick={handleStartSearch}
+              >
+                <Search size={18} />
+              </button>
+            </div>
+
+            {/* 搜索历史 */}
+            <div className="w-full mt-4">
+              <SearchHistory onSelect={handleSelectHistory} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -1,0 +1,187 @@
+/*
+ *  Copyright 2026 The InfiniFlow Authors. All Rights Reserved.
+ *  Modifications Copyright 2026 线缆工业智搜平台. All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+/*
+ * Font stacks.
+ *
+ * A 政企 system states its Chinese face explicitly: 微软雅黑 first, then the
+ * macOS/Linux equivalents, then a sans-serif fallback. No webfont request, so the
+ * UI paints immediately. `--font-mono` is used for anything read character by
+ * character — model names, units, timestamps, log lines — where a proportional
+ * font misaligns the columns.
+ *
+ * `tailwind.css` reads this variable from a bare `html { font-family:
+ * var(--font-sans) }`, so the declaration has to sit on `:root` itself: nesting it
+ * one level deeper compiles to `:root :root`, which matches nothing and leaves the
+ * whole app on the browser's default serif face.
+ */
+:root {
+  --font-sans:
+    'Microsoft YaHei', '微软雅黑', 'PingFang SC', 'Hiragino Sans GB', Arial,
+    sans-serif;
+  --font-mono: Consolas, 'Courier New', SimSun, '宋体', monospace;
+}
+
+html,
+body,
+#root {
+  width: 100vw;
+  width: 100dvw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+
+  margin: 0;
+  padding: 0;
+}
+
+.vue-office-excel {
+  height: 100%;
+}
+
+/* @js-preview/excel gives the sheet tab bar a fixed 40px height but floats the
+   tabs (`.x-spreadsheet-menu > li { float: left }`) with no horizontal overflow
+   handling. A workbook with several sheets therefore wraps the tabs onto a
+   second row that spills past the bar, which pushes a vertical scrollbar onto
+   the previewer container and steals 10px of its width. Keep the tabs on one
+   scrollable row instead, the way Excel does. */
+.x-spreadsheet-bottombar {
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  .x-spreadsheet-menu {
+    display: flex;
+    flex-wrap: nowrap;
+  }
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+}
+
+/* Scroll bar stylings: the same scrollbar tokens the Tailwind base layer names
+   for `scrollbar-color`, so engines that still paint ::-webkit-scrollbar produce
+   the identical bar instead of the browser's default grey. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 5px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Collapsible reasoning / progress panels produced by the markdown pipeline
+   (`utils/chat.ts` turns `<think>` bodies and the Agentic RAG `[Stage] …` lines
+   into `<details>`). Defined once, globally, because rehype-raw renders them as
+   plain HTML on every markdown surface; colours come from the cable tokens so
+   light and dark modes are both covered without per-surface overrides. */
+details.think,
+details.retrieving,
+details.agentic-log {
+  margin: 0 0 0.75rem;
+  border: 1px solid var(--cable-surface-border);
+  border-radius: 0.625rem;
+  background-color: var(--cable-surface-muted);
+  color: var(--cable-muted);
+  font-size: 0.8125rem;
+  line-height: 1.75;
+  overflow: hidden;
+
+  > summary {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 500;
+    color: var(--cable-muted);
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::before {
+      content: '›';
+      display: inline-block;
+      color: var(--cable-accent);
+      transition: transform 0.15s ease;
+    }
+
+    &:hover {
+      color: var(--cable-brand);
+    }
+  }
+
+  &[open] > summary {
+    color: var(--cable-brand);
+    border-bottom: 1px solid var(--cable-divider);
+
+    &::before {
+      transform: rotate(90deg);
+    }
+  }
+
+  > :not(summary) {
+    padding-inline: 0.75rem;
+
+    &:first-of-type {
+      margin-top: 0.5rem;
+    }
+
+    &:last-child {
+      margin-bottom: 0.5rem;
+    }
+  }
+}
+
+/* Diagnostic lines: keep them monospaced and wrap long queries instead of
+   letting them stretch the message bubble. The panel body is real markdown, so
+   the target is every child after the summary. */
+details.agentic-log > :not(summary) {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.Highlight--scrolledTo .Highlight__part {
+  background: color-mix(in srgb, var(--accent-primary) 50%, transparent) !important;
+}
+
+.Highlight__part {
+  background: color-mix(in srgb, var(--accent-primary) 10%, transparent) !important;
+}
+
+.x-spreadsheet-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: initial;
+}
