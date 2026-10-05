@@ -95,13 +95,31 @@ def start(args):
     subprocess.run(command+['exec','-T','wenruo-rag-cpu','python','/ragflow/delivery/transfer.py','restore','/delivery-package'],env=clean_env,input=password,text=True,check=True)
     print('Backend and restored data verified. '+base+'/login')
 
+def set_image(args):
+    """An explicit image-only upgrade; credentials and resource identity stay fixed."""
+    identity=json.loads((PRIVATE/'identity.json').read_text())
+    path=PRIVATE/'runtime.env'
+    if hashlib.sha256(path.read_bytes()).hexdigest()!=identity['env_sha256']:
+        raise ValueError('Runtime configuration changed; image upgrade refused')
+    values=dict(line.split('=',1) for line in path.read_text().splitlines())
+    values['RAGFLOW_IMAGE']=json.loads(docker('image','inspect',args.image))[0]['Id']
+    values['SOURCE_COMMIT']=docker('run','--rm','--entrypoint','cat',values['RAGFLOW_IMAGE'],'/ragflow/VERSION').strip()
+    path.write_text(''.join(k+'='+v+'\n' for k,v in values.items()),encoding='utf-8')
+    identity['env_sha256']=hashlib.sha256(path.read_bytes()).hexdigest()
+    (PRIVATE/'identity.json').write_text(json.dumps(identity))
+    print('Selected explicit image; credentials and resource identity preserved. Run start.')
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);sub=p.add_subparsers(dest='operation',required=True)
     init=sub.add_parser('init');init.add_argument('--project',required=True);init.add_argument('--image',required=True)
     init.add_argument('--revision',required=True);init.add_argument('--package',required=True);init.add_argument('--port',type=int,default=9222)
     run=sub.add_parser('start');run.add_argument('--timeout',type=int,default=600)
+    upgrade=sub.add_parser('set-image');upgrade.add_argument('--image',required=True)
     a=p.parse_args()
-    try: initialize(a) if a.operation=='init' else start(a)
+    try:
+        if a.operation=='init':initialize(a)
+        elif a.operation=='set-image':set_image(a)
+        else:start(a)
     except Exception as exc:
         # subprocess command/env and provider exceptions may contain credentials.
         if isinstance(exc,(ValueError,TimeoutError,FileNotFoundError)):p.exit(1,str(exc)+'\n')

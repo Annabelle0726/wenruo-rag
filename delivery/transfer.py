@@ -172,7 +172,7 @@ def restore(args):
     if not receipts:
         for table in ('user','tenant','knowledgebase','document','dialog','conversation','api_token'):
             if query(db,f'SELECT COUNT(*) n FROM `{table}`')[0]['n']: raise ValueError('Target is not empty: '+table)
-        if es.indices.exists(index='ragflow_*'): raise ValueError('Target has pre-existing data indices')
+        if es.indices.get(index='ragflow_*',allow_no_indices=True): raise ValueError('Target has pre-existing data indices')
         if storage.conn.list_buckets(): raise ValueError('Target has pre-existing object buckets')
         db.execute_sql('INSERT INTO delivery_restore VALUES (%s,%s,%s)',(tenant,package_hash,'restoring'))
     from api.db import db_models as models

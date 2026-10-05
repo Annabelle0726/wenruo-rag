@@ -182,7 +182,7 @@ const routeConfigOptions = [
         url.searchParams.delete('auth');
         return redirect(`${url.pathname}${url.search}`);
       }
-      return null;
+      return authorizationUtil.getAuthorization() ? null : redirect('/login');
     },
     children: [
       {
@@ -193,10 +193,12 @@ const routeConfigOptions = [
   },
   {
     path: Routes.Chat + '/:id',
+    loader: () => authorizationUtil.getAuthorization() ? null : redirect('/login'),
     Component: () => import('@/pages/next-chats/chat'),
   },
   {
     path: Routes.Root,
+    loader: () => authorizationUtil.getAuthorization() ? null : redirect('/login'),
     Component: () => import('@/layouts/root-layout'),
     children: [
       {
