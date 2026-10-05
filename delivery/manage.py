@@ -29,7 +29,13 @@ def initialize(args):
         raise ValueError('Existing project resources: refusing to generate different passwords')
     names=docker('volume','ls','--format','{{.Name}}').split()
     if any(n.startswith(args.project+'_') for n in names): raise ValueError('Existing volume prefix')
-    with socket.socket() as s: s.bind(('0.0.0.0',args.port))
+    with socket.socket() as probe:
+        probe.settimeout(2)
+        if probe.connect_ex(('127.0.0.1',args.port))==0:
+            raise ValueError('Requested web port already has a listener')
+    with socket.socket() as s:
+        if os.name=='nt':s.setsockopt(socket.SOL_SOCKET,socket.SO_EXCLUSIVEADDRUSE,1)
+        s.bind(('0.0.0.0',args.port))
     from policy import verify_package
     verify_package(Path(args.package).resolve())
     image=json.loads(docker('image','inspect',args.image))[0]['Id']
