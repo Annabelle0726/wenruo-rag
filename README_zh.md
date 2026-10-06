@@ -1,385 +1,168 @@
 <div align="center">
-<img src="./web/src/assets/icon/brand-lockup.png" width="320" alt="芯导软件 | 文若 RAG logo">
-<h1>芯导软件 | 文若 RAG</h1>
-<p><b>面向线缆工业的智能检索增强生成（RAG）系统</b></p>
-<p>面向线缆标准、产品规格、BOM 与质检记录的智能检索与问答系统。</p>
+<img src="./web/src/assets/icon/brand-lockup.png" width="320" alt="芯导软件 | 文若 RAG">
+<h1>文若 RAG</h1>
+<p>面向线缆工程采购场景的标准、技术规范、BOM 与质检资料检索和问答平台。</p>
+<p><a href="./README.md">English</a> · <a href="./README_zh.md">简体中文</a> · <a href="./LICENSE">Apache-2.0</a></p>
 </div>
 
-<p align="center">
-  <a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-DFE0E5"></a>
-  <a href="./README_zh.md"><img alt="简体中文版自述文件" src="https://img.shields.io/badge/简体中文-DBEDFA"></a>
-  <a href="./LICENSE"><img height="21" src="https://img.shields.io/badge/License-Apache--2.0-ffffff?labelColor=d4eaf7&color=2e6cc4" alt="license"></a>
-</p>
+## 先选对启动方式
 
-<details open>
-<summary><b>📕 目录</b></summary>
+本分支是客户交付分支，基于 RAGFlow 二次开发，使用 Python 后端。客户启动入口是 `delivery/manage.py`，Compose 文件是 `delivery/compose.yaml`。旧的 `docker/docker-compose.yml` 和 `tools/scripts/start_deployment.py` 不在此分支，不要复制旧命令启动。
 
-- 💡 [文若 RAG 是什么？](#-文若-rag-是什么)
-- 🎮 [快速开始](#-快速开始)
-- 📌 [近期更新](#-近期更新)
-- 🌟 [主要功能](#-主要功能)
-- 🔎 [系统架构](#-系统架构)
-- 🎬 [自主托管](#-自主托管)
-- 🔧 [系统配置](#-系统配置)
-- 🔧 [源码编译 Docker 镜像](#-源码编译-docker-镜像)
-- 🔨 [以源代码启动服务](#-以源代码启动服务)
-- 📚 [技术文档](#-技术文档)
-- 🙌 [贡献指南](#-贡献指南)
+| 场景 | 命令（源码根目录） | 浏览器入口 |
+| --- | --- | --- |
+| 已初始化的客户/验收环境 | `python delivery/manage.py start` | 初始化时选定的端口，默认 `http://localhost:9222/login` |
+| 新机器首次部署 | 先执行下方 `init`，再 `start` | 默认 9222；占用时初始化选择 19222 |
+| 本地前端开发 | 启动可用后端并配置代理，再 `npm run dev -- --port 5173` | `http://localhost:5173` |
 
-</details>
+19222 是既有隔离验收环境使用的端口，不是所有安装的默认值。切换 Git 分支或新建 clone 目录不会自动迁移资料，也不会自动隔离原数据库。
 
-## 💡 文若 RAG 是什么？
+## 客户部署：先准备三个部分
 
-文若 RAG 是面向线缆工业的检索增强生成（RAG）引擎：一套自主托管的智能检索与问答系统，把线缆领域的资料沉淀为**可溯源、有引用**的知识库。
+- **源码**：Git 仓库或 `source.zip`，包含程序和部署脚本。
+- **镜像**：`images.tar` 与 `images.json`，包含应用和固定版本的中间件。
+- **业务数据**：`business-data.zip`，包含选定 PDF、解析切片、向量、文档元数据、助手配置和已有 Wiki；不是完整私人数据库转储。
 
-它摄入线缆企业日常真正依赖的文档——国家标准与国际标准、产品规格书与数据表、BOM 物料清单、检测报告、质检记录、工艺文件、扫描图纸与网页——并基于这些内容回答问题，给出可追溯的引用，而不是无法验证的泛泛而谈。
+Git clone 和 docker load 都不会自动恢复解析好的资料。业务包是单独交付文件，不在 Git 中。只交付审查通过的发布目录；不要发送其父目录、私人备份或 `delivery/private`。
 
-平台保留了上游引擎中经过验证的核心链路（深度文档理解与 OCR、基于模板的文本切片、关键词/向量混合召回与融合重排序、Agent 工作流、OpenAI 兼容 API），并封装为线缆工业的工作流：按文件单独配置解析方式的数据集、切片级人工检查、自动关键词与问题提取、知识图谱，以及可调用内部系统的 Agent。
+### 环境要求
 
-## 🎮 快速开始
+需要 Docker（含 Compose；Windows 推荐 Docker Desktop/WSL2）和主机 Python 3.10+，用于标准库部署脚本。离线导入已构建镜像不需要 Node.js、uv 或主机 Python 后端依赖。建议至少 4 核、16 GB RAM、50 GB 可用磁盘，并为镜像导入和构建预留额外空间。
 
-文若 RAG 采用自主托管方式，请按目标选择路径：
+客户应用通过一个 Web 端口提供服务；MySQL、Elasticsearch、MinIO 和 Redis/Valkey 不向主机发布端口。离线环境必须拿到包含所有依赖镜像的完整包，仅构建应用镜像不足以部署。
 
-- **Docker 部署或试用** —— 见 [自主托管](#-自主托管)。
-- **本地源码开发（本仓库标准流程）** —— 见 [以源代码启动服务](#-以源代码启动服务)。
+### 首次部署（Windows PowerShell）
 
-## 📌 近期更新
+示例发布目录为 `C:\wenruo\release`。先用 `SHA256SUMS.txt` 核对交付文件，以下目录须是本次专用的新目录：
 
-- 2026-06-15 支持飞书、Discord、Telegram、Line 等多种聊天渠道。
-- 2026-04-24 支持 DeepSeek v4。
-- 2025-12-26 支持 AI 代理的"记忆"功能。
-- 2025-11-19 支持 Gemini 3 Pro。
-- 2025-11-12 支持从 Confluence、S3、Notion、Discord、Google Drive 进行数据同步。
-- 2025-10-23 支持 MinerU 和 Docling 作为文档解析方法。
-- 2025-10-15 支持可编排的数据管道。
-- 2025-08-08 支持 OpenAI 最新的 GPT-5 系列模型。
-- 2025-08-01 支持 agentic workflow 和 MCP。
-- 2025-05-23 Agent 新增 Python/JS 代码执行器组件。
-- 2025-03-19 PDF 和 DOCX 中的图支持用多模态大模型解析并生成描述。
+```powershell
+cd C:\wenruo\release
+Get-FileHash source.zip,images.tar,business-data.zip -Algorithm SHA256
+Expand-Archive -LiteralPath source.zip -DestinationPath C:\wenruo\source
+Expand-Archive -LiteralPath business-data.zip -DestinationPath C:\wenruo\business-data
+docker load -i images.tar
+cd C:\wenruo\source
+python delivery/manage.py init --project wenruo-delivery-customer01 --image wenruo:customer-release --revision 57cea96304b9fb840aa1f6291016354e74ab4f13 --package C:/wenruo/business-data
+python delivery/manage.py start
+```
 
-## 🌟 主要功能
+提交号对应 2026-10-05 已验收镜像；未来发布请以配套交付报告中的镜像和提交号为准。项目名须唯一且以 `wenruo-delivery-` 开头。若 9222 已占用，在首次 init 命令末尾添加 `--port 19222`；不要停止不属于本项目的服务。
 
-### 🍭 **"Quality in, quality out"**
+init 只运行一次，会校验业务包、固定镜像、端口和已有资源，并生成本机配置。start 会启动服务、等待后端就绪、恢复资料并校验恢复结果；看到容器 Started 不等于完成。默认等待最多 600 秒，浏览器出现 502 时先看初始化日志。
 
-- 基于[深度文档理解](./deepdoc/README.md)，能够从各类复杂格式的非结构化数据中提取真知灼见。
-- 真正在无限上下文（token）的场景下快速完成大海捞针测试。
+### 账号、资料与模型
 
-### 🍱 **基于模板的文本切片**
+唯一初始账号为 `admin@wenruo.local`，同时拥有超级管理员和工作区 Owner 权限。密码在客户本机首次初始化时随机生成，保存于 `delivery/private/admin-password.txt`；数据库密码、会话密钥和登录 RSA 私钥也在本机生成。不要上传或复制该目录，不要给客户开发机的密码。
 
-- 不仅仅是智能，更重要的是可控可解释。
-- 多种文本模板可供选择。
+2026-10-05 已验收业务包包含 **3 个知识库、18 份 PDF、797 条切片及文档向量、18 条文档元数据、3 个正式助手、579 篇 Wiki**。16,135 是 Wiki 索引记录数，不是 Wiki 篇数。具体数量以配套 `DELIVERY-REPORT.txt` 为准。
 
-### 🌱 **有理有据、最大程度降低幻觉（hallucination）**
+私人用户、聊天记录、API Token 和模型 Key 不迁移。管理员需在模型管理中配置客户自己的提供方、地址和 Key。保留了模型名称和绑定，不等于模型已可调用；文档查询 embedding 必须与原有 3072 维向量空间兼容，不能只靠维度相同就随意换模型。
 
-- 文本切片过程可视化，支持手动调整。
-- 有理有据：答案提供关键引用的快照并支持追根溯源。
+已有 Wiki 可阅读，管道和模板已保留；后续生成仍需管理员绑定管道并配置模型，部署不会自动覆盖正式库解析配置。没有模型配置时不能把启动成功宣称为问答验收通过。
 
-### 🍔 **兼容各类异构数据源**
+## 日常启动、日志与停止
 
-- 支持丰富的文件类型，包括 Word 文档（含旧版 `.doc` 格式的 PDF 无缝转换预览）、PPT、Excel 表格、txt 文件、图片、PDF、影印件、复印件、结构化数据、网页等。
+在已 init 的同一个源码目录执行：
 
-### 🛀 **全程无忧、自动化的 RAG 工作流**
+```powershell
+python delivery/manage.py start
+```
 
-- 全面优化的 RAG 工作流可以支持从个人应用乃至超大型企业的各类生态系统。
-- 大语言模型 LLM 以及向量模型均支持配置。
-- 基于多路召回、融合重排序。
-- 提供易用的 API，可以轻松集成到各类企业系统。
+重复 start 会校验恢复回执，不重复创建账号或重新生成密码。需要查看或停止此项目时，可在 PowerShell 定义：
 
-## 🔎 系统架构
+```powershell
+$project=(Get-Content delivery/private/identity.json -Raw | ConvertFrom-Json).project
+function dc {
+  docker compose --project-name $project --env-file delivery/private/runtime.env -f delivery/compose.yaml --profile cpu @args
+}
+dc ps
+dc logs --tail 100 wenruo-rag-cpu
+# 停止服务，保留数据：
+dc stop
+# 移除容器和网络，保留命名数据卷：
+dc down
+```
 
-文若 RAG 以一个轻量栈的形式运行在统一的 nginx 入口之后：
+恢复运行仍用 manage.py start。不要为排错执行 `down -v`、删除数据卷或重新生成 private 配置；这可能丢失资料或导致密码与存量数据库不一致。不要手改 runtime.env，管理脚本会拒绝不匹配的配置。
 
-- **Web UI** —— 构建进镜像的前端产物，由 nginx 在 `80` 端口提供服务。
-- **API 服务**（`api/wenruo_server.py`）—— 应用 API 监听 `9380`，管理 API 监听 `9381`。
-- **任务执行器**（`rag/svr/task_executor.py`）—— 负责文档解析、OCR、切片与索引的后台进程。
-- **文档引擎** —— 默认 Elasticsearch，也可切换为 Infinity 或 OpenSearch，用于全文与向量存储。
-- **元数据、对象与队列** —— MySQL 存元数据，MinIO 存原始文件，Redis 负责队列与锁。
+## 完整构建与升级镜像
 
-管理员、开发者与参考文档见 [docs/](./docs)。
+修改打进镜像的代码后，restart 不会更新代码。此分支使用完整 Dockerfile 构建；不推荐向旧容器覆盖文件或依赖 latest 判断版本。
 
-## 🎬 自主托管
+从源码构建需要 Node.js 22、Docker 和联网下载构建依赖。先在源码根目录编译前端：
 
-### 📝 前提条件
-
-- CPU >= 4 核
-- RAM >= 16 GB
-- Disk >= 50 GB
-- Docker >= 24.0.0 且 Docker Compose >= v2.26.1
-- Python >= 3.13（仅本地源码启动方式需要）
-- [gVisor](https://gvisor.dev/docs/user_guide/install/): 仅当你打算使用代码执行器（沙箱）功能时才需要安装。
-
-> [!TIP]
-> 在 Windows 上，Docker Desktop 把整套服务跑在 WSL2 虚拟机里。请在构建镜像或运行文档引擎前给虚拟机留足内存，
-> 例如在 `%USERPROFILE%\.wslconfig` 中配置 `memory=10GB`、`processors=8`、`swap=8GB`，然后执行 `wsl --shutdown`
-> 使其生效。虚拟内存过小会让容器构建陷在 swap 抖动中缓慢爬行，而不是快速失败。
-
-### 🚀 启动服务器
-
-1. Linux 主机需确保 `vm.max_map_count` 不小于 262144（Windows/macOS 的 Docker Desktop 已在其虚拟机内设置好）：
-
-   > 如需确认 `vm.max_map_count` 的大小：
-   >
-   > ```bash
-   > sysctl vm.max_map_count
-   > ```
-   >
-   > 如果 `vm.max_map_count` 的值小于 262144，可以进行重置：
-   >
-   > ```bash
-   > # 这里我们设为 262144:
-   > sudo sysctl -w vm.max_map_count=262144
-   > ```
-   >
-   > 你的改动会在下次系统重启时被重置。如果希望做永久改动，还需要在 **/etc/sysctl.conf** 文件里把 `vm.max_map_count` 的值再相应更新一遍：
-   >
-   > ```bash
-   > vm.max_map_count=262144
-   > ```
-
-2. 克隆本仓库：
-
-   ```bash
-   git clone <YOUR_REPOSITORY_URL> wenruo-rag
-   cd wenruo-rag
-   ```
-
-3. 构建并启动应用容器：
-
-   ```bash
-   cd docker
-
-   # 构建镜像（更快的前端预构建方式见「源码编译 Docker 镜像」）：
-   docker compose build wenruo-rag-cpu
-
-   # 启动应用容器：
-   docker compose up -d wenruo-rag-cpu
-   ```
-
-   > 应用容器名为 `wenruo-rag-cpu`，使用的镜像由 [.env](./docker/.env) 中的 `RAGFLOW_IMAGE` 指定，默认为
-   > `my-wenruorag:latest`。它依赖的容器（`wenruo-rag-mysql-1`、`wenruo-rag-es01-1`、`wenruo-rag-minio-1`、
-   > `wenruo-rag-redis-1`）必须先处于运行状态；冷启动整栈请改用：
-   >
-   > ```bash
-   > docker compose up -d
-   > ```
-
-4. 服务器启动成功后确认服务器状态：
-
-   ```bash
-   docker logs -f wenruo-rag-cpu
-   ```
-
-   _出现以下输出说明服务器启动成功：_
-
-   ```bash
-                         Wenruo RAG Engine                   
-
-   Wenruo RAG version: v0.27.1-<git-describe>
-   project base: /wenruo-rag
-   Wenruo RAG server is ready after 131.1s initialization.
-   Running on http://0.0.0.0:9380 (CTRL + C to quit)
-   ```
-
-   > 版本号后缀是你所构建代码的 `git describe` 结果。首次启动耗时更久，因为在 API 开始监听之前需要完成数据表、
-   > 索引与超级用户的初始化。
-   >
-   > 如果你在没有看到上述提示信息之前就尝试登录，浏览器可能会提示 `network abnormal` 或 `网络异常`，因为此时
-   > API 尚未完成初始化。
-   >
-
-5. 在浏览器中输入服务器对应的 IP 地址并登录：
-
-   > 默认配置下只需输入 `http://IP_OF_YOUR_MACHINE` 即可：未改动过配置则无需输入端口（默认 HTTP 服务端口 `80`）。
-   >
-
-6. 在 [service_conf.yaml.template](./docker/service_conf.yaml.template) 文件的 `user_default_llm` 栏配置 LLM factory，并在 `API_KEY` 栏填写与你所选大模型相对应的 API key。
-
-   > 文若 RAG 发布的是 slim 版本，不包含 embedding 模型，因此在创建知识库之前还需配置 embedding 模型服务。
-   > 相关配置说明见 [docs/](./docs)。
-   >
-
-   _好戏开始，接着奏乐接着舞！_
-
-## 🔧 系统配置
-
-系统配置涉及以下三份文件：
-
-- [.env](./docker/.env)：存放一些基本的系统环境变量，比如 `COMPOSE_PROJECT_NAME`、`RAGFLOW_IMAGE`、`SVR_HTTP_PORT`、`MYSQL_PASSWORD`、`MINIO_PASSWORD` 等。
-- [service_conf.yaml.template](./docker/service_conf.yaml.template)：配置各类后台服务。
-- [docker-compose.yml](./docker/docker-compose.yml): 系统依赖该文件完成启动。
-
-请务必确保 [.env](./docker/.env) 文件中的变量设置与 [service_conf.yaml.template](./docker/service_conf.yaml.template) 文件中的配置保持一致！
-
-如果不能访问镜像站点 hub.docker.com 或者模型站点 huggingface.co，请按照 [.env](./docker/.env) 注释修改 `RAGFLOW_IMAGE` 和 `HF_ENDPOINT`。
-
-> [./docker/README](./docker/README.md) 解释了 [service_conf.yaml.template](./docker/service_conf.yaml.template) 用到的环境变量设置和服务配置。
-
-如需更新默认的 HTTP 服务端口(80), 可以在 [docker-compose.yml](./docker/docker-compose.yml) 文件中将配置 `80:80` 改为 `<YOUR_SERVING_PORT>:80`。
-
-> 所有系统配置都需要通过重启应用容器生效：
->
-> ```bash
-> cd docker
-> docker compose up -d wenruo-rag-cpu
-> ```
-
-### 把文档引擎从 Elasticsearch 切换成为 Infinity
-
-文若 RAG 默认使用 Elasticsearch 存储文本和向量数据。如果要切换为 Infinity，可以按照下面步骤进行：
-
-1. 停止所有容器运行:
-
-   ```bash
-   docker compose -f docker/docker-compose.yml down -v
-   ```
-   Note: `-v` 将会删除 docker 容器的 volumes，已有的数据会被清空。
-
-2. 设置 **docker/.env** 目录中的 `DOC_ENGINE` 为 `infinity`.
-
-3. 启动容器:
-
-   ```bash
-   docker compose -f docker/docker-compose.yml up -d
-   ```
-
-> [!WARNING]
-> Infinity 目前并未正式支持在 Linux/arm64 架构下的机器上运行。
-
-## 🔧 源码编译 Docker 镜像
-
-应用镜像由本仓库根目录的 [Dockerfile](./Dockerfile) 构建，并以 [docker/.env](./docker/.env) 中的 `RAGFLOW_IMAGE`
-（默认 `my-wenruorag:latest`）打标签。
-
-**最快的构建方式 —— 前端预构建。** 先在宿主机上生成 `web/dist`，再让镜像直接使用它，避免在容器内跑 Vite 构建：
-
-```bash
-# 1. 在宿主机上构建前端（容器构建会从构建上下文中读取 web/dist）：
+```powershell
 cd web
+npm ci
+$env:NODE_OPTIONS='--max-old-space-size=4096'
+$env:VITE_BUILD_SOURCEMAP='false'
+$env:VITE_MINIFY='esbuild'
 npm run build
 cd ..
-
-# 2. 使用预构建前端构建镜像：
-cd docker
-docker compose build --build-arg WEB_DIST_MODE=prebuilt wenruo-rag-cpu
+$revision=(git rev-parse HEAD).Trim()
+docker build --build-arg WEB_DIST_MODE=prebuilt --build-arg SOURCE_COMMIT=$revision -t wenruo:customer-updated .
 ```
 
-> 在 Docker 虚拟机内存较小的机器上建议走这条路：本仓库在容器内执行 Vite 构建时非常吃内存。
-> `WEB_BUILD_HEAP_MB`（默认 `4096`）用于限制容器内构建的 V8 堆上限，必须低于 Docker 虚拟机能够用真实内存支撑的量。
+source.zip 不含 .git，使用 ZIP 时将 $revision 直接赋值为对应交付报告中的发布提交号。prebuilt 会把本机 web/dist 放进镜像；前端有改动必须先重新编译，不能带旧 dist 构建。
 
-**容器内完整构建**（前端在镜像内编译）：
+已初始化环境升级：
 
-```bash
-cd docker
-docker compose build wenruo-rag-cpu
+```powershell
+python delivery/manage.py set-image --image wenruo:customer-updated
+python delivery/manage.py start
 ```
 
-> 两种方式都需要一个内含模型与 native 依赖库的依赖镜像；它构建自本仓库，任何时候都可以在无外网的情况下重新生成：
->
-> ```bash
-> cd wenruo_deps
-> docker build -f Dockerfile -t infiniflow/wenruo_deps:latest .
-> ```
+set-image 显式更新镜像和版本，保留凭据、资源标记和恢复回执。首次部署使用 init。正式重新交付时，应重新验收并生成配套镜像包、源码包、业务包和校验清单；docker save 仅导出镜像，不包含运行数据卷。
 
-## 🔨 以源代码启动服务
+## 本地源码开发
 
-本仓库在 Windows + PowerShell 环境下开发和运行，下述流程为本仓库标准的本地启动方式，请保持 Docker
-依赖服务在后台常驻运行。
+客户 Compose 仅发布 Web 端口，未发布 9380/9381。当前 Vite 的 Python 代理默认指向主机 `127.0.0.1:9380`（/api、/v1）与 `9381`（管理 API），因此不能直接对客户栈运行 npm dev 并期待问答正常。
 
-> [!TIP]
-> **旧版 Office 预览 (.doc)：**
-> Docker 镜像中已预装无界面版 LibreOffice，用于将旧版 `.doc` 文档转换为 PDF 进行在线预览。
-> 如果你在本地以源码方式启动开发，且需要测试 `.doc` 文件的本地预览功能，请在宿主机安装 LibreOffice 并配置 `SOFFICE_BIN` 环境变量指向 `soffice` 可执行文件。
+推荐使用独立开发环境，配置 Vite 代理指向可用 API，再运行：
 
-> [!IMPORTANT]
-> 首次克隆仓库后，请在仓库根目录执行一次 `git config --local --unset core.hooksPath`、`uv tool install lefthook` 和 `lefthook install`，以启用本地 Git hooks。
+```powershell
+cd web
+npm ci
+npm run dev -- --port 5173
+```
 
-### 首次环境准备
+若开发后端也跑在 Docker，可通过专用开发配置发布 API 或将代理指向后端 Web 入口；不要改客户的 private/runtime.env。不要与客户栈共用数据库、队列或项目名。
 
-1. 安装 `uv`。如已经安装，可跳过本步骤：
+主机 Python 深度调试需要 Python 3.13、uv、完整依赖及独立的 MySQL/ES/MinIO/Redis 服务。先配置本机 conf/service_conf.yaml 的地址、端口和凭据；Docker 内服务名不能直接当主机地址使用。停止对应容器后台任务，避免两套 worker 消费同一队列，然后分别运行：
 
-   ```powershell
-   pip install uv
-   ```
+```powershell
+# 安装 Python 依赖：
+uv sync --python 3.13
+# 终端 1：API
+$env:PYTHONPATH="."
+$env:PYTHONUTF8="1"
+uv run python api/wenruo_server.py
+# 终端 2：任务后台（在另一个终端运行）
+$env:PYTHONPATH="."
+$env:PYTHONUTF8="1"
+uv run python rag/svr/task_executor.py
+```
 
-2. 安装 Python 依赖并下载 native 依赖库：
+前端由第三个终端运行，确认代理匹配 API。Python 服务改动后按需要重启，不保证全链路热重载。这是开发流程，不是客户安装步骤。
 
-   ```powershell
-   uv sync --python 3.13
-   uv run python wenruo_deps/download_deps.py
-   ```
+## 排错与验收
 
-3. 安装前端依赖：
+| 现象 | 先检查 |
+| --- | --- |
+| 找不到 docker/docker-compose.yml | 本分支使用 delivery/manage.py 和 delivery/compose.yaml |
+| 端口占用 | docker ps；首次 init 选择空闲端口 |
+| 502 / ERR_EMPTY_RESPONSE | 此项目状态与应用日志；等待 API 就绪，检查数据库健康 |
+| 配置或密码不匹配被拒绝 | 保留原 private 与数据卷，查来源；不要重置密码文件 |
+| 模型配置缺失 | 配置客户模型和 Key，检查地址、额度及 embedding 兼容性 |
+| Wiki 正文可读但不能生成 | 检查模型、管道绑定、模板和准备状态 |
 
-   ```powershell
-   cd web
-   npm install
-   ```
+验收应使用无痕窗口，确认未登录时进入登录页；登录后检查唯一管理员、3 个知识库/助手、PDF、切片、元数据及 Wiki。模型配置完成后另做检索与问答验证。HTTP 200、容器 Started 或有界面均不能替代恢复校验。
 
-### 启动服务
+## 文档与开发约定
 
-1. 确认 Docker 依赖容器已启动：执行 `docker ps` 应能看到 `wenruo-rag-mysql-1`、`wenruo-rag-es01-1`、
-   `wenruo-rag-redis-1` 和 `wenruo-rag-minio-1`。如果尚未启动，请先执行以下命令（下次可直接跳过本步骤）：
+- [交付流程与数据边界](./delivery/README.md)
+- [管理员与开发文档](./docs/)
+- [文档理解与 OCR](./deepdoc/README.md)
+- [许可证](./LICENSE)
 
-   ```powershell
-   docker compose -f docker/docker-compose-base.yml up -d
-   ```
-
-2. 终端 1 —— Task Executor 任务后台，负责文档解析与索引：
-
-   ```powershell
-   $env:PYTHONPATH="."
-   $env:HF_ENDPOINT="https://hf-mirror.com"
-   $env:PYTHONUTF8="1"
-   uv run python rag/svr/task_executor.py
-   ```
-
-3. 终端 2 —— Web API 服务，监听 9380 端口：
-
-   ```powershell
-   $env:PYTHONPATH="."
-   $env:HF_ENDPOINT="https://hf-mirror.com"
-   $env:PYTHONUTF8="1"
-   uv run python api/ragflow_server.py
-   ```
-
-4. 终端 3 —— 前端 UI，访问地址 <http://localhost:9222>，并代理后端 API：
-
-   ```powershell
-   cd web
-   npm run dev
-   ```
-   ![前端 UI 界面](./probe-register-light.png)
-
-   | 前端（开发） | API 代理目标 | 用途 |
-   |--------------|--------------|------|
-   | `http://localhost:9222` | `http://127.0.0.1:9380` | `/api`、`/v1` —— 由 `api/wenruo_server.py` 提供的应用 API |
-   | `http://localhost:9222` | `http://127.0.0.1:9381` | `/api/v1/admin` —— 同一进程提供的管理 API |
-
-5. 浏览器访问 <http://localhost:9222> 即可使用 文若 RAG：
-
-   首次请求前请等待控制台出现 [自主托管](#-自主托管) 中所示的启动横幅（或 `logs/ragflow_server.log` 中的等价日志）：
-   Web API 只有在数据库与文档引擎就绪后才会监听 9380 端口。
-
-   `$env:PYTHONUTF8="1"` 用于避免中文日志触发控制台编码报错（乱码），
-   `$env:HF_ENDPOINT="https://hf-mirror.com"` 用于把模型下载指向 HuggingFace 镜像站。
-
-### 停止服务
-
-在每个终端按 `Ctrl+C` 即可。Docker 依赖服务会继续运行，如需一并停止请执行
-`docker compose -f docker/docker-compose-base.yml down`。
-
-在 Linux 或 macOS 上，把 `$env:X="..."` 换成 `export X=...` 即可；这两个平台上
-`bash docker/launch_backend_service.sh` 可以在一个终端内同时启动两个后端进程。
-
-## 📚 技术文档
-
-- [docs/](./docs) —— 本仓库自带的管理员、开发者、使用指南与参考文档。
-- [docker/README.md](./docker/README.md) —— `service_conf.yaml.template` 使用的环境变量与服务配置说明。
-- [deepdoc/README.md](./deepdoc/README.md) —— 深度文档理解与 OCR 链路。
-- [internal/development.md](./internal/development.md) —— native 与 Go 构建说明。
-- [AGENTS.md](./AGENTS.md) —— 本仓库的改动约定与验证要求。
-
-## 🙌 贡献指南
-
-本仓库是私有二次开发分支。请保持改动小而聚焦，用范围最小的相关命令进行验证（见 [AGENTS.md](./AGENTS.md)），
-并优先删除被取代的代码，而不是保留兼容层。前端相关改动请同时遵循 [web/CLAUDE.md](./web/CLAUDE.md)。
+保持改动聚焦，使用与改动相关的检查；不要提交私人配置、账号密码、模型 Key、业务资料或客户数据。README 命令从源码根目录执行，多行 PowerShell 续行符须保留；本页示例采用单行命令以便复制。
